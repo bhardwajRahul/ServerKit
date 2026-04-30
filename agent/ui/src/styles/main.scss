@@ -14,7 +14,12 @@ body,
     color: $text-primary;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     font-size: 14px;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+}
+
+button {
+    font-family: inherit;
 }
 
 a {
@@ -22,54 +27,295 @@ a {
     text-decoration: none;
 }
 
-.console {
+.muted {
+    color: $text-tertiary;
+}
+
+// ─── App shell ───────────────────────────────────────────────────────────
+
+.shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+.shell__main {
+    overflow-y: auto;
+    background: $bg-body;
+}
+
+// ─── Sidebar ─────────────────────────────────────────────────────────────
+
+.sidebar {
+    background: $bg-sidebar;
+    border-right: 1px solid $border-default;
     display: flex;
     flex-direction: column;
-    height: 100%;
-    min-height: 100vh;
+    padding: $space-md;
+    gap: $space-lg;
 }
 
-.console__header {
+.sidebar__brand {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
-    background: $bg-sidebar;
-    border-bottom: 1px solid $border-default;
-    -webkit-app-region: drag;
+    gap: $space-sm;
+    padding: $space-sm 4px;
 }
 
-.console__brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+.sidebar__brand-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-sm;
+    background: linear-gradient(135deg, $accent, #8b5cf6);
+    display: grid;
+    place-items: center;
+    color: white;
+}
+
+.sidebar__brand-name {
     font-weight: 600;
     color: $text-primary;
+    line-height: 1.2;
 }
 
-.console__version {
+.sidebar__brand-sub {
+    font-size: 11px;
     color: $text-tertiary;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: $space-sm;
+    padding: 8px 10px;
+    border-radius: $radius-sm;
+    color: $text-secondary;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 120ms, color 120ms;
+
+    &:hover {
+        background: $bg-hover;
+        color: $text-primary;
+    }
+
+    &--active {
+        background: $bg-elevated;
+        color: $text-primary;
+    }
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────
+
+.page {
+    padding: $space-xl;
+    max-width: 980px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: $space-lg;
+}
+
+.page__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $space-md;
+}
+
+.page__title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.page__sub {
+    margin: 0;
+    display: flex;
+    gap: $space-sm;
+    align-items: center;
+    font-size: 13px;
+}
+
+// ─── Cards ───────────────────────────────────────────────────────────────
+
+.card {
+    background: $bg-card;
+    border: 1px solid $border-default;
+    border-radius: $radius-md;
+    padding: $space-lg;
+    display: flex;
+    flex-direction: column;
+    gap: $space-md;
+}
+
+.card__title {
+    margin: 0;
     font-size: 12px;
+    font-weight: 600;
+    color: $text-tertiary;
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
 
-.console__body {
-    flex: 1;
-    padding: 32px;
-    max-width: 720px;
-    margin: 0 auto;
-    width: 100%;
+.empty-state {
+    color: $text-secondary;
+    font-size: 13px;
+    line-height: 1.6;
+}
 
-    h1 {
-        margin: 0 0 12px;
-        font-size: 24px;
-        font-weight: 600;
+// ─── Pills ───────────────────────────────────────────────────────────────
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+
+    &::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+    }
+
+    &--ok {
+        background: rgba($success, 0.12);
+        color: $success;
+    }
+    &--warn {
+        background: rgba($warning, 0.15);
+        color: $warning;
+    }
+    &--muted {
+        background: $bg-hover;
+        color: $text-tertiary;
     }
 }
 
-.console__lead {
-    color: $text-secondary;
-    line-height: 1.55;
-    margin: 0;
+// ─── Banner ──────────────────────────────────────────────────────────────
+
+.banner {
+    border-radius: $radius-md;
+    padding: 12px 16px;
+    font-size: 13px;
+    border: 1px solid;
+    display: flex;
+    gap: $space-sm;
+    align-items: flex-start;
+
+    &--warn {
+        background: rgba($warning, 0.08);
+        border-color: rgba($warning, 0.3);
+        color: lighten($warning, 12%);
+    }
+}
+
+// ─── Info rows ───────────────────────────────────────────────────────────
+
+.info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-md;
+    padding: 10px 0;
+    border-bottom: 1px solid $border-subtle;
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.info-row__label {
+    font-size: 12px;
+    color: $text-tertiary;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.info-row__value {
+    color: $text-primary;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: right;
+    word-break: break-all;
+
+    &--mono {
+        font-family: 'JetBrains Mono', 'Consolas', ui-monospace, monospace;
+        font-size: 12px;
+    }
+}
+
+.copy-btn {
+    background: transparent;
+    border: 1px solid $border-default;
+    color: $text-tertiary;
+    border-radius: $radius-sm;
+    padding: 4px 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: color 120ms, border-color 120ms;
+
+    &:hover {
+        color: $text-primary;
+        border-color: $border-active;
+    }
+}
+
+// ─── Metrics ─────────────────────────────────────────────────────────────
+
+.metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $space-md;
+}
+
+.metric-card {
+    gap: $space-sm;
+}
+
+.metric-card__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.metric-card__value {
+    font-size: 24px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: $text-primary;
+}
+
+.sparkline {
+    margin: 0 -8px;
+
+    &--empty {
+        height: 64px;
+        display: grid;
+        place-items: center;
+        color: $text-tertiary;
+        font-size: 12px;
+    }
 }

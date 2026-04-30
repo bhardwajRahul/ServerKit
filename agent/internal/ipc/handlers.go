@@ -49,6 +49,20 @@ func (h *Handlers) HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, metrics)
 }
 
+// HandleMetricsHistory returns the recent CPU/memory ring buffer used by
+// the agent console to render sparklines. The buffer is bounded (5 minutes
+// at 1 Hz) so the response is always tiny.
+func (h *Handlers) HandleMetricsHistory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	samples := h.provider.GetMetricsHistory()
+	h.writeJSON(w, map[string]interface{}{
+		"samples": samples,
+	})
+}
+
 // HandleConnection returns WebSocket connection information
 func (h *Handlers) HandleConnection(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {

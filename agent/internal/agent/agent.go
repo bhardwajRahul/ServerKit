@@ -39,6 +39,7 @@ type Agent struct {
 	metrics  *metrics.Collector
 	terminal *terminal.Manager
 	ipc      *ipc.Server
+	sampler  *metricSampler
 
 	// Active subscriptions
 	subscriptions map[string]context.CancelFunc
@@ -97,6 +98,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Agent, error) {
 		docker:        dockerClient,
 		metrics:       metricsCollector,
 		terminal:      termManager,
+		sampler:       newMetricSampler(300), // 5 min @ 1 Hz
 		subscriptions: make(map[string]context.CancelFunc),
 		handlers:      make(map[string]CommandHandler),
 		startTime:     time.Now(),
@@ -216,6 +218,11 @@ func (a *Agent) Run(ctx context.Context) error {
 
 	// Start discovery responder
 	go a.discoveryLoop(ctx)
+
+	// Start the desktop-console metrics sampler (1 Hz ring buffer, 5 min)
+	if a.sampler != nil {
+		go a.samplerLoop(ctx)
+	}
 
 	// Wait for context cancellation or restart request
 	select {
@@ -1344,6 +1351,17 @@ func (a *Agent) GetDetailedMetrics() *ipc.DetailedMetrics {
 		},
 		Timestamp: time.Now().UnixMilli(),
 	}
+}
+
+// GetMetricsHistory returns the recent CPU/memory ring buffer for the
+// desktop console's sparkline charts. Returns an empty slice (not nil) when
+// metrics are disabled or the sampler hasn't run yet, so the JSON shape
+// stays stable.
+func (a *Agent) GetMetricsHistory() []ipc.MetricSample {
+	if a.sampler == nil {
+		return []ipc.MetricSample{}
+	}
+	return a.sampler.snapshot()
 }
 
 // GetConnectionInfo returns WebSocket connection information for the IPC API

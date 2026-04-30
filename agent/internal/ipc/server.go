@@ -15,6 +15,7 @@ import (
 type StatusProvider interface {
 	GetStatus() AgentStatus
 	GetDetailedMetrics() *DetailedMetrics
+	GetMetricsHistory() []MetricSample
 	GetConnectionInfo() ConnectionInfo
 	GetRecentLogs(lines int) []string
 	Restart() error
@@ -75,6 +76,14 @@ type NetworkMetrics struct {
 	PacketsRecv uint64 `json:"packets_recv"`
 }
 
+// MetricSample is one entry in the agent's CPU/memory ring buffer used by
+// the desktop console to render sparklines. Timestamp is unix milliseconds.
+type MetricSample struct {
+	Timestamp int64   `json:"t"`
+	CPU       float64 `json:"cpu"`
+	Mem       float64 `json:"mem"`
+}
+
 // ConnectionInfo contains WebSocket connection details
 type ConnectionInfo struct {
 	Connected      bool   `json:"connected"`
@@ -116,6 +125,7 @@ func (s *Server) Start(ctx context.Context) error {
 	handlers := NewHandlers(s.provider, s.log)
 	mux.HandleFunc("/status", handlers.HandleStatus)
 	mux.HandleFunc("/metrics", handlers.HandleMetrics)
+	mux.HandleFunc("/metrics/history", handlers.HandleMetricsHistory)
 	mux.HandleFunc("/connection", handlers.HandleConnection)
 	mux.HandleFunc("/logs", handlers.HandleLogs)
 	mux.HandleFunc("/restart", handlers.HandleRestart)
