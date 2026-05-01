@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import PackagesTab from '../components/serverdetail/PackagesTab';
+import ServicesTab from '../components/serverdetail/ServicesTab';
 
 const ServerDetail = () => {
     const { id, tab } = useParams();
@@ -25,7 +27,7 @@ const ServerDetail = () => {
     const [showTokenModal, setShowTokenModal] = useState(false);
     const toast = useToast();
 
-    const validTabs = ['overview', 'docker', 'cron', 'cloudflared', 'metrics', 'settings'];
+    const validTabs = ['overview', 'docker', 'cron', 'cloudflared', 'packages', 'services', 'metrics', 'settings'];
     const activeTab = validTabs.includes(tab) ? tab : 'overview';
 
     const loadServer = useCallback(async () => {
@@ -165,6 +167,8 @@ const ServerDetail = () => {
         { id: 'docker', label: 'Docker' },
         ...(server.capabilities?.cron ? [{ id: 'cron', label: 'Cron' }] : []),
         ...(server.capabilities?.cloudflared ? [{ id: 'cloudflared', label: 'Tunnels' }] : []),
+        ...(server.capabilities?.packages ? [{ id: 'packages', label: 'Packages' }] : []),
+        ...(server.capabilities?.systemd ? [{ id: 'services', label: 'Services' }] : []),
         { id: 'metrics', label: 'Metrics' },
         { id: 'settings', label: 'Settings' }
     ];
@@ -260,6 +264,16 @@ const ServerDetail = () => {
                     {server.capabilities?.cloudflared && (
                         <TabsContent value="cloudflared">
                             <CloudflaredTab serverId={id} serverStatus={server.status} />
+                        </TabsContent>
+                    )}
+                    {server.capabilities?.packages && (
+                        <TabsContent value="packages">
+                            <PackagesTab serverId={id} serverStatus={server.status} />
+                        </TabsContent>
+                    )}
+                    {server.capabilities?.systemd && (
+                        <TabsContent value="services">
+                            <ServicesTab serverId={id} serverStatus={server.status} />
                         </TabsContent>
                     )}
                     <TabsContent value="metrics">

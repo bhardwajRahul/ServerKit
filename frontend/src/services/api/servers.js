@@ -199,6 +199,152 @@ export async function toggleRemoteCronJob(serverId, jobId, enabled) {
     });
 }
 
+// Remote Capabilities
+
+// Asks the agent to re-run its capability probe and pushes the
+// refreshed payload back. Used after the user installs a runtime,
+// configures sudoers, or adds a new package manager so feature tabs
+// light up without restarting the agent service.
+export async function refreshRemoteCapabilities(serverId) {
+    return this.request(`/servers/${serverId}/refresh-capabilities`, {
+        method: 'POST'
+    });
+}
+
+// Remote Packages (via agent)
+//
+// install / upgrade are streaming: the panel returns
+// { jobId, channel } and the frontend subscribes to the matching
+// Socket.IO room (server_<id>_<channel>) for live install output.
+
+export async function getRemotePackages(serverId) {
+    return this.request(`/servers/${serverId}/packages`);
+}
+
+export async function searchRemotePackages(serverId, query, limit = 100) {
+    const params = new URLSearchParams({ q: query, limit: String(limit) });
+    return this.request(`/servers/${serverId}/packages/search?${params.toString()}`);
+}
+
+export async function getRemotePackageInfo(serverId, name) {
+    return this.request(`/servers/${serverId}/packages/info/${encodeURIComponent(name)}`);
+}
+
+export async function updateRemotePackageCache(serverId) {
+    return this.request(`/servers/${serverId}/packages/update-cache`, {
+        method: 'POST'
+    });
+}
+
+export async function installRemotePackages(serverId, names) {
+    return this.request(`/servers/${serverId}/packages/install`, {
+        method: 'POST',
+        body: { names: Array.isArray(names) ? names : [names] }
+    });
+}
+
+export async function removeRemotePackage(serverId, name) {
+    return this.request(`/servers/${serverId}/packages/remove`, {
+        method: 'POST',
+        body: { name }
+    });
+}
+
+export async function upgradeRemotePackages(serverId, { names = null, all = false } = {}) {
+    const body = {};
+    if (all) body.all = true;
+    if (names && names.length) body.names = names;
+    return this.request(`/servers/${serverId}/packages/upgrade`, {
+        method: 'POST',
+        body
+    });
+}
+
+// Remote Services (systemd)
+
+export async function getRemoteServices(serverId, { state = null, type = 'service' } = {}) {
+    const params = new URLSearchParams({ type });
+    if (state) params.set('state', state);
+    return this.request(`/servers/${serverId}/services?${params.toString()}`);
+}
+
+export async function getRemoteServiceStatus(serverId, unit) {
+    return this.request(`/servers/${serverId}/services/${encodeURIComponent(unit)}`);
+}
+
+export async function controlRemoteService(serverId, unit, action) {
+    return this.request(`/servers/${serverId}/services/${encodeURIComponent(unit)}/${action}`, {
+        method: 'POST'
+    });
+}
+
+export async function getRemoteServiceLogs(serverId, unit, lines = 200) {
+    const params = new URLSearchParams({ lines: String(lines) });
+    return this.request(`/servers/${serverId}/services/${encodeURIComponent(unit)}/logs?${params.toString()}`);
+}
+
+export async function reloadRemoteSystemdDaemon(serverId) {
+    return this.request(`/servers/${serverId}/services/daemon-reload`, {
+        method: 'POST'
+    });
+}
+
+// Remote Runtimes (pyenv / pyenv-win)
+//
+// pyenvBootstrap and installPythonVersion are streaming: returned
+// payload contains { jobId, channel } and the frontend subscribes via
+// the same Socket.IO room pattern as installRemotePackages.
+
+export async function getRemoteRuntimes(serverId) {
+    return this.request(`/servers/${serverId}/runtimes`);
+}
+
+export async function bootstrapRemotePyenv(serverId) {
+    return this.request(`/servers/${serverId}/runtimes/pyenv/bootstrap`, {
+        method: 'POST'
+    });
+}
+
+export async function getRemotePythonVersions(serverId) {
+    return this.request(`/servers/${serverId}/runtimes/python`);
+}
+
+export async function getRemotePythonAvailable(serverId) {
+    return this.request(`/servers/${serverId}/runtimes/python/available`);
+}
+
+export async function getRemotePythonCurrent(serverId) {
+    return this.request(`/servers/${serverId}/runtimes/python/current`);
+}
+
+export async function installRemotePythonVersion(serverId, version) {
+    return this.request(`/servers/${serverId}/runtimes/python/install`, {
+        method: 'POST',
+        body: { version }
+    });
+}
+
+export async function uninstallRemotePythonVersion(serverId, version) {
+    return this.request(`/servers/${serverId}/runtimes/python/uninstall`, {
+        method: 'POST',
+        body: { version }
+    });
+}
+
+export async function setRemotePythonGlobal(serverId, version) {
+    return this.request(`/servers/${serverId}/runtimes/python/global`, {
+        method: 'POST',
+        body: { version }
+    });
+}
+
+export async function setRemotePythonLocal(serverId, version, dir) {
+    return this.request(`/servers/${serverId}/runtimes/python/local`, {
+        method: 'POST',
+        body: { version, dir }
+    });
+}
+
 // Remote Files (via agent)
 export async function getRemoteAllowedPaths(serverId) {
     return this.request(`/servers/${serverId}/files/allowed-paths`);

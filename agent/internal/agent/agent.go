@@ -179,6 +179,9 @@ func New(cfg *config.Config, log *logger.Logger) (*Agent, error) {
 	)
 	agent.sudoMode = probeSudoMode(probeCtx)
 	agent.capabilities.Sudo = string(agent.sudoMode)
+	agent.capabilities.RuntimeManagers = map[string]string{
+		"python": pyenvManagerKind(),
+	}
 	agent.capabilities.ProbedAt = time.Now().UnixMilli()
 	probeCancel()
 	log.Info("Sudo probe complete", "mode", agent.sudoMode)
@@ -308,6 +311,20 @@ func (a *Agent) registerHandlers() {
 	// Agent commands
 	a.handlers[protocol.ActionAgentUpdate] = a.handleAgentUpdate
 	a.handlers[protocol.ActionAgentRecapabilities] = a.handleAgentRecapabilities
+
+	// Runtime version managers (Phase 5). pyenv on Linux,
+	// pyenv-win on Windows. Always registered so pages that probe
+	// runtimes:list can tell "manager not installed" from "unknown
+	// action" — bootstrap then becomes a one-click action.
+	a.handlers[protocol.ActionRuntimesList] = a.handleRuntimesList
+	a.handlers[protocol.ActionRuntimesPyenvBootstrap] = a.handleRuntimesPyenvBootstrap
+	a.handlers[protocol.ActionRuntimesPythonInstalled] = a.handleRuntimesPythonInstalled
+	a.handlers[protocol.ActionRuntimesPythonAvailable] = a.handleRuntimesPythonAvailable
+	a.handlers[protocol.ActionRuntimesPythonInstall] = a.handleRuntimesPythonInstall
+	a.handlers[protocol.ActionRuntimesPythonUninstall] = a.handleRuntimesPythonUninstall
+	a.handlers[protocol.ActionRuntimesPythonSetGlobal] = a.handleRuntimesPythonSetGlobal
+	a.handlers[protocol.ActionRuntimesPythonSetLocal] = a.handleRuntimesPythonSetLocal
+	a.handlers[protocol.ActionRuntimesPythonCurrent] = a.handleRuntimesPythonCurrent
 
 	// GUI SDK — primitives that panel extensions (serverkit-gui, etc.)
 	// compose into desktop-streaming or synthetic-UI features. Always

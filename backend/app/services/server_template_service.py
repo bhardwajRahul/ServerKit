@@ -59,6 +59,128 @@ class ServerTemplateService:
                 {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
             ],
         },
+
+        # ───── one-click stacks (Phase 4) ─────────────────────────────
+        # Curated entries that the agent's packages:* + systemd:* surface
+        # can apply unattended. Package names target Debian/Ubuntu where
+        # they differ across distros — RHEL/Alpine users will need to
+        # tweak names. The list here drives the workflow engine's
+        # capability_gate + agent_command nodes; the agent makes the
+        # apt/dnf/apk distinction at install time.
+        'lemp': {
+            'name': 'LEMP Stack',
+            'description': 'Nginx + MariaDB + PHP-FPM (Linux/Nginx/MariaDB/PHP)',
+            'category': 'web',
+            'packages': ['nginx', 'mariadb-server', 'php-fpm', 'php-mysql'],
+            'services': [
+                {'name': 'nginx', 'enabled': True, 'running': True},
+                {'name': 'mariadb', 'enabled': True, 'running': True},
+                {'name': 'php-fpm', 'enabled': True, 'running': True},
+            ],
+            'firewall_rules': [
+                {'port': 80, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 443, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'lamp': {
+            'name': 'LAMP Stack',
+            'description': 'Apache + MariaDB + PHP (mod_php)',
+            'category': 'web',
+            'packages': ['apache2', 'mariadb-server', 'php', 'libapache2-mod-php', 'php-mysql'],
+            'services': [
+                {'name': 'apache2', 'enabled': True, 'running': True},
+                {'name': 'mariadb', 'enabled': True, 'running': True},
+            ],
+            'firewall_rules': [
+                {'port': 80, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 443, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'docker-host': {
+            'name': 'Docker Host',
+            'description': 'Docker Engine + Compose plugin',
+            'category': 'container',
+            # docker.io is the Debian/Ubuntu package; users on RHEL/Fedora
+            # should swap to docker-ce via the Docker repo. The agent
+            # surfaces a clear "no candidate" error on those distros so
+            # the failure mode is explicit, not silent.
+            'packages': ['docker.io', 'docker-compose-plugin'],
+            'services': [
+                {'name': 'docker', 'enabled': True, 'running': True},
+            ],
+            'firewall_rules': [
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'node-host': {
+            'name': 'Node.js Host',
+            'description': 'Node.js + npm runtime (no service — start your apps via systemd or pm2)',
+            'category': 'runtime',
+            'packages': ['nodejs', 'npm'],
+            'services': [],
+            'firewall_rules': [
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'python-host': {
+            'name': 'Python Host',
+            'description': 'Python 3 + venv + pip + Gunicorn',
+            'category': 'runtime',
+            'packages': ['python3', 'python3-venv', 'python3-pip', 'gunicorn'],
+            'services': [],
+            'firewall_rules': [
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'redis': {
+            'name': 'Redis',
+            'description': 'Redis in-memory data store',
+            'category': 'cache',
+            'packages': ['redis-server'],
+            'services': [
+                {'name': 'redis-server', 'enabled': True, 'running': True},
+            ],
+            'firewall_rules': [
+                {'port': 6379, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'postgres': {
+            'name': 'PostgreSQL',
+            'description': 'PostgreSQL relational database',
+            'category': 'database',
+            'packages': ['postgresql'],
+            'services': [
+                {'name': 'postgresql', 'enabled': True, 'running': True},
+            ],
+            'firewall_rules': [
+                {'port': 5432, 'protocol': 'tcp', 'action': 'allow'},
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'cloudflared': {
+            'name': 'Cloudflare Tunnel',
+            'description': 'cloudflared agent for outbound-only Cloudflare named tunnels',
+            'category': 'network',
+            'packages': ['cloudflared'],
+            'services': [
+                {'name': 'cloudflared', 'enabled': True, 'running': False},
+            ],
+            'firewall_rules': [
+                {'port': 22, 'protocol': 'tcp', 'action': 'allow'},
+            ],
+        },
+        'fail2ban': {
+            'name': 'Fail2ban',
+            'description': 'Brute-force protection / log-driven IP banning',
+            'category': 'security',
+            'packages': ['fail2ban'],
+            'services': [
+                {'name': 'fail2ban', 'enabled': True, 'running': True},
+            ],
+        },
     }
 
     @staticmethod

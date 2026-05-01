@@ -60,6 +60,11 @@ func (a *Agent) handleAgentRecapabilities(ctx context.Context, params json.RawMe
 	// sudoers config since boot.
 	mode := probeSudoMode(probeCtx)
 	fresh.Sudo = string(mode)
+	// Re-detect runtime version managers; user may have just bootstrapped
+	// pyenv via runtimes:pyenv:bootstrap and is hitting refresh.
+	fresh.RuntimeManagers = map[string]string{
+		"python": pyenvManagerKind(),
+	}
 	fresh.ProbedAt = time.Now().UnixMilli()
 
 	// Capabilities are additive across re-probes: if the previous

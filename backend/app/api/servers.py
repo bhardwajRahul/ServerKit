@@ -2476,6 +2476,109 @@ def remote_services_control(server_id, unit, action):
     return _agent_result(result)
 
 
+# ==================== Remote Runtimes (pyenv) ====================
+#
+# Manages Python versions via pyenv (Linux) and pyenv-win (Windows).
+# Bootstrap and install return {job_id, channel} for streaming
+# progress; everything else is a synchronous round-trip.
+
+from app.services.remote_runtimes_service import RemoteRuntimesService
+
+
+@servers_bp.route('/<server_id>/runtimes', methods=['GET'])
+@jwt_required()
+def remote_runtimes_list(server_id):
+    user_id = get_jwt_identity()
+    result = RemoteRuntimesService.list_state(server_id, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/pyenv/bootstrap', methods=['POST'])
+@jwt_required()
+@developer_required
+def remote_runtimes_pyenv_bootstrap(server_id):
+    user_id = get_jwt_identity()
+    result = RemoteRuntimesService.pyenv_bootstrap(server_id, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python', methods=['GET'])
+@jwt_required()
+def remote_runtimes_python_installed(server_id):
+    user_id = get_jwt_identity()
+    result = RemoteRuntimesService.python_installed(server_id, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/available', methods=['GET'])
+@jwt_required()
+def remote_runtimes_python_available(server_id):
+    user_id = get_jwt_identity()
+    result = RemoteRuntimesService.python_available(server_id, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/current', methods=['GET'])
+@jwt_required()
+def remote_runtimes_python_current(server_id):
+    user_id = get_jwt_identity()
+    result = RemoteRuntimesService.python_current(server_id, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/install', methods=['POST'])
+@jwt_required()
+@developer_required
+def remote_runtimes_python_install(server_id):
+    user_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    version = (data.get('version') or '').strip()
+    if not version:
+        return jsonify({'error': 'version is required'}), 400
+    result = RemoteRuntimesService.python_install(server_id, version, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/uninstall', methods=['POST'])
+@jwt_required()
+@developer_required
+def remote_runtimes_python_uninstall(server_id):
+    user_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    version = (data.get('version') or '').strip()
+    if not version:
+        return jsonify({'error': 'version is required'}), 400
+    result = RemoteRuntimesService.python_uninstall(server_id, version, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/global', methods=['POST'])
+@jwt_required()
+@developer_required
+def remote_runtimes_python_set_global(server_id):
+    user_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    version = (data.get('version') or '').strip()
+    if not version:
+        return jsonify({'error': 'version is required'}), 400
+    result = RemoteRuntimesService.python_set_global(server_id, version, user_id=user_id)
+    return _agent_result(result)
+
+
+@servers_bp.route('/<server_id>/runtimes/python/local', methods=['POST'])
+@jwt_required()
+@developer_required
+def remote_runtimes_python_set_local(server_id):
+    user_id = get_jwt_identity()
+    data = request.get_json(silent=True) or {}
+    version = (data.get('version') or '').strip()
+    dir_path = (data.get('dir') or '').strip()
+    if not version or not dir_path:
+        return jsonify({'error': 'version and dir are required'}), 400
+    result = RemoteRuntimesService.python_set_local(server_id, version, dir_path, user_id=user_id)
+    return _agent_result(result)
+
+
 # ==================== Remote File Operations ====================
 #
 # Endpoints under /servers/<id>/files/ proxy to the agent's file:*
