@@ -72,8 +72,8 @@ fi
 # 5. Launch
 echo -e "\n${GREEN}✅ Setup Complete!${NC}"
 echo -e "Starting ServerKit..."
-echo -e "  - ${CYAN}Frontend:${NC} http://localhost:5173"
-echo -e "  - ${CYAN}Backend:${NC}  http://localhost:5000"
+echo -e "  - ${CYAN}Frontend:${NC} http://localhost:41921"
+echo -e "  - ${CYAN}Backend:${NC}  http://localhost:47927"
 echo -e "\n${YELLOW}Press Ctrl+C to stop both servers.${NC}\n"
 
 # Run dev.sh to handle the dual-process execution

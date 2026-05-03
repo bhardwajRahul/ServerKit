@@ -5,7 +5,7 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
-    PORT=5000
+    SERVERKIT_BACKEND_PORT=5000
 
 # Set working directory
 WORKDIR /app
@@ -57,10 +57,7 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api/v1/system/health || exit 1
+    CMD curl -f "http://localhost:${SERVERKIT_BACKEND_PORT:-5000}/api/v1/system/health" || exit 1
 
 # Run with gunicorn + gevent for WebSocket support
-CMD ["gunicorn", "-k", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", \
-     "-w", "1", "-b", "0.0.0.0:5000", "--timeout", "120", \
-     "--access-logfile", "-", "--error-logfile", "-", \
-     "run:app"]
+CMD ["sh", "-c", "exec gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:${SERVERKIT_BACKEND_PORT:-5000} --timeout 120 --access-logfile - --error-logfile - run:app"]

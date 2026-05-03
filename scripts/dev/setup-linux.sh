@@ -62,8 +62,9 @@ if [ ! -f ".env" ]; then
 SECRET_KEY=dev-secret-key-change-in-production
 JWT_SECRET_KEY=dev-jwt-key-change-in-production
 DATABASE_URL=sqlite:///backend/instance/serverkit.db
-CORS_ORIGINS=http://localhost,http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:41921,http://127.0.0.1:41921,http://localhost:47927,http://127.0.0.1:47927
 FLASK_ENV=development
+PORT=47927
 EOF
 fi
 
@@ -85,6 +86,6 @@ echo "  Terminal 2 (Frontend):"
 echo "    cd frontend && npm run dev"
 echo ""
 echo "Access:"
-echo "  Frontend: http://localhost:5173"
-echo "  Backend:  http://localhost:5000"
+echo "  Frontend: http://localhost:41921"
+echo "  Backend:  http://localhost:47927"
 echo ""

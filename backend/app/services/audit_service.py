@@ -1,7 +1,19 @@
 """Service for audit logging operations."""
-from flask import request
+from flask import g, has_request_context, request
 from app import db
 from app.models import AuditLog
+
+REDACTED = '[redacted]'
+SENSITIVE_SETTING_PARTS = (
+    'password',
+    'secret',
+    'token',
+    'credential',
+    'private',
+    'certificate',
+    'api_key',
+    'apikey',
+)
 
 
 class AuditService:
@@ -10,6 +22,9 @@ class AuditService:
     @staticmethod
     def get_request_info():
         """Extract IP address and user agent from the current request."""
+        if not has_request_context():
+            return None, None
+
         ip_address = request.remote_addr
         # Handle proxy headers
         if request.headers.get('X-Forwarded-For'):
@@ -21,7 +36,7 @@ class AuditService:
         return ip_address, user_agent
 
     @staticmethod
-    def log(action, user_id=None, target_type=None, target_id=None, details=None):
+    def log(action, user_id=None, target_type=None, target_id=None, details=None, commit=True):
         """
         Create an audit log entry with request context.
 
@@ -31,6 +46,8 @@ class AuditService:
             target_type: Type of the target (e.g., 'user', 'app', 'setting')
             target_id: ID of the target entity
             details: Dictionary with additional details
+            commit: Persist the entry immediately. Set to False when batching
+                audit rows into a larger explicit transaction.
 
         Returns:
             The created AuditLog entry
@@ -47,12 +64,18 @@ class AuditService:
             user_agent=user_agent
         )
 
+        if has_request_context():
+            g.audit_logged = True
+
         # Emit webhook event for matching audit actions
         try:
             from app.services.event_service import EventService
             EventService.emit_for_audit(action, target_type, target_id, details, user_id)
         except Exception:
             pass  # Don't let event emission failures break audit logging
+
+        if commit:
+            db.session.commit()
 
         return log_entry
 
@@ -82,12 +105,21 @@ class AuditService:
     @staticmethod
     def log_settings_change(user_id, key, old_value, new_value):
         """Log a settings change."""
+        if AuditService.is_sensitive_key(key):
+            old_value = REDACTED if old_value is not None else None
+            new_value = REDACTED if new_value is not None else None
+
         return AuditService.log(
             action=AuditLog.ACTION_SETTINGS_UPDATE,
             user_id=user_id,
             target_type='setting',
             details={'key': key, 'old_value': old_value, 'new_value': new_value}
         )
+
+    @staticmethod
+    def is_sensitive_key(key):
+        lowered = str(key).lower()
+        return any(part in lowered for part in SENSITIVE_SETTING_PARTS)
 
     @staticmethod
     def log_app_action(action, user_id, app_id, app_name=None, details=None):

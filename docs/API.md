@@ -6,7 +6,7 @@ This document provides complete REST API documentation for ServerKit.
 
 ## Overview
 
-**Base URL:** `http://localhost:5000/api/v1`
+**Base URL:** `http://localhost:47927/api/v1`
 
 **Content Type:** All requests and responses use `application/json`
 
@@ -1136,7 +1136,7 @@ ServerKit uses Socket.IO for real-time updates.
 
 **Connection:**
 ```javascript
-const socket = io('http://localhost:5000', {
+const socket = io('http://localhost:47927', {
   auth: { token: 'your-access-token' }
 });
 ```
@@ -1158,17 +1158,17 @@ const socket = io('http://localhost:5000', {
 
 ```bash
 # Login
-TOKEN=$(curl -s -X POST http://localhost:5000/api/v1/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:47927/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@example.com","password":"password"}' \
   | jq -r '.access_token')
 
 # Get system metrics
-curl -s http://localhost:5000/api/v1/system/metrics \
+curl -s http://localhost:47927/api/v1/system/metrics \
   -H "Authorization: Bearer $TOKEN" | jq
 
 # Create application
-curl -s -X POST http://localhost:5000/api/v1/apps \
+curl -s -X POST http://localhost:47927/api/v1/apps \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"my-app","app_type":"php","php_version":"8.2"}'
@@ -1179,7 +1179,7 @@ curl -s -X POST http://localhost:5000/api/v1/apps \
 ```python
 import requests
 
-BASE_URL = "http://localhost:5000/api/v1"
+BASE_URL = "http://localhost:47927/api/v1"
 
 # Login
 response = requests.post(f"{BASE_URL}/auth/login", json={
@@ -1198,7 +1198,7 @@ print(f"CPU: {metrics['cpu']['percent']}%")
 ### JavaScript
 
 ```javascript
-const BASE_URL = 'http://localhost:5000/api/v1';
+const BASE_URL = 'http://localhost:47927/api/v1';
 
 // Login
 const loginRes = await fetch(`${BASE_URL}/auth/login`, {

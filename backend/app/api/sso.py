@@ -65,20 +65,16 @@ def callback(provider):
         profile = sso_service.handle_oauth_callback(provider, code, state, redirect_uri)
         user, is_new = sso_service.find_or_create_user(provider, profile)
     except ValueError as e:
-        AuditLog.log(
+        AuditService.log(
             action=AuditLog.ACTION_SSO_LOGIN_FAILED,
             details={'provider': provider, 'error': str(e)},
-            ip_address=request.remote_addr,
         )
-        db.session.commit()
         return jsonify({'error': str(e)}), 403
     except Exception as e:
-        AuditLog.log(
+        AuditService.log(
             action=AuditLog.ACTION_SSO_LOGIN_FAILED,
             details={'provider': provider, 'error': str(e)},
-            ip_address=request.remote_addr,
         )
-        db.session.commit()
         return jsonify({'error': 'SSO authentication failed'}), 500
 
     return _complete_sso_login(user, provider, is_new)
@@ -241,12 +237,11 @@ def update_provider_config(provider):
         SettingsService.set(full_key, value, user_id=user.id)
         updated.append(key)
 
-    AuditLog.log(
+    AuditService.log(
         action=AuditLog.ACTION_SETTINGS_UPDATE,
         user_id=user.id,
         details={'sso_provider': provider, 'updated_fields': updated},
     )
-    db.session.commit()
     return jsonify({'message': f'{provider} SSO config updated', 'updated': updated}), 200
 
 
@@ -273,12 +268,11 @@ def update_general_settings():
             SettingsService.set(key, data[key], user_id=user.id)
             updated.append(key)
 
-    AuditLog.log(
+    AuditService.log(
         action=AuditLog.ACTION_SETTINGS_UPDATE,
         user_id=user.id,
         details={'sso_general': updated},
     )
-    db.session.commit()
     return jsonify({'message': 'SSO general settings updated', 'updated': updated}), 200
 
 

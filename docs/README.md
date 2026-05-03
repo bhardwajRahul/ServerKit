@@ -202,19 +202,19 @@ See [Deployment Guide](DEPLOYMENT.md) for complete CLI documentation.
 
 ServerKit provides a REST API for automation and integration.
 
-**Base URL:** `http://localhost:5000/api/v1`
+**Base URL:** `http://localhost:47927/api/v1`
 
 **Authentication:** JWT Bearer tokens
 
 Quick example:
 ```bash
 # Login
-curl -X POST http://localhost:5000/api/v1/auth/login \
+curl -X POST http://localhost:47927/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "admin", "password": "password"}'
 
 # Use token
-curl http://localhost:5000/api/v1/system/stats \
+curl http://localhost:47927/api/v1/system/stats \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -229,7 +229,7 @@ See [API Reference](API.md) for complete documentation.
 **Container won't start:**
 ```bash
 docker compose logs backend
-sudo lsof -i :5000
+sudo lsof -i :47927
 ```
 
 **502 Bad Gateway:**

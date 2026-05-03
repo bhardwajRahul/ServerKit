@@ -1,0 +1,12 @@
+{
+  "plugins": [
+    {
+      "name": "serverkit-git",
+      "slug": "serverkit-git",
+      "display_name": "Git Server (extension)",
+      "version": "1.0.0",
+      "frontend_entry": "",
+      "path": "serverkit-git"
+    }
+  ]
+}

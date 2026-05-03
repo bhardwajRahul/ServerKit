@@ -5,11 +5,22 @@ A plugin manifest may declare a `contributions` block with any subset of:
 
     {
       "nav":            [{ id, label, route, category, icon, ... }],
-      "routes":         [{ path, component }],
+      "routes":         [{ path, component, layout? }],
       "page_titles":    { "/some-path": "Title" },
       "command_palette":[{ label, path, category, keywords }],
-      "widgets":        [{ slot, component }]
+      "widgets":        [{ slot, component }],
+      "layouts":        [{ id, component }]
     }
+
+The `layout` field on a route may be one of:
+
+    "padded" (default) — render inside DashboardLayout, normal padding
+    "full"             — render inside DashboardLayout, no padding
+                         (matches /workflow, /files, /docker shape)
+    "bare"             — render OUTSIDE DashboardLayout (no sidebar)
+                         under PrivateRoute, fullscreen authenticated
+    "<custom-id>"      — wrap in a plugin-contributed layout component
+                         declared via contributions.layouts
 
 Each entry is tagged with the source plugin's slug so the frontend knows
 which plugin a contribution came from (for error attribution + matching
@@ -42,6 +53,7 @@ def get_active_contributions():
     page_titles = {}
     command_palette = []
     widgets = []
+    layouts = []
 
     for p in plugins:
         contrib = (p.manifest or {}).get('contributions') or {}
@@ -52,6 +64,7 @@ def get_active_contributions():
         routes.extend(_tag(contrib.get('routes'), p.slug))
         command_palette.extend(_tag(contrib.get('command_palette'), p.slug))
         widgets.extend(_tag(contrib.get('widgets'), p.slug))
+        layouts.extend(_tag(contrib.get('layouts'), p.slug))
 
         titles = contrib.get('page_titles')
         if isinstance(titles, dict):
@@ -65,4 +78,5 @@ def get_active_contributions():
         'page_titles': page_titles,
         'command_palette': command_palette,
         'widgets': widgets,
+        'layouts': layouts,
     }

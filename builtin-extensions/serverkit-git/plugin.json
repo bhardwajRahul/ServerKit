@@ -1,0 +1,37 @@
+{
+    "name": "serverkit-git",
+    "display_name": "Git Server (extension)",
+    "version": "1.0.0",
+    "description": "Self-hosted Git server (Gitea) wrapper exposed as the /git-ext route. Runs alongside the built-in /git page so you can compare the opt-in extension flow against the hardcoded one.",
+    "author": "ServerKit",
+    "license": "MIT",
+    "category": "deployment",
+    "homepage": "https://github.com/jhd3197/ServerKit",
+    "permissions": ["docker", "filesystem"],
+    "contributions": {
+        "nav": [
+            {
+                "id": "git-ext",
+                "label": "Git (ext)",
+                "route": "/git-ext",
+                "category": "infrastructure",
+                "icon": "<circle cx=\"18\" cy=\"18\" r=\"3\"/><circle cx=\"6\" cy=\"6\" r=\"3\"/><path d=\"M6 21V9a9 9 0 0 0 9 9\"/>"
+            }
+        ],
+        "routes": [
+            { "path": "git-ext", "component": "GitExtPage" },
+            { "path": "git-ext/:tab", "component": "GitExtPage" }
+        ],
+        "page_titles": {
+            "/git-ext": "Git (extension)"
+        },
+        "command_palette": [
+            {
+                "label": "Git (extension)",
+                "path": "/git-ext",
+                "category": "Pages",
+                "keywords": "git repos extension plugin"
+            }
+        ]
+    }
+}

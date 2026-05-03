@@ -35,6 +35,10 @@ class MarketplaceService:
         return Extension.query.filter_by(slug=slug).first()
 
     @staticmethod
+    def get_install(install_id):
+        return ExtensionInstall.query.get(install_id)
+
+    @staticmethod
     def create_extension(data, user_id=None):
         slug = data.get('slug', data['name'].lower().replace(' ', '-'))
         if Extension.query.filter_by(slug=slug).first():

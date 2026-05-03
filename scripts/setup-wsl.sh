@@ -216,7 +216,7 @@ fi
 if [ "$IN_WSL" -eq 1 ]; then
     header "WSL tips"
     info "Backend already binds to 0.0.0.0 and uses a stat-based reloader (good for WSL)."
-    info "Vite dev server is reachable from Windows at http://localhost:5173 thanks to WSL2 localhost forwarding."
+    info "Vite dev server is reachable from Windows at http://localhost:41921 thanks to WSL2 localhost forwarding."
     info "If hot-reload feels stuck, ensure the repo lives under your Linux home (~) rather than /mnt/c."
     if command -v ngrok &>/dev/null; then
         ok "ngrok is installed (use ./dev.sh tunnel to expose the backend)"

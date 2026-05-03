@@ -51,9 +51,22 @@ export async function disablePlugin(pluginId) {
 }
 
 // Returns the merged contribution envelope for active plugins:
-//   { nav, routes, page_titles, command_palette, widgets }
+//   { nav, routes, page_titles, command_palette, widgets, layouts }
 // Each list item carries a `plugin` slug field so the UI can resolve
 // `component` references against the right plugin module.
 export async function getPluginContributions() {
     return this.request('/plugins/contributions');
+}
+
+// Returns extensions bundled with the repo at builtin-extensions/.
+// Each entry: { folder, path, slug, manifest, installed, install_id, status }.
+export async function getBuiltinExtensions() {
+    return this.request('/plugins/builtin');
+}
+
+// One-click install for a bundled extension by slug.
+export async function installBuiltinExtension(slug) {
+    return this.request(`/plugins/builtin/${encodeURIComponent(slug)}/install`, {
+        method: 'POST',
+    });
 }

@@ -9,12 +9,12 @@ ServerKit is a server control panel for managing web applications, databases, Do
 ## Development Commands
 
 ```bash
-# Backend (port 5000, hot-reload)
+# Backend (launcher default port 47927, hot-reload)
 cd backend && python -m venv venv && source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python run.py
 
-# Frontend (port 5173, Vite HMR)
+# Frontend (launcher default port 41921, Vite HMR)
 cd frontend && npm install && npm run dev
 
 # Both at once (Linux/WSL)

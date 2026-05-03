@@ -24,7 +24,8 @@ services:
       - SECRET_KEY=dev-secret-key-not-for-production
       - JWT_SECRET_KEY=dev-jwt-key-not-for-production
       - DATABASE_URL=sqlite:////app/instance/serverkit.db
-      - CORS_ORIGINS=http://localhost,http://localhost:3847,http://localhost:5173
+      - CORS_ORIGINS=http://localhost,http://localhost:3847,http://localhost:41921
+      - SERVERKIT_BACKEND_PORT=5000
     ports:
       - "5849:5000"
     volumes:
@@ -34,7 +35,7 @@ services:
       - serverkit-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/v1/system/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:$${SERVERKIT_BACKEND_PORT:-5000}/api/v1/system/health"]
       interval: 10s
       timeout: 5s
       retries: 3

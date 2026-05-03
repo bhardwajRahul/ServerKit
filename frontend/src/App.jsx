@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -10,7 +10,6 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Setup from './pages/Setup';
-import Applications from './pages/Applications';
 import ApplicationDetail from './pages/ApplicationDetail';
 import Docker from './pages/Docker';
 import Databases from './pages/Databases';
@@ -44,7 +43,6 @@ import Email from './pages/Email';
 import SSOCallback from './pages/SSOCallback';
 import SourceConnectionCallback from './pages/SourceConnectionCallback';
 import DatabaseMigration from './pages/DatabaseMigration';
-import AgentPlugins from './pages/AgentPlugins';
 import ServerTemplates from './pages/ServerTemplates';
 import Workspaces from './pages/Workspaces';
 import DNSZones from './pages/DNSZones';
@@ -92,7 +90,7 @@ const PAGE_TITLES = {
     '/migrate': 'Database Migration',
     '/fleet': 'Agent Fleet',
     '/fleet-monitor': 'Fleet Monitor',
-    '/agent-plugins': 'Agent Plugins',
+    '/agent-plugins': 'Marketplace',
     '/server-templates': 'Server Templates',
     '/workspaces': 'Workspaces',
     '/dns': 'DNS Zones',
@@ -188,7 +186,7 @@ function SetupRoute({ children }) {
 }
 
 function AppRoutes() {
-    const extensionRoutes = useExtensionRoutes();
+    const { dashboardRoutes, standaloneGroups } = useExtensionRoutes();
     return (
         <Routes>
             <Route path="/migrate" element={<DatabaseMigration />} />
@@ -217,6 +215,20 @@ function AppRoutes() {
                     <SourceConnectionCallback />
                 </PrivateRoute>
             } />
+            {/* Standalone plugin layouts — bare or custom. Each group is
+                a sibling top-level Route under PrivateRoute, so the
+                plugin owns the chrome (no DashboardLayout sidebar). */}
+            {standaloneGroups.map((group) => {
+                const Layout = group.LayoutComponent;
+                return (
+                    <Route
+                        key={`standalone:${group.layoutId}`}
+                        element={<PrivateRoute><Layout /></PrivateRoute>}
+                    >
+                        {group.routes}
+                    </Route>
+                );
+            })}
             <Route path="/" element={
                 <PrivateRoute>
                     <DashboardLayout />
@@ -250,7 +262,7 @@ function AppRoutes() {
                 <Route path="servers/:id/:tab" element={<ServerDetail />} />
                 <Route path="fleet" element={<AgentFleet />} />
                 <Route path="fleet-monitor" element={<FleetMonitor />} />
-                <Route path="agent-plugins" element={<AgentPlugins />} />
+                <Route path="agent-plugins" element={<Navigate to="/marketplace" replace />} />
                 <Route path="server-templates" element={<ServerTemplates />} />
                 <Route path="workspaces" element={<Workspaces />} />
                 <Route path="dns" element={<DNSZones />} />
@@ -282,7 +294,7 @@ function AppRoutes() {
                 <Route path="terminal/:tab" element={<Terminal />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/:tab" element={<Settings />} />
-                {extensionRoutes}
+                {dashboardRoutes}
             </Route>
         </Routes>
     );

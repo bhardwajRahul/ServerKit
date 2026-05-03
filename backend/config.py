@@ -24,8 +24,18 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
-    # CORS - Allow both dev server and Flask server
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5274,http://localhost:5000,http://127.0.0.1:5173,http://127.0.0.1:5274,http://127.0.0.1:5000').split(',')
+    # CORS - allow the launcher defaults plus legacy local dev ports.
+    DEFAULT_CORS_ORIGINS = ','.join([
+        'http://localhost:41921',
+        'http://127.0.0.1:41921',
+        'http://localhost:47927',
+        'http://127.0.0.1:47927',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5000',
+        'http://127.0.0.1:5000',
+    ])
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', DEFAULT_CORS_ORIGINS).split(',')
 
 
 class DevelopmentConfig(Config):

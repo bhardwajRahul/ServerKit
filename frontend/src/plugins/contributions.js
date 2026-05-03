@@ -57,7 +57,32 @@ const EMPTY = {
     page_titles: {},
     command_palette: [],
     widgets: [],
+    layouts: [],
 };
+
+// Built-in layout ids. These are reserved — a plugin can't redefine them.
+//   padded  → routes go inside DashboardLayout, normal padding (default)
+//   full    → routes go inside DashboardLayout, no padding (FULL_PAGE_ROUTES)
+//   bare    → routes go OUTSIDE DashboardLayout, just the page + auth guard
+export const BUILTIN_LAYOUTS = new Set(['padded', 'full', 'bare']);
+
+// True iff this layout is rendered inside the dashboard chrome. The
+// other case (bare + custom plugin layouts) gets its own top-level
+// route tree in App.jsx.
+export function isInsideDashboard(layoutId) {
+    if (!layoutId || layoutId === 'padded' || layoutId === 'full') return true;
+    return false;
+}
+
+// Resolve a custom (plugin-contributed) layout id to a React component.
+// Built-ins return null — App.jsx handles them directly. Returns null
+// if the id is unknown or the referenced component can't be found.
+export function resolveCustomLayout(layoutId, layouts) {
+    if (!layoutId || BUILTIN_LAYOUTS.has(layoutId)) return null;
+    const decl = (layouts || []).find((l) => l && l.id === layoutId);
+    if (!decl) return null;
+    return resolveComponent(decl.plugin, decl.component);
+}
 
 let cachedPromise = null;
 let cachedValue = null;

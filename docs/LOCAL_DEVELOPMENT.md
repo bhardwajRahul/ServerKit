@@ -78,8 +78,9 @@ cat > .env << 'EOF'
 SECRET_KEY=dev-secret-key-change-in-production
 JWT_SECRET_KEY=dev-jwt-key-change-in-production
 DATABASE_URL=sqlite:///backend/instance/serverkit.db
-CORS_ORIGINS=http://localhost,http://localhost:3000,http://localhost:5173
+CORS_ORIGINS=http://localhost:41921,http://127.0.0.1:41921,http://localhost:47927,http://127.0.0.1:47927
 FLASK_ENV=development
+PORT=47927
 EOF
 
 # Create instance directory
@@ -96,17 +97,17 @@ export $(cat ../.env | xargs)
 python run.py
 ```
 
-Backend will be available at: `http://localhost:5000`
+Backend will be available at: `http://localhost:47927`
 
 ### Step 5: Run Frontend (Terminal 2)
 
 ```bash
 cd ~/ServerKit/frontend
 npm install
-npm run dev
+npm run dev -- --host 127.0.0.1 --port 41921 --strictPort
 ```
 
-Frontend will be available at: `http://localhost:5173`
+Frontend will be available at: `http://localhost:41921`
 
 ---
 
@@ -133,9 +134,9 @@ services:
       - SECRET_KEY=dev-secret-key
       - JWT_SECRET_KEY=dev-jwt-key
       - DATABASE_URL=sqlite:////app/instance/serverkit.db
-      - CORS_ORIGINS=http://localhost,http://localhost:3000
+      - CORS_ORIGINS=http://localhost,http://localhost:3000,http://localhost:5849
     ports:
-      - "5000:5000"
+      - "5849:5000"
     volumes:
       - ./backend:/app
       - dev-data:/app/instance
@@ -148,7 +149,7 @@ services:
       dockerfile: Dockerfile.dev
     container_name: serverkit-frontend-dev
     environment:
-      - VITE_API_URL=http://localhost:5000
+      - VITE_API_URL=http://localhost:5849/api/v1
     ports:
       - "3000:3000"
     volumes:
@@ -236,7 +237,7 @@ To test PHP installation, firewall, etc. locally:
 ### Port already in use
 ```bash
 # Find what's using the port
-sudo lsof -i :5000
+sudo lsof -i :47927
 # Kill it
 sudo kill -9 <PID>
 ```
@@ -260,7 +261,7 @@ rm backend/instance/serverkit.db-journal
 When developing locally on Windows/WSL you may want a remote ServerKit agent (or
 a Docker host on another machine) to connect back to your machine. The `dev.sh`
 and `dev.ps1` scripts include a `tunnel` mode that starts the backend, frontend,
-and an ngrok tunnel pointed at the backend (port 5000).
+and an ngrok tunnel pointed at the active backend port printed by the launcher.
 
 ### Prerequisites
 

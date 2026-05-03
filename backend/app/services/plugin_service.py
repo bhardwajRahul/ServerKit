@@ -48,6 +48,15 @@ FRONTEND_PLUGINS_DIR = os.environ.get(
     os.path.join(_PROJECT_ROOT, 'frontend', 'src', 'plugins'),
 )
 
+# Folder of bundled-with-the-repo extensions that ship as plugins
+# but are not installed by default. The discovery endpoint enumerates
+# this folder so the Marketplace can show one-click installs without
+# requiring users to know absolute paths.
+BUILTIN_EXTENSIONS_DIR = os.environ.get(
+    'SERVERKIT_BUILTIN_EXTENSIONS_DIR',
+    os.path.join(_PROJECT_ROOT, 'builtin-extensions'),
+)
+
 
 def _ensure_backend_dir():
     """Create the backend plugin dir; raise a useful error if we can't."""
@@ -763,3 +772,56 @@ def get_plugin(plugin_id):
 def get_plugin_by_slug(slug):
     """Get a plugin by its slug."""
     return InstalledPlugin.query.filter_by(slug=slug).first()
+
+
+def list_builtin_extensions():
+    """Enumerate folders in BUILTIN_EXTENSIONS_DIR that look like plugins.
+
+    Each entry includes the manifest, the absolute source path, and the
+    install state (installed/active/disabled/error/not_installed). The
+    Marketplace UI uses this to render one-click installs.
+    """
+    out = []
+    if not os.path.isdir(BUILTIN_EXTENSIONS_DIR):
+        return out
+
+    for name in sorted(os.listdir(BUILTIN_EXTENSIONS_DIR)):
+        folder = os.path.join(BUILTIN_EXTENSIONS_DIR, name)
+        manifest_path = os.path.join(folder, 'plugin.json')
+        if not os.path.isfile(manifest_path):
+            continue
+
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                manifest = json.load(f)
+        except Exception as e:
+            logger.warning(f'Skipping builtin {name}: bad plugin.json ({e})')
+            continue
+
+        slug = manifest.get('name') or name
+        existing = InstalledPlugin.query.filter_by(slug=slug).first()
+        installed_state = existing.status if existing else 'not_installed'
+
+        out.append({
+            'folder': name,
+            'path': folder,
+            'slug': slug,
+            'manifest': manifest,
+            'installed': existing is not None,
+            'install_id': existing.id if existing else None,
+            'status': installed_state,
+        })
+
+    return out
+
+
+def install_builtin_extension(slug, user_id=None):
+    """Install a builtin extension by its slug (folder lookup)."""
+    if not os.path.isdir(BUILTIN_EXTENSIONS_DIR):
+        raise ValueError(f'Builtin extensions dir not found: {BUILTIN_EXTENSIONS_DIR}')
+
+    for entry in list_builtin_extensions():
+        if entry['slug'] == slug:
+            return install_from_path(entry['path'], user_id=user_id)
+
+    raise ValueError(f"No builtin extension with slug '{slug}'")

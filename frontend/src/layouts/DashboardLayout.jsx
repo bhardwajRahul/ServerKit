@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import CommandPalette from '../components/CommandPalette';
 import LogsDrawer from '../components/LogsDrawer';
 import { LogsDrawerProvider } from '../contexts/LogsDrawerContext';
 import PluginLoader from '../plugins/PluginLoader';
-import { refreshContributions } from '../plugins/contributions';
+import { refreshContributions, useContributions } from '../plugins/contributions';
 import api from '../services/api';
 
 const FULL_PAGE_ROUTES = ['/workflow', '/files', '/docker'];
@@ -13,7 +13,22 @@ const FULL_PAGE_ROUTES = ['/workflow', '/files', '/docker'];
 const DashboardLayout = () => {
     const location = useLocation();
     const [paletteOpen, setPaletteOpen] = useState(false);
-    const isFullPageRoute = FULL_PAGE_ROUTES.some((route) => (
+    const { routes: pluginRoutes } = useContributions();
+
+    // Plugin routes contribute their path relative to the dashboard
+    // parent (e.g. "git", "git/:tab"). Normalize to leading-slash and
+    // strip any :params so we can do a startsWith check below.
+    const fullPagePaths = useMemo(() => {
+        const fromPlugins = (pluginRoutes || [])
+            .filter((r) => r && r.layout === 'full' && r.path)
+            .map((r) => {
+                const stripped = r.path.split('/:')[0].replace(/^\/+/, '');
+                return '/' + stripped;
+            });
+        return [...FULL_PAGE_ROUTES, ...fromPlugins];
+    }, [pluginRoutes]);
+
+    const isFullPageRoute = fullPagePaths.some((route) => (
         location.pathname === route || location.pathname.startsWith(`${route}/`)
     ));
 

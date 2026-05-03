@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url'
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
-    const apiTarget = (env.VITE_API_URL || 'http://localhost:5000/api/v1').replace(/\/api\/v1\/?$/, '')
+    const frontendPort = Number(env.SERVERKIT_FRONTEND_PORT) || 41921
+    const apiTarget = (env.VITE_API_URL || 'http://localhost:47927/api/v1').replace(/\/api\/v1\/?$/, '')
 
     return {
         plugins: [react(), tailwindcss()],
@@ -20,7 +21,7 @@ export default defineConfig(({ mode }) => {
             },
         },
         server: {
-            port: 5274,
+            port: frontendPort,
             proxy: {
                 '/api': {
                     target: apiTarget,

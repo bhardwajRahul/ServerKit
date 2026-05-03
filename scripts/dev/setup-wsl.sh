@@ -57,6 +57,8 @@ FLASK_DEBUG=1
 SECRET_KEY=dev-secret-key-change-in-production
 JWT_SECRET_KEY=jwt-secret-key-change-in-production
 DATABASE_URL=sqlite:///instance/serverkit.db
+PORT=47927
+CORS_ORIGINS=http://localhost:41921,http://127.0.0.1:41921,http://localhost:47927,http://127.0.0.1:47927
 EOF
 fi
 echo -e "${GREEN}Done!${NC}"
@@ -64,7 +66,7 @@ echo -e "${GREEN}Done!${NC}"
 echo -e "${YELLOW}[5/6] Setting up frontend...${NC}"
 cd "$PROJECT_ROOT/frontend"
 npm install
-[ ! -f .env.development ] && echo "VITE_API_URL=http://localhost:5000/api/v1" > .env.development
+[ ! -f .env.development ] && echo "VITE_API_URL=http://localhost:47927/api/v1" > .env.development
 echo -e "${GREEN}Done!${NC}"
 
 echo -e "${YELLOW}[6/6] Creating admin user...${NC}"
@@ -103,5 +105,5 @@ echo "  DB:     ~/.serverkit/serverkit.db"
 echo ""
 echo "  Start:  ./dev.sh"
 echo ""
-echo "  Open:   http://localhost:5173"
+echo "  Open:   http://localhost:41921"
 echo ""

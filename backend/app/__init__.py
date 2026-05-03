@@ -65,6 +65,10 @@ def create_app(config_name=None):
     from app.middleware.api_analytics import register_api_analytics
     register_api_analytics(app)
 
+    # Register fallback audit logging for authenticated mutating API requests
+    from app.middleware.audit import register_audit_fallback
+    register_audit_fallback(app)
+
     # Update rate limiter with custom key function
     from app.middleware.rate_limit import get_rate_limit_key, register_rate_limit_headers
     limiter._key_func = get_rate_limit_key

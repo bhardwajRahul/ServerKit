@@ -20,7 +20,7 @@ chmod +x ./scripts/dev/*.sh
 ./dev.sh
 ```
 
-Open http://localhost:5173 — login: `admin` / `admin`
+Open http://localhost:41921 — login: `admin` / `admin`
 
 > **Troubleshooting:** If you get `bad interpreter` error, fix line endings:
 > ```bash

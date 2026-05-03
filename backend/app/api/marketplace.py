@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
 from app.services.marketplace_service import MarketplaceService
+from app.services.audit_service import AuditService
+from app.models.audit_log import AuditLog
 
 marketplace_bp = Blueprint('marketplace', __name__)
 
@@ -44,6 +46,13 @@ def create_extension():
         return jsonify({'error': 'name required'}), 400
     try:
         ext = MarketplaceService.create_extension(data, user.id)
+        AuditService.log(
+            action=AuditLog.ACTION_RESOURCE_CREATE,
+            user_id=user.id,
+            target_type='marketplace_extension',
+            target_id=ext.id,
+            details={'name': ext.name, 'slug': ext.slug, 'version': ext.version},
+        )
         return jsonify(ext.to_dict()), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -59,6 +68,13 @@ def update_extension(ext_id):
     ext = MarketplaceService.update_extension(ext_id, data)
     if not ext:
         return jsonify({'error': 'Not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_UPDATE,
+        user_id=user.id,
+        target_type='marketplace_extension',
+        target_id=ext.id,
+        details={'name': ext.name, 'slug': ext.slug, 'updated_fields': sorted((data or {}).keys())},
+    )
     return jsonify(ext.to_dict())
 
 
@@ -71,6 +87,13 @@ def publish_extension(ext_id):
     ext = MarketplaceService.publish_extension(ext_id)
     if not ext:
         return jsonify({'error': 'Not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_UPDATE,
+        user_id=user.id,
+        target_type='marketplace_extension',
+        target_id=ext.id,
+        details={'name': ext.name, 'slug': ext.slug, 'status': ext.status, 'operation': 'publish'},
+    )
     return jsonify(ext.to_dict())
 
 
@@ -80,8 +103,17 @@ def delete_extension(ext_id):
     user = get_current_user()
     if not user or not user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
+    ext = MarketplaceService.get_extension(ext_id)
+    audit_details = {'name': ext.name if ext else None, 'slug': ext.slug if ext else None}
     if not MarketplaceService.delete_extension(ext_id):
         return jsonify({'error': 'Not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_DELETE,
+        user_id=user.id,
+        target_type='marketplace_extension',
+        target_id=ext_id,
+        details=audit_details,
+    )
     return jsonify({'message': 'Extension deleted'})
 
 
@@ -100,6 +132,18 @@ def install_extension(ext_id):
     data = request.get_json() or {}
     try:
         install = MarketplaceService.install_extension(ext_id, user.id, data.get('config'))
+        AuditService.log(
+            action=AuditLog.ACTION_RESOURCE_INSTALL,
+            user_id=user.id,
+            target_type='marketplace_extension',
+            target_id=ext_id,
+            details={
+                'install_id': install.id,
+                'extension_id': install.extension_id,
+                'extension_name': install.extension.display_name if install.extension else None,
+                'version': install.installed_version,
+            },
+        )
         return jsonify(install.to_dict()), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
@@ -111,18 +155,42 @@ def uninstall_extension(install_id):
     user = get_current_user()
     if not user or not user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
+    install = MarketplaceService.get_install(install_id)
+    audit_details = {
+        'extension_id': install.extension_id if install else None,
+        'extension_name': install.extension.display_name if install and install.extension else None,
+    }
     if not MarketplaceService.uninstall_extension(install_id):
         return jsonify({'error': 'Not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_UNINSTALL,
+        user_id=user.id,
+        target_type='marketplace_extension_install',
+        target_id=install_id,
+        details=audit_details,
+    )
     return jsonify({'message': 'Extension uninstalled'})
 
 
 @marketplace_bp.route('/installs/<int:install_id>/config', methods=['PUT'])
 @jwt_required()
 def update_config(install_id):
+    user = get_current_user()
     data = request.get_json() or {}
     install = MarketplaceService.update_extension_config(install_id, data.get('config', {}))
     if not install:
         return jsonify({'error': 'Not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_UPDATE,
+        user_id=user.id if user else None,
+        target_type='marketplace_extension_install',
+        target_id=install.id,
+        details={
+            'extension_id': install.extension_id,
+            'extension_name': install.extension.display_name if install.extension else None,
+            'operation': 'update_config',
+        },
+    )
     return jsonify(install.to_dict())
 
 

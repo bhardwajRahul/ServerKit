@@ -205,6 +205,13 @@ def enable_plugin(plugin_id):
     plugin = enable_plugin(plugin_id)
     if not plugin:
         return jsonify({'error': 'Plugin not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_ENABLE,
+        user_id=user.id,
+        target_type='plugin',
+        target_id=plugin.id,
+        details={'name': plugin.name, 'version': plugin.version},
+    )
     return jsonify(plugin.to_dict())
 
 
@@ -220,7 +227,56 @@ def disable_plugin(plugin_id):
     plugin = disable_plugin(plugin_id)
     if not plugin:
         return jsonify({'error': 'Plugin not found'}), 404
+    AuditService.log(
+        action=AuditLog.ACTION_RESOURCE_DISABLE,
+        user_id=user.id,
+        target_type='plugin',
+        target_id=plugin.id,
+        details={'name': plugin.name, 'version': plugin.version},
+    )
     return jsonify(plugin.to_dict())
+
+
+@plugins_bp.route('/builtin', methods=['GET'])
+@jwt_required()
+def list_builtin():
+    """Enumerate bundled extensions in BUILTIN_EXTENSIONS_DIR.
+
+    Used by the Marketplace UI to show one-click installs for plugins
+    that ship with the repo (e.g. the opt-in Git wrapper) without
+    making the user paste an absolute path.
+    """
+    from app.services.plugin_service import list_builtin_extensions
+    return jsonify({'builtin': list_builtin_extensions()})
+
+
+@plugins_bp.route('/builtin/<slug>/install', methods=['POST'])
+@jwt_required()
+def install_builtin(slug):
+    """Install a bundled extension by slug.
+
+    Mirror of /plugins/install — admin-only, since this writes to disk
+    and may execute lifecycle hooks.
+    """
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({'error': 'Admin access required'}), 403
+
+    from app.services.plugin_service import install_builtin_extension
+    try:
+        plugin = install_builtin_extension(slug, user_id=user.id)
+        AuditService.log(
+            action=AuditLog.ACTION_RESOURCE_CREATE,
+            user_id=user.id,
+            target_type='plugin',
+            target_id=plugin.id,
+            details={'name': plugin.name, 'version': plugin.version, 'source': 'builtin'},
+        )
+        return jsonify(plugin.to_dict()), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f'Installation failed: {e}'}), 500
 
 
 @plugins_bp.route('/manifest-spec', methods=['GET'])
@@ -268,10 +324,13 @@ def get_manifest_spec():
                 'type': 'object',
                 'properties': {
                     'nav': {'type': 'array', 'description': 'Sidebar items: {id, label, route, category, icon}.'},
-                    'routes': {'type': 'array', 'description': 'SPA routes: {path, component}. component matches a named export of the plugin index module.'},
+                    'routes': {'type': 'array',
+                               'description': 'SPA routes: {path, component, layout?}. component matches a named export of the plugin index module. layout: padded (default) | full | bare | <custom-layout-id>.'},
                     'page_titles': {'type': 'object', 'description': 'Map of route path → document title.'},
                     'command_palette': {'type': 'array', 'description': '{label, path, category, keywords}.'},
                     'widgets': {'type': 'array', 'description': '{slot, component}. slot=global renders globally inside DashboardLayout.'},
+                    'layouts': {'type': 'array',
+                                'description': 'Custom layout components: {id, component}. The component must render <Outlet/> somewhere; it wraps every route that references its id. Built-in layouts (padded, full, bare) are reserved.'},
                 },
             },
         },

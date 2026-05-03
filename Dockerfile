@@ -9,6 +9,7 @@
 #
 # Build: docker build -t serverkit .
 # Run:   docker run -d -p 5000:5000 --env-file .env serverkit
+#        Override the internal backend port with SERVERKIT_BACKEND_PORT if needed.
 # ============================================
 
 # Stage 1: Build Frontend
@@ -36,7 +37,7 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     FLASK_ENV=production \
-    PORT=5000
+    SERVERKIT_BACKEND_PORT=5000
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -92,17 +93,10 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/api/v1/system/health || exit 1
+    CMD curl -f "http://localhost:${SERVERKIT_BACKEND_PORT:-5000}/api/v1/system/health" || exit 1
 
 # Working directory for the backend
 WORKDIR /app/backend
 
 # Default command - use gunicorn for production
-CMD ["gunicorn", \
-    "--worker-class", "geventwebsocket.gunicorn.workers.GeventWebSocketWorker", \
-    "--workers", "1", \
-    "--bind", "0.0.0.0:5000", \
-    "--timeout", "120", \
-    "--access-logfile", "-", \
-    "--error-logfile", "-", \
-    "run:app"]
+CMD ["sh", "-c", "exec gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 1 --bind 0.0.0.0:${SERVERKIT_BACKEND_PORT:-5000} --timeout 120 --access-logfile - --error-logfile - run:app"]
