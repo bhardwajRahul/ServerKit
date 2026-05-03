@@ -201,6 +201,10 @@ def create_app(config_name=None):
     from app.api.sso import sso_bp
     app.register_blueprint(sso_bp, url_prefix='/api/v1/sso')
 
+    # Register blueprints - Source provider connections
+    from app.api.source_connections import source_connections_bp
+    app.register_blueprint(source_connections_bp, url_prefix='/api/v1/source-connections')
+
     # Register blueprints - Database Migrations
     from app.api.migrations import migrations_bp
     app.register_blueprint(migrations_bp, url_prefix='/api/v1/migrations')

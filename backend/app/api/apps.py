@@ -9,6 +9,7 @@ from app.models import Application, User
 from app.services.build_service import BuildService
 from app.services.docker_service import DockerService
 from app.services.git_service import GitService
+from app.services.source_connection_service import SourceConnectionService
 from app.services.remote_docker_service import RemoteDockerService
 from app.services.log_service import LogService
 from app import paths
@@ -357,6 +358,8 @@ def create_app_from_repository():
     data = request.get_json() or {}
     name = _service_slug(data.get('name'))
     repo_url = (data.get('repo_url') or '').strip()
+    source_connection_id = data.get('source_connection_id')
+    repository_full_name = (data.get('repository_full_name') or '').strip()
     branch = (data.get('branch') or 'main').strip()
     app_type = (data.get('app_type') or 'auto').strip().lower()
     build_method = (data.get('build_method') or 'auto').strip().lower()
@@ -365,7 +368,22 @@ def create_app_from_repository():
 
     if not name or len(name) < 2:
         return jsonify({'error': 'Service name must be at least 2 characters'}), 400
-    if not repo_url:
+    if source_connection_id:
+        try:
+            source_repo = SourceConnectionService.get_authenticated_clone_url(
+                user_id=current_user_id,
+                connection_id=int(source_connection_id),
+                full_name=repository_full_name,
+            )
+            clone_repo_url = source_repo['clone_url']
+            deploy_repo_url = source_repo['public_url']
+        except (TypeError, ValueError) as exc:
+            return jsonify({'error': str(exc)}), 400
+    else:
+        clone_repo_url = repo_url
+        deploy_repo_url = repo_url
+
+    if not clone_repo_url:
         return jsonify({'error': 'repo_url is required'}), 400
 
     valid_app_types = ['auto', 'docker', 'flask', 'django', 'php', 'static']
@@ -394,8 +412,10 @@ def create_app_from_repository():
     if os.path.exists(app_path):
         return jsonify({'error': f'App directory already exists: {app_path}'}), 400
 
-    clone_result = GitService.clone_repository(app_path, repo_url, branch or None)
+    clone_result = GitService.clone_repository(app_path, clone_repo_url, branch or None)
     if not clone_result.get('success'):
+        if clone_repo_url != deploy_repo_url and clone_result.get('error'):
+            clone_result['error'] = clone_result['error'].replace(clone_repo_url, deploy_repo_url)
         return jsonify(clone_result), 400
 
     detection = BuildService.detect_build_method(app_path)
@@ -417,7 +437,7 @@ def create_app_from_repository():
         deploy_result = GitService.configure_deployment(
             app_id=app.id,
             app_path=app.root_path,
-            repo_url=repo_url,
+            repo_url=deploy_repo_url,
             branch=branch or 'main',
             auto_deploy=auto_deploy,
         )
@@ -436,7 +456,7 @@ def create_app_from_repository():
             'message': 'Repository service created',
             'app': _attach_deploy_config(app.to_dict(include_linked=True)),
             'deploy_config': {
-                'repo_url': _safe_repo_url(repo_url),
+                'repo_url': _safe_repo_url(deploy_repo_url),
                 'branch': branch or 'main',
                 'auto_deploy': auto_deploy,
                 'webhook_url': deploy_result.get('webhook_url'),

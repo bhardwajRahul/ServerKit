@@ -42,6 +42,7 @@ import WordPressProject from './pages/WordPressProject';
 import SSLCertificates from './pages/SSLCertificates';
 import Email from './pages/Email';
 import SSOCallback from './pages/SSOCallback';
+import SourceConnectionCallback from './pages/SourceConnectionCallback';
 import DatabaseMigration from './pages/DatabaseMigration';
 import AgentPlugins from './pages/AgentPlugins';
 import ServerTemplates from './pages/ServerTemplates';
@@ -85,6 +86,7 @@ const PAGE_TITLES = {
     '/email': 'Email Server',
     '/terminal': 'Terminal',
     '/settings': 'Settings',
+    '/connections/callback/github': 'GitHub Connection',
     '/migrate': 'Database Migration',
     '/fleet': 'Agent Fleet',
     '/fleet-monitor': 'Fleet Monitor',
@@ -203,6 +205,11 @@ function AppRoutes() {
                 <PublicRoute>
                     <Register />
                 </PublicRoute>
+            } />
+            <Route path="/connections/callback/:provider" element={
+                <PrivateRoute>
+                    <SourceConnectionCallback />
+                </PrivateRoute>
             } />
             <Route path="/" element={
                 <PrivateRoute>

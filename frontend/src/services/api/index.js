@@ -12,6 +12,7 @@ import * as dnsMethods from './dns.js';
 import * as pluginMethods from './plugins.js';
 import * as deploymentJobMethods from './deploymentJobs.js';
 import * as pairingMethods from './pairing.js';
+import * as sourceConnectionMethods from './sourceConnections.js';
 
 class ApiService extends ApiClient {
     constructor() {
@@ -31,6 +32,7 @@ class ApiService extends ApiClient {
             pluginMethods,
             deploymentJobMethods,
             pairingMethods,
+            sourceConnectionMethods,
         ];
         for (const mod of modules) {
             for (const [key, fn] of Object.entries(mod)) {

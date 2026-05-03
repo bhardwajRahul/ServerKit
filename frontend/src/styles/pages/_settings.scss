@@ -225,6 +225,133 @@
     }
 }
 
+// Source provider connections
+.source-connections {
+    .source-connection-status {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-1;
+        padding: $space-1 $space-2;
+        border: 1px solid $border-subtle;
+        border-radius: $radius-full;
+        color: $text-tertiary;
+        font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
+
+        &--connected {
+            border-color: $success-border;
+            background: $success-bg;
+            color: $success;
+        }
+    }
+
+    .source-connection-profile,
+    .source-connection-empty {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        gap: $space-3;
+        padding: $space-4;
+        background: $bg-elevated;
+        border: 1px solid $border-subtle;
+        border-radius: $radius-md;
+    }
+
+    .source-connection-profile {
+        img {
+            width: 42px;
+            height: 42px;
+            border-radius: $radius-full;
+        }
+
+        strong,
+        span {
+            display: block;
+        }
+
+        strong {
+            color: $text-primary;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-semibold;
+        }
+
+        span {
+            margin-top: 2px;
+            color: $text-tertiary;
+            font-size: $font-size-xs;
+        }
+    }
+
+    .source-connection-empty {
+        > svg {
+            color: $accent-primary;
+        }
+
+        strong,
+        span {
+            display: block;
+        }
+
+        strong {
+            color: $text-primary;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-semibold;
+        }
+
+        span {
+            margin-top: 3px;
+            color: $text-tertiary;
+            font-size: $font-size-xs;
+            line-height: 1.45;
+        }
+    }
+}
+
+.source-oauth-config {
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: $space-4;
+        margin-bottom: $space-4;
+    }
+
+    &__callback {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        padding: $space-3;
+        background: $bg-elevated;
+        border: 1px solid $border-subtle;
+        border-radius: $radius-md;
+        color: $text-tertiary;
+        font-size: $font-size-xs;
+        overflow-wrap: anywhere;
+
+        svg {
+            flex-shrink: 0;
+            color: $text-secondary;
+        }
+    }
+}
+
+@media (max-width: $breakpoint-md) {
+    .source-connections {
+        .source-connection-profile,
+        .source-connection-empty {
+            grid-template-columns: 1fr;
+
+            .btn,
+            button {
+                width: 100%;
+            }
+        }
+    }
+
+    .source-oauth-config__grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .settings-card__loading {
     padding: $space-6;
     text-align: center;

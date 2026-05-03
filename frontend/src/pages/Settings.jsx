@@ -13,15 +13,16 @@ import UsersTab from '../components/settings/UsersTab';
 import ActivityTab from '../components/settings/ActivityTab';
 import SiteSettingsTab from '../components/settings/SiteSettingsTab';
 import SSOConfigTab from '../components/settings/SSOConfigTab';
+import SourceConnectionsTab from '../components/settings/SourceConnectionsTab';
 import ApiSettingsTab from '../components/settings/ApiSettingsTab';
 import MigrationHistoryTab from '../components/settings/MigrationHistoryTab';
 import IconReferenceTab from '../components/settings/IconReferenceTab';
 import AboutTab from '../components/settings/AboutTab';
-import { Activity, Code, Database, Layers, PaintBucket } from 'lucide-react';
+import { Activity, Code, Database, Layers, Link2, PaintBucket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
-const VALID_TABS = ['profile', 'security', 'appearance', 'sidebar', 'whitelabel', 'notifications', 'system', 'users', 'activity', 'site', 'sso', 'api', 'migrations', 'developer', 'about'];
+const VALID_TABS = ['profile', 'security', 'connections', 'appearance', 'sidebar', 'whitelabel', 'notifications', 'system', 'users', 'activity', 'site', 'sso', 'api', 'migrations', 'developer', 'about'];
 
 const Settings = () => {
     const [activeTab, setActiveTab] = useTabParam('/settings', VALID_TABS);
@@ -81,6 +82,14 @@ const Settings = () => {
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </svg>
                         Notifications
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className={`settings-nav-item ${activeTab === 'connections' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('connections')}
+                    >
+                        <Link2 size={18} />
+                        Connections
                     </Button>
                     <div className="settings-nav-divider">Preferences</div>
                     <Button
@@ -248,6 +257,7 @@ const Settings = () => {
                 <div className="settings-content">
                     {activeTab === 'profile' && <ProfileTab />}
                     {activeTab === 'security' && <SecuritySettingsTab />}
+                    {activeTab === 'connections' && <SourceConnectionsTab />}
                     {activeTab === 'appearance' && <AppearanceTab />}
                     {activeTab === 'sidebar' && <SidebarSettings />}
                     {activeTab === 'whitelabel' && <WhiteLabelTab />}
