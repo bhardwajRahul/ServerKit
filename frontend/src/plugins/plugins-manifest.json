@@ -7,6 +7,17 @@
       "version": "1.0.0",
       "frontend_entry": "",
       "path": "serverkit-git"
+    },
+    {
+      "name": "serverkit-gui",
+      "slug": "serverkit-gui",
+      "display_name": "ServerKit Agent GUI",
+      "version": "0.1.0",
+      "frontend_entry": "components/ServerGui.jsx",
+      "path": "serverkit-gui",
+      "styles": [
+        "plugins/serverkit-gui/styles/server-gui.css"
+      ]
     }
   ]
 }

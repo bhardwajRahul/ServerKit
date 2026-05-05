@@ -131,6 +131,13 @@ func (p *pairer) handleStart(w http.ResponseWriter, r *http.Request) {
 			if err := runServiceCmd("stop"); err != nil {
 				p.log.Info("Service stop reported error (likely already stopped)", "error", err)
 			}
+			// sc.exe returns once SCM accepts the stop request, not when the
+			// service is fully stopped. Issuing sc start while the service is
+			// still STOP_PENDING fails with 1056 ("instance already running"),
+			// so wait until SCM reports STOPPED before starting.
+			if err := waitForServiceStopped(15 * time.Second); err != nil {
+				p.log.Info("Service did not reach STOPPED before start", "error", err)
+			}
 			if err := runServiceCmd("start"); err != nil {
 				p.log.Error("Failed to start service after pairing", "error", err)
 				p.mu.Lock()
@@ -213,8 +220,8 @@ type connStringRequest struct {
 	ConnectionString string `json:"connection_string"`
 }
 
-// handleConnectionString accepts a single sk_conn_v1.<...> blob, decodes
-// it into a panel URL + registration token, and runs the legacy
+// handleConnectionString accepts a single sk1://… connection string,
+// decodes it into a panel URL + registration token, and runs the legacy
 // /api/v1/servers/register flow against the panel — the same one the
 // `serverkit-agent register` CLI uses. We reuse the existing pairer
 // state machine ("enrolling" -> "claimed") so the React wizard's polling

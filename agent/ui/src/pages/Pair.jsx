@@ -47,7 +47,7 @@ function FormStage({ onConnectionString, onPairCode, busy, defaultName }) {
             setError('Paste the connection string from your panel.');
             return;
         }
-        if (!trimmed.startsWith('sk_conn_')) {
+        if (!trimmed.startsWith('sk1://')) {
             setError('That doesn’t look like a connection string. Generate one from the panel’s Add Server screen.');
             return;
         }
@@ -103,7 +103,7 @@ function FormStage({ onConnectionString, onPairCode, busy, defaultName }) {
                         <textarea
                             className="field__input field__input--mono"
                             rows={4}
-                            placeholder="sk_conn_v1...."
+                            placeholder="sk1://panel.example.com/sk_reg_..."
                             value={connString}
                             onChange={(e) => setConnString(e.target.value)}
                             autoFocus

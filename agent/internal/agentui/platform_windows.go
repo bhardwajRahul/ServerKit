@@ -49,6 +49,28 @@ func waitForServiceRunning(timeout time.Duration) error {
 		timeout, strings.TrimSpace(lastOut))
 }
 
+// waitForServiceStopped polls `sc query` until the service reports state
+// 1 (STOPPED) or the deadline passes. `sc stop` returns as soon as SCM
+// accepts the stop request — issuing `sc start` while the service is
+// still STOP_PENDING returns error 1056 ("instance already running"),
+// which is exactly what users hit on the post-pair restart.
+func waitForServiceStopped(timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastOut string
+	for time.Now().Before(deadline) {
+		cmd := exec.Command("sc.exe", "query", "ServerKitAgent")
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		out, err := cmd.CombinedOutput()
+		lastOut = string(out)
+		if err == nil && strings.Contains(lastOut, "STOPPED") {
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return fmt.Errorf("service did not reach STOPPED within %s (last sc query: %s)",
+		timeout, strings.TrimSpace(lastOut))
+}
+
 // openTarget hands a path or URL to Explorer / the default browser via
 // rundll32 + url.dll, which is the canonical "open this thing" entry point
 // on Windows. Faster than shelling out to cmd /c start.

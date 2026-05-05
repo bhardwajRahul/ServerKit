@@ -25,7 +25,7 @@ def test_create_server_without_name_returns_connection_string(client, auth_heade
 
     data = resp.get_json()
     assert 'connection_string' in data
-    assert data['connection_string'].startswith('sk_conn_v1.')
+    assert data['connection_string'].startswith('sk1://')
     assert data['name'].startswith('Pending pairing (')
 
     # Token in the connection string matches the registration_token in the response
@@ -115,7 +115,7 @@ def test_regenerate_token_returns_connection_string(client, auth_headers, app):
     )
     assert regen_resp.status_code == 200
     body = regen_resp.get_json()
-    assert body['connection_string'].startswith('sk_conn_v1.')
+    assert body['connection_string'].startswith('sk1://')
 
     new_token = body['registration_token']
     assert new_token != original_token

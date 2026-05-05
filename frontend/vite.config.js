@@ -8,6 +8,14 @@ export default defineConfig(({ mode }) => {
     const frontendPort = Number(env.SERVERKIT_FRONTEND_PORT) || 41921
     const apiTarget = (env.VITE_API_URL || 'http://localhost:47927/api/v1').replace(/\/api\/v1\/?$/, '')
 
+    const rawAllowedHosts = (env.VITE_ALLOWED_HOSTS || '').trim()
+    let allowedHosts
+    if (rawAllowedHosts === 'all') {
+        allowedHosts = true
+    } else if (rawAllowedHosts) {
+        allowedHosts = rawAllowedHosts.split(',').map(s => s.trim()).filter(Boolean)
+    }
+
     return {
         plugins: [react(), tailwindcss()],
         resolve: {
@@ -22,6 +30,7 @@ export default defineConfig(({ mode }) => {
         },
         server: {
             port: frontendPort,
+            ...(allowedHosts !== undefined ? { allowedHosts } : {}),
             proxy: {
                 '/api': {
                     target: apiTarget,

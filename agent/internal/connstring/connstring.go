@@ -1,92 +1,102 @@
 // Package connstring decodes the panel's "connection string" — a single
-// base64-packed blob the user copies from the ServerKit panel and pastes
-// into the agent's pairing wizard. It bundles the panel URL plus a
-// single-use registration token, replacing the older flow where the user
-// typed those into separate fields.
+// URL-shaped string the user copies from the ServerKit panel and pastes
+// into the agent's pairing wizard. It bundles the panel host plus a
+// single-use registration token plus an optional expiry, replacing the
+// older flow where the user typed those into separate fields.
 //
-// Format: ``sk_conn_v1.<base64url(json_payload)>``
+// Format: ``sk1://<host>[:<port>]/<token>[?exp=<ISO8601>][&insecure=1]``
 //
-// The version prefix exists so older agents reject newer payloads cleanly
-// instead of mis-parsing them. Today's payload is intentionally tiny —
-// just the URL, the token, and an optional expiry the agent treats as
-// advisory (the panel is the authoritative source of truth on whether the
-// token is still good).
+// The ``sk1://`` scheme self-identifies the format (you can recognise a
+// ServerKit connection string at a glance) and gives us a version
+// lever: any future format change goes out as ``sk2://``. The host is
+// visible up front so the user can sanity-check which panel they're
+// pointing at before pasting. ``insecure=1`` flips the implied scheme
+// from https to http for dev / local-network use; absent it, https is
+// implied. Older agents reject newer-versioned payloads cleanly with
+// ErrUnknownVersion instead of mis-parsing them.
 package connstring
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 )
 
 const (
-	// Prefix is the version tag that introduces every v1 connection string.
-	Prefix = "sk_conn_v1."
+	// SchemePrefix is the scheme + separator that introduces every v1
+	// connection string. Used to fail fast on legacy or unrelated input
+	// before we try to parse it as a URL.
+	SchemePrefix = "sk1://"
 )
 
-// Decoded is the payload encoded inside a connection string.
+// Decoded is the data extracted from a connection string.
 type Decoded struct {
-	URL       string    `json:"url"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"-"` // parsed from the raw payload below
-	// Raw expiry kept verbatim so we can show the user the panel's exact
-	// formatting (or "never") without re-stringifying.
-	ExpiresAtRaw string `json:"expires_at,omitempty"`
+	URL          string    // reconstructed http/https URL of the panel
+	Token        string    // single-use registration token
+	ExpiresAt    time.Time // zero value means "never" or "unparseable"
+	ExpiresAtRaw string    // panel's exact expiry string (or "" if none)
 }
 
 // ErrUnknownVersion is returned when the prefix is missing or names a
 // version this build doesn't understand. Callers should surface this as
-// "your panel is newer than this agent" rather than a generic decode error
-// — it's almost always the cause.
+// "your panel is newer than this agent" rather than a generic decode
+// error — it's almost always the cause.
 var ErrUnknownVersion = errors.New("connstring: unknown version prefix")
 
-// Decode parses a connection string. Whitespace surrounding the input is
-// stripped (paste-from-clipboard often picks up a trailing newline).
+// Decode parses a connection string. Whitespace surrounding the input
+// is stripped (paste-from-clipboard often picks up a trailing newline).
 func Decode(s string) (*Decoded, error) {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil, errors.New("connstring: empty input")
 	}
-	if !strings.HasPrefix(s, Prefix) {
+	if !strings.HasPrefix(s, SchemePrefix) {
 		return nil, ErrUnknownVersion
 	}
-	payload := strings.TrimPrefix(s, Prefix)
 
-	// We use the URL-safe alphabet without padding on the panel side; allow
-	// either padded or unpadded inputs here so a hand-edited string still
-	// decodes.
-	raw, err := base64.RawURLEncoding.DecodeString(payload)
+	u, err := url.Parse(s)
 	if err != nil {
-		raw, err = base64.URLEncoding.DecodeString(payload)
+		return nil, fmt.Errorf("connstring: parse: %w", err)
 	}
-	if err != nil {
-		return nil, fmt.Errorf("connstring: base64 decode: %w", err)
+	if u.Scheme != "sk1" {
+		return nil, ErrUnknownVersion
 	}
-
-	// Parse twice — once into the public Decoded struct (gets URL+Token),
-	// then into a small auxiliary struct to capture the expiry as both a
-	// time.Time and the original string.
-	var out Decoded
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return nil, fmt.Errorf("connstring: json decode: %w", err)
-	}
-	if out.URL == "" || out.Token == "" {
-		return nil, errors.New("connstring: payload missing url or token")
+	if u.Host == "" {
+		return nil, errors.New("connstring: missing host")
 	}
 
-	var aux struct {
-		ExpiresAt string `json:"expires_at"`
+	token := strings.TrimPrefix(u.Path, "/")
+	if token == "" {
+		return nil, errors.New("connstring: missing token")
 	}
-	_ = json.Unmarshal(raw, &aux)
-	out.ExpiresAtRaw = aux.ExpiresAt
-	if aux.ExpiresAt != "" {
-		if t, perr := time.Parse(time.RFC3339, aux.ExpiresAt); perr == nil {
+	// Tokens are url-safe by construction (panel uses secrets.token_urlsafe);
+	// a stray slash means the user mangled the string. Better to fail
+	// loudly than silently truncate.
+	if strings.Contains(token, "/") {
+		return nil, errors.New("connstring: token must not contain '/'")
+	}
+
+	q := u.Query()
+	scheme := "https"
+	switch q.Get("insecure") {
+	case "1", "true", "yes":
+		scheme = "http"
+	}
+
+	out := &Decoded{
+		URL:   scheme + "://" + u.Host,
+		Token: token,
+	}
+	if exp := q.Get("exp"); exp != "" {
+		out.ExpiresAtRaw = exp
+		// Best-effort parse — if the panel sends a format we don't
+		// understand we still surface the raw value, and the panel
+		// remains the source of truth on whether the token is good.
+		if t, perr := time.Parse(time.RFC3339, exp); perr == nil {
 			out.ExpiresAt = t
 		}
 	}
-
-	return &out, nil
+	return out, nil
 }
