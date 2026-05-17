@@ -10,12 +10,19 @@ installer actually works on multiple distros" use case.
 
 ## Prerequisites (one-time)
 
-1. **Multipass** — https://multipass.run/download/windows
+1. **Multipass** — Ubuntu 22.04 + 24.04 VMs
    ```powershell
    winget install Canonical.Multipass
    ```
-2. **Python 3** on PATH (for the HTML report generator; tests run inside the VMs).
-3. **WSL2 / Hyper-V** enabled (Multipass uses this — installer prompts you).
+2. **Vagrant** — Debian 12, Fedora, Rocky 9 VMs (uses Hyper-V provider, no VirtualBox)
+   ```powershell
+   winget install Hashicorp.Vagrant
+   ```
+3. **Python 3** on PATH (for the HTML report generator; tests run inside the VMs).
+4. **Hyper-V** enabled (both Multipass and Vagrant use it on Windows).
+
+You can install only Multipass if Ubuntu coverage is enough — the harness
+auto-detects which backends are available and skips distros it can't run.
 
 ## Usage
 
@@ -32,15 +39,31 @@ HTML report.
 ### Options
 
 ```powershell
-# Only test Ubuntu 24.04
-.\scripts\test\full-stack-test.ps1 -Only ubuntu24
+# Full default suite: ubuntu22, ubuntu24, debian12, fedora, rocky9
+.\scripts\test\full-stack-test.ps1
+
+# Subset
+.\scripts\test\full-stack-test.ps1 -Only "ubuntu24,debian12"
 
 # Keep VMs running so you can shell in and poke around
 .\scripts\test\full-stack-test.ps1 -Keep
 
 # Bigger VMs (default 2 CPU / 4 GB RAM / 15 GB disk)
 .\scripts\test\full-stack-test.ps1 -Cpus 4 -MemoryGB 8
+
+# Re-run harness against an already-installed Multipass VM (fast iteration)
+.\scripts\test\full-stack-test.ps1 -ReuseVm sk-test-ubuntu24-<id>
 ```
+
+### Distro coverage
+
+| Distro | Backend | Box / Image |
+|---|---|---|
+| Ubuntu 22.04 | Multipass | `22.04` |
+| Ubuntu 24.04 | Multipass | `24.04` |
+| Debian 12    | Vagrant   | `generic/debian12` |
+| Fedora       | Vagrant   | `generic/fedora39` |
+| Rocky 9      | Vagrant   | `generic/rocky9` |
 
 ### Agent pairing test (optional)
 
