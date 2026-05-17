@@ -229,8 +229,10 @@ function Test-VagrantInstall {
     Set-VmStage -Vm $Vm -Stage 'launching VM (vagrant up, ~5-10 min first time)'
     Write-Host "  [$Vm] vagrant up... (full output below; also saved to vagrant-up.log)" -ForegroundColor DarkCyan
     # Tee so the operator can see download progress + any prompts live,
-    # and the log file still gets a copy for later inspection.
-    & $VgExe up --provider=hyperv 2>&1 | Tee-Object -FilePath (Join-Path $VmOut 'vagrant-up.log')
+    # and the log file still gets a copy for later inspection. Pipe to
+    # Out-Host at the end so the pipeline output is CONSUMED — otherwise
+    # it leaks into this function's return stream and corrupts $status.
+    & $VgExe up --provider=hyperv 2>&1 | Tee-Object -FilePath (Join-Path $VmOut 'vagrant-up.log') | Out-Host
     if ($LASTEXITCODE -ne 0) {
         Set-Content -Path $statusFile -Value 'LAUNCH_FAILED' -Encoding ascii
         Set-VmStage -Vm $Vm -Stage 'launch failed'
