@@ -10,7 +10,7 @@
   - Builds the agent (go build) and runs it against the VM
   - Verifies pairing short-code flow and that capabilities arrive
 
-  This is intentionally minimal — it exercises the pairing happy path so
+  This is intentionally minimal -- it exercises the pairing happy path so
   regressions in the agent <-> panel handshake get caught.
 
 .PARAMETER VmName
@@ -53,7 +53,7 @@ $cred = @{
 $resp = Invoke-RestMethod -Uri "http://${vmIp}:5000/api/v1/auth/register" `
     -Method Post -ContentType 'application/json' -Body ($cred | ConvertTo-Json)
 $token = $resp.access_token
-Write-Host "  ✓ Admin registered, got JWT" -ForegroundColor Green
+Write-Host "  [OK] Admin registered, got JWT" -ForegroundColor Green
 
 # 2. Build agent
 $agentDir = Join-Path $RepoRoot 'agent'
@@ -65,7 +65,7 @@ try {
     & go build -o $agentBin ./cmd/serverkit-agent
     if ($LASTEXITCODE -ne 0) { throw "go build failed" }
 } finally { Pop-Location }
-Write-Host "  ✓ Agent built: $agentBin" -ForegroundColor Green
+Write-Host "  [OK] Agent built: $agentBin" -ForegroundColor Green
 
 # 3. Generate pairing short-code by enrolling from "agent side"
 # (Normally the agent does this itself; here we drive it explicitly to test API.)
@@ -78,7 +78,7 @@ $enrollBody = @{
 
 $enroll = Invoke-RestMethod -Uri "http://${vmIp}:5000/api/v1/pairing/enroll" `
     -Method Post -ContentType 'application/json' -Body $enrollBody
-Write-Host "  ✓ Enrolled, short-code: $($enroll.code)" -ForegroundColor Green
+Write-Host "  [OK] Enrolled, short-code: $($enroll.code)" -ForegroundColor Green
 
 # 4. Operator-side claim
 $claim = Invoke-RestMethod -Uri "http://${vmIp}:5000/api/v1/pairing/claim" `
@@ -86,7 +86,7 @@ $claim = Invoke-RestMethod -Uri "http://${vmIp}:5000/api/v1/pairing/claim" `
     -Headers @{ Authorization = "Bearer $token" } `
     -ContentType 'application/json' `
     -Body (@{ code = $enroll.code; passphrase = 'test-passphrase'; name = $VmName } | ConvertTo-Json)
-Write-Host "  ✓ Server claimed, id=$($claim.server_id)" -ForegroundColor Green
+Write-Host "  [OK] Server claimed, id=$($claim.server_id)" -ForegroundColor Green
 
 Write-Host "`nPairing API end-to-end OK." -ForegroundColor Green
 Write-Host "Note: this exercises the API handshake; full agent process lifecycle test is TODO."

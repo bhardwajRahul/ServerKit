@@ -9,7 +9,7 @@
   installer, then runs a pytest harness against the live API. Aggregates
   everything into a single HTML report.
 
-  Designed to be slow but unattended — 1-2 hours is expected on first run
+  Designed to be slow but unattended -- 1-2 hours is expected on first run
   (cloud images download). Subsequent runs are ~15-30 min.
 
 .PARAMETER Distros
@@ -72,7 +72,7 @@ $OutDir   = Join-Path $PSScriptRoot "output\$RunId"
 $null     = New-Item -ItemType Directory -Force -Path $OutDir
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host " ServerKit E2E Test — run $RunId" -ForegroundColor Cyan
+Write-Host " ServerKit E2E Test - run $RunId" -ForegroundColor Cyan
 Write-Host " Repo:    $RepoRoot" -ForegroundColor Cyan
 Write-Host " Distros: $($Distros -join ', ')" -ForegroundColor Cyan
 Write-Host " Output:  $OutDir" -ForegroundColor Cyan
@@ -87,7 +87,7 @@ if (-not (Get-Command multipass -ErrorAction SilentlyContinue)) {
     exit 2
 }
 if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-    Write-Warning "python not on PATH — report.py won't run automatically; will print raw paths."
+    Write-Warning "python not on PATH - report.py won't run automatically; will print raw paths."
 }
 
 # --- build source tarball once -------------------------------------------
@@ -146,10 +146,10 @@ $jobs | Remove-Job
 $liveVMs = @()
 foreach ($r in $launchResults) {
     if ($r.RC -eq 0) {
-        Write-Host "  ✓ $($r.Name) launched" -ForegroundColor Green
+        Write-Host "  [OK] $($r.Name) launched" -ForegroundColor Green
         $liveVMs += $r.Name
     } else {
-        Write-Host "  ✗ $($r.Name) failed to launch (rc=$($r.RC))" -ForegroundColor Red
+        Write-Host "  [FAIL] $($r.Name) failed to launch (rc=$($r.RC))" -ForegroundColor Red
         $r.Log | ForEach-Object { Write-Host "    $_" -ForegroundColor DarkGray }
     }
 }
@@ -261,7 +261,7 @@ if ($Keep) {
 $failed = @($results | Where-Object { $_.Status -ne 'OK' })
 Write-Host ""
 if ($failed.Count -eq 0) {
-    Write-Host "ALL GREEN — $($liveVMs.Count) VM(s) installed and passed tests." -ForegroundColor Green
+    Write-Host "ALL GREEN - $($liveVMs.Count) VM(s) installed and passed tests." -ForegroundColor Green
     if ($reportHtml) { Start-Process $reportHtml }
     exit 0
 } else {
