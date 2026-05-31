@@ -35,7 +35,16 @@ class Config:
         'http://localhost:5000',
         'http://127.0.0.1:5000',
     ])
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', DEFAULT_CORS_ORIGINS).split(',')
+    _cors_raw = os.environ.get('CORS_ORIGINS', DEFAULT_CORS_ORIGINS)
+    CORS_ORIGINS = [o.strip() for o in _cors_raw.split(',') if o.strip()]
+    # Whenever the panel sits behind a reverse proxy / tunnel, agents and
+    # browsers come from SERVERKIT_PUBLIC_URL — auto-allow it so the user
+    # only has to configure that public URL in one place. Without this
+    # the engine.io WS handshake rejects the public origin and every
+    # Socket.IO connection 400s with "not an accepted origin".
+    _public_url = os.environ.get('SERVERKIT_PUBLIC_URL', '').strip().rstrip('/')
+    if _public_url and _public_url not in CORS_ORIGINS:
+        CORS_ORIGINS.append(_public_url)
 
 
 class DevelopmentConfig(Config):

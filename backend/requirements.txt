@@ -15,7 +15,7 @@ PyJWT==2.12.1
 Flask-Cors==6.0.2
 
 # WebSocket support
-Flask-SocketIO==5.4.1
+Flask-SocketIO==5.6.1
 python-socketio==5.14.0
 python-engineio==4.11.2
 
