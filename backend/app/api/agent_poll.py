@@ -16,13 +16,17 @@ Auth model:
     which is what authenticates the request — no per-call HMAC.
 """
 
+import logging
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from app.services.agent_registry import agent_registry
+from app.agent_gateway import _check_auth_rate_limit
 from app.utils.ip_utils import is_ip_allowed
 from app.services.anomaly_detection_service import anomaly_detection_service
 
+
+logger = logging.getLogger(__name__)
 
 agent_poll_bp = Blueprint('agent_poll', __name__)
 
@@ -47,6 +51,15 @@ def connect():
         return jsonify({'success': False, 'error': 'Missing required fields'}), 400
 
     ip = _client_ip()
+
+    # Apply the SAME per-IP auth throttle that guards the WebSocket auth path
+    # (agent_gateway.on_auth). /connect is the REST-transport equivalent of
+    # on_auth, so without this it was an unthrottled bypass an attacker could
+    # use for credential-stuffing while the WS path stayed rate-limited.
+    if not _check_auth_rate_limit(ip):
+        logger.warning("Auth rate limit exceeded for IP: %s (poll/connect)", ip)
+        return jsonify({'success': False, 'error': 'Rate limit exceeded. Try again later.'}), 429
+
     server = agent_registry.verify_agent_auth(
         agent_id, api_key_prefix, signature, timestamp,
         nonce=nonce, ip_address=ip,
