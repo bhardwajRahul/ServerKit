@@ -280,13 +280,50 @@ class AgentRegistry:
         )
 
         with self._lock:
-            # Remove old connection if exists
+            # Replace any existing connection for this server. Capture the old
+            # agent's in-flight commands and socket so we can clean them up
+            # AFTER releasing the lock — doing socket I/O under the lock risks
+            # deadlocking with the disconnect handler, which also takes it.
             old_agent = self._agents.get(server_id)
             if old_agent:
                 self._socket_to_server.pop(old_agent.socket_id, None)
+                old_pending = list(old_agent.pending_commands.values())
+                old_agent.pending_commands.clear()
+                old_socket_id = old_agent.socket_id
+                old_transport = old_agent.transport
+            else:
+                old_pending = []
+                old_socket_id = None
+                old_transport = None
 
             self._agents[server_id] = agent
             self._socket_to_server[socket_id] = server_id
+
+        # The previous connection for this server (if any) is now orphaned by
+        # this reconnect. Fail its in-flight commands so callers blocked in
+        # send_command() return immediately with AGENT_RECONNECTED instead of
+        # waiting out the full timeout — the late result would resolve against
+        # the new agent and be unreachable anyway. Then drop the stale WS
+        # socket so the agent isn't left holding two live connections.
+        # (unregister_agent keys off socket_id and we already removed the old
+        # one from _socket_to_server, so the resulting disconnect handler is a
+        # no-op for the freshly-registered agent.)
+        for pending in old_pending:
+            try:
+                pending.result_queue.put({
+                    'success': False,
+                    'error': 'Agent reconnected',
+                    'code': 'AGENT_RECONNECTED',
+                })
+            except Exception:
+                logger.exception("Error failing pending command on reconnect")
+        if (old_socket_id and old_socket_id != socket_id
+                and old_transport == 'ws' and self._socketio is not None):
+            try:
+                self._socketio.server.disconnect(old_socket_id, namespace='/agent')
+            except Exception:
+                logger.debug("Old socket %s already disconnected on reconnect",
+                             old_socket_id, exc_info=True)
 
         # Update database
         try:

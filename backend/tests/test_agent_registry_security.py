@@ -170,3 +170,64 @@ def test_reaper_evicts_genuinely_stale_agent(app, clean_registry):
 
     assert agent_registry.is_agent_connected(sid) is False
     assert Server.query.get(sid).status == "offline"
+
+
+# --------------------------------------------------------------------------
+# Bug #4 — reconnect must fail in-flight commands and drop the stale socket
+# --------------------------------------------------------------------------
+
+def test_register_agent_fails_old_pending_commands_on_reconnect(app, clean_registry):
+    from app.services.agent_registry import PendingCommand
+
+    s = Server(name="t", agent_id="agent-reconpending")
+    _db.session.add(s)
+    _db.session.commit()
+    sid = s.id
+
+    agent_registry.register_agent(sid, "socket-OLD", "203.0.113.7", "1.0.0")
+    old = agent_registry.get_agent(sid)
+    pending = PendingCommand(command_id="cmd1", action="noop", params={})
+    with agent_registry._lock:
+        old.pending_commands["cmd1"] = pending
+
+    # Agent reconnects on a new socket while a command is in flight.
+    agent_registry.register_agent(sid, "socket-NEW", "203.0.113.7", "1.0.0")
+
+    # The caller blocked in send_command() gets an immediate failure rather
+    # than waiting out the full timeout.
+    res = pending.result_queue.get(timeout=2)
+    assert res["success"] is False
+    assert res["code"] == "AGENT_RECONNECTED"
+    assert agent_registry.get_agent(sid).socket_id == "socket-NEW"
+
+
+def test_register_agent_disconnects_old_ws_socket(app, clean_registry):
+    class _FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def disconnect(self, sid, namespace=None):
+            self.calls.append((sid, namespace))
+
+    class _FakeSocketIO:
+        def __init__(self):
+            self.server = _FakeServer()
+
+        def emit(self, *a, **k):
+            pass
+
+    fake = _FakeSocketIO()
+    prev = agent_registry._socketio
+    agent_registry._socketio = fake
+    try:
+        s = Server(name="t", agent_id="agent-recondisc")
+        _db.session.add(s)
+        _db.session.commit()
+        sid = s.id
+
+        agent_registry.register_agent(sid, "socket-OLD", "1.2.3.4", "1.0.0")
+        agent_registry.register_agent(sid, "socket-NEW", "1.2.3.4", "1.0.0")
+
+        assert ("socket-OLD", "/agent") in fake.server.calls
+    finally:
+        agent_registry._socketio = prev
