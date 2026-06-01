@@ -73,23 +73,30 @@ class WorkspaceService:
         return ws_id
 
     @staticmethod
-    def scope_query(query, model, user, workspace_id=None, owner_attr=None):
-        """Apply scoping to a resource list query. Critically, this can only ever
-        NARROW what a user sees — it never broadens access — so activating a
-        workspace can't reveal another user's resources.
+    def scope_query(query, model, user, workspace_id=None, owner_attr=None, grant_resource_type=None):
+        """Apply scoping to a resource list query.
 
-        - non-admin + owner_attr -> always restricted to the user's own rows
-          (preserves the existing per-user ownership model, e.g. applications).
-          A workspace context then narrows *within* those rows.
+        - non-admin + owner_attr -> restricted to the user's own rows, PLUS any
+          rows explicitly shared with them via a per-resource grant (#33) when
+          grant_resource_type is given (e.g. 'application'). A workspace context
+          then narrows *within* that set.
         - admin, or a global resource (owner_attr=None, e.g. servers) -> no owner
           filter; today's behavior (admin sees all; servers are global).
         - workspace context active -> additionally filter to that workspace.
 
-        Broader "every member sees every resource in the workspace" visibility is
-        deliberately NOT done here — that needs the workspace-role/ACL step.
+        It still only ever NARROWS the global/admin view; for non-admins it widens
+        ONLY by explicit grants the user was given, never by workspace membership
+        alone.
         """
         if owner_attr and not user.is_admin:
-            query = query.filter(getattr(model, owner_attr) == user.id)
+            own = getattr(model, owner_attr) == user.id
+            if grant_resource_type:
+                from app import db
+                from app.services.resource_grant_service import ResourceGrantService
+                granted = ResourceGrantService.granted_ids(user.id, grant_resource_type)
+                query = query.filter(db.or_(own, model.id.in_(granted))) if granted else query.filter(own)
+            else:
+                query = query.filter(own)
         if workspace_id is not None:
             query = query.filter(model.workspace_id == workspace_id)
         return query

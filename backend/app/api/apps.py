@@ -318,7 +318,8 @@ def get_apps():
     ws_id = WorkspaceService.resolve_workspace_id(
         user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
     query = WorkspaceService.scope_query(Application.query, Application, user,
-                                         workspace_id=ws_id, owner_attr='user_id')
+                                         workspace_id=ws_id, owner_attr='user_id',
+                                         grant_resource_type='application')
 
     if environment_filter:
         query = query.filter_by(environment_type=environment_filter)
@@ -366,21 +367,87 @@ def set_app_workspace(app_id):
     return jsonify({'message': 'Workspace updated', 'app': app.to_dict()}), 200
 
 
+def _can_access_app(user, app):
+    """True if the user owns the app, is admin, or was granted access (#33 ACL).
+    Uses user.id (int) — get_jwt_identity() is the stringified token id."""
+    if user.is_admin or app.user_id == user.id:
+        return True
+    from app.services.resource_grant_service import ResourceGrantService
+    return ResourceGrantService.user_has_grant(user.id, 'application', app.id)
+
+
 @apps_bp.route('/<int:app_id>', methods=['GET'])
 @jwt_required()
 def get_app(app_id):
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = User.query.get(get_jwt_identity())
     app = Application.query.get(app_id)
 
     if not app:
         return jsonify({'error': 'Application not found'}), 404
 
-    if user.role != 'admin' and app.user_id != current_user_id:
+    if not _can_access_app(user, app):
         return jsonify({'error': 'Access denied'}), 403
 
     # Single app requests include linked app info by default
     return jsonify({'app': _attach_deploy_config(app.to_dict(include_linked=True))}), 200
+
+
+# ---- Per-resource access grants (#33 per-site ACL): share an app with a user ----
+
+@apps_bp.route('/<int:app_id>/grants', methods=['GET'])
+@jwt_required()
+def list_app_grants(app_id):
+    """List who has been granted access to this app (owner-or-admin)."""
+    from app.services.resource_grant_service import ResourceGrantService
+    user = User.query.get(get_jwt_identity())
+    app = Application.query.get(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if user.role != 'admin' and app.user_id != user.id:
+        return jsonify({'error': 'Access denied'}), 403
+    grants = ResourceGrantService.list_for_resource('application', app.id)
+    return jsonify({'grants': [g.to_dict() for g in grants]}), 200
+
+
+@apps_bp.route('/<int:app_id>/grants', methods=['POST'])
+@jwt_required()
+def grant_app_access(app_id):
+    """Grant a user access to this app (owner-or-admin). Body: {user_id, role?}."""
+    from app.services.resource_grant_service import ResourceGrantService
+    user = User.query.get(get_jwt_identity())
+    app = Application.query.get(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if user.role != 'admin' and app.user_id != user.id:
+        return jsonify({'error': 'Access denied'}), 403
+    data = request.get_json() or {}
+    grantee_id = data.get('user_id')
+    if not grantee_id:
+        return jsonify({'error': 'user_id is required'}), 400
+    grantee = User.query.get(grantee_id)
+    if not grantee:
+        return jsonify({'error': 'User not found'}), 404
+    if grantee.id == app.user_id:
+        return jsonify({'error': 'The owner already has access'}), 400
+    grant = ResourceGrantService.grant(user_id=grantee.id, resource_type='application',
+                                       resource_id=app.id, granted_by=user.id,
+                                       role=data.get('role') or 'editor')
+    return jsonify({'grant': grant.to_dict()}), 201
+
+
+@apps_bp.route('/<int:app_id>/grants/<int:grant_id>', methods=['DELETE'])
+@jwt_required()
+def revoke_app_access(app_id, grant_id):
+    """Revoke a grant on this app (owner-or-admin)."""
+    from app.services.resource_grant_service import ResourceGrantService
+    user = User.query.get(get_jwt_identity())
+    app = Application.query.get(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if user.role != 'admin' and app.user_id != user.id:
+        return jsonify({'error': 'Access denied'}), 403
+    ok = ResourceGrantService.revoke(grant_id, resource_type='application', resource_id=app.id)
+    return jsonify({'success': ok}), (200 if ok else 404)
 
 
 @apps_bp.route('/from-repository', methods=['POST'])

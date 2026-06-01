@@ -558,15 +558,18 @@ def scan_site_vulnerabilities(app_id):
 # ---- Per-site security depth (#30): file integrity, WP_DEBUG, WP-Cron ----
 
 def _owner_or_admin_app(app_id):
-    """Resolve an app and enforce the owner-or-admin read guard. Returns
-    (app, None) or (None, (response, status))."""
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    """Resolve an app and enforce the access guard: owner, admin, or a user the
+    app was shared with via a per-resource grant (#33). Returns (app, None) or
+    (None, (response, status))."""
+    user = User.query.get(get_jwt_identity())
     app = _resolve_app(app_id)
     if not app:
         return None, (jsonify({'error': 'Application not found'}), 404)
-    if user.role != 'admin' and app.user_id != current_user_id:
-        return None, (jsonify({'error': 'Access denied'}), 403)
+    # user.id (int), not the stringified token id; honor per-resource grants.
+    if not user.is_admin and app.user_id != user.id:
+        from app.services.resource_grant_service import ResourceGrantService
+        if not ResourceGrantService.user_has_grant(user.id, 'application', app.id):
+            return None, (jsonify({'error': 'Access denied'}), 403)
     return app, None
 
 

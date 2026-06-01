@@ -139,3 +139,42 @@ class WorkspaceApiKey(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'last_used_at': self.last_used_at.isoformat() if self.last_used_at else None,
         }
+
+
+class ResourceGrant(db.Model):
+    """Per-resource access grant (#33 — per-site ACL): grants a user access to a
+    specific resource they don't own (e.g. an application and, transitively, its
+    WordPress site / databases / domains).
+
+    Access-level for now — a granted user can see and operate the resource like an
+    owner. Per-grant view/edit roles are a future refinement; the `role` column is
+    reserved for it but not yet enforced.
+    """
+    __tablename__ = 'resource_grants'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    resource_type = db.Column(db.String(32), nullable=False)   # 'application'
+    resource_id = db.Column(db.Integer, nullable=False, index=True)
+    role = db.Column(db.String(16), default='editor')          # reserved for view/edit
+    granted_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'resource_type', 'resource_id', name='uq_resource_grant'),
+    )
+
+    user = db.relationship('User', foreign_keys=[user_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
+            'email': self.user.email if self.user else None,
+            'resource_type': self.resource_type,
+            'resource_id': self.resource_id,
+            'role': self.role,
+            'granted_by': self.granted_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+        }
