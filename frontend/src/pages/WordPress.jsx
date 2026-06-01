@@ -20,6 +20,10 @@ function WordPress() {
     const [createLoading, setCreateLoading] = useState(false);
     const [createForm, setCreateForm] = useState({ name: '', adminEmail: '' });
     const [createdCreds, setCreatedCreds] = useState(null);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [importLoading, setImportLoading] = useState(false);
+    const [importForm, setImportForm] = useState({ name: '', adminEmail: '', oldUrl: '' });
+    const [importFile, setImportFile] = useState(null);
 
     const navigate = useNavigate();
     const toast = useToast();
@@ -69,6 +73,35 @@ function WordPress() {
             toast.error(`Failed to create site: ${error.message}`);
         } finally {
             setCreateLoading(false);
+        }
+    };
+
+    const handleImport = async () => {
+        if (!importForm.name) { toast.error('Site name is required'); return; }
+        if (!importForm.oldUrl) { toast.error('Original site URL is required'); return; }
+        if (!importFile) { toast.error('A .sql or .sql.gz dump is required'); return; }
+        setImportLoading(true);
+        try {
+            const result = await wordpressApi.importSite({
+                name: importForm.name,
+                adminEmail: importForm.adminEmail,
+                oldUrl: importForm.oldUrl,
+                sqlFile: importFile,
+            });
+            if (result.success) {
+                toast.success('WordPress site imported successfully');
+                if (result.warning) toast.info(result.warning, { duration: 8000 });
+                setShowImportModal(false);
+                setImportForm({ name: '', adminEmail: '', oldUrl: '' });
+                setImportFile(null);
+                await loadSites();
+            } else {
+                toast.error(result.error || 'Failed to import site');
+            }
+        } catch (error) {
+            toast.error(`Failed to import site: ${error.message}`);
+        } finally {
+            setImportLoading(false);
         }
     };
 
@@ -128,6 +161,10 @@ function WordPress() {
                     <p className="page-description">Manage your WordPress sites</p>
                 </div>
                 <div className="page-header-actions">
+                    <Button variant="outline" onClick={() => setShowImportModal(true)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Import Site
+                    </Button>
                     <Button onClick={() => setShowCreateModal(true)}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Create Site
@@ -256,6 +293,87 @@ function WordPress() {
                     ))}
                 </div>
                 </>
+            )}
+
+            {/* Import Site Modal */}
+            {showImportModal && (
+                <div className="modal-overlay" onClick={() => !importLoading && setShowImportModal(false)}>
+                    <div className="modal modal-lg" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Import WordPress Site</h3>
+                            <button className="modal-close" onClick={() => !importLoading && setShowImportModal(false)}>
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="install-warning">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                                <div>
+                                    <strong>Imports a database dump into a new stack:</strong>
+                                    <ul>
+                                        <li>Provisions a fresh WordPress + MySQL container</li>
+                                        <li>Loads your .sql / .sql.gz dump</li>
+                                        <li>Rewrites the site URL to this server</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <Label>Site Name <span className="required">*</span></Label>
+                                <Input
+                                    type="text"
+                                    value={importForm.name}
+                                    onChange={e => setImportForm({ ...importForm, name: e.target.value })}
+                                    placeholder="my-imported-site"
+                                    disabled={importLoading}
+                                />
+                                <span className="form-hint">Used as the Docker project name. Letters, numbers, and hyphens only.</span>
+                            </div>
+
+                            <div className="form-group">
+                                <Label>Original Site URL <span className="required">*</span></Label>
+                                <Input
+                                    type="text"
+                                    value={importForm.oldUrl}
+                                    onChange={e => setImportForm({ ...importForm, oldUrl: e.target.value })}
+                                    placeholder="https://old-site.com"
+                                    disabled={importLoading}
+                                />
+                                <span className="form-hint">The live URL in your dump; we rewrite it to the localhost address on this server.</span>
+                            </div>
+
+                            <div className="form-group">
+                                <Label>Admin Email</Label>
+                                <Input
+                                    type="email"
+                                    value={importForm.adminEmail}
+                                    onChange={e => setImportForm({ ...importForm, adminEmail: e.target.value })}
+                                    placeholder="admin@example.com"
+                                    disabled={importLoading}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <Label>Database Dump <span className="required">*</span></Label>
+                                <input
+                                    type="file"
+                                    accept=".sql,.gz,.sql.gz"
+                                    disabled={importLoading}
+                                    onChange={e => setImportFile(e.target.files?.[0] || null)}
+                                />
+                                <span className="form-hint">Export via phpMyAdmin or the wp db export command. .sql.gz is supported and recommended (100MB upload limit).</span>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <Button variant="outline" onClick={() => setShowImportModal(false)} disabled={importLoading}>
+                                Cancel
+                            </Button>
+                            <Button onClick={handleImport} disabled={importLoading || !importForm.name || !importForm.oldUrl || !importFile}>
+                                {importLoading ? <><Spinner size="sm" /> Importing...</> : 'Import Site'}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Create Site Modal */}

@@ -11,6 +11,22 @@ const wordpressApi = {
         body: data
     }),
 
+    // Import an existing WP site from an uploaded SQL dump (multipart upload).
+    importSite: ({ name, adminEmail, oldUrl, sqlFile }) => {
+        const fd = new FormData();
+        fd.append('name', name);
+        fd.append('adminEmail', adminEmail || '');
+        fd.append('oldUrl', oldUrl);
+        fd.append('sql', sqlFile);
+        return api.request(`${BASE_PATH}/import`, { method: 'POST', body: fd });
+    },
+
+    // Clone a site into a new independent top-level site (fresh admin creds returned once).
+    cloneSite: (id, data) => api.request(`${BASE_PATH}/${id}/clone`, {
+        method: 'POST',
+        body: data
+    }),
+
     getSite: (id) => api.request(`${BASE_PATH}/${id}`),
 
     // Replace the tag list for a site (agency organization labels)

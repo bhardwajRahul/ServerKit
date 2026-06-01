@@ -174,13 +174,13 @@ These are the features that make a user say "this is a managed platform, not a f
 - **Reuse:** `wordpress_service.wp_cli` (`:61-143`), `create_user`/`reset_password`, `AuditLog`, panel RBAC.
 - **Done when:** "Auto Login" drops a permitted operator straight into `wp-admin`, logged, with no stored WP password.
 
-### #17 — Existing-site import `[M]` ❌
+### #17 — Existing-site import `[M]` ❌ — ✅ Done (.sql/.sql.gz MVP; wp-content zip + SFTP deferred)
 - **Today:** No import path exists — only blank create or prod→child-env clone.
 - **Do:** Accept a `wp-content`/full-site zip + `.sql` dump (or an SFTP pull), provision DB + files, run the serialized-safe `search-replace` for the new URL, and register a `WordPressSite`.
 - **Reuse:** `db_sync_service` search-replace/clone, `_copy_wordpress_files`, `install_wordpress`, `ftp_service`.
 - **Done when:** An exported site comes up running on a new domain.
 
-### #18 — Clone-to-new-independent-site with fresh credentials `[M]` 🟡
+### #18 — Clone-to-new-independent-site with fresh credentials `[M]` 🟡 — ✅ Done
 - **Today:** `create_environment` (`services/wordpress_env_service.py:97-228`) clones files + DB (table-prefix + search-replace) but always links via `production_site_id` and **inherits** the parent's `admin_user`/`admin_email`/credentials (`:165-171`). No "duplicate as a brand-new top-level site".
 - **Do:** Generalize the clone to produce a standalone site and generate **fresh** admin credentials via `create_user`/`reset_password`.
 - **Reuse:** `create_environment` internals, `db_sync_service`.
@@ -198,7 +198,7 @@ These are the features that make a user say "this is a managed platform, not a f
 - **Reuse:** `WordPressSite.to_dict`, `WordPressSiteCard.jsx`.
 - **Done when:** Sites can be tagged and filtered.
 
-### #21 — Temporary preview URL before DNS is pointed `[M]` ❌
+### #21 — Temporary preview URL before DNS is pointed `[M]` ❌ — ⏸️ Deferred (BLOCKED: a genuinely public, TLS-valid preview URL needs a pre-configured public base domain + wildcard DNS; managed sites are localhost:port only. Revisit after a public base-domain setting exists.)
 - **Today:** `EnvironmentDomainService.generate_domain` only emits real subdomains or a `.localhost` fallback; the env nginx template listens on `:80` only. No preview hostname scheme.
 - **Do:** Add a wildcard/preview hostname (e.g. `<site>.preview.<panel-domain>` or a `*.sslip.io`-style scheme) with auto TLS so a site is reachable and verifiable pre-DNS.
 - **Reuse:** `environment_domain_service`, wildcard SSL (#8).

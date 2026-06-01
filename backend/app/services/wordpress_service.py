@@ -773,6 +773,49 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         alphabet = string.ascii_letters + string.digits + '!@#$%^&*'
         return ''.join(secrets.choice(alphabet) for _ in range(length))
 
+    @staticmethod
+    def _read_env_value(root_path: str, key: str) -> Optional[str]:
+        """Read a single KEY from a Docker stack's <root>/.env (None if absent)."""
+        env_path = os.path.join(root_path, '.env')
+        if not os.path.exists(env_path):
+            return None
+        try:
+            with open(env_path, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith(f'{key}='):
+                        return line.split('=', 1)[1]
+        except Exception:
+            pass
+        return None
+
+    @classmethod
+    def _copy_wp_content_between_containers(cls, source_container: str, target_container: str) -> Dict:
+        """Best-effort copy of /var/www/html/wp-content from source to target
+        WordPress container using `docker cp` via a host tmp dir. Never raises.
+        """
+        import tempfile
+        try:
+            tmp = tempfile.mkdtemp(prefix='wpclone_')
+            staged = os.path.join(tmp, 'wp-content')
+            cp_out = subprocess.run(
+                ['docker', 'cp', f'{source_container}:/var/www/html/wp-content', staged],
+                capture_output=True, text=True, timeout=600,
+            )
+            if cp_out.returncode != 0:
+                shutil.rmtree(tmp, ignore_errors=True)
+                return {'success': False, 'error': cp_out.stderr}
+            cp_in = subprocess.run(
+                ['docker', 'cp', f'{staged}/.', f'{target_container}:/var/www/html/wp-content'],
+                capture_output=True, text=True, timeout=600,
+            )
+            shutil.rmtree(tmp, ignore_errors=True)
+            if cp_in.returncode != 0:
+                return {'success': False, 'error': cp_in.stderr}
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
     # ========================================
     # WORDPRESS STANDALONE (DOCKER) MANAGEMENT
     # ========================================
@@ -1081,6 +1124,76 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         return {'site': site_data}
 
     @classmethod
+    def import_site(cls, name: str, admin_email: str, user_id: int, sql_path: str,
+                    old_url: str, wp_content_zip_path: str = None) -> Dict:
+        """Import an existing WordPress site from a SQL dump into a fresh Docker stack.
+
+        Stands up a normal blank stack via create_site (reusing the full Docker
+        provisioning + Application/WordPressSite rows), then OVERWRITES its DB
+        with the uploaded dump and rewrites the site URL to the new localhost
+        port. ``sql_path`` is a host-side temp file owned by the caller.
+        """
+        from app import db
+        from app.models import WordPressSite
+        from app.services.db_sync_service import DatabaseSyncService
+
+        # 1) Stand up a fresh stack (reuses all Docker provisioning + rows).
+        result = cls.create_site(name, admin_email, user_id)
+        if not result.get('success'):
+            return result
+        http_port = result.get('http_port')
+        wp_site = WordPressSite.query.get(result['site']['id'])
+        root_path = wp_site.application.root_path
+        compose_file = os.path.join(root_path, 'docker-compose.yml')
+
+        try:
+            # 2) Overwrite the fresh DB with the user's dump. Root user, since a
+            #    real dump issues DROP/CREATE on the wordpress DB.
+            db_password = cls._read_env_value(root_path, 'DB_PASSWORD')
+            imp = DatabaseSyncService.import_to_container(
+                compose_path=compose_file,
+                snapshot_path=sql_path,
+                db_name='wordpress',
+                db_user='root',
+                db_password=db_password,
+            )
+            if not imp.get('success'):
+                return {'success': False,
+                        'error': 'Database import failed: ' + (imp.get('error') or ''),
+                        'site': wp_site.to_dict(), 'http_port': http_port}
+
+            # 3) Rewrite the site URL to this server's localhost address.
+            new_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+            cls.wp_cli(root_path, ['option', 'update', 'home', new_url])
+            cls.wp_cli(root_path, ['option', 'update', 'siteurl', new_url])
+            sr = cls.search_replace(root_path, old_url, new_url, dry_run=False)
+            cls.wp_cli(root_path, ['cache', 'flush'])
+            cls.wp_cli(root_path, ['rewrite', 'flush'])
+
+            # 4) The imported DB carries the source's users, so the create-time
+            #    admin no longer matches; clear it and re-detect multisite.
+            wp_site.admin_user = None
+            wp_site.multisite = cls.is_multisite(root_path)
+            db.session.commit()
+
+            out = {
+                'success': True,
+                'message': 'WordPress site imported successfully',
+                'site': wp_site.to_dict(),
+                'http_port': http_port,
+                'old_url': old_url,
+                'new_url': new_url,
+            }
+            if not sr.get('success'):
+                out['warning'] = 'Search-replace reported an issue; verify links inside wp-admin.'
+            if wp_content_zip_path:
+                out['warning'] = 'wp-content import is not yet supported; only the database was imported.'
+            return out
+        except Exception as e:
+            return {'success': False, 'error': str(e),
+                    'site': wp_site.to_dict(), 'http_port': http_port}
+
+    @classmethod
     def create_site(cls, name: str, admin_email: str, user_id: int, admin_user: str = 'admin') -> Dict:
         """Create a new WordPress site via Docker."""
         from app import db
@@ -1180,6 +1293,101 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 result['warning'] = wp_warning
             return result
 
+        except Exception as e:
+            db.session.rollback()
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def clone_site(cls, source_site_id: int, new_name: str, user_id: int) -> Dict:
+        """Clone an existing Docker WordPress site into a NEW independent top-level
+        site (is_production=True, no production_site_id) with FRESH admin creds.
+
+        (1) stand up a brand-new stack via create_site; (2) container-to-container
+        clone the source DB into it with a URL search-replace to the new localhost
+        URL; (3) best-effort copy wp-content between containers; (4) create a fresh
+        admin user (new generated password) so the clone does NOT share the
+        source's credentials. Returns the new admin_password ONCE.
+        """
+        from app import db
+        from app.models import WordPressSite
+        from app.services.db_sync_service import DatabaseSyncService
+
+        source = WordPressSite.query.get(source_site_id)
+        if not source:
+            return {'success': False, 'error': 'Source site not found'}
+        if not source.application or not source.application.root_path:
+            return {'success': False, 'error': 'Source site has no application/root path'}
+        source_root = source.application.root_path
+        source_compose = os.path.join(source_root, 'docker-compose.yml')
+        if not os.path.exists(source_compose):
+            return {'success': False, 'error': 'Source is not a Docker-stack site (no docker-compose.yml)'}
+
+        # 1) Stand up a NEW independent stack (fresh install + an admin we will replace).
+        admin_email = source.admin_email or ''
+        create_res = cls.create_site(new_name, admin_email, user_id)
+        if not create_res.get('success'):
+            return create_res
+        new_site = WordPressSite.query.get(create_res['site']['id'])
+        new_root = new_site.application.root_path
+        new_compose = os.path.join(new_root, 'docker-compose.yml')
+        http_port = create_res.get('http_port')
+        new_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+
+        try:
+            src_port = source.application.port
+            source_url = f'http://localhost:{src_port}' if src_port else None
+
+            # 2) Clone the source DB into the new stack (root user for a clean overwrite;
+            #    both stacks use db name 'wordpress'; root pw lives in each .env DB_PASSWORD).
+            src_pw = cls._read_env_value(source_root, 'DB_PASSWORD')
+            new_pw = cls._read_env_value(new_root, 'DB_PASSWORD')
+            clone_options = {
+                'truncate_tables': ['actionscheduler_actions', 'actionscheduler_logs'],
+            }
+            if source_url and new_url and source_url != new_url:
+                clone_options['search_replace'] = {
+                    source_url: new_url,
+                    f'localhost:{src_port}': f'localhost:{http_port}',
+                }
+            clone_res = DatabaseSyncService.clone_between_containers(
+                source_compose_path=source_compose,
+                target_compose_path=new_compose,
+                source_db='wordpress', target_db='wordpress',
+                source_user='root', target_user='root',
+                source_password=src_pw, target_password=new_pw,
+                options=clone_options,
+            )
+            if not clone_res.get('success'):
+                return {'success': False, 'error': f"Database clone failed: {clone_res.get('error')}"}
+
+            # 3) Best-effort copy wp-content from source container to the new one.
+            cls._copy_wp_content_between_containers(source.application.name, new_site.application.name)
+
+            # 4) Fresh admin: the DB import replaced users with the SOURCE users, so
+            #    create a brand-new administrator with a generated password.
+            new_admin_user = 'admin'
+            new_admin_pass = cls._generate_password()
+            exists = cls.wp_cli(new_root, ['user', 'get', new_admin_user, '--field=ID'])
+            if exists.get('success'):
+                new_admin_user = f'admin_{new_site.id}'
+            cu = cls.create_user(new_root, new_admin_user, admin_email or f'{new_admin_user}@example.com',
+                                 role='administrator', password=new_admin_pass)
+            if not cu.get('success'):
+                return {'success': False, 'error': f"Failed to create fresh admin: {cu.get('error')}"}
+
+            new_site.admin_user = new_admin_user
+            if admin_email:
+                new_site.admin_email = admin_email
+            db.session.commit()
+
+            return {
+                'success': True,
+                'message': f'Site cloned from "{source.application.name}" successfully',
+                'site': new_site.to_dict(),
+                'http_port': http_port,
+                'admin_user': new_admin_user,
+                'admin_password': new_admin_pass,
+            }
         except Exception as e:
             db.session.rollback()
             return {'success': False, 'error': str(e)}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock } from 'lucide-react';
+import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock, Copy } from 'lucide-react';
 import useTabParam from '../hooks/useTabParam';
 import wordpressApi from '../services/wordpress';
 import api from '../services/api';
@@ -81,6 +81,10 @@ const WordPressDetail = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useTabParam(`/wordpress/${id}`, VALID_TABS);
     const [autoLoggingIn, setAutoLoggingIn] = useState(false);
+    const [showCloneModal, setShowCloneModal] = useState(false);
+    const [cloning, setCloning] = useState(false);
+    const [cloneName, setCloneName] = useState('');
+    const [clonedCreds, setClonedCreds] = useState(null);
 
     useEffect(() => {
         loadSite();
@@ -95,6 +99,32 @@ const WordPressDetail = () => {
             toast.error('Failed to load WordPress site');
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleClone() {
+        if (!cloneName.trim()) {
+            toast.error('New site name is required');
+            return;
+        }
+        setCloning(true);
+        toast.info('Cloning site... this spins up a new stack and may take a minute.', { duration: 6000 });
+        try {
+            const res = await wordpressApi.cloneSite(site.id, { name: cloneName.trim() });
+            if (res.success) {
+                setShowCloneModal(false);
+                setCloneName('');
+                if (res.admin_password) {
+                    setClonedCreds({ user: res.admin_user || 'admin', password: res.admin_password, id: res.site?.id });
+                }
+                toast.success('Site cloned successfully');
+            } else {
+                toast.error(res.error || 'Failed to clone site');
+            }
+        } catch (err) {
+            toast.error(err.message || 'Failed to clone site');
+        } finally {
+            setCloning(false);
         }
     }
 
@@ -134,6 +164,21 @@ const WordPressDetail = () => {
 
     return (
         <div className="app-detail-page wp-detail-page">
+            {/* One-time cloned-admin credentials banner */}
+            {clonedCreds && (
+                <div className="wp-creds-banner">
+                    <div className="wp-creds-banner-text">
+                        <strong>New site created — save these admin credentials, shown only once.</strong>
+                        <span>Username: <code>{clonedCreds.user}</code></span>
+                        <span>Password: <code>{clonedCreds.password}</code></span>
+                        {clonedCreds.id && (
+                            <Button variant="ghost" onClick={() => navigate(`/wordpress/${clonedCreds.id}`)}>Open new site</Button>
+                        )}
+                    </div>
+                    <Button variant="ghost" onClick={() => setClonedCreds(null)}>Dismiss</Button>
+                </div>
+            )}
+
             {/* Top Bar */}
             <div className="app-detail-topbar">
                 <div className="app-detail-breadcrumbs">
@@ -193,6 +238,14 @@ const WordPressDetail = () => {
                             </Button>
                         </>
                     )}
+                    <Button
+                        variant="ghost"
+                        onClick={() => setShowCloneModal(true)}
+                        title="Duplicate this site as a new independent site with fresh admin credentials"
+                    >
+                        <Copy size={16} />
+                        Clone
+                    </Button>
                     <Button
                         variant="default"
                         onClick={handleAutoLogin}
@@ -283,6 +336,36 @@ const WordPressDetail = () => {
                     <Archive size={14} /> Backups
                 </div>
             </div>
+
+            {/* Clone Site Modal */}
+            {showCloneModal && (
+                <div className="modal-overlay" onClick={() => !cloning && setShowCloneModal(false)}>
+                    <div className="modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Clone Site</h2>
+                            <button className="modal-close" onClick={() => !cloning && setShowCloneModal(false)}>&times;</button>
+                        </div>
+                        <form onSubmit={(e) => { e.preventDefault(); handleClone(); }}>
+                            <p className="hint">Creates a brand-new independent WordPress site (its own Docker stack and database) seeded from <strong>{site.name}</strong>, with fresh admin credentials shown once.</p>
+                            <div className="form-group">
+                                <Label>New Site Name *</Label>
+                                <Input
+                                    type="text"
+                                    value={cloneName}
+                                    onChange={(e) => setCloneName(e.target.value)}
+                                    placeholder={`${site.name}-copy`}
+                                    autoFocus
+                                    disabled={cloning}
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <Button type="button" variant="outline" onClick={() => setShowCloneModal(false)} disabled={cloning}>Cancel</Button>
+                                <Button type="submit" disabled={cloning || !cloneName.trim()}>{cloning ? 'Cloning...' : 'Clone Site'}</Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Tab Content */}
             <div className="app-detail-content">

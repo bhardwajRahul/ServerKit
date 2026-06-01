@@ -44,6 +44,49 @@ def create_site():
     return jsonify(result), 400
 
 
+@wordpress_bp.route('/sites/import', methods=['POST'])
+@jwt_required()
+def import_site():
+    """Import an existing WordPress site from an uploaded SQL dump (multipart)."""
+    import os
+    import tempfile
+    name = request.form.get('name')
+    admin_email = request.form.get('adminEmail', '')
+    old_url = request.form.get('oldUrl', '').strip()
+    if not name:
+        return jsonify({'error': 'Site name is required'}), 400
+    if not old_url:
+        return jsonify({'error': 'Original site URL (old_url) is required for search-replace'}), 400
+    if 'sql' not in request.files:
+        return jsonify({'error': 'A .sql or .sql.gz database dump is required'}), 400
+    sql_file = request.files['sql']
+    if not sql_file.filename:
+        return jsonify({'error': 'No SQL file selected'}), 400
+    fname = sql_file.filename.lower()
+    if not (fname.endswith('.sql') or fname.endswith('.sql.gz') or fname.endswith('.gz')):
+        return jsonify({'error': 'Dump must be a .sql or .sql.gz file'}), 400
+
+    suffix = '.sql.gz' if fname.endswith('.gz') else '.sql'
+    fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix='wp_import_')
+    os.close(fd)
+    try:
+        sql_file.save(tmp_path)
+        current_user_id = get_jwt_identity()
+        result = WordPressService.import_site(
+            name=name,
+            admin_email=admin_email,
+            user_id=current_user_id,
+            sql_path=tmp_path,
+            old_url=old_url,
+        )
+    finally:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+    return (jsonify(result), 201) if result.get('success') else (jsonify(result), 400)
+
+
 @wordpress_bp.route('/sites/<int:site_id>', methods=['GET'])
 @jwt_required()
 def get_site(site_id):
@@ -52,6 +95,22 @@ def get_site(site_id):
     if 'error' in result:
         return jsonify(result), 404
     return jsonify(result), 200
+
+
+@wordpress_bp.route('/sites/<int:site_id>/clone', methods=['POST'])
+@jwt_required()
+def clone_site(site_id):
+    """Clone a site into a new INDEPENDENT top-level site with fresh admin creds."""
+    data = request.get_json() or {}
+    new_name = data.get('name')
+    if not new_name:
+        return jsonify({'error': 'New site name is required'}), 400
+
+    current_user_id = get_jwt_identity()
+    result = WordPressService.clone_site(site_id, new_name, current_user_id)
+    if result.get('success'):
+        return jsonify(result), 201
+    return jsonify(result), 400
 
 
 @wordpress_bp.route('/sites/<int:site_id>/tags', methods=['PATCH'])
