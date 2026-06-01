@@ -127,3 +127,4 @@ docs/PLAN_AGENT_FLEET.md
 /.extension-platform-plan/
 /.claude
 /.github/skills
+/.playwright-mcp
