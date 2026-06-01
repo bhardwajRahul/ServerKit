@@ -37,6 +37,9 @@ class Application(db.Model):
     # Foreign keys
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     server_id = db.Column(db.String(36), db.ForeignKey('servers.id'), nullable=True, index=True)
+    # Workspace scoping (#33). Nullable: existing rows are backfilled to a default
+    # workspace by migration 015; new rows are stamped on create.
+    workspace_id = db.Column(db.Integer, db.ForeignKey('workspaces.id'), nullable=True, index=True)
 
     # Relationships
     # Use 'subquery' to eagerly load domains in a single query, avoiding N+1
@@ -68,6 +71,7 @@ class Application(db.Model):
             'last_deployed_at': self.last_deployed_at.isoformat() if self.last_deployed_at else None,
             'user_id': self.user_id,
             'server_id': self.server_id,
+            'workspace_id': self.workspace_id,
             'server_name': self.server.name if self.server else 'Local server',
             'domains': [d.to_dict() for d in self.domains]
         }

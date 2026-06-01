@@ -13,10 +13,86 @@ logger = logging.getLogger(__name__)
 class WorkspaceService:
     """Service for multi-tenancy workspace management."""
 
+    DEFAULT_WORKSPACE_SLUG = 'default'
+
     @staticmethod
     def _slugify(name):
         slug = re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
         return slug or 'workspace'
+
+    # --- Scoping (#33 foundation) ---
+    #
+    # These three helpers centralize resource scoping so the admin-vs-owner-vs-
+    # workspace branch isn't re-implemented per route. Scoping is OPT-IN: a
+    # request only filters by workspace when it carries a workspace context
+    # (X-Workspace-Id header or ?workspace_id=). With no context, scope_query
+    # preserves each resource's existing ownership behavior exactly, so this
+    # foundation changes nothing until a caller activates a workspace.
+
+    @staticmethod
+    def ensure_default_workspace():
+        """Find-or-create the Default workspace (idempotent). Used to stamp newly
+        created resources when no workspace context is supplied, and to give
+        existing resources a home (mirrors migration 015's backfill)."""
+        ws = Workspace.query.filter_by(slug=WorkspaceService.DEFAULT_WORKSPACE_SLUG).first()
+        if ws is None:
+            ws = Workspace(
+                name='Default',
+                slug=WorkspaceService.DEFAULT_WORKSPACE_SLUG,
+                description='Default workspace (auto-created for existing resources).',
+            )
+            db.session.add(ws)
+            db.session.commit()
+        return ws
+
+    @staticmethod
+    def resolve_workspace_id(user, requested):
+        """Validate an optionally-requested workspace context.
+
+        Returns (workspace_id|None, error|None) where error is a (message, status)
+        tuple. A None workspace_id means "no active context" — callers then keep
+        their existing non-workspace behavior. A truthy error means the request
+        named a workspace the user may not use; callers should surface it.
+        """
+        if requested in (None, '', 'all'):
+            return None, None
+        # A deactivated account must not drive workspace resolution (the admin
+        # bypass / membership check below key off this token-loaded user). Gated
+        # only on the workspace path so the no-context behavior is unchanged.
+        if not getattr(user, 'is_active', True):
+            return None, ('Account is deactivated', 403)
+        try:
+            ws_id = int(requested)
+        except (ValueError, TypeError):
+            return None, ('Invalid workspace id', 400)
+        ws = Workspace.query.get(ws_id)
+        if not ws:
+            return None, ('Workspace not found', 404)
+        if not user.is_admin and WorkspaceService.get_user_role(ws_id, user.id) is None:
+            return None, ('Workspace access denied', 403)
+        return ws_id, None
+
+    @staticmethod
+    def scope_query(query, model, user, workspace_id=None, owner_attr=None):
+        """Apply scoping to a resource list query. Critically, this can only ever
+        NARROW what a user sees — it never broadens access — so activating a
+        workspace can't reveal another user's resources.
+
+        - non-admin + owner_attr -> always restricted to the user's own rows
+          (preserves the existing per-user ownership model, e.g. applications).
+          A workspace context then narrows *within* those rows.
+        - admin, or a global resource (owner_attr=None, e.g. servers) -> no owner
+          filter; today's behavior (admin sees all; servers are global).
+        - workspace context active -> additionally filter to that workspace.
+
+        Broader "every member sees every resource in the workspace" visibility is
+        deliberately NOT done here — that needs the workspace-role/ACL step.
+        """
+        if owner_attr and not user.is_admin:
+            query = query.filter(getattr(model, owner_attr) == user.id)
+        if workspace_id is not None:
+            query = query.filter(model.workspace_id == workspace_id)
+        return query
 
     @staticmethod
     def list_workspaces(user_id=None, include_archived=False):

@@ -85,6 +85,9 @@ class Server(db.Model):
 
     # Organization
     group_id = db.Column(db.String(36), db.ForeignKey('server_groups.id'), nullable=True, index=True)
+    # Workspace scoping (#33). Nullable: existing rows are backfilled to a default
+    # workspace by migration 015; new rows are stamped on create.
+    workspace_id = db.Column(db.Integer, db.ForeignKey('workspaces.id'), nullable=True, index=True)
     tags = db.Column(db.JSON, default=list)  # ["production", "us-east", "docker"]
 
     # Status
@@ -398,6 +401,7 @@ class Server(db.Model):
             'ip_address': self.ip_address,
             'group_id': self.group_id,
             'group_name': self.group.name if self.group else None,
+            'workspace_id': self.workspace_id,
             'tags': self.tags or [],
             'status': self.status,
             'last_seen': self.last_seen.isoformat() if self.last_seen else None,

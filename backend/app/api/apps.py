@@ -311,10 +311,16 @@ def get_apps():
     environment_filter = request.args.get('environment')
     include_linked = request.args.get('include_linked', 'false').lower() == 'true'
 
-    if user.role == 'admin':
-        query = Application.query
-    else:
-        query = Application.query.filter_by(user_id=current_user_id)
+    # Workspace-aware scoping (#33). With no workspace context this is exactly the
+    # prior behavior (admin -> all, else -> own); with ?workspace_id / X-Workspace-Id
+    # it filters to that workspace (membership-checked).
+    from app.services.workspace_service import WorkspaceService
+    ws_id, werr = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    if werr:
+        return jsonify({'error': werr[0]}), werr[1]
+    query = WorkspaceService.scope_query(Application.query, Application, user,
+                                         workspace_id=ws_id, owner_attr='user_id')
 
     if environment_filter:
         query = query.filter_by(environment_type=environment_filter)
@@ -530,6 +536,16 @@ def create_app():
     if app_type not in valid_types:
         return jsonify({'error': f'Invalid app_type. Must be one of: {", ".join(valid_types)}'}), 400
 
+    # Stamp the workspace (#33): the requested one (membership-checked) or the default.
+    from app.services.workspace_service import WorkspaceService
+    user = User.query.get(current_user_id)
+    ws_id, werr = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    if werr:
+        return jsonify({'error': werr[0]}), werr[1]
+    if ws_id is None:
+        ws_id = WorkspaceService.ensure_default_workspace().id
+
     app = Application(
         name=name,
         app_type=app_type,
@@ -539,7 +555,8 @@ def create_app():
         port=data.get('port'),
         root_path=data.get('root_path'),
         docker_image=data.get('docker_image'),
-        user_id=current_user_id
+        user_id=current_user_id,
+        workspace_id=ws_id
     )
 
     db.session.add(app)

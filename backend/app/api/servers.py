@@ -252,7 +252,17 @@ def list_servers():
     status = request.args.get('status')
     tag = request.args.get('tag')
 
-    query = Server.query
+    # Workspace-aware scoping (#33). Servers are global today, so with no workspace
+    # context this stays unfiltered; with a workspace context it filters to it.
+    from app.models import User
+    from app.services.workspace_service import WorkspaceService
+    user = User.query.get(get_jwt_identity())
+    ws_id, werr = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    if werr:
+        return jsonify({'error': werr[0]}), werr[1]
+    query = WorkspaceService.scope_query(Server.query, Server, user,
+                                         workspace_id=ws_id, owner_attr=None)
 
     if group_id:
         query = query.filter_by(group_id=group_id)
@@ -310,6 +320,17 @@ def create_server():
 
     expires_at = _resolve_token_expiry(data.get('expires_in'))
 
+    # Stamp the workspace (#33): the requested one (membership-checked) or the default.
+    from app.models import User
+    from app.services.workspace_service import WorkspaceService
+    user = User.query.get(user_id)
+    ws_id, werr = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    if werr:
+        return jsonify({'error': werr[0]}), werr[1]
+    if ws_id is None:
+        ws_id = WorkspaceService.ensure_default_workspace().id
+
     server = Server(
         # Temporary name — replaced with the agent's hostname when the
         # agent calls /register. _is_placeholder_name() in the register
@@ -322,6 +343,7 @@ def create_server():
         permissions=permissions,
         allowed_ips=data.get('allowed_ips', []),
         registered_by=user_id,
+        workspace_id=ws_id,
         registration_token_expires=expires_at,
     )
     server.set_registration_token(registration_token)
