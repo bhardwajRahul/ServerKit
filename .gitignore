@@ -125,3 +125,5 @@ docs/PLAN_AGENT_FLEET.md
 /docs/plans
 /.agents
 /.extension-platform-plan/
+/.claude
+/.github/skills
