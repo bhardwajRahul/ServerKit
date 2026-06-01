@@ -284,141 +284,9 @@
     }
 }
 
-.filters-bar {
-    display: flex;
-    gap: $space-4;
-    align-items: flex-end;
-    margin-bottom: $space-6;
-    padding: $space-4;
-    background: $bg-hover;
-    border-radius: $radius-md;
-
-    .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: $space-1;
-
-        label {
-            font-size: $font-size-sm;
-            font-weight: 500;
-            color: $text-secondary;
-        }
-
-        select {
-            min-width: 180px;
-        }
-    }
-}
-
-.audit-log-list {
-    display: flex;
-    flex-direction: column;
-    gap: $space-2;
-}
-
-.log-entry {
-    display: flex;
-    gap: $space-4;
-    padding: $space-4;
-    background: $bg-card;
-    border-radius: $radius-md;
-    border-left: 3px solid transparent;
-
-    &.action-success {
-        border-left-color: $success;
-    }
-
-    &.action-warning {
-        border-left-color: $warning;
-    }
-
-    &.action-danger {
-        border-left-color: $danger;
-    }
-
-    &.action-info {
-        border-left-color: $accent-primary;
-    }
-
-    .log-icon {
-        flex-shrink: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: $bg-hover;
-        border-radius: $radius-sm;
-        color: $text-secondary;
-    }
-
-    .log-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .log-header {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $space-2;
-        align-items: center;
-        margin-bottom: $space-1;
-
-        .log-action {
-            font-weight: 500;
-            text-transform: capitalize;
-        }
-
-        .log-user {
-            color: $text-secondary;
-            font-size: $font-size-sm;
-        }
-
-        .log-target {
-            color: $text-tertiary;
-            font-size: $font-size-sm;
-        }
-    }
-
-    .log-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $space-2;
-        margin-bottom: $space-2;
-
-        .detail-item {
-            display: inline-flex;
-            gap: $space-1;
-            padding: 2px $space-2;
-            background: $bg-hover;
-            border-radius: $radius-sm;
-            font-size: $font-size-xs;
-
-            .detail-key {
-                color: $text-tertiary;
-            }
-
-            .detail-value {
-                color: $text-secondary;
-                max-width: 200px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-        }
-    }
-
-    .log-meta {
-        display: flex;
-        gap: $space-4;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-
-        .log-ip {
-            font-family: $font-mono;
-        }
-    }
-}
+// NOTE: the audit-log / filters styles that previously lived here were a
+// stale duplicate (overridden by the definitions further down). Removed to
+// kill the dead code, including an orphaned colored left-border side-stripe.
 
 .pagination {
     display: flex;
@@ -678,46 +546,31 @@
     }
 }
 
-.activity-summary {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: $space-6;
-    margin-bottom: $space-8;
-
-    @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-    }
-}
-
-.activity-stat-card {
+// Restrained readout strip (replaces the hero-metric stat cards). Reads like
+// the dashboard's server-identity line: mono numbers, muted labels, one row.
+.activity-stats {
     display: flex;
-    flex-direction: column;
-    padding: $space-6;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
-    box-shadow: $shadow-sm;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $space-3 $space-6;
+    margin-bottom: $space-8;
+    padding-bottom: $space-5;
+    border-bottom: 1px solid $border-subtle;
+    color: $text-tertiary;
+    font-size: $font-size-sm;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: $shadow-md;
+    &__item {
+        display: inline-flex;
+        align-items: baseline;
+        gap: $space-2;
     }
 
-    .stat-label {
-        font-size: $font-size-sm;
-        font-weight: 500;
-        color: $text-tertiary;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: $space-2;
-    }
-
-    .stat-number {
-        font-size: 2.25rem;
-        font-weight: 800;
-        color: $accent-primary;
-        line-height: 1;
+    &__value {
+        font-family: $font-mono;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $text-primary;
+        font-variant-numeric: tabular-nums;
     }
 }
 
@@ -880,132 +733,99 @@
     }
 }
 
+// Dense, scannable audit log (journalctl-style), not a social feed. One row
+// per event inside a single bordered surface with hairline separators.
 .audit-log-list {
-    display: flex;
-    flex-direction: column;
-    gap: $space-3;
+    border: 1px solid $border-default;
+    border-radius: $radius-lg;
+    overflow: hidden;
+    background: $bg-card;
 }
 
-.log-entry {
+.log-row {
     display: flex;
-    gap: $space-5;
-    padding: $space-5;
-    background: $bg-card;
-    border-radius: $radius-lg;
-    border: 1px solid $border-default;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $space-2 $space-3;
+    padding: $space-2 $space-4;
+    border-bottom: 1px solid $border-subtle;
+    font-size: $font-size-sm;
+    transition: background-color $transition-fast;
+
+    &:last-child { border-bottom: none; }
 
     &:hover {
-        transform: translateX(4px);
-        box-shadow: $shadow-sm;
-        border-color: $border-active;
-    }
-
-    &.action-success .log-icon { background: fade($success, 10%); color: $success; }
-    &.action-warning .log-icon { background: fade($warning, 10%); color: $warning; }
-    &.action-danger .log-icon { background: fade($danger, 10%); color: $danger; }
-    &.action-info .log-icon { background: fade($accent-primary-raw, 10%); color: $accent-primary; }
-
-    .log-icon {
-        flex-shrink: 0;
-        width: 42px;
-        height: 42px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: $radius-md;
         background: $bg-hover;
-        color: $text-secondary;
     }
 
-    .log-content {
-        flex: 1;
+    // Severity reads from the dot color AND the action text, never color alone.
+    .log-row__dot {
+        flex-shrink: 0;
+        align-self: center;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: $text-tertiary;
+    }
+
+    &.action-success .log-row__dot { background: $success; }
+    &.action-warning .log-row__dot { background: $warning; }
+    &.action-danger  .log-row__dot { background: $danger; }
+    &.action-info    .log-row__dot { background: $accent-primary; }
+
+    .log-row__time {
+        flex-shrink: 0;
+        width: 124px;
+        font-family: $font-mono;
+        font-size: $font-size-xs;
+        color: $text-tertiary;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .log-row__action {
+        font-family: $font-mono;
+        font-weight: $font-weight-medium;
+        color: $text-primary;
+    }
+
+    .log-row__user {
+        color: $accent-primary;
+        font-weight: $font-weight-medium;
+        white-space: nowrap;
+    }
+
+    .log-row__target {
+        color: $text-tertiary;
+        white-space: nowrap;
+    }
+
+    .log-row__meta {
+        margin-left: auto;
+        display: inline-flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: baseline;
+        gap: $space-1 $space-3;
         min-width: 0;
+        font-family: $font-mono;
+        font-size: $font-size-xs;
+        color: $text-tertiary;
     }
 
-    .log-header {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: $space-2;
-        margin-bottom: $space-2;
-
-        .log-action {
-            font-weight: 600;
-            color: $text-primary;
-            text-transform: capitalize;
-            font-size: $font-size-md;
-        }
-
-        .log-user {
-            font-weight: 500;
-            color: $accent-primary;
-            background: fade($accent-primary-raw, 8%);
-            padding: 2px 8px;
-            border-radius: $radius-full;
-            font-size: $font-size-xs;
-        }
-
-        .log-target {
-            color: $text-tertiary;
-            font-size: $font-size-sm;
-        }
-
-        .log-time {
-            margin-left: auto;
-            color: $text-tertiary;
-            font-size: $font-size-xs;
-            font-weight: 500;
-        }
+    .log-row__detail {
+        color: $text-secondary;
+        max-width: 320px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .log-details {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $space-2;
-        margin-top: $space-3;
-
-        .detail-item {
-            display: inline-flex;
-            align-items: center;
-            gap: $space-2;
-            padding: 4px $space-3;
-            background: $bg-hover;
-            border: 1px solid $border-default;
-            border-radius: $radius-md;
-            font-size: $font-size-xs;
-
-            .detail-key {
-                color: $text-tertiary;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                font-size: 0.7rem;
-            }
-
-            .detail-value {
-                color: $text-secondary;
-                font-family: $font-mono;
-                max-width: 300px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-        }
+    .log-row__detail-key {
+        color: $text-tertiary;
     }
 
-    .log-meta {
-        margin-top: $space-3;
-        display: flex;
-        gap: $space-4;
-
-        .log-ip {
-            font-size: $font-size-xs;
-            color: $text-tertiary;
-            background: $bg-hover;
-            padding: 2px 6px;
-            border-radius: $radius-sm;
-            font-family: $font-mono;
-        }
+    .log-row__ip {
+        color: $text-tertiary;
     }
 }

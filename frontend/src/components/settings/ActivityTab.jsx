@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import ContributionGraph from './ContributionGraph';
-import { Search, Filter, X, ChevronRight, User as UserIcon, Activity as ActivityIcon, Terminal } from 'lucide-react';
+import { Search, Filter, X, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
@@ -90,19 +90,6 @@ const ActivityTab = () => {
         });
     }
 
-    function getActionIcon(action) {
-        if (action.includes('login')) {
-            return <UserIcon size={16} />;
-        }
-        if (action.includes('app') || action.includes('deploy')) {
-            return <Terminal size={16} />;
-        }
-        if (action.includes('setting')) {
-            return <ActivityIcon size={16} />;
-        }
-        return <ChevronRight size={16} />;
-    }
-
     function getActionClass(action) {
         if (action?.includes('failed') || action?.includes('delete') || action?.includes('revoke')) return 'action-danger';
         if (action?.includes('create') || action?.includes('enable') || action?.includes('login') || action?.includes('accept')) return 'action-success';
@@ -114,20 +101,14 @@ const ActivityTab = () => {
         return action.replace(/\./g, ' ').replace(/_/g, ' ');
     }
 
-    function renderDetails(details) {
+    function renderDetailsInline(details) {
         if (!details || Object.keys(details).length === 0) return null;
-        return (
-            <div className="log-details">
-                {Object.entries(details).map(([key, value]) => (
-                    <span key={key} className="detail-item">
-                        <span className="detail-key">{key}</span>
-                        <span className="detail-value">
-                            {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                        </span>
-                    </span>
-                ))}
-            </div>
-        );
+        return Object.entries(details).map(([key, value]) => (
+            <span key={key} className="log-row__detail">
+                <span className="log-row__detail-key">{key}=</span>
+                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+            </span>
+        ));
     }
 
     if (loading) {
@@ -149,19 +130,19 @@ const ActivityTab = () => {
 
             {summary && (
                 <>
-                    <div className="activity-summary">
-                        <div className="activity-stat-card">
-                            <span className="stat-label">Active Users Today</span>
-                            <span className="stat-number">{summary.active_users_today}</span>
-                        </div>
-                        <div className="activity-stat-card">
-                            <span className="stat-label">Actions This Week</span>
-                            <span className="stat-number">{summary.actions_this_week}</span>
-                        </div>
-                        <div className="activity-stat-card">
-                            <span className="stat-label">Total Users</span>
-                            <span className="stat-number">{summary.total_users}</span>
-                        </div>
+                    <div className="activity-stats">
+                        <span className="activity-stats__item">
+                            <span className="activity-stats__value">{summary.active_users_today}</span>
+                            active today
+                        </span>
+                        <span className="activity-stats__item">
+                            <span className="activity-stats__value">{summary.actions_this_week}</span>
+                            actions this week
+                        </span>
+                        <span className="activity-stats__item">
+                            <span className="activity-stats__value">{summary.total_users}</span>
+                            total users
+                        </span>
                     </div>
 
                     <div className="graphs-section">
@@ -268,32 +249,24 @@ const ActivityTab = () => {
                         <p>No audit logs found</p>
                     </div>
                 ) : (
-                    <div className="audit-log-list">
+                    <div className="audit-log-list" role="list">
                         {logs.map(log => (
-                            <div key={log.id} className={`log-entry ${getActionClass(log.action)}`}>
-                                <div className="log-icon">
-                                    {getActionIcon(log.action)}
-                                </div>
-                                <div className="log-content">
-                                    <div className="log-header">
-                                        <span className="log-action">{formatActionName(log.action)}</span>
-                                        <span className="log-user">
-                                            {log.username || 'System'}
-                                        </span>
-                                        {log.target_type && (
-                                            <span className="log-target">
-                                                on {log.target_type} {log.target_id ? `#${log.target_id}` : ''}
-                                            </span>
-                                        )}
-                                        <span className="log-time">{formatDate(log.created_at)}</span>
-                                    </div>
-                                    {renderDetails(log.details)}
-                                    {log.ip_address && (
-                                        <div className="log-meta">
-                                            <span className="log-ip">{log.ip_address}</span>
-                                        </div>
-                                    )}
-                                </div>
+                            <div key={log.id} className={`log-row ${getActionClass(log.action)}`} role="listitem">
+                                <time className="log-row__time" dateTime={log.created_at}>
+                                    {formatDate(log.created_at)}
+                                </time>
+                                <span className="log-row__dot" aria-hidden="true" />
+                                <span className="log-row__action">{log.action}</span>
+                                <span className="log-row__user">{log.username || 'system'}</span>
+                                {log.target_type && (
+                                    <span className="log-row__target">
+                                        {log.target_type}{log.target_id ? ` #${log.target_id}` : ''}
+                                    </span>
+                                )}
+                                <span className="log-row__meta">
+                                    {renderDetailsInline(log.details)}
+                                    {log.ip_address && <span className="log-row__ip">{log.ip_address}</span>}
+                                </span>
                             </div>
                         ))}
                     </div>
