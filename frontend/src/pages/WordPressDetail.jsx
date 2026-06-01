@@ -70,7 +70,7 @@ const DetailPageSkeleton = () => (
     </div>
 );
 
-const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'git', 'backups'];
+const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'php', 'git', 'backups'];
 
 const WordPressDetail = () => {
     const { id } = useParams();
@@ -324,6 +324,12 @@ const WordPressDetail = () => {
                     <Palette size={14} /> Themes
                 </div>
                 <div
+                    className={`app-detail-tab ${activeTab === 'php' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('php')}
+                >
+                    <Settings size={14} /> PHP
+                </div>
+                <div
                     className={`app-detail-tab ${activeTab === 'git' ? 'active' : ''}`}
                     onClick={() => setActiveTab('git')}
                 >
@@ -375,9 +381,109 @@ const WordPressDetail = () => {
                     {activeTab === 'database' && <DatabaseTab siteId={site.id} site={site} />}
                     {activeTab === 'plugins' && <PluginsTab siteId={site.id} />}
                     {activeTab === 'themes' && <ThemesTab siteId={site.id} />}
+                    {activeTab === 'php' && <PhpTab siteId={site.id} />}
                     {activeTab === 'git' && <GitTab siteId={site.id} site={site} onUpdate={loadSite} />}
                     {activeTab === 'backups' && <BackupsTab siteId={site.id} />}
                 </ErrorBoundary>
+            </div>
+        </div>
+    );
+};
+
+// PHP Tab — live PHP version + ini limits for the Docker (apache/mod_php) site.
+// Version is the image tag; switching recreates the container (volumes persist).
+const PhpTab = ({ siteId }) => {
+    const toast = useToast();
+    const [php, setPhp] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [switching, setSwitching] = useState(false);
+
+    const load = React.useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await wordpressApi.getPhpInfo(siteId);
+            setPhp(data.php || data);
+        } catch (err) {
+            toast.error(err.message || 'Failed to load PHP info');
+        } finally {
+            setLoading(false);
+        }
+    }, [siteId, toast]);
+
+    useEffect(() => { load(); }, [load]);
+
+    async function handleSwitch(version) {
+        if (!window.confirm(`Switch this site to PHP ${version}? This pulls the wordpress:php${version}-apache image and recreates the container (brief downtime; database and files are preserved).`)) return;
+        setSwitching(true);
+        toast.info(`Switching to PHP ${version}...`, { duration: 4000 });
+        try {
+            const res = await wordpressApi.setPhpVersion(siteId, version);
+            if (res.success === false) { toast.error(res.error || 'Failed to switch PHP version'); return; }
+            toast.success(res.message || `Switched to PHP ${version}`);
+            await load();
+        } catch (err) {
+            toast.error(err.message || 'Failed to switch PHP version');
+        } finally {
+            setSwitching(false);
+        }
+    }
+
+    if (loading) return <div className="tab-loading"><p className="hint">Loading PHP info...</p></div>;
+
+    const limits = php?.limits || {};
+    const current = php?.php_version || 'Unknown';
+    const versions = php?.available_versions || [];
+
+    return (
+        <div className="app-overview-grid">
+            <div className="app-overview-left">
+                <div className="app-panel">
+                    <div className="app-panel-header">PHP</div>
+                    <div className="app-panel-body">
+                        <div className="app-info-grid">
+                            <div className="app-info-item">
+                                <span className="app-info-label">PHP Version</span>
+                                <span className="app-info-value">{current}</span>
+                            </div>
+                            <div className="app-info-item">
+                                <span className="app-info-label">Memory Limit</span>
+                                <span className="app-info-value">{limits.memory_limit || '-'}</span>
+                            </div>
+                            <div className="app-info-item">
+                                <span className="app-info-label">Upload Max Filesize</span>
+                                <span className="app-info-value">{limits.upload_max_filesize || '-'}</span>
+                            </div>
+                            <div className="app-info-item">
+                                <span className="app-info-label">Post Max Size</span>
+                                <span className="app-info-value">{limits.post_max_size || '-'}</span>
+                            </div>
+                            <div className="app-info-item">
+                                <span className="app-info-label">Max Execution Time</span>
+                                <span className="app-info-value">{limits.max_execution_time || '-'}</span>
+                            </div>
+                            <div className="app-info-item">
+                                <span className="app-info-label">Max Input Time</span>
+                                <span className="app-info-value">{limits.max_input_time || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {versions.length > 0 && (
+                    <div className="app-panel">
+                        <div className="app-panel-header">Change PHP Version</div>
+                        <div className="app-panel-body">
+                            <p className="hint">Switching rebuilds the container from the official wordpress php-apache image. The database and uploaded files are preserved.</p>
+                            <div className="app-detail-actions">
+                                {versions.map(v => (
+                                    <Button key={v} variant="outline" size="sm" disabled={switching || current.startsWith(v)} onClick={() => handleSwitch(v)}>
+                                        {current.startsWith(v) ? `PHP ${v} (current)` : `PHP ${v}`}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

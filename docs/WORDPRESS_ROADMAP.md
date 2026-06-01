@@ -222,7 +222,7 @@ The headline value of a managed platform, and the most net-new — but it leans 
 - **Reuse:** `wp_cli`, `wordpress.yaml` compose template, `flush_cache`.
 - **Done when:** Object cache is enabled and reports a hit ratio.
 
-### #24 — Per-site PHP version & limits panel `[M]` 🟡
+### #24 — Per-site PHP version & limits panel `[M]` 🟡 — ✅ Done (read panel: live version + limits via wp eval; version switch via image tag + recreate. Arbitrary limit-WRITE deferred — needs a conf.d ini + compose bind-mount for durability)
 - **Today:** The full PHP-FPM API (`getPHPVersions`/`setDefaultPHPVersion`/`installPHPVersion`/`createPHPPool`/`getPHPPools`/`restartPHPFPM` in `services/system.js`) has **zero** frontend consumers; `php_version` on `Application` is write-once with no update route, and pools are decoupled from the WP model.
 - **Do:** A per-site PHP panel (version + `memory_limit`/upload size/`max_execution_time`/workers) bound to the WP environment + an update-pool/change-version route.
 - **Reuse:** `php_service`, `system.js`.

@@ -132,6 +132,15 @@ const wordpressApi = {
     // Live WP-CLI info (core version + update_available / latest_version)
     getWordPressInfo: (siteId) => api.request(`${BASE_PATH}/${siteId}/info`),
 
+    // Live PHP version + ini limits for a Docker WP site (read-only).
+    getPhpInfo: (siteId) => api.request(`${BASE_PATH}/${siteId}/php`),
+
+    // Switch the site's PHP version (swaps the Docker image tag + recreates the container).
+    setPhpVersion: (siteId, version) => api.request(`${BASE_PATH}/${siteId}/php`, {
+        method: 'POST',
+        body: { version }
+    }),
+
     // Update plugins. Pass an array of slugs to update specific ones, omit for all.
     updatePlugins: (siteId, plugins) => api.request(`${BASE_PATH}/${siteId}/plugins/update`, {
         method: 'POST',

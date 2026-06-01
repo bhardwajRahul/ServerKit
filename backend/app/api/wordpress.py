@@ -346,6 +346,40 @@ def install_wordpress():
     return jsonify(result), 201 if result['success'] else 400
 
 
+@wordpress_bp.route('/sites/<int:app_id>/php', methods=['GET'])
+@jwt_required()
+def get_php(app_id):
+    """Live PHP version + ini limits for a Docker WP site (read-only)."""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    app = _resolve_app(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if user.role != 'admin' and app.user_id != current_user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    info = WordPressService.get_php_info(app.root_path)
+    info['available_versions'] = WordPressService.get_available_php_versions()
+    return jsonify({'php': info}), 200
+
+
+@wordpress_bp.route('/sites/<int:app_id>/php', methods=['POST'])
+@jwt_required()
+@admin_required
+def set_php(app_id):
+    """Switch the Docker WP site's PHP version (swaps image tag + recreates)."""
+    app = _resolve_app(app_id)
+    data = request.get_json() or {}
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if app.app_type not in ('wordpress', 'docker'):
+        return jsonify({'error': 'Application is not a WordPress site'}), 400
+    version = data.get('version')
+    if not version:
+        return jsonify({'error': 'version is required'}), 400
+    result = WordPressService.set_php_version(app.root_path, version)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
 @wordpress_bp.route('/sites/<int:app_id>/info', methods=['GET'])
 @jwt_required()
 def get_wordpress_info(app_id):

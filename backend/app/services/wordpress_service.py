@@ -213,6 +213,71 @@ define('WP_AUTO_UPDATE_CORE', 'minor');
             return {'success': False, 'error': str(e)}
 
     @classmethod
+    def get_php_info(cls, path: str) -> Dict:
+        """Read the LIVE PHP version + key ini limits from inside the running
+        WordPress container via the Docker-aware wp_cli bridge. Read-only.
+        """
+        info = {}
+        ver = cls.wp_cli(path, ['eval', 'echo phpversion();'])
+        if ver.get('success'):
+            info['php_version'] = (ver.get('output') or '').strip()
+        php = (
+            "foreach(['memory_limit','upload_max_filesize','post_max_size',"
+            "'max_execution_time','max_input_time'] as $k){"
+            "echo $k.'='.ini_get($k).\"\\n\";}"
+        )
+        limits = cls.wp_cli(path, ['eval', php])
+        parsed = {}
+        if limits.get('success'):
+            for line in (limits.get('output') or '').splitlines():
+                line = line.strip()
+                if '=' in line:
+                    k, v = line.split('=', 1)
+                    parsed[k.strip()] = v.strip()
+        info['limits'] = parsed
+        info['source'] = 'container'
+        return info
+
+    @classmethod
+    def get_available_php_versions(cls) -> List[str]:
+        """Official wordpress image PHP variant tags we support switching to."""
+        return ['8.1', '8.2', '8.3']
+
+    @classmethod
+    def set_php_version(cls, path: str, version: str) -> Dict:
+        """Switch a Docker WP site to a different PHP by rewriting the compose
+        image tag (wordpress:<wp>-php<version>-apache) and recreating the app
+        container. Volumes/DB persist. NOT host php-fpm. Brief downtime.
+        """
+        from app.services.docker_service import DockerService
+        if version not in cls.get_available_php_versions():
+            return {'success': False, 'error': f'Unsupported PHP version: {version}'}
+        compose_file = os.path.join(path, 'docker-compose.yml')
+        if not os.path.exists(compose_file):
+            return {'success': False, 'error': 'Not a Docker-stack site (no docker-compose.yml)'}
+        try:
+            with open(compose_file, 'r') as f:
+                content = f.read()
+            import re as _re
+            m = _re.search(r'image:\s*wordpress:([^\s]+)', content)
+            if not m:
+                return {'success': False, 'error': 'wordpress image line not found in compose file'}
+            current_tag = m.group(1)
+            wp_core = current_tag.split('-')[0] if current_tag and current_tag[0].isdigit() else ''
+            new_tag = (f'{wp_core}-php{version}-apache' if wp_core else f'php{version}-apache')
+            new_content = content.replace(f'image: wordpress:{current_tag}', f'image: wordpress:{new_tag}')
+            with open(compose_file, 'w') as f:
+                f.write(new_content)
+            up = DockerService.compose_up(path, detach=True, build=False)
+            if not up.get('success'):
+                return {'success': False, 'error': up.get('error') or 'compose up failed', 'image_tag': new_tag}
+            cls._wait_for_wp_ready(path)
+            live = cls.get_php_info(path).get('php_version')
+            return {'success': True, 'message': f'Switched to PHP {version}', 'image_tag': new_tag, 'php_version': live}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
     def is_multisite(cls, path: str) -> bool:
         """Return True if the WordPress install at ``path`` is a multisite network.
 
