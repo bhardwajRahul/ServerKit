@@ -1296,11 +1296,21 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         return site_data
 
     @classmethod
-    def get_sites(cls) -> Dict:
-        """Get all production WordPress sites with environment counts."""
-        from app.models import WordPressSite
+    def get_sites(cls, workspace_id=None) -> Dict:
+        """Get all production WordPress sites with environment counts.
 
-        sites = WordPressSite.query.filter_by(is_production=True).all()
+        Workspace scoping (#33): when workspace_id is given, only sites whose
+        Application belongs to that workspace are returned (join-based, since WP
+        sites carry no workspace_id of their own — they inherit their app's). The
+        hub is global today, so with no workspace context this is unchanged.
+        """
+        from app.models import WordPressSite, Application
+
+        query = WordPressSite.query.filter_by(is_production=True)
+        if workspace_id is not None:
+            query = query.join(Application, WordPressSite.application_id == Application.id) \
+                         .filter(Application.workspace_id == workspace_id)
+        sites = query.all()
         result = []
 
         for site in sites:

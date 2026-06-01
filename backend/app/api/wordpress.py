@@ -21,8 +21,15 @@ def _resolve_app(site_or_app_id):
 @wordpress_bp.route('/sites', methods=['GET'])
 @jwt_required()
 def list_sites():
-    """List all WordPress sites (production sites with environment counts)."""
-    result = WordPressService.get_sites()
+    """List all WordPress sites (production sites with environment counts).
+
+    Workspace-aware (#33): filters to the active workspace when one is supplied
+    (X-Workspace-Id / ?workspace_id), via the site's parent application."""
+    from app.services.workspace_service import WorkspaceService
+    user = User.query.get(get_jwt_identity())
+    ws_id = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    result = WordPressService.get_sites(workspace_id=ws_id)
     return jsonify(result), 200
 
 

@@ -319,3 +319,33 @@ def test_servers_list_global_without_context(app, client):
     r = client.get('/api/v1/servers', headers=_token(dev.id))
     assert r.status_code == 200
     assert any(s['name'] == 'srv-a' for s in r.get_json())
+
+
+def test_wordpress_sites_scoping_api(app, client):
+    from app import db
+    from app.services.workspace_service import WorkspaceService
+    from app.models import Application, WordPressSite
+
+    admin = _mk_user(db, 'wp_admin', 'admin')
+    ws_a = WorkspaceService.create_workspace({'name': 'WP-A'}, admin.id)
+    ws_b = WorkspaceService.create_workspace({'name': 'WP-B'}, admin.id)
+
+    def mk_site(name, ws_id):
+        a = Application(name=name, app_type='wordpress', user_id=admin.id, workspace_id=ws_id)
+        db.session.add(a)
+        db.session.commit()
+        db.session.add(WordPressSite(application_id=a.id, is_production=True))
+        db.session.commit()
+
+    mk_site('site-a', ws_a.id)
+    mk_site('site-b', ws_b.id)
+
+    # No context: the WP hub is global -> both sites.
+    r = client.get('/api/v1/wordpress/sites', headers=_token(admin.id))
+    assert r.status_code == 200
+    assert {s['name'] for s in r.get_json()['sites']} == {'site-a', 'site-b'}
+
+    # Scoped to workspace A (via the site's parent application) -> only site-a.
+    r = client.get('/api/v1/wordpress/sites', headers={**_token(admin.id), 'X-Workspace-Id': str(ws_a.id)})
+    assert r.status_code == 200
+    assert {s['name'] for s in r.get_json()['sites']} == {'site-a'}
