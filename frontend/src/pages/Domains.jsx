@@ -15,12 +15,7 @@ import {
     Select, SelectTrigger, SelectContent, SelectItem, SelectValue,
 } from '@/components/ui/select';
 import { PageTopbar, MetricCard, SegControl, Pill, Drawer } from '@/components/ds';
-
-const DOMAIN_TABS = [
-    { to: '/domains', label: 'Domains', end: true, icon: <Globe size={15} /> },
-    { to: '/dns', label: 'DNS Zones', icon: <NetworkIcon size={15} /> },
-    { to: '/ssl', label: 'SSL', icon: <Lock size={15} /> },
-];
+import { DOMAIN_TABS } from '../components/domains/domainTabs';
 
 const Domains = () => {
     const toast = useToast();

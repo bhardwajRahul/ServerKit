@@ -5,6 +5,8 @@ import {
     Settings, Download
 } from 'lucide-react';
 import api from '../services/api';
+import { PageTopbar } from '@/components/ds';
+import { DOMAIN_TABS } from '../components/domains/domainTabs';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../hooks/useConfirm';
 import EmptyState from '../components/EmptyState';
@@ -168,12 +170,7 @@ const SSLCertificates = () => {
     if (loading) {
         return (
             <div className="page-container ssl-page">
-                <header className="top-bar">
-                    <div>
-                        <h1>SSL Certificates</h1>
-                        <p className="subtitle">Manage Let's Encrypt SSL certificates</p>
-                    </div>
-                </header>
+                <PageTopbar icon={<Lock size={18} />} title="SSL Certificates" tabs={DOMAIN_TABS} />
                 <div className="ssl-status-bar">
                     {[1, 2, 3].map(i => (
                         <div key={i} className="ssl-status-item">
@@ -206,44 +203,39 @@ const SSLCertificates = () => {
 
     return (
         <div className="page-container ssl-page">
-            <header className="top-bar">
-                <div>
-                    <h1>SSL Certificates</h1>
-                    <p className="subtitle">Manage Let's Encrypt SSL certificates</p>
-                </div>
-                <div className="top-bar-actions">
-                    <Button
-                        variant="outline"
-                        onClick={handleSetupAutoRenewal}
-                        disabled={actionLoading || !certbotInstalled}
-                        title="Configure automatic renewal via systemd or cron"
-                    >
-                        <Settings size={16} />
-                        Auto-Renew
-                    </Button>
-                    {certificates.length > 0 && (
+            <PageTopbar
+                icon={<Lock size={18} />}
+                title="SSL Certificates"
+                tabs={DOMAIN_TABS}
+                actions={(
+                    <>
                         <Button
                             variant="outline"
-                            onClick={handleRenewAll}
-                            disabled={actionLoading}
+                            size="sm"
+                            onClick={handleSetupAutoRenewal}
+                            disabled={actionLoading || !certbotInstalled}
+                            title="Configure automatic renewal via systemd or cron"
                         >
-                            <RefreshCw size={16} />
-                            Renew All
+                            <Settings size={15} />
+                            Auto-Renew
                         </Button>
-                    )}
-                    <Button variant="outline" onClick={loadData}>
-                        <RefreshCw size={16} />
-                        Refresh
-                    </Button>
-                    <Button
-                        onClick={() => setShowObtainModal(true)}
-                        disabled={!certbotInstalled}
-                    >
-                        <Plus size={16} />
-                        New Certificate
-                    </Button>
-                </div>
-            </header>
+                        {certificates.length > 0 && (
+                            <Button variant="outline" size="sm" onClick={handleRenewAll} disabled={actionLoading}>
+                                <RefreshCw size={15} />
+                                Renew All
+                            </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={loadData}>
+                            <RefreshCw size={15} />
+                            Refresh
+                        </Button>
+                        <Button size="sm" onClick={() => setShowObtainModal(true)} disabled={!certbotInstalled}>
+                            <Plus size={15} />
+                            New Certificate
+                        </Button>
+                    </>
+                )}
+            />
 
             {/* Status Cards */}
             <div className="ssl-status-bar">
@@ -404,7 +396,7 @@ const SSLCertificates = () => {
                             <div className="ssl-info-box">
                                 <ShieldCheck size={32} />
                                 <div>
-                                    <h4>Free SSL from Let's Encrypt</h4>
+                                    <h4>Free SSL from Let&apos;s Encrypt</h4>
                                     <p>Obtain a free, automatically-renewed SSL certificate for your domains.</p>
                                 </div>
                             </div>
