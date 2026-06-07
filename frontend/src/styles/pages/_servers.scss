@@ -2512,14 +2512,15 @@
         top: 0;
         z-index: 1;
         text-align: left;
-        padding: $space-3 $space-4;
-        font-size: $font-size-xs;
+        padding: 11px $space-4;
+        font-family: var(--mono);
+        font-size: 10.5px;
         font-weight: $font-weight-semibold;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: $text-tertiary;
-        background: $bg-elevated;
-        border-bottom: 1px solid $border-subtle;
+        color: var(--text-faint);
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
         white-space: nowrap;
     }
 
@@ -2703,20 +2704,20 @@
 
     .bar {
         position: relative;
-        height: 6px;
-        background: $bg-elevated;
-        border-radius: $radius-full;
+        height: 5px;
+        background: var(--surface-3);
+        border-radius: 3px;
         overflow: hidden;
     }
 
     .bar-fill {
         position: absolute;
         inset: 0 auto 0 0;
-        border-radius: $radius-full;
+        border-radius: 3px;
 
-        &.cpu { background: $accent-primary; }
-        &.memory { background: $success; }
-        &.disk { background: $warning; }
+        &.cpu { background: var(--accent-bright); }
+        &.memory { background: var(--cyan); }
+        &.disk { background: var(--green); }
     }
 }
 
