@@ -53,34 +53,34 @@
         margin-bottom: $space-4;
     }
 
+    // Redesign: the demo's centered "method card" chooser.
     &__mode-card {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: $space-3;
-        min-height: 72px;
-        padding: $space-4;
-        background: $bg-card;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-lg;
+        gap: $space-2;
+        position: relative;
+        min-height: 116px;
+        padding: $space-5 $space-4;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
         color: $text-primary;
         font: inherit;
-        text-align: left;
+        text-align: center;
         text-decoration: none;
         cursor: pointer;
         transition: border-color $transition-fast, background $transition-fast, transform $transition-fast;
 
         &:hover {
-            background: $bg-hover;
-            border-color: $border-default;
+            background: var(--surface-2);
+            border-color: var(--border-strong);
             transform: translateY(-1px);
         }
 
         &--active {
-            border-color: rgba(20, 184, 166, 0.5);
-            background:
-                linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(99, 102, 241, 0.08)),
-                $bg-card;
+            border-color: var(--accent-dim);
+            background: var(--accent-bg-soft);
         }
 
         strong,
@@ -89,16 +89,40 @@
         }
 
         strong {
-            font-size: $font-size-sm;
+            font-size: $font-size-base;
             font-weight: $font-weight-semibold;
         }
 
         small {
-            margin-top: 2px;
+            margin-top: 3px;
             color: $text-tertiary;
             font-size: $font-size-xs;
             line-height: 1.4;
         }
+
+        // trailing indicator: hidden arrow when idle, accent check when active
+        > svg {
+            position: absolute;
+            top: $space-3;
+            right: $space-3;
+            color: var(--accent-bright);
+            opacity: 0;
+            transition: opacity $transition-fast;
+        }
+        &--active > svg { opacity: 1; }
+    }
+
+    // method-card icon chip: dim by default, accent when its card is active
+    &__mode-card &__mode-icon {
+        width: 42px;
+        height: 42px;
+        background: var(--surface-2);
+        color: var(--text-dim);
+        transition: background $transition-fast, color $transition-fast;
+    }
+    &__mode-card--active &__mode-icon {
+        background: var(--accent-bg);
+        color: var(--accent-bright);
     }
 
     &__mode-icon,
