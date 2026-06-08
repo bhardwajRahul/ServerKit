@@ -80,11 +80,22 @@
         }
     }
 
+    // Redesign KPI strip (replaces the StatStrip)
+    .svc-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: $space-4;
+        margin-bottom: $space-4;
+
+        @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+    }
+
     &__list {
         display: flex;
         flex-direction: column;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
         overflow: hidden;
     }
 
@@ -265,14 +276,15 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: $space-2 $space-5;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-        font-weight: $font-weight-medium;
+        padding: 11px $space-5;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+        font-weight: $font-weight-semibold;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid $border-subtle;
-        background: $bg-elevated;
+        letter-spacing: 0.06em;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-2);
     }
 
     &__list-header-left {

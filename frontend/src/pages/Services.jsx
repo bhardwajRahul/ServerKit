@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Box, Layers, Plus } from 'lucide-react';
+import { Box, Layers, Plus, Activity, Square, Clock } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getServiceType, getStatusConfig, formatRelativeTime } from '../utils/serviceTypes';
 import EmptyState from '../components/EmptyState';
-import { StatStrip, Stat } from '../components/StatCard';
-import { PageTopbar } from '@/components/ds';
+import { PageTopbar, MetricCard, Pill } from '@/components/ds';
 import { SERVICE_TABS } from '../components/services/serviceTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,28 +158,25 @@ const Services = () => {
 
             {/* Summary */}
             {apps.length > 0 && (
-                <StatStrip ariaLabel="Services summary">
-                    <Stat
-                        label="Running"
-                        value={stats.running}
-                        state={stats.running > 0 ? 'success' : undefined}
-                    />
-                    <Stat
-                        label="Stopped"
-                        value={stats.stopped}
-                        state={stats.stopped > 0 ? 'warning' : undefined}
-                    />
-                    <Stat
-                        label="Total"
-                        value={stats.total}
-                        detail={stats.topType ? `${stats.topType[1]} ${stats.topType[0]}` : undefined}
-                    />
-                    <Stat
-                        label="Last Deploy"
+                <div className="svc-kpis">
+                    <MetricCard tone="green" icon={<Activity size={16} />} value={stats.running} label="Running" />
+                    <MetricCard tone="amber" icon={<Square size={16} />} value={stats.stopped} label="Stopped" />
+                    <MetricCard tone="accent" icon={<Layers size={16} />} value={stats.total} label="Total">
+                        {stats.topType && (
+                            <div className="sk-kpi__sub"><span>{stats.topType[1]} {stats.topType[0]}</span></div>
+                        )}
+                    </MetricCard>
+                    <MetricCard
+                        tone="cyan"
+                        icon={<Clock size={16} />}
                         value={stats.recentDeploy ? formatRelativeTime(stats.recentDeploy.last_deploy_at) : 'N/A'}
-                        detail={stats.recentDeploy?.name}
-                    />
-                </StatStrip>
+                        label="Last Deploy"
+                    >
+                        {stats.recentDeploy?.name && (
+                            <div className="sk-kpi__sub"><span>{stats.recentDeploy.name}</span></div>
+                        )}
+                    </MetricCard>
+                </div>
             )}
 
             {/* Filters + Sort */}
@@ -340,10 +336,7 @@ const Services = () => {
                                 </div>
 
                                 <div className="services-page__row-right">
-                                    <div className={`services-page__status services-page__status--${statusInfo.dotClass}`}>
-                                        <span className="services-page__status-dot" />
-                                        {statusInfo.label}
-                                    </div>
+                                    <Pill kind={app.status === 'running' ? 'green' : 'gray'}>{statusInfo.label}</Pill>
 
                                     {app.deploy_repo_url && (
                                         <div className="services-page__repo-pill">
