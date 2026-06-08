@@ -11,7 +11,6 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectTrigger,
@@ -220,7 +219,7 @@ const DNSZones = () => {
                                 )}
                             </div>
                         </div>
-                        <table className="table">
+                        <table className="sk-dtable dns-records-table">
                             <thead>
                                 <tr>
                                     <th>Type</th>
@@ -234,9 +233,9 @@ const DNSZones = () => {
                             <tbody>
                                 {records.map(rec => (
                                     <tr key={rec.id}>
-                                        <td><Badge variant="outline">{rec.record_type}</Badge></td>
+                                        <td><span className={`dns-rtype dns-rtype--${(rec.record_type || '').toLowerCase()}`}>{rec.record_type}</span></td>
                                         <td>{rec.name}</td>
-                                        <td className="text-mono">{rec.content}</td>
+                                        <td className="sk-cell-mono">{rec.content}</td>
                                         <td>{rec.ttl}</td>
                                         <td>{rec.priority || '-'}</td>
                                         <td>

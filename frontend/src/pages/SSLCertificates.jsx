@@ -5,7 +5,7 @@ import {
     Settings, Download
 } from 'lucide-react';
 import api from '../services/api';
-import { PageTopbar } from '@/components/ds';
+import { PageTopbar, Pill } from '@/components/ds';
 import { DOMAIN_TABS } from '../components/domains/domainTabs';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../hooks/useConfirm';
@@ -14,7 +14,6 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -328,17 +327,9 @@ const SSLCertificates = () => {
                                 </div>
                             </div>
                             <div className="ssl-cert-item-status">
-                                {cert.expiry_valid ? (
-                                    <Badge variant="success">
-                                        <CheckCircle size={14} />
-                                        Valid
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="warning">
-                                        <AlertTriangle size={14} />
-                                        Expiring
-                                    </Badge>
-                                )}
+                                {cert.expiry_valid
+                                    ? <Pill kind="green">Valid</Pill>
+                                    : <Pill kind="amber">Expiring</Pill>}
                             </div>
                             <div className="ssl-cert-item-actions">
                                 <Button
