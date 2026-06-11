@@ -2,6 +2,21 @@ import { useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown, Database } from 'lucide-react';
 import EmptyState from '../EmptyState';
 
+// Semantic cell tints (prototype `cellEl`): emails/URLs read as string values,
+// positive/negative status words get green/amber.
+const STRING_VALUE = /@|^https?:|\.dev$|\.local$|\.com$/;
+const POSITIVE_VALUE = /^(publish|running|open|instock|yes|active|true|1)$/i;
+const NEGATIVE_VALUE = /^(draft|pending|spam|auto-draft|exited|stopped|closed|no|false|0)$/i;
+
+function cellClass(cell) {
+    if (cell === null) return 'is-null';
+    const s = String(cell);
+    if (STRING_VALUE.test(s)) return 'is-strv';
+    if (POSITIVE_VALUE.test(s)) return 'is-pos';
+    if (NEGATIVE_VALUE.test(s)) return 'is-neg';
+    return undefined;
+}
+
 // Renders a query/data result set: columns + row arrays. Sorting is client-side
 // over the rows already returned (a page), matching the old QueryRunner.
 export default function ResultsGrid({ columns, rows, loading, error, emptyTitle = 'No rows', emptyDescription }) {
@@ -90,7 +105,7 @@ export default function ResultsGrid({ columns, rows, loading, error, emptyTitle 
                         <tr key={rowIdx}>
                             <td className="dbx-grid-rownum">{rowIdx + 1}</td>
                             {row.map((cell, cellIdx) => (
-                                <td key={cellIdx} className={cell === null ? 'is-null' : undefined} title={cell === null ? 'NULL' : String(cell)}>
+                                <td key={cellIdx} className={cellClass(cell)} title={cell === null ? 'NULL' : String(cell)}>
                                     {cell === null ? 'NULL' : String(cell)}
                                 </td>
                             ))}

@@ -502,6 +502,16 @@ export default function Databases() {
                                     </button>
                                 </div>
                             ))}
+                            <button
+                                type="button"
+                                className="dbx-tab dbx-tab-new"
+                                disabled={!newConsoleConn}
+                                onClick={() => { if (newConsoleConn) openConsole(newConsoleConn, selectedNode.engine); }}
+                                title={newConsoleConn ? 'New SQL console' : 'Select a database to open a console'}
+                                aria-label="New SQL console"
+                            >
+                                <Plus size={14} aria-hidden="true" />
+                            </button>
                         </div>
                     )}
 

@@ -212,7 +212,7 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                         {results && !error && (
                             <div className="dbx-results-head">
                                 <span className="dbx-results-count">
-                                    {results.row_count} row{results.row_count === 1 ? '' : 's'}
+                                    <strong>{results.row_count}</strong> row{results.row_count === 1 ? '' : 's'}
                                     {results.truncated && ` · truncated from ${results.total_rows}`}
                                 </span>
                                 <span className="dbx-results-time">{results.execution_time}s</span>

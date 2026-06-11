@@ -18,8 +18,10 @@ $dbx-sqlite: #3d8fd1;
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: $space-3;
-    gap: $space-2;
+    // flush full-height console (demo `.db-layout`): panes join on 1px borders,
+    // no outer padding / gaps / card radii
+    padding: 0;
+    gap: 0;
     box-sizing: border-box;
     overflow: hidden;
 
@@ -92,10 +94,10 @@ $dbx-sqlite: #3d8fd1;
         align-items: center;
         justify-content: space-between;
         gap: $space-3;
+        min-height: 54px;
         padding: $space-2 $space-3;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-bottom: 1px solid $border-default;
         flex-shrink: 0;
     }
 
@@ -169,7 +171,7 @@ $dbx-sqlite: #3d8fd1;
     .dbx-body {
         display: grid;
         grid-template-columns: 280px 1fr;
-        gap: $space-2;
+        gap: 0;
         flex: 1;
         min-height: 0;
         overflow: hidden;
@@ -189,9 +191,13 @@ $dbx-sqlite: #3d8fd1;
         flex-direction: column;
         min-height: 0;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-right: 1px solid $border-default;
         overflow: hidden;
+
+        @media (max-width: $breakpoint-md) {
+            border-right: none;
+            border-bottom: 1px solid $border-default;
+        }
     }
 
     .dbx-tree-search {
@@ -380,8 +386,6 @@ $dbx-sqlite: #3d8fd1;
         min-width: 0;
         min-height: 0;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
         overflow: hidden;
     }
 
@@ -437,6 +441,17 @@ $dbx-sqlite: #3d8fd1;
     }
 
     .dbx-tab-title { @include dbx-trunc; }
+
+    // demo's `+` new-tab pill at the end of the strip
+    .dbx-tab-new {
+        padding: $space-2;
+        align-self: center;
+        border-radius: $radius-md;
+        color: $text-tertiary;
+
+        &:disabled { opacity: 0.4; cursor: not-allowed; }
+        &:hover:not(:disabled) { background: $bg-hover; color: $text-primary; }
+    }
 
     .dbx-tab-close {
         display: flex;
@@ -772,6 +787,9 @@ $dbx-sqlite: #3d8fd1;
             @include dbx-trunc;
             &:last-child { border-right: none; }
             &.is-null { color: $text-tertiary; font-style: italic; }
+            &.is-strv { color: $success; }
+            &.is-pos { color: $success; }
+            &.is-neg { color: $warning; }
         }
 
         tbody tr:hover td { background: $bg-hover; }
@@ -855,10 +873,10 @@ $dbx-sqlite: #3d8fd1;
         align-items: center;
         justify-content: space-between;
         gap: $space-3;
+        min-height: 32px;
         padding: $space-1 $space-3;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-top: 1px solid $border-default;
         flex-shrink: 0;
         flex-wrap: wrap;
     }
