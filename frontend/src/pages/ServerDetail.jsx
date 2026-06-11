@@ -9,7 +9,7 @@ import { DangerZone } from '../components/DangerZone';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { Pill, Gauge } from '../components/ds';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
     Dialog,
@@ -32,6 +32,15 @@ import ServicesTab from '../components/serverdetail/ServicesTab';
 import SystemStatusCard from '../components/serverdetail/SystemStatusCard';
 import EmptyState from '../components/EmptyState';
 import { BellRing, Boxes, Container, Clock3, Cloud } from 'lucide-react';
+
+// Server status → ds Pill tone (shared by the header pill and the
+// Overview "Status" row).
+const STATUS_PILL_KIND = {
+    online: 'green',
+    offline: 'red',
+    connecting: 'amber',
+    pending: 'gray',
+};
 
 const ServerDetail = () => {
     const { id, tab } = useParams();
@@ -254,10 +263,9 @@ const ServerDetail = () => {
                     <div className="server-detail-header__identity">
                         <div className="server-detail-header__title-row">
                             <h1>{server.name}</h1>
-                            <span className={`status-pill status-pill--${server.status || 'pending'}`}>
-                                <span className="status-pill__dot" />
+                            <Pill kind={STATUS_PILL_KIND[server.status] || 'gray'}>
                                 {server.status || 'pending'}
-                            </span>
+                            </Pill>
                             <CopyChip
                                 label="id"
                                 value={server.id}
@@ -266,16 +274,34 @@ const ServerDetail = () => {
                             />
                         </div>
                         <div className="server-detail-header__meta">
-                            <span className="mono">{server.hostname || server.ip_address || 'No endpoint configured'}</span>
+                            <span className="server-detail-header__meta-item">
+                                {server.hostname || server.ip_address || 'No endpoint configured'}
+                            </span>
                             {server.group_name && (
-                                <span className="server-detail-header__chip"><FolderTinyIcon /> {server.group_name}</span>
+                                <>
+                                    <span className="dotsep">·</span>
+                                    <span className="server-detail-header__meta-item"><FolderTinyIcon /> {server.group_name}</span>
+                                </>
                             )}
-                            {server.os_type && <span className="server-detail-header__chip">{server.os_type}</span>}
-                            {server.agent_version && <span className="server-detail-header__chip">agent {server.agent_version}</span>}
+                            {server.os_type && (
+                                <>
+                                    <span className="dotsep">·</span>
+                                    <span className="server-detail-header__meta-item">{server.os_type}</span>
+                                </>
+                            )}
+                            {server.agent_version && (
+                                <>
+                                    <span className="dotsep">·</span>
+                                    <span className="server-detail-header__meta-item">agent {server.agent_version}</span>
+                                </>
+                            )}
                             {server.last_seen && (
-                                <span className="server-detail-header__chip">
-                                    last seen {new Date(server.last_seen).toLocaleString()}
-                                </span>
+                                <>
+                                    <span className="dotsep">·</span>
+                                    <span className="server-detail-header__meta-item">
+                                        last seen {new Date(server.last_seen).toLocaleString()}
+                                    </span>
+                                </>
                             )}
                         </div>
                         {server.description && (
@@ -412,7 +438,6 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
                     label="Status"
                     value={server.status || 'pending'}
                     tone={isOnline ? 'success' : server.status === 'connecting' ? 'warning' : 'danger'}
-                    accent
                 />
                 <KpiTile
                     icon={<ClockIcon />}
@@ -424,21 +449,21 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
                     icon={<CpuIcon />}
                     label="CPU"
                     percent={isOnline ? metrics?.cpu_percent : null}
-                    color="var(--accent-primary)"
+                    color="var(--accent-bright)"
                     sub={cpuCores ? `${cpuCores} cores` : null}
                 />
                 <KpiGauge
                     icon={<MemoryIcon />}
                     label="Memory"
                     percent={isOnline ? metrics?.memory_percent : null}
-                    color="#10B981"
+                    color="var(--cyan)"
                     sub={totalMemory ? formatBytes(totalMemory) : null}
                 />
                 <KpiGauge
                     icon={<DiskIcon />}
                     label="Disk"
                     percent={isOnline ? metrics?.disk_percent : null}
-                    color="#F59E0B"
+                    color="var(--green)"
                     sub={totalDisk ? formatBytes(totalDisk) : null}
                 />
             </div>
@@ -458,11 +483,11 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
             )}
 
             <div className="overview-grid">
-                <div className="info-card info-card--accent">
+                <div className="info-card">
                     <h3><ServerIcon /> Server Information</h3>
                     <ul className="info-rows">
                         <InfoRow icon={<PulseIcon />} label="Status">
-                            <span className={`status-badge ${server.status}`}>{server.status}</span>
+                            <Pill kind={STATUS_PILL_KIND[server.status] || 'gray'}>{server.status}</Pill>
                         </InfoRow>
                         <InfoRow icon={<HostIcon />} label="Hostname" value={server.hostname || 'N/A'} mono />
                         <InfoRow icon={<NetworkIcon />} label="IP Address" value={server.ip_address || 'N/A'} mono />
@@ -475,7 +500,7 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
                     </ul>
                 </div>
 
-                <div className="info-card info-card--accent">
+                <div className="info-card">
                     <h3><ChipIcon /> System Information</h3>
                     <ul className="info-rows">
                         <InfoRow icon={<OsIcon />} label="Operating System" value={osLabel} />
@@ -492,7 +517,7 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
                     </ul>
                 </div>
 
-                <div className="info-card info-card--accent overview-grid__full">
+                <div className="info-card overview-grid__full">
                     <h3><AgentIcon /> Agent Information</h3>
                     <ul className="info-rows info-rows--columns">
                         <InfoRow icon={<TagIcon />} label="Agent Version" value={server.agent_version || 'Not installed'} mono />
@@ -642,8 +667,8 @@ const InfoRow = ({ icon, label, value, mono, children }) => (
     </li>
 );
 
-const KpiTile = ({ icon, label, value, sub, tone, accent }) => (
-    <div className={`kpi-tile${accent ? ' kpi-tile--accent' : ''}${tone ? ` kpi-tile--${tone}` : ''}`}>
+const KpiTile = ({ icon, label, value, sub, tone }) => (
+    <div className={`kpi-tile${tone ? ` kpi-tile--${tone}` : ''}`}>
         <div className="kpi-tile__head">
             <span className="kpi-tile__icon">{icon}</span>
             <span className="kpi-tile__label">{label}</span>
@@ -658,10 +683,7 @@ const KpiGauge = ({ icon, label, percent, color, sub }) => {
     const safe = has ? Math.min(Math.max(percent, 0), 100) : 0;
     const danger = safe > 85;
     const warn = safe > 70 && !danger;
-    const fillColor = danger ? '#EF4444' : warn ? '#F59E0B' : color;
-    const radius = 22;
-    const circumference = 2 * Math.PI * radius;
-    const dash = (safe / 100) * circumference;
+    const fillColor = danger ? 'var(--red)' : warn ? 'var(--amber)' : color;
 
     return (
         <div className={`kpi-tile kpi-tile--gauge${danger ? ' kpi-tile--danger' : warn ? ' kpi-tile--warn' : ''}`}>
@@ -669,24 +691,9 @@ const KpiGauge = ({ icon, label, percent, color, sub }) => {
                 <span className="kpi-tile__icon">{icon}</span>
                 <span className="kpi-tile__label">{label}</span>
             </div>
-            <div className="kpi-tile__gauge-row">
-                <svg className="kpi-gauge" width="56" height="56" viewBox="0 0 56 56">
-                    <circle cx="28" cy="28" r={radius} className="kpi-gauge__track" />
-                    <circle
-                        cx="28"
-                        cy="28"
-                        r={radius}
-                        className="kpi-gauge__bar"
-                        stroke={has ? fillColor : 'var(--border-subtle)'}
-                        strokeDasharray={`${dash} ${circumference - dash}`}
-                        transform="rotate(-90 28 28)"
-                    />
-                </svg>
-                <div className="kpi-tile__gauge-text">
-                    <span className="kpi-tile__value">{has ? `${safe.toFixed(1)}%` : '—'}</span>
-                    {sub && <span className="kpi-tile__sub">{sub}</span>}
-                </div>
-            </div>
+            <div className="kpi-tile__value">{has ? `${safe.toFixed(1)}%` : '—'}</div>
+            <Gauge className="kpi-tile__meter" value={safe} color={fillColor} />
+            {sub && <div className="kpi-tile__sub">{sub}</div>}
         </div>
     );
 };
@@ -867,9 +874,9 @@ const DockerTab = ({ serverId, serverStatus, server }) => {
                                             </td>
                                             <td>{container.image}</td>
                                             <td>
-                                                <span className={`status-pill ${isRunning ? 'running' : 'stopped'}`}>
+                                                <Pill kind={isRunning ? 'green' : container.state === 'paused' || container.state === 'restarting' ? 'amber' : 'gray'}>
                                                     {container.state}
-                                                </span>
+                                                </Pill>
                                             </td>
                                             <td>{formatPorts(container.ports)}</td>
                                             <td className="actions-cell">
@@ -1097,11 +1104,11 @@ const CronTab = ({ serverId, serverStatus }) => {
             <div className="cron-tab__header">
                 <div className="cron-tab__status">
                     {status?.available === false ? (
-                        <Badge variant="warning">cron not available: {status.reason || 'unknown'}</Badge>
+                        <Pill kind="amber">cron not available: {status.reason || 'unknown'}</Pill>
                     ) : status?.running === false ? (
-                        <Badge variant="warning">cron daemon not running</Badge>
+                        <Pill kind="amber">cron daemon not running</Pill>
                     ) : (
-                        <Badge variant="success">cron daemon active{status?.daemon ? ` (${status.daemon})` : ''}</Badge>
+                        <Pill kind="green">cron daemon active{status?.daemon ? ` (${status.daemon})` : ''}</Pill>
                     )}
                     <span className="cron-tab__count">{jobs.length} job{jobs.length === 1 ? '' : 's'}</span>
                 </div>
@@ -1147,9 +1154,9 @@ const CronTab = ({ serverId, serverStatus }) => {
                                     <code className="cron-tab__command">{job.command}</code>
                                 </td>
                                 <td>
-                                    <span className={`status-pill ${job.enabled ? 'running' : 'stopped'}`}>
+                                    <Pill kind={job.enabled ? 'green' : 'gray'}>
                                         {job.enabled ? 'enabled' : 'disabled'}
-                                    </span>
+                                    </Pill>
                                 </td>
                                 <td className="actions-cell">
                                     <button
@@ -1462,11 +1469,11 @@ const CloudflaredTab = ({ serverId, serverStatus }) => {
             <div className="cron-tab__header">
                 <div className="cron-tab__status">
                     {notInstalled ? (
-                        <Badge variant="warning">cloudflared not installed</Badge>
+                        <Pill kind="amber">cloudflared not installed</Pill>
                     ) : notAuthed ? (
-                        <Badge variant="warning">not authenticated — run cloudflared tunnel login</Badge>
+                        <Pill kind="amber">not authenticated — run cloudflared tunnel login</Pill>
                     ) : (
-                        <Badge variant="success">cloudflared ready{status?.version ? ` (${status.version})` : ''}</Badge>
+                        <Pill kind="green">cloudflared ready{status?.version ? ` (${status.version})` : ''}</Pill>
                     )}
                     <span className="cron-tab__count">{tunnels.length} tunnel{tunnels.length === 1 ? '' : 's'}</span>
                 </div>
@@ -1993,7 +2000,7 @@ const SettingsTab = ({ server, onUpdate, onRegenerateToken, onDelete }) => {
                                     <div key={idx} className="ip-item">
                                         <code>{ip}</code>
                                         {connectionInfo?.ip_address === ip && (
-                                            <Badge variant="success">Current</Badge>
+                                            <Pill kind="green" dot={false}>Current</Pill>
                                         )}
                                         <button
                                             className="btn-icon danger"
