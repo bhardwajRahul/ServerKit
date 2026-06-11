@@ -3,11 +3,10 @@ import api from '../../services/api';
 import ConfirmDialog from '../ConfirmDialog';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../Modal';
-import { InfoList, InfoItem } from '../InfoList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ds';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 const Fail2banTab = () => {
@@ -122,51 +121,69 @@ const Fail2banTab = () => {
                             </div>
                         </div>
                         <div className="card-body">
-                            <InfoList>
-                                <InfoItem label="Service">
-                                    <Badge variant={status.service_running ? 'success' : 'destructive'}>
+                            <div className="sec-rows">
+                                <div className="sk-info-row">
+                                    <span className="k">Service</span>
+                                    <Pill kind={status.service_running ? 'green' : 'red'}>
                                         {status.service_running ? 'Running' : 'Stopped'}
-                                    </Badge>
-                                </InfoItem>
-                                <InfoItem label="Version" value={status.version || 'Unknown'} />
-                                <InfoItem label="Active Jails" value={status.jails?.join(', ') || 'None'} />
-                                <InfoItem label="Total Banned IPs" value={bans.length} />
-                            </InfoList>
+                                    </Pill>
+                                </div>
+                                <div className="sk-info-row">
+                                    <span className="k">Version</span>
+                                    <span className="v">{status.version || 'Unknown'}</span>
+                                </div>
+                                <div className="sk-info-row">
+                                    <span className="k">Active jails</span>
+                                    {status.jails?.length > 0 ? (
+                                        <span className="sec-chiprow">
+                                            {status.jails.map((jail) => (
+                                                <span key={jail} className="sk-tag">{jail}</span>
+                                            ))}
+                                        </span>
+                                    ) : (
+                                        <span className="v">None</span>
+                                    )}
+                                </div>
+                                <div className="sk-info-row">
+                                    <span className="k">Total banned IPs</span>
+                                    <span className={`v ${bans.length > 0 ? 'sec-v-amber' : ''}`}>{bans.length}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="card">
+                    <div className="card sec-flush">
                         <div className="card-header">
-                            <h3>Banned IPs</h3>
+                            <h3>Banned IPs {bans.length > 0 && <span className="sec-count">· {bans.length}</span>}</h3>
                         </div>
-                        <div className="card-body">
-                            {bans.length === 0 ? (
+                        {bans.length === 0 ? (
+                            <div className="card-body">
                                 <p className="text-muted">No IPs are currently banned.</p>
-                            ) : (
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>IP Address</th>
-                                            <th>Jail</th>
-                                            <th>Actions</th>
+                            </div>
+                        ) : (
+                            <table className="sk-dtable">
+                                <thead>
+                                    <tr>
+                                        <th>IP Address</th>
+                                        <th>Jail</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bans.map((ban, index) => (
+                                        <tr key={index}>
+                                            <td className="sk-cell-mono sec-ip--red">{ban.ip}</td>
+                                            <td><span className="sk-tag">{ban.jail}</span></td>
+                                            <td>
+                                                <Button variant="secondary" size="sm" onClick={() => handleUnban(ban.ip, ban.jail)}>
+                                                    Unban
+                                                </Button>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {bans.map((ban, index) => (
-                                            <tr key={index}>
-                                                <td><code>{ban.ip}</code></td>
-                                                <td><Badge variant="info">{ban.jail}</Badge></td>
-                                                <td>
-                                                    <Button variant="secondary" size="sm" onClick={() => handleUnban(ban.ip, ban.jail)}>
-                                                        Unban
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </>
             )}

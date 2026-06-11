@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 const IntegrityTab = () => {
     const [checking, setChecking] = useState(false);
@@ -81,12 +80,15 @@ const IntegrityTab = () => {
                 <div className="card">
                     <div className="card-header">
                         <h3>Changes Detected</h3>
-                        <Badge variant="warning">{results.total_changes} changes</Badge>
+                        <span className="sec-state sec-state--amber">{results.total_changes} changes</span>
                     </div>
                     <div className="card-body">
                         {results.changes.modified?.length > 0 && (
                             <div className="change-section">
-                                <h4>Modified Files ({results.changes.modified.length})</h4>
+                                <div className="sec-change-head">
+                                    <span className="sec-state sec-state--amber">modified</span>
+                                    <span className="sec-change-count">{results.changes.modified.length} files</span>
+                                </div>
                                 <ul className="file-list">
                                     {results.changes.modified.map((file, i) => (
                                         <li key={i}>{file.path}</li>
@@ -97,7 +99,10 @@ const IntegrityTab = () => {
 
                         {results.changes.deleted?.length > 0 && (
                             <div className="change-section">
-                                <h4>Deleted Files ({results.changes.deleted.length})</h4>
+                                <div className="sec-change-head">
+                                    <span className="sec-state sec-state--red">deleted</span>
+                                    <span className="sec-change-count">{results.changes.deleted.length} files</span>
+                                </div>
                                 <ul className="file-list">
                                     {results.changes.deleted.map((file, i) => (
                                         <li key={i}>{file}</li>
@@ -108,7 +113,10 @@ const IntegrityTab = () => {
 
                         {results.changes.new?.length > 0 && (
                             <div className="change-section">
-                                <h4>New Files ({results.changes.new.length})</h4>
+                                <div className="sec-change-head">
+                                    <span className="sec-state sec-state--cyan">added</span>
+                                    <span className="sec-change-count">{results.changes.new.length} files</span>
+                                </div>
                                 <ul className="file-list">
                                     {results.changes.new.slice(0, 50).map((file, i) => (
                                         <li key={i}>{file}</li>
@@ -122,7 +130,10 @@ const IntegrityTab = () => {
 
                         {results.changes.permission_changed?.length > 0 && (
                             <div className="change-section">
-                                <h4>Permission Changes ({results.changes.permission_changed.length})</h4>
+                                <div className="sec-change-head">
+                                    <span className="sec-state sec-state--violet">permissions</span>
+                                    <span className="sec-change-count">{results.changes.permission_changed.length} files</span>
+                                </div>
                                 <ul className="file-list">
                                     {results.changes.permission_changed.map((file, i) => (
                                         <li key={i}>{file.path} ({file.old_mode} → {file.new_mode})</li>

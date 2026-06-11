@@ -19,7 +19,8 @@ import {
 } from '../components/security';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import EmptyState from '../components/EmptyState';
-import { StatStrip, Stat } from '../components/StatCard';
+import { MetricCard } from '@/components/ds';
+import { Siren, Bug, ShieldCheck, Radar } from 'lucide-react';
 
 const VALID_TABS = ['overview', 'firewall', 'fail2ban', 'ssh-keys', 'ip-lists', 'scanner', 'quarantine', 'integrity', 'audit', 'vulnerability', 'updates', 'events', 'settings'];
 
@@ -76,28 +77,34 @@ const Security = () => {
                 </div>
             </div>
 
-            <StatStrip ariaLabel="Security overview">
-                <Stat
-                    label="Alerts (24h)"
+            <div className="sec-kpis" role="group" aria-label="Security overview">
+                <MetricCard
+                    tone={alerts.total > 0 ? 'amber' : 'green'}
+                    icon={<Siren size={16} />}
                     value={alerts.total || 0}
-                    state={alerts.total > 0 ? 'warning' : 'success'}
+                    label="Alerts (24h)"
                 />
-                <Stat
-                    label="Malware Detected"
+                <MetricCard
+                    tone={alerts.malware_detections > 0 ? 'red' : 'green'}
+                    icon={<Bug size={16} />}
                     value={alerts.malware_detections || 0}
-                    state={alerts.malware_detections > 0 ? 'danger' : 'success'}
+                    label="Malware detected"
                 />
-                <Stat
-                    label="ClamAV"
+                <MetricCard
+                    className="sec-kpi-text"
+                    tone={clamav?.installed ? 'green' : 'amber'}
+                    icon={<ShieldCheck size={16} />}
                     value={clamav?.installed ? 'Active' : 'Not installed'}
-                    state={clamav?.installed ? 'success' : 'warning'}
+                    label="ClamAV"
                 />
-                <Stat
-                    label="Scan Status"
+                <MetricCard
+                    className="sec-kpi-text"
+                    tone={scanRunning ? 'cyan' : 'accent'}
+                    icon={<Radar size={16} />}
                     value={capitalize(status?.scan_status) || 'Idle'}
-                    state={scanRunning ? 'info' : undefined}
+                    label="Scan status"
                 />
-            </StatStrip>
+            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>

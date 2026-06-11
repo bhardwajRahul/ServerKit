@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ds';
+import { Zap, Radar, FolderSearch, Download } from 'lucide-react';
 
 const ScannerTab = () => {
     const [scanStatus, setScanStatus] = useState({ status: 'idle' });
@@ -91,11 +92,9 @@ const ScannerTab = () => {
             )}
 
             <div className="scan-options">
-                <div className="scan-card" onClick={() => !isScanning && !scanning && handleStartScan('quick')}>
+                <div className="scan-card scan-card--quick" onClick={() => !isScanning && !scanning && handleStartScan('quick')}>
                     <div className="scan-card-icon">
-                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
-                        </svg>
+                        <Zap size={20} />
                     </div>
                     <h4>Quick Scan</h4>
                     <span className="scan-desc">Scan common web directories</span>
@@ -109,13 +108,9 @@ const ScannerTab = () => {
                     </Button>
                 </div>
 
-                <div className="scan-card" onClick={() => !isScanning && !scanning && handleStartScan('full')}>
+                <div className="scan-card scan-card--full" onClick={() => !isScanning && !scanning && handleStartScan('full')}>
                     <div className="scan-card-icon">
-                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
-                        </svg>
+                        <Radar size={20} />
                     </div>
                     <h4>Full Scan</h4>
                     <span className="scan-desc">Scan entire system (slow)</span>
@@ -131,9 +126,7 @@ const ScannerTab = () => {
 
                 <div className="scan-card scan-card--custom">
                     <div className="scan-card-icon">
-                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" fill="none" strokeWidth="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                        </svg>
+                        <FolderSearch size={20} />
                     </div>
                     <h4>Custom Path</h4>
                     <span className="scan-desc">Scan a specific directory</span>
@@ -160,11 +153,7 @@ const ScannerTab = () => {
 
             <div className="scan-toolbar">
                 <Button variant="outline" size="sm" onClick={handleUpdateDefinitions} disabled={updating}>
-                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
+                    <Download size={14} />
                     {updating ? 'Updating...' : 'Update Definitions'}
                 </Button>
             </div>
@@ -181,10 +170,10 @@ const ScannerTab = () => {
                         <div className="progress-info">
                             <div className="spinner"></div>
                             <div>
-                                <p><strong>Scanning:</strong> {scanStatus.directory}</p>
-                                <p><strong>Started:</strong> {new Date(scanStatus.started_at).toLocaleString()}</p>
+                                <p><strong>Scanning:</strong> <span className="sec-mono">{scanStatus.directory}</span></p>
+                                <p><strong>Started:</strong> <span className="sec-mono">{new Date(scanStatus.started_at).toLocaleString()}</span></p>
                                 {scanStatus.files_scanned > 0 && (
-                                    <p><strong>Files scanned:</strong> {scanStatus.files_scanned}</p>
+                                    <p><strong>Files scanned:</strong> <span className="sec-mono">{scanStatus.files_scanned}</span></p>
                                 )}
                             </div>
                         </div>
@@ -192,13 +181,13 @@ const ScannerTab = () => {
                 </div>
             )}
 
-            <div className="card">
+            <div className="card sec-flush">
                 <div className="card-header">
                     <h3>Scan History</h3>
                     <Button variant="outline" size="sm" onClick={loadHistory}>Refresh</Button>
                 </div>
-                <div className="card-body">
-                    {history.length === 0 ? (
+                {history.length === 0 ? (
+                    <div className="card-body">
                         <div className="empty-state-sm">
                             <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" fill="none" strokeWidth="1.5">
                                 <circle cx="11" cy="11" r="8"/>
@@ -206,39 +195,39 @@ const ScannerTab = () => {
                             </svg>
                             <p>No scans have been run yet. Start a scan above to check for threats.</p>
                         </div>
-                    ) : (
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Directory</th>
-                                    <th>Status</th>
-                                    <th>Threats</th>
+                    </div>
+                ) : (
+                    <table className="sk-dtable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Directory</th>
+                                <th>Status</th>
+                                <th>Threats</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {history.map((scan, index) => (
+                                <tr key={index}>
+                                    <td className="sk-cell-mono sec-faint">{new Date(scan.started_at).toLocaleString()}</td>
+                                    <td className="sk-cell-mono sec-path">{scan.directory}</td>
+                                    <td>
+                                        <Pill kind={scan.status === 'completed' ? 'green' : scan.status === 'error' ? 'red' : 'amber'}>
+                                            {scan.status}
+                                        </Pill>
+                                    </td>
+                                    <td>
+                                        {scan.infected_files?.length > 0 ? (
+                                            <span className="sec-state sec-state--red">{scan.infected_files.length} found</span>
+                                        ) : (
+                                            <span className="sec-state sec-state--green">clean</span>
+                                        )}
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {history.map((scan, index) => (
-                                    <tr key={index}>
-                                        <td>{new Date(scan.started_at).toLocaleString()}</td>
-                                        <td className="path-cell">{scan.directory}</td>
-                                        <td>
-                                            <Badge variant={scan.status === 'completed' ? 'success' : scan.status === 'error' ? 'destructive' : 'warning'}>
-                                                {scan.status}
-                                            </Badge>
-                                        </td>
-                                        <td>
-                                            {scan.infected_files?.length > 0 ? (
-                                                <Badge variant="destructive">{scan.infected_files.length} found</Badge>
-                                            ) : (
-                                                <Badge variant="success">Clean</Badge>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );

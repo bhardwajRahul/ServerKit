@@ -1,7 +1,21 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { ScoreGauge } from '@/components/ds';
+
+const SEVERITY_TONES = {
+    pass: 'green',
+    critical: 'red',
+    warning: 'amber',
+    info: 'cyan',
+};
+
+const scoreColor = (score) => {
+    if (score >= 80) return 'var(--green)';
+    if (score >= 60) return 'var(--accent-bright)';
+    if (score >= 40) return 'var(--amber)';
+    return 'var(--red)';
+};
 
 const AuditTab = () => {
     const [audit, setAudit] = useState(null);
@@ -19,23 +33,6 @@ const AuditTab = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const getSeverityVariant = (severity) => {
-        switch (severity) {
-            case 'pass': return 'success';
-            case 'critical': return 'destructive';
-            case 'warning': return 'warning';
-            case 'info': return 'info';
-            default: return 'secondary';
-        }
-    };
-
-    const getScoreClass = (score) => {
-        if (score >= 80) return 'score-excellent';
-        if (score >= 60) return 'score-good';
-        if (score >= 40) return 'score-fair';
-        return 'score-poor';
     };
 
     return (
@@ -68,25 +65,27 @@ const AuditTab = () => {
 
                     {audit && !loading && (
                         <div className="audit-results">
-                            <div className={`audit-score ${getScoreClass(audit.score)}`}>
-                                <span className="score-value">{audit.score}</span>
-                                <span className="score-label">Security Score</span>
-                            </div>
-
-                            <div className="audit-timestamp">
-                                Generated: {new Date(audit.generated_at).toLocaleString()}
+                            <div className="sec-audit-score">
+                                <ScoreGauge
+                                    value={audit.score}
+                                    size={120}
+                                    stroke={10}
+                                    color={scoreColor(audit.score)}
+                                    label="security score"
+                                />
+                                <div className="sec-audit-meta">Generated {new Date(audit.generated_at).toLocaleString()}</div>
                             </div>
 
                             {Object.entries(audit.services || {}).map(([service, data]) => (
                                 <div key={service} className="audit-section">
                                     <h4>{service.toUpperCase()}</h4>
-                                    <div className="findings-list">
+                                    <div className="sec-finding-list">
                                         {data.findings?.map((finding, idx) => (
-                                            <div key={idx} className="finding-item">
-                                                <Badge variant={getSeverityVariant(finding.severity)}>
+                                            <div key={idx} className="sec-finding">
+                                                <span className={`sec-state sec-state--${SEVERITY_TONES[finding.severity] || 'gray'}`}>
                                                     {finding.severity}
-                                                </Badge>
-                                                <span className="finding-message">{finding.message}</span>
+                                                </span>
+                                                <span className="sec-finding__msg">{finding.message}</span>
                                             </div>
                                         ))}
                                     </div>

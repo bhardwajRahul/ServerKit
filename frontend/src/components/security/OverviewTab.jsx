@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import api from '../../services/api';
-import { InfoList, InfoItem } from '../InfoList';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ds';
 
 const InstallClamAVButton = ({ onInstalled }) => {
     const [installing, setInstalling] = useState(false);
@@ -34,6 +33,7 @@ const InstallClamAVButton = ({ onInstalled }) => {
 const OverviewTab = ({ status, clamavStatus, clamavLoading, onRefreshClamav }) => {
     const alerts = status?.recent_alerts || {};
     const loading = clamavLoading;
+    const integrityChanges = alerts.integrity_changes || 0;
 
     return (
         <div className="security-overview">
@@ -47,18 +47,22 @@ const OverviewTab = ({ status, clamavStatus, clamavLoading, onRefreshClamav }) =
                         {loading ? (
                             <div className="loading-sm">Loading...</div>
                         ) : clamavStatus?.installed ? (
-                            <InfoList>
-                                <InfoItem label="Version" value={clamavStatus.version || 'Unknown'} />
-                                <InfoItem label="Service">
-                                    <Badge variant={clamavStatus.service_running ? 'success' : 'warning'}>
+                            <div className="sec-rows">
+                                <div className="sk-info-row">
+                                    <span className="k">Version</span>
+                                    <span className="v">{clamavStatus.version || 'Unknown'}</span>
+                                </div>
+                                <div className="sk-info-row">
+                                    <span className="k">Service</span>
+                                    <Pill kind={clamavStatus.service_running ? 'green' : 'amber'}>
                                         {clamavStatus.service_running ? 'Running' : 'Stopped'}
-                                    </Badge>
-                                </InfoItem>
-                                <InfoItem
-                                    label="Last Definition Update"
-                                    value={clamavStatus.last_update ? new Date(clamavStatus.last_update).toLocaleString() : 'Unknown'}
-                                />
-                            </InfoList>
+                                    </Pill>
+                                </div>
+                                <div className="sk-info-row">
+                                    <span className="k">Last definition update</span>
+                                    <span className="v">{clamavStatus.last_update ? new Date(clamavStatus.last_update).toLocaleString() : 'Unknown'}</span>
+                                </div>
+                            </div>
                         ) : (
                             <div className="not-installed">
                                 <p>ClamAV is not installed on this server.</p>
@@ -73,19 +77,24 @@ const OverviewTab = ({ status, clamavStatus, clamavLoading, onRefreshClamav }) =
                         <h3>File Integrity Monitoring</h3>
                     </div>
                     <div className="card-body">
-                        <InfoList>
-                            <InfoItem label="Status">
-                                <Badge variant={status?.file_integrity?.enabled ? 'success' : 'secondary'}>
+                        <div className="sec-rows">
+                            <div className="sk-info-row">
+                                <span className="k">Status</span>
+                                <Pill kind={status?.file_integrity?.enabled ? 'green' : 'gray'}>
                                     {status?.file_integrity?.enabled ? 'Enabled' : 'Disabled'}
-                                </Badge>
-                            </InfoItem>
-                            <InfoItem label="Database">
-                                <Badge variant={status?.file_integrity?.database_exists ? 'success' : 'warning'}>
+                                </Pill>
+                            </div>
+                            <div className="sk-info-row">
+                                <span className="k">Database</span>
+                                <Pill kind={status?.file_integrity?.database_exists ? 'green' : 'amber'}>
                                     {status?.file_integrity?.database_exists ? 'Initialized' : 'Not Initialized'}
-                                </Badge>
-                            </InfoItem>
-                            <InfoItem label="Changes Detected (24h)" value={alerts.integrity_changes || 0} />
-                        </InfoList>
+                                </Pill>
+                            </div>
+                            <div className="sk-info-row">
+                                <span className="k">Changes detected (24h)</span>
+                                <span className={`v ${integrityChanges > 0 ? 'sec-v-amber' : ''}`}>{integrityChanges}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -94,14 +103,15 @@ const OverviewTab = ({ status, clamavStatus, clamavLoading, onRefreshClamav }) =
                         <h3>Notifications</h3>
                     </div>
                     <div className="card-body">
-                        <InfoList>
-                            <InfoItem label="Security Alerts">
-                                <Badge variant={status?.notifications_enabled ? 'success' : 'secondary'}>
+                        <div className="sec-rows">
+                            <div className="sk-info-row">
+                                <span className="k">Security alerts</span>
+                                <Pill kind={status?.notifications_enabled ? 'green' : 'gray'}>
                                     {status?.notifications_enabled ? 'Enabled' : 'Disabled'}
-                                </Badge>
-                            </InfoItem>
-                        </InfoList>
-                        <p className="help-text" style={{ marginTop: '1rem' }}>
+                                </Pill>
+                            </div>
+                        </div>
+                        <p className="sec-hint">
                             Configure notification channels in Settings → Notifications to receive security alerts via Discord, Slack, or Telegram.
                         </p>
                     </div>
