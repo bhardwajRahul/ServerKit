@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock, Copy, Zap, Activity, Globe, Layers, BarChart3, FileBarChart, Printer, Download } from 'lucide-react';
+import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock, Copy, Zap, Activity, Globe, Layers, BarChart3, FileBarChart, Printer, Download, ChevronDown, Check, AlertTriangle, HardDrive } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import useTabParam from '../hooks/useTabParam';
 import wordpressApi from '../services/wordpress';
@@ -9,6 +9,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useLogsDrawer } from '../contexts/LogsDrawerContext';
 import { EnvironmentCard, SnapshotTable, GitConnectForm, CommitList, DiskUsageBar } from '../components/wordpress';
 import { HealthDot } from '../components/wordpress/HealthStatusPanel';
+import { Pill, EnvTag, MetricCard, SegControl } from '../components/ds';
 import { ErrorBoundary, ErrorState } from '../components/ErrorBoundary';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -18,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 
 // Detail Page Skeleton for initial loading
 const DetailPageSkeleton = () => (
@@ -75,6 +75,74 @@ const DetailPageSkeleton = () => (
 
 const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'php', 'git', 'backups', 'uptime', 'analytics', 'vulnerabilities', 'security', 'updates', 'reports'];
 
+// Environment-type → dot tint for the header environment switcher.
+const ENV_DOT_COLORS = {
+    production: 'var(--green)',
+    staging: 'var(--amber)',
+    development: 'var(--cyan)',
+    multidev: 'var(--violet)',
+};
+
+// Short label for an environment type tag (PROD / STAGING / DEV).
+const envTagLabel = (type) => (
+    type === 'production' ? 'PROD' : type === 'staging' ? 'STAGING' : 'DEV'
+);
+
+const ENV_TYPE_LABELS = { production: 'Production', staging: 'Staging', development: 'Development', multidev: 'Multidev' };
+
+// Compact header environment switcher — navigates between the environment
+// site ids already present in the loaded payload (no extra fetches).
+const EnvSwitcher = ({ options, onSelect }) => {
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const close = () => setOpen(false);
+        window.addEventListener('click', close);
+        return () => window.removeEventListener('click', close);
+    }, [open]);
+
+    const current = options.find(o => o.current) || options[0];
+
+    return (
+        <div className="wp-envswitch-wrap">
+            <button
+                type="button"
+                className={`wp-envswitch ${open ? 'open' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+                title="Switch environment"
+            >
+                <span className="ed" style={{ background: ENV_DOT_COLORS[current.type] || 'var(--text-faint)' }} />
+                {ENV_TYPE_LABELS[current.type] || current.name}
+                <ChevronDown size={13} className="chev" />
+            </button>
+            {open && (
+                <div className="wp-envswitch-menu" onClick={e => e.stopPropagation()}>
+                    <div className="wp-envswitch-head">Switch environment</div>
+                    {options.map(o => (
+                        <button
+                            type="button"
+                            className="wp-envswitch-opt"
+                            key={o.id}
+                            onClick={() => { setOpen(false); if (!o.current) onSelect(o.id); }}
+                        >
+                            <span className="ed" style={{ background: ENV_DOT_COLORS[o.type] || 'var(--text-faint)' }} />
+                            <span className="wp-envswitch-opt-body">
+                                <span className="nm">{o.name}</span>
+                                <span className="meta">
+                                    {envTagLabel(o.type)}
+                                    {o.url ? ` · ${o.url.replace(/^https?:\/\//, '')}` : ''}
+                                </span>
+                            </span>
+                            {o.current && <Check size={14} className="check" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const WordPressDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -90,6 +158,9 @@ const WordPressDetail = () => {
     const [clonedCreds, setClonedCreds] = useState(null);
 
     useEffect(() => {
+        // Show the skeleton again when navigating between environment site ids
+        // (env switcher / "Open new site") so stale data never renders.
+        setLoading(true);
         loadSite();
     }, [id]);
 
@@ -164,6 +235,27 @@ const WordPressDetail = () => {
     }
 
     const isRunning = site.status === 'running';
+
+    // Environment switcher options from data already in the payload:
+    // production sites carry `environments`; child envs carry `production_site_id`.
+    let envOptions = null;
+    if (site.is_production && (site.environments || []).length > 0) {
+        envOptions = [
+            { id: site.id, name: site.name, type: 'production', url: site.url, current: true },
+            ...site.environments.map(e => ({
+                id: e.id,
+                name: e.name || e.environment_type || `Environment ${e.id}`,
+                type: e.environment_type || 'development',
+                url: e.url,
+                current: false,
+            })),
+        ];
+    } else if (!site.is_production && site.production_site_id) {
+        envOptions = [
+            { id: site.production_site_id, name: 'Production', type: 'production', current: false },
+            { id: site.id, name: site.name, type: site.environment_type || 'development', url: site.url, current: true },
+        ];
+    }
 
     return (
         <div className="app-detail-page wp-detail-page">
@@ -267,27 +359,33 @@ const WordPressDetail = () => {
                     <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
                         <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 19.542c-5.261 0-9.542-4.281-9.542-9.542S6.739 2.458 12 2.458 21.542 6.739 21.542 12 17.261 21.542 12 21.542z"/>
                     </svg>
+                    <span className={`wp-head-dot ${isRunning ? 'running' : 'stopped'}`} />
                 </div>
                 <div className="app-detail-title-block">
                     <h1>
                         {site.name}
-                        <span className={`app-status-badge ${isRunning ? 'running' : 'stopped'}`}>
-                            <span className="pulse-dot" />
-                            {isRunning ? 'Running' : 'Stopped'}
-                        </span>
-                        {site.is_production && (
-                            <span className="env-badge env-production">PROD</span>
-                        )}
-                        {!site.is_production && site.production_site_id && (
-                            <span className="env-badge env-development">DEV</span>
+                        <Pill kind={isRunning ? 'green' : 'gray'}>{isRunning ? 'Running' : 'Stopped'}</Pill>
+                        {site.is_production ? (
+                            <EnvTag env="PROD" />
+                        ) : site.production_site_id ? (
+                            <EnvTag env={envTagLabel(site.environment_type)} />
+                        ) : null}
+                        {envOptions && envOptions.length > 1 && (
+                            <EnvSwitcher options={envOptions} onSelect={(envId) => navigate(`/wordpress/${envId}`)} />
                         )}
                     </h1>
                     <div className="app-detail-subtitle">
-                        <span>WordPress {site.wp_version || ''}</span>
+                        <span>WordPress {site.wp_version || '—'}</span>
                         {site.url && (
                             <>
-                                <span className="separator">•</span>
-                                <span className="mono">{site.url}</span>
+                                <span className="separator">·</span>
+                                <a href={site.url} target="_blank" rel="noopener noreferrer">{site.url}</a>
+                            </>
+                        )}
+                        {site.multisite && (
+                            <>
+                                <span className="separator">·</span>
+                                <span>multisite</span>
                             </>
                         )}
                     </div>
@@ -618,11 +716,11 @@ const UptimeTab = ({ siteId }) => {
                         <div className="app-panel-header">Uptime</div>
                         <div className="app-panel-body">
                             {comp.last_check_at ? (
-                                <div className="app-info-grid">
-                                    <div className="app-info-item"><span className="app-info-label">24 hours</span><span className="app-info-value">{pct(comp.uptime_24h)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">7 days</span><span className="app-info-value">{pct(comp.uptime_7d)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">30 days</span><span className="app-info-value">{pct(comp.uptime_30d)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">90 days</span><span className="app-info-value">{pct(comp.uptime_90d)}</span></div>
+                                <div className="wp-kpis">
+                                    <MetricCard icon={<Activity size={16} />} tone="green" value={pct(comp.uptime_24h)} label="Uptime · 24 hours" />
+                                    <MetricCard icon={<Activity size={16} />} tone="green" value={pct(comp.uptime_7d)} label="Uptime · 7 days" />
+                                    <MetricCard icon={<Activity size={16} />} tone="cyan" value={pct(comp.uptime_30d)} label="Uptime · 30 days" />
+                                    <MetricCard icon={<Activity size={16} />} tone="cyan" value={pct(comp.uptime_90d)} label="Uptime · 90 days" />
                                 </div>
                             ) : (
                                 <p className="hint">Awaiting the first health check (runs within 5 minutes).</p>
@@ -723,7 +821,7 @@ const UpdatesTab = ({ siteId }) => {
 
     const runs = data?.runs || [];
     const running = data?.running;
-    const statusVariant = (s) => ({ completed: 'success', rolled_back: 'warning', failed: 'destructive', running: 'info' }[s] || 'secondary');
+    const statusPill = (s) => ({ completed: 'green', rolled_back: 'amber', failed: 'red', running: 'cyan' }[s] || 'gray');
 
     return (
         <div className="app-overview-grid">
@@ -769,10 +867,10 @@ const UpdatesTab = ({ siteId }) => {
                             const d = r.details || {};
                             const n = (d.updated || []).length;
                             return (
-                                <div className="form-group" key={r.id}>
-                                    <div>
-                                        <Badge variant={statusVariant(r.status)}>{r.status.replace('_', ' ')}</Badge>{' '}
-                                        <span className="form-hint">{r.started_at ? new Date(r.started_at).toLocaleString() : ''} · {r.trigger}</span>
+                                <div className="wp-run-row" key={r.id}>
+                                    <div className="wp-run-row-head">
+                                        <Pill kind={statusPill(r.status)}>{r.status.replace('_', ' ')}</Pill>
+                                        <span className="wp-run-row-meta">{r.started_at ? new Date(r.started_at).toLocaleString() : ''} · {r.trigger}</span>
                                     </div>
                                     <span className="form-hint">
                                         {n === 0 ? 'No components needed updating' : `${n} component${n === 1 ? '' : 's'} updated`}
@@ -781,7 +879,7 @@ const UpdatesTab = ({ siteId }) => {
                                     </span>
                                     {d.warning && <span className="form-hint">⚠ {d.warning}</span>}
                                     {(d.updated || []).slice(0, 10).map((u, i) => (
-                                        <span className="form-hint" key={i}>{u.type} {u.slug}: {u.from} → {u.to}</span>
+                                        <span className="form-hint wp-run-component" key={i}>{u.type} {u.slug}: {u.from} → {u.to}</span>
                                     ))}
                                 </div>
                             );
@@ -877,8 +975,10 @@ const SecurityTab = ({ siteId }) => {
                             issues.length === 0
                                 ? <p className="hint">All core and plugin files verify against official checksums.</p>
                                 : <>
-                                    <div className="app-detail-actions"><Badge variant="destructive">{issues.length} issue{issues.length === 1 ? '' : 's'}</Badge></div>
-                                    {issues.slice(0, 50).map((line, i) => <div className="form-hint" key={i}>{line}</div>)}
+                                    <div className="app-detail-actions"><Pill kind="red">{issues.length} issue{issues.length === 1 ? '' : 's'}</Pill></div>
+                                    <div className="wp-code-list">
+                                        {issues.slice(0, 50).map((line, i) => <div key={i}>{line}</div>)}
+                                    </div>
                                 </>
                         )}
                     </div>
@@ -888,7 +988,7 @@ const SecurityTab = ({ siteId }) => {
                     <div className="app-panel-header">Debug mode</div>
                     <div className="app-panel-body">
                         <div className="app-info-grid">
-                            <div className="app-info-item"><span className="app-info-label">WP_DEBUG</span><span className="app-info-value"><Badge variant={debug?.debug?.WP_DEBUG ? 'warning' : 'secondary'}>{debug?.debug?.WP_DEBUG ? 'on' : 'off'}</Badge></span></div>
+                            <div className="app-info-item"><span className="app-info-label">WP_DEBUG</span><span className="app-info-value"><Pill kind={debug?.debug?.WP_DEBUG ? 'amber' : 'gray'}>{debug?.debug?.WP_DEBUG ? 'on' : 'off'}</Pill></span></div>
                             <div className="app-info-item"><span className="app-info-label">Debug log</span><span className="app-info-value">{debug?.debug?.WP_DEBUG_LOG ? 'on' : 'off'}</span></div>
                             <div className="app-info-item"><span className="app-info-label">Script debug</span><span className="app-info-value">{debug?.debug?.SCRIPT_DEBUG ? 'on' : 'off'}</span></div>
                         </div>
@@ -962,7 +1062,6 @@ const VulnerabilitiesTab = ({ siteId }) => {
     const running = data?.scan_status === 'running';
     const summary = data?.summary || {};
     const vulns = data?.vulnerabilities || [];
-    const sevVariant = (s) => ({ critical: 'destructive', high: 'destructive', medium: 'warning', low: 'info' }[s] || 'secondary');
 
     return (
         <div className="app-overview-grid">
@@ -979,19 +1078,22 @@ const VulnerabilitiesTab = ({ siteId }) => {
                             <div className="app-info-item"><span className="app-info-label">Last scan</span><span className="app-info-value">{data?.scanned_at ? new Date(data.scanned_at).toLocaleString() : 'Never'}</span></div>
                             <div className="app-info-item"><span className="app-info-label">Findings</span><span className="app-info-value">{summary.total ?? 0}</span></div>
                         </div>
-                        {summary.total > 0 && (
-                            <div className="app-detail-actions">
-                                {summary.critical > 0 && <Badge variant="destructive">{summary.critical} critical</Badge>}
-                                {summary.high > 0 && <Badge variant="destructive">{summary.high} high</Badge>}
-                                {summary.medium > 0 && <Badge variant="warning">{summary.medium} medium</Badge>}
-                                {summary.low > 0 && <Badge variant="info">{summary.low} low</Badge>}
-                                {summary.unknown > 0 && <Badge variant="secondary">{summary.unknown} unrated</Badge>}
-                            </div>
-                        )}
                         {data?.scan_error && <p className="hint">Last scan error: {data.scan_error}</p>}
                         <p className="hint">Cross-references installed plugin, theme, and core versions against the WPVulnerability community database. Re-run after updating.</p>
                     </div>
                 </div>
+
+                {data?.scanned_at && (
+                    <div className="wp-kpis">
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="red" value={summary.critical ?? 0} label="Critical" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="red" value={summary.high ?? 0} label="High" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="amber" value={summary.medium ?? 0} label="Medium" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="cyan" value={summary.low ?? 0} label="Low" />
+                        {summary.unknown > 0 && (
+                            <MetricCard icon={<AlertTriangle size={16} />} tone="violet" value={summary.unknown} label="Unrated" />
+                        )}
+                    </div>
+                )}
 
                 {vulns.length === 0 ? (
                     <div className="app-panel">
@@ -1002,25 +1104,41 @@ const VulnerabilitiesTab = ({ siteId }) => {
                 ) : (
                     <div className="app-panel">
                         <div className="app-panel-header">Findings</div>
-                        <div className="app-panel-body">
-                            {vulns.map(v => (
-                                <div className="form-group" key={v.id}>
-                                    <div>
-                                        <Badge variant={sevVariant(v.severity)}>{v.severity}</Badge>{' '}
-                                        <strong>{v.name}</strong>
-                                    </div>
-                                    {v.title && <span className="form-hint">{v.title}</span>}
-                                    <span className="form-hint">
-                                        {v.source}{v.slug ? ` · ${v.slug}` : ''} · installed {v.installed_version}
-                                        {v.fixed_in ? ` · fixed in ${v.fixed_in}` : ' · no fix yet'}
-                                        {v.advisory_id ? ` · ${v.advisory_id}` : ''}
-                                    </span>
-                                    {v.reference_url && (
-                                        <a href={v.reference_url} target="_blank" rel="noopener noreferrer" className="form-hint">View advisory ↗</a>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <table className="sk-dtable wp-vuln-table">
+                            <thead>
+                                <tr>
+                                    <th>Severity</th>
+                                    <th>Component</th>
+                                    <th>Issue</th>
+                                    <th>Installed</th>
+                                    <th>Fixed in</th>
+                                    <th>Advisory</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {vulns.map(v => (
+                                    <tr key={v.id}>
+                                        <td><span className={`wp-sev wp-sev--${v.severity || 'unknown'}`}><span className="d" />{v.severity || 'unrated'}</span></td>
+                                        <td>
+                                            <div className="sk-cell-name">{v.name}</div>
+                                            <div className="sk-cell-sub">{v.source}{v.slug ? ` · ${v.slug}` : ''}</div>
+                                        </td>
+                                        <td className="wp-vuln-title">{v.title || '—'}</td>
+                                        <td><span className="sk-cell-mono">{v.installed_version}</span></td>
+                                        <td>
+                                            {v.fixed_in
+                                                ? <span className="wp-fix-chip">{v.fixed_in}</span>
+                                                : <span className="wp-no-fix">no fix yet</span>}
+                                        </td>
+                                        <td>
+                                            {v.reference_url
+                                                ? <a className="wp-advisory-link" href={v.reference_url} target="_blank" rel="noopener noreferrer">{v.advisory_id || 'advisory'} ↗</a>
+                                                : <span className="sk-cell-mono">{v.advisory_id || '—'}</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
@@ -1067,24 +1185,22 @@ const AnalyticsTab = ({ siteId }) => {
     return (
         <div className="app-overview-grid">
             <div className="app-overview-left">
-                <div className="app-panel">
-                    <div className="app-panel-header">Traffic ({hours <= 24 ? 'last 24 hours' : 'last 7 days'})</div>
-                    <div className="app-panel-body">
-                        <div className="app-detail-actions">
-                            {ANALYTICS_PERIODS.map(p => (
-                                <Button key={p.hours} variant={hours === p.hours ? 'default' : 'outline'} size="sm" onClick={() => setHours(p.hours)}>{p.label}</Button>
-                            ))}
-                        </div>
-                        {data?.note && <p className="hint">{data.note}</p>}
-                        <div className="app-info-grid">
-                            <div className="app-info-item"><span className="app-info-label">Requests</span><span className="app-info-value">{(data?.requests ?? 0).toLocaleString()}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Unique Visitors</span><span className="app-info-value">{(data?.unique_visitors ?? 0).toLocaleString()}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Bandwidth</span><span className="app-info-value">{data?.bytes_human || '0 B'}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Error Rate</span><span className="app-info-value">{data?.error_rate ?? 0}%</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Bot Traffic</span><span className="app-info-value">{data?.bot_pct ?? 0}%</span></div>
-                            <div className="app-info-item"><span className="app-info-label">404s</span><span className="app-info-value">{(data?.not_found ?? 0).toLocaleString()}</span></div>
-                        </div>
-                    </div>
+                <div className="wp-analytics-head">
+                    <h3 className="wp-eyebrow">Traffic · {hours <= 24 ? 'last 24 hours' : 'last 7 days'}</h3>
+                    <SegControl
+                        options={ANALYTICS_PERIODS.map(p => ({ value: p.hours, label: p.label }))}
+                        value={hours}
+                        onChange={setHours}
+                    />
+                </div>
+                {data?.note && <p className="hint">{data.note}</p>}
+                <div className="wp-kpis">
+                    <MetricCard icon={<BarChart3 size={16} />} tone="accent" value={(data?.requests ?? 0).toLocaleString()} label="Requests" />
+                    <MetricCard icon={<Globe size={16} />} tone="cyan" value={(data?.unique_visitors ?? 0).toLocaleString()} label="Unique visitors" />
+                    <MetricCard icon={<HardDrive size={16} />} tone="violet" value={data?.bytes_human || '0 B'} label="Bandwidth" />
+                    <MetricCard icon={<AlertTriangle size={16} />} tone={(data?.error_rate ?? 0) > 5 ? 'red' : 'amber'} value={`${data?.error_rate ?? 0}%`} label="Error rate" />
+                    <MetricCard icon={<Activity size={16} />} tone="green" value={`${data?.bot_pct ?? 0}%`} label="Bot traffic" />
+                    <MetricCard icon={<FileText size={16} />} tone="red" value={(data?.not_found ?? 0).toLocaleString()} label="404s" />
                 </div>
 
                 <div className="app-panel">
@@ -1094,20 +1210,20 @@ const AnalyticsTab = ({ siteId }) => {
                             <AreaChart data={data?.series || []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="wpReq" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#6d7cff" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#6d7cff" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="wpErr" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#fb6f6f" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#fb6f6f" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.15} />
-                                <XAxis dataKey="hour" tickFormatter={fmtHour} tick={{ fontSize: 11, fill: '#888' }} minTickGap={24} />
-                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#888' }} width={36} />
+                                <XAxis dataKey="hour" tickFormatter={fmtHour} tick={{ fontSize: 11, fill: '#888' }} minTickGap={24} axisLine={false} tickLine={false} />
+                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#888' }} width={36} axisLine={false} tickLine={false} />
                                 <Tooltip labelFormatter={fmtHour} />
-                                <Area type="monotone" dataKey="requests" name="Requests" stroke="#6366f1" fill="url(#wpReq)" strokeWidth={2} />
-                                <Area type="monotone" dataKey="errors" name="Errors" stroke="#ef4444" fill="url(#wpErr)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="requests" name="Requests" stroke="#8b93ff" fill="url(#wpReq)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="errors" name="Errors" stroke="#fb6f6f" fill="url(#wpErr)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -1319,8 +1435,8 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
     const vulns = d.vulnerabilities || {};
     const health = d.health || {};
     const sev = vulns.by_severity || {};
-    const sevVariant = (s) => ({ critical: 'destructive', high: 'destructive', medium: 'warning', low: 'info' }[s] || 'secondary');
-    const impactVariant = (i) => ({ critical: 'destructive', major: 'destructive', minor: 'warning' }[i] || 'secondary');
+    const sevTone = (s) => ({ critical: 'red', high: 'red', medium: 'amber', low: 'cyan' }[s] || 'gray');
+    const impactTone = (i) => ({ critical: 'red', major: 'red', minor: 'amber' }[i] || 'gray');
     const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
     const fmtDay = (key) => {
         if (!key) return '';
@@ -1366,9 +1482,9 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     </div>
                     {(updates.rolled_back > 0 || updates.failed > 0) && (
                         <div className="app-detail-actions">
-                            {updates.completed > 0 && <Badge variant="success">{updates.completed} completed</Badge>}
-                            {updates.rolled_back > 0 && <Badge variant="warning">{updates.rolled_back} rolled back</Badge>}
-                            {updates.failed > 0 && <Badge variant="destructive">{updates.failed} failed</Badge>}
+                            {updates.completed > 0 && <Pill kind="green">{updates.completed} completed</Pill>}
+                            {updates.rolled_back > 0 && <Pill kind="amber">{updates.rolled_back} rolled back</Pill>}
+                            {updates.failed > 0 && <Pill kind="red">{updates.failed} failed</Pill>}
                         </div>
                     )}
                 </div>
@@ -1382,15 +1498,15 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                             <AreaChart data={d.uptime_daily || []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="wpUptime" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#3ddc97" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#3ddc97" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.15} />
-                                <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 11, fill: '#888' }} minTickGap={16} />
-                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#888' }} width={36} />
+                                <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 11, fill: '#888' }} minTickGap={16} axisLine={false} tickLine={false} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#888' }} width={36} axisLine={false} tickLine={false} />
                                 <Tooltip formatter={(v) => (v === null ? 'no data' : `${v}%`)} />
-                                <Area connectNulls type="monotone" dataKey="percent" name="Uptime %" stroke="#10b981" fill="url(#wpUptime)" strokeWidth={2} />
+                                <Area connectNulls type="monotone" dataKey="percent" name="Uptime %" stroke="#3ddc97" fill="url(#wpUptime)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                         <p className="hint">Uptime recomputed from recorded health-check samples ({uptime.samples} this month). Rolling 30-day: {uptime.rolling_30d ?? '—'}%.</p>
@@ -1403,9 +1519,9 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     <div className="app-panel-header">Incidents</div>
                     <div className="app-panel-body">
                         {d.incidents.map(inc => (
-                            <div className="form-group" key={inc.id}>
-                                <div>
-                                    <Badge variant={impactVariant(inc.impact)}>{inc.impact}</Badge>{' '}
+                            <div className="wp-run-row" key={inc.id}>
+                                <div className="wp-run-row-head">
+                                    <Pill kind={impactTone(inc.impact)}>{inc.impact}</Pill>
                                     <strong>{inc.title}</strong>
                                 </div>
                                 <span className="form-hint">
@@ -1423,12 +1539,12 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     <div className="app-panel-body">
                         {updates.runs.map(r => {
                             const n = (r.updated || []).length;
-                            const sv = ({ completed: 'success', rolled_back: 'warning', failed: 'destructive', running: 'info' }[r.status] || 'secondary');
+                            const kind = ({ completed: 'green', rolled_back: 'amber', failed: 'red', running: 'cyan' }[r.status] || 'gray');
                             return (
-                                <div className="form-group" key={r.id}>
-                                    <div>
-                                        <Badge variant={sv}>{r.status.replace('_', ' ')}</Badge>{' '}
-                                        <span className="form-hint">{fmt(r.started_at)} · {r.trigger}</span>
+                                <div className="wp-run-row" key={r.id}>
+                                    <div className="wp-run-row-head">
+                                        <Pill kind={kind}>{r.status.replace('_', ' ')}</Pill>
+                                        <span className="wp-run-row-meta">{fmt(r.started_at)} · {r.trigger}</span>
                                     </div>
                                     <span className="form-hint">
                                         {n === 0 ? 'No components needed updating' : `${n} component${n === 1 ? '' : 's'} updated`}
@@ -1462,15 +1578,15 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     {vulns.total > 0 ? (
                         <>
                             <div className="app-detail-actions">
-                                {sev.critical > 0 && <Badge variant="destructive">{sev.critical} critical</Badge>}
-                                {sev.high > 0 && <Badge variant="destructive">{sev.high} high</Badge>}
-                                {sev.medium > 0 && <Badge variant="warning">{sev.medium} medium</Badge>}
-                                {sev.low > 0 && <Badge variant="info">{sev.low} low</Badge>}
-                                {sev.unknown > 0 && <Badge variant="secondary">{sev.unknown} unrated</Badge>}
+                                {sev.critical > 0 && <Pill kind="red">{sev.critical} critical</Pill>}
+                                {sev.high > 0 && <Pill kind="red">{sev.high} high</Pill>}
+                                {sev.medium > 0 && <Pill kind="amber">{sev.medium} medium</Pill>}
+                                {sev.low > 0 && <Pill kind="cyan">{sev.low} low</Pill>}
+                                {sev.unknown > 0 && <Pill kind="gray">{sev.unknown} unrated</Pill>}
                             </div>
                             {(vulns.items || []).map((v, i) => (
-                                <div className="form-group" key={i}>
-                                    <div><Badge variant={sevVariant(v.severity)}>{v.severity}</Badge>{' '}<strong>{v.name}</strong></div>
+                                <div className="wp-run-row" key={i}>
+                                    <div className="wp-run-row-head"><Pill kind={sevTone(v.severity)}>{v.severity}</Pill><strong>{v.name}</strong></div>
                                     <span className="form-hint">
                                         {v.source}{v.slug ? ` · ${v.slug}` : ''} · installed {v.installed_version}
                                         {v.fixed_in ? ` · fixed in ${v.fixed_in}` : ' · no fix yet'}
@@ -1773,8 +1889,20 @@ const OverviewTab = ({ site, onUpdate }) => {
         }
     }
 
+    const statusTone = site.status === 'running' ? 'green' : site.status === 'archived' ? 'violet' : 'amber';
+    const statusLabel = (site.status || 'unknown').replace(/^./, c => c.toUpperCase());
+
     return (
-        <div className="app-overview-grid">
+        <div className="wp-overview">
+            <div className="wp-kpis">
+                <MetricCard icon={<Activity size={16} />} tone={statusTone} value={statusLabel} label="Status" />
+                <MetricCard icon={<Globe size={16} />} tone="accent" value={wpInfo?.version || site.wp_version || '—'} label="WordPress core" />
+                <MetricCard icon={<HardDrive size={16} />} tone="cyan" value={site.disk_usage_human || '—'} label="Disk usage" />
+                {site.is_production && (
+                    <MetricCard icon={<Layers size={16} />} tone="violet" value={1 + (site.environments || []).length} label="Environments" />
+                )}
+            </div>
+            <div className="app-overview-grid">
             <div className="app-overview-left">
                 <div className="app-panel">
                     <div className="app-panel-header">Site Information</div>
@@ -2129,6 +2257,7 @@ const OverviewTab = ({ site, onUpdate }) => {
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
             />
+            </div>
         </div>
     );
 };
@@ -2195,8 +2324,10 @@ const SiteSSLPanel = ({ site }) => {
                     </div>
                     <div className="app-info-item">
                         <span className="app-info-label">Status</span>
-                        <span className={`app-status-badge ${issued ? 'running' : 'stopped'}`}>
-                            {checking ? 'Checking...' : issued ? `Active (${health.grade})` : 'Not Secured'}
+                        <span className="app-info-value">
+                            <Pill kind={checking ? 'gray' : issued ? 'green' : 'amber'}>
+                                {checking ? 'Checking...' : issued ? `Active (${health.grade})` : 'Not Secured'}
+                            </Pill>
                         </span>
                     </div>
                     {issued && health.expires_at && (
@@ -3021,40 +3152,59 @@ const PluginsTab = ({ siteId }) => {
                 </div>
             )}
 
-            <div className="plugins-list">
-                {plugins.length === 0 ? (
-                    <EmptyState icon={Package} title="No plugins installed" description="Install a plugin by entering its slug above." />
-                ) : (
-                    plugins.map(plugin => (
-                        <div key={plugin.name} className={`plugin-item ${plugin.status === 'active' ? 'active' : ''}`}>
-                            <div className="plugin-info">
-                                <span className="plugin-name">{plugin.title || plugin.name}</span>
-                                <span className="plugin-version">{plugin.version}</span>
-                                {plugin.update === 'available' && (
-                                    <span className="wp-update-badge">
-                                        Update{plugin.update_version ? `: ${plugin.update_version}` : ''}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="plugin-actions">
-                                {plugin.update === 'available' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleUpdate(plugin.name)}
-                                        disabled={updating !== null}
-                                    >
-                                        {updating === plugin.name ? 'Updating...' : 'Update'}
-                                    </Button>
-                                )}
-                                <span className={`plugin-status ${plugin.status}`}>
-                                    {plugin.status === 'active' ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            {plugins.length === 0 ? (
+                <EmptyState icon={Package} title="No plugins installed" description="Install a plugin by entering its slug above." />
+            ) : (
+                <div className="wp-table-card">
+                    <table className="sk-dtable wp-asset-table">
+                        <thead>
+                            <tr>
+                                <th>Plugin</th>
+                                <th>Version</th>
+                                <th>Status</th>
+                                <th className="wp-th-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {plugins.map(plugin => (
+                                <tr key={plugin.name}>
+                                    <td>
+                                        <div className="sk-cell-name">{plugin.title || plugin.name}</div>
+                                        {plugin.title && plugin.title !== plugin.name && (
+                                            <div className="sk-cell-sub">{plugin.name}</div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <span className="sk-cell-mono">{plugin.version}</span>
+                                        {plugin.update === 'available' && (
+                                            <span className="wp-update-badge">
+                                                Update{plugin.update_version ? `: ${plugin.update_version}` : ''}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <Pill kind={plugin.status === 'active' ? 'green' : 'gray'}>
+                                            {plugin.status === 'active' ? 'Active' : 'Inactive'}
+                                        </Pill>
+                                    </td>
+                                    <td className="wp-cell-actions">
+                                        {plugin.update === 'available' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleUpdate(plugin.name)}
+                                                disabled={updating !== null}
+                                            >
+                                                {updating === plugin.name ? 'Updating...' : 'Update'}
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };
@@ -3180,40 +3330,59 @@ const ThemesTab = ({ siteId }) => {
                 </div>
             )}
 
-            <div className="themes-list">
-                {themes.length === 0 ? (
-                    <EmptyState icon={Palette} title="No themes installed" description="Install a theme by entering its slug above." />
-                ) : (
-                    themes.map(theme => (
-                        <div key={theme.name} className={`theme-item ${theme.status === 'active' ? 'active' : ''}`}>
-                            <div className="theme-info">
-                                <span className="theme-name">{theme.title || theme.name}</span>
-                                <span className="theme-version">{theme.version}</span>
-                                {theme.update === 'available' && (
-                                    <span className="wp-update-badge">
-                                        Update{theme.update_version ? `: ${theme.update_version}` : ''}
-                                    </span>
-                                )}
-                            </div>
-                            <div className="theme-actions">
-                                {theme.update === 'available' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleUpdate(theme.name)}
-                                        disabled={updating !== null}
-                                    >
-                                        {updating === theme.name ? 'Updating...' : 'Update'}
-                                    </Button>
-                                )}
-                                {theme.status === 'active' && (
-                                    <span className="active-badge">Active</span>
-                                )}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+            {themes.length === 0 ? (
+                <EmptyState icon={Palette} title="No themes installed" description="Install a theme by entering its slug above." />
+            ) : (
+                <div className="wp-table-card">
+                    <table className="sk-dtable wp-asset-table">
+                        <thead>
+                            <tr>
+                                <th>Theme</th>
+                                <th>Version</th>
+                                <th>Status</th>
+                                <th className="wp-th-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {themes.map(theme => (
+                                <tr key={theme.name}>
+                                    <td>
+                                        <div className="sk-cell-name">{theme.title || theme.name}</div>
+                                        {theme.title && theme.title !== theme.name && (
+                                            <div className="sk-cell-sub">{theme.name}</div>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <span className="sk-cell-mono">{theme.version}</span>
+                                        {theme.update === 'available' && (
+                                            <span className="wp-update-badge">
+                                                Update{theme.update_version ? `: ${theme.update_version}` : ''}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td>
+                                        <Pill kind={theme.status === 'active' ? 'green' : 'gray'}>
+                                            {theme.status === 'active' ? 'Active' : 'Inactive'}
+                                        </Pill>
+                                    </td>
+                                    <td className="wp-cell-actions">
+                                        {theme.update === 'available' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleUpdate(theme.name)}
+                                                disabled={updating !== null}
+                                            >
+                                                {updating === theme.name ? 'Updating...' : 'Update'}
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 };

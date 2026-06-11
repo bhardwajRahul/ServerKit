@@ -12,10 +12,10 @@ const STATUS_CONFIG = {
 
 const HealthDot = ({ status, size = 8 }) => {
     const colorMap = {
-        healthy: 'var(--color-success, #22c55e)',
-        degraded: 'var(--color-warning, #eab308)',
-        unhealthy: 'var(--color-danger, #ef4444)',
-        unknown: 'var(--color-text-tertiary, #6b7280)',
+        healthy: 'var(--green, #3ddc97)',
+        degraded: 'var(--amber, #f5b945)',
+        unhealthy: 'var(--red, #fb6f6f)',
+        unknown: 'var(--text-faint, #646b7a)',
     };
 
     return (

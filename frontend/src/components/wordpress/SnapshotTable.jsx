@@ -54,77 +54,78 @@ const SnapshotTable = ({ snapshots, onRestore, onDelete, loading = false }) => {
     }
 
     return (
-        <table className="docker-table wp-snapshot-table">
-            <thead>
-                <tr>
-                    <th>Snapshot</th>
-                    <th>Size</th>
-                    <th>Created</th>
-                    <th>Git Context</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {snapshots.map(snapshot => (
-                    <tr key={snapshot.id}>
-                        <td>
-                            <div className="snapshot-name-cell">
-                                <span className="snapshot-name">{snapshot.name}</span>
-                                {snapshot.tag && (
-                                    <span className="snapshot-tag">
-                                        <Tag size={10} /> {snapshot.tag}
-                                    </span>
-                                )}
-                                {snapshot.description && (
-                                    <span className="snapshot-desc">{snapshot.description}</span>
-                                )}
-                            </div>
-                        </td>
-                        <td>
-                            <span className="mono">{formatBytes(snapshot.size_bytes)}</span>
-                            {snapshot.compressed && (
-                                <span className="compressed-badge" title="Compressed">gz</span>
-                            )}
-                        </td>
-                        <td>{formatDate(snapshot.created_at)}</td>
-                        <td>
-                            {snapshot.commit_sha ? (
-                                <div className="git-context">
-                                    <GitCommit size={12} />
-                                    <span className="mono">{snapshot.commit_sha.substring(0, 7)}</span>
-                                    {snapshot.commit_message && (
-                                        <span className="commit-msg" title={snapshot.commit_message}>
-                                            {snapshot.commit_message.substring(0, 30)}
-                                            {snapshot.commit_message.length > 30 && '...'}
+        <div className="wp-table-card">
+            <table className="sk-dtable wp-snapshot-table">
+                <thead>
+                    <tr>
+                        <th>Snapshot</th>
+                        <th>Size</th>
+                        <th>Created</th>
+                        <th>Git Context</th>
+                        <th className="wp-th-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {snapshots.map(snapshot => (
+                        <tr key={snapshot.id}>
+                            <td>
+                                <div className="snapshot-name-cell">
+                                    <span className="snapshot-name">{snapshot.name}</span>
+                                    {snapshot.tag && (
+                                        <span className="snapshot-tag">
+                                            <Tag size={10} /> {snapshot.tag}
                                         </span>
                                     )}
+                                    {snapshot.description && (
+                                        <span className="snapshot-desc">{snapshot.description}</span>
+                                    )}
                                 </div>
-                            ) : (
-                                <span className="text-muted">-</span>
-                            )}
-                        </td>
-                        <td className="docker-actions-cell">
-                            <button
-                                className="docker-icon-action"
-                                title="Restore"
-                                onClick={() => setConfirmRestore(snapshot)}
-                                disabled={actionLoading[`restore-${snapshot.id}`]}
-                            >
-                                <RotateCcw size={14} />
-                            </button>
-                            <button
-                                className="docker-icon-action"
-                                title="Delete"
-                                onClick={() => setConfirmDelete(snapshot)}
-                                disabled={actionLoading[`delete-${snapshot.id}`]}
-                                style={{ color: '#EF4444' }}
-                            >
-                                <Trash2 size={14} />
-                            </button>
-                        </td>
-                    </tr>
-                ))}
-            </tbody>
+                            </td>
+                            <td>
+                                <span className="mono">{formatBytes(snapshot.size_bytes)}</span>
+                                {snapshot.compressed && (
+                                    <span className="compressed-badge" title="Compressed">gz</span>
+                                )}
+                            </td>
+                            <td><span className="snapshot-date">{formatDate(snapshot.created_at)}</span></td>
+                            <td>
+                                {snapshot.commit_sha ? (
+                                    <div className="git-context">
+                                        <GitCommit size={12} />
+                                        <span className="mono git-context-sha">{snapshot.commit_sha.substring(0, 7)}</span>
+                                        {snapshot.commit_message && (
+                                            <span className="commit-msg" title={snapshot.commit_message}>
+                                                {snapshot.commit_message.substring(0, 30)}
+                                                {snapshot.commit_message.length > 30 && '...'}
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <span className="text-muted">-</span>
+                                )}
+                            </td>
+                            <td className="wp-cell-actions">
+                                <button
+                                    className="wp-row-action"
+                                    title="Restore"
+                                    onClick={() => setConfirmRestore(snapshot)}
+                                    disabled={actionLoading[`restore-${snapshot.id}`]}
+                                >
+                                    <RotateCcw size={14} />
+                                </button>
+                                <button
+                                    className="wp-row-action wp-row-action--danger"
+                                    title="Delete"
+                                    onClick={() => setConfirmDelete(snapshot)}
+                                    disabled={actionLoading[`delete-${snapshot.id}`]}
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
 
             <ConfirmDialog
                 isOpen={!!confirmRestore}
@@ -161,7 +162,7 @@ const SnapshotTable = ({ snapshots, onRestore, onDelete, loading = false }) => {
                 onConfirm={() => handleDelete(confirmDelete)}
                 onCancel={() => setConfirmDelete(null)}
             />
-        </table>
+        </div>
     );
 };
 
