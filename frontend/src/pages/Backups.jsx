@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import useTabParam from '../hooks/useTabParam';
-import { Upload, Download, Check, AlertTriangle, Clock, Database, Package, FolderArchive, HardDrive, Cloud, CloudOff, RefreshCw, Trash2, Plus, CheckCircle, XCircle, FileArchive } from 'lucide-react';
+import { Upload, Check, AlertTriangle, Clock, Database, Package, FolderArchive, HardDrive, Cloud, CloudOff, RefreshCw, Trash2, Plus, CheckCircle, XCircle, FileArchive } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { StatCard, StatsGrid } from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { MetricCard, Pill, SegControl } from '@/components/ds';
 
 const VALID_TABS = ['backups', 'schedules', 'storage', 'settings'];
+
+const PROVIDER_LABELS = { local: 'Local only', s3: 'S3-Compatible', b2: 'Backblaze B2' };
 
 const Backups = () => {
     const toast = useToast();
@@ -346,14 +347,14 @@ const Backups = () => {
         }
     };
 
-    const getRemoteStatusBadge = (status) => {
+    const getRemoteStatusPill = (status) => {
         switch (status) {
             case 'synced':
-                return <Badge variant="success"><Cloud size={12} /> Synced</Badge>;
+                return <Pill kind="green" dot={false}><Cloud size={11} /> Synced</Pill>;
             case 'remote-only':
-                return <Badge variant="info"><Cloud size={12} /> Remote</Badge>;
+                return <Pill kind="cyan" dot={false}><Cloud size={11} /> Remote</Pill>;
             default:
-                return <Badge variant="secondary"><HardDrive size={12} /> Local</Badge>;
+                return <Pill kind="gray" dot={false}><HardDrive size={11} /> Local</Pill>;
         }
     };
 
@@ -372,7 +373,7 @@ const Backups = () => {
                     <h1>Backups</h1>
                     <p className="page-subtitle">Manage application, database, and file backups with local and remote storage</p>
                 </div>
-                <div className="page-actions">
+                <div className="page-header-actions">
                     <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
                         <Clock size={16} />
                         Add Schedule
@@ -391,16 +392,22 @@ const Backups = () => {
                 </div>
             )}
 
-            {/* Stats Cards */}
-            <StatsGrid>
-                <StatCard icon={Download} iconVariant="backups" label="Total Backups" value={stats?.total_backups || 0} />
-                <StatCard icon={Package} iconVariant="apps" label="Application Backups" value={stats?.application_backups || 0} />
-                <StatCard icon={Database} iconVariant="databases" label="Database Backups" value={stats?.database_backups || 0} />
-                <StatCard icon={HardDrive} iconVariant="size" label="Local Size" value={stats?.total_size_human || '0 B'} />
+            {/* KPI strip */}
+            <div className="bk-kpis">
+                <MetricCard tone="green" icon={<FileArchive size={16} />} value={stats?.total_backups || 0} label="Total backups">
+                    <div className="sk-kpi__sub"><span>{stats?.file_backups || 0} file backups</span></div>
+                </MetricCard>
+                <MetricCard tone="accent" icon={<Package size={16} />} value={stats?.application_backups || 0} label="Application backups" />
+                <MetricCard tone="violet" icon={<Database size={16} />} value={stats?.database_backups || 0} label="Database backups" />
+                <MetricCard tone="amber" icon={<HardDrive size={16} />} value={stats?.total_size_human || '0 B'} label="Local size" />
                 {storageConfig?.provider !== 'local' && (
-                    <StatCard icon={Cloud} iconVariant="cloud" label="Remote Backups" value={stats?.remote_count || 0} />
+                    <MetricCard tone="cyan" icon={<Cloud size={16} />} value={stats?.remote_count || 0} label="Remote backups">
+                        {stats?.remote_size_human && (
+                            <div className="sk-kpi__sub"><span>{stats.remote_size_human} remote</span></div>
+                        )}
+                    </MetricCard>
                 )}
-            </StatsGrid>
+            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
@@ -412,209 +419,236 @@ const Backups = () => {
 
                 {/* Backups Tab */}
                 <TabsContent value="backups">
-                    <div className="card">
-                        <div className="card-header">
-                            <h3>Backup List</h3>
-                            <div className="card-actions">
-                                <select
-                                    value={filterType}
-                                    onChange={(e) => setFilterType(e.target.value)}
-                                    className="filter-select"
-                                >
-                                    <option value="all">All Types</option>
-                                    <option value="application">Applications</option>
-                                    <option value="database">Databases</option>
-                                    <option value="files">Files</option>
-                                </select>
-                                <Button size="sm" variant="outline" onClick={loadData}>
-                                    <RefreshCw size={14} />
-                                    Refresh
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="card-body">
-                            {filteredBackups.length === 0 ? (
-                                <EmptyState
-                                    icon={FileArchive}
-                                    title="No Backups"
-                                    description="No backups found. Create your first backup to get started."
-                                    action={<Button onClick={() => setShowBackupModal(true)}>Create Backup</Button>}
-                                />
-                            ) : (
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Type</th>
-                                            <th>Size</th>
-                                            <th>Storage</th>
-                                            <th>Created</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredBackups.map((backup, index) => (
-                                            <tr key={index}>
-                                                <td>
-                                                    <div className="backup-name">
+                    <div className="bk-listhead">
+                        <h2>Backup archive</h2>
+                        <SegControl
+                            value={filterType}
+                            onChange={setFilterType}
+                            options={[
+                                { value: 'all', label: 'All', count: backups.length },
+                                { value: 'application', label: 'Applications', count: backups.filter(b => b.type === 'application').length },
+                                { value: 'database', label: 'Databases', count: backups.filter(b => b.type === 'database').length },
+                                { value: 'files', label: 'Files', count: backups.filter(b => b.type === 'files').length },
+                            ]}
+                        />
+                        <Button size="sm" variant="outline" onClick={loadData}>
+                            <RefreshCw size={14} />
+                            Refresh
+                        </Button>
+                    </div>
+                    {backups.length === 0 ? (
+                        <EmptyState
+                            icon={FileArchive}
+                            title="No Backups"
+                            description="No backups found. Create your first backup to get started."
+                            action={<Button onClick={() => setShowBackupModal(true)}>Create Backup</Button>}
+                        />
+                    ) : filteredBackups.length === 0 ? (
+                        <div className="bk-empty">No backups match the current filter.</div>
+                    ) : (
+                        <div className="bk-card">
+                            <table className="sk-dtable bk-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Storage</th>
+                                        <th>Created</th>
+                                        <th aria-label="Actions" />
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredBackups.map((backup, index) => (
+                                        <tr key={index}>
+                                            <td>
+                                                <div className="sk-cell-name">
+                                                    <span className={`bk-ico bk-ico--${backup.type}`}>
                                                         {getBackupIcon(backup.type)}
-                                                        <span>{backup.name || backup.app_name}</span>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <Badge variant={backup.type === 'application' ? 'default' : backup.type === 'database' ? 'info' : 'warning'}>
-                                                        {backup.type}
-                                                    </Badge>
-                                                </td>
-                                                <td>{formatSize(backup.size)}</td>
-                                                <td>{getRemoteStatusBadge(backup.remote_status)}</td>
-                                                <td>{formatTimestamp(backup.timestamp)}</td>
-                                                <td>
-                                                    <div className="action-buttons">
-                                                        {backup.type !== 'files' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => {
-                                                                    setSelectedBackup(backup);
-                                                                    setShowRestoreModal(true);
-                                                                }}
-                                                                title="Restore"
-                                                            >
-                                                                <RefreshCw size={14} />
-                                                            </Button>
-                                                        )}
-                                                        {storageConfig?.provider !== 'local' && backup.remote_status !== 'synced' && (
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                onClick={() => handleUploadToRemote(backup)}
-                                                                disabled={uploadingBackup === backup.path}
-                                                                title="Upload to Remote"
-                                                            >
-                                                                {uploadingBackup === backup.path ? (
-                                                                    <RefreshCw size={14} className="spinning" />
-                                                                ) : (
-                                                                    <Upload size={14} />
-                                                                )}
-                                                            </Button>
-                                                        )}
+                                                    </span>
+                                                    <span>{backup.name || backup.app_name}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`bk-type bk-type--${backup.type}`}>{backup.type}</span>
+                                            </td>
+                                            <td className="sk-cell-mono">{formatSize(backup.size)}</td>
+                                            <td>{getRemoteStatusPill(backup.remote_status)}</td>
+                                            <td className="bk-when">{formatTimestamp(backup.timestamp)}</td>
+                                            <td>
+                                                <div className="bk-actions">
+                                                    {backup.type !== 'files' && (
                                                         <Button
                                                             size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => handleDeleteBackup(backup.path)}
-                                                            title="Delete"
+                                                            variant="outline"
+                                                            onClick={() => {
+                                                                setSelectedBackup(backup);
+                                                                setShowRestoreModal(true);
+                                                            }}
+                                                            title="Restore"
                                                         >
-                                                            <Trash2 size={14} />
+                                                            <RefreshCw size={14} />
                                                         </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
+                                                    )}
+                                                    {storageConfig?.provider !== 'local' && backup.remote_status !== 'synced' && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => handleUploadToRemote(backup)}
+                                                            disabled={uploadingBackup === backup.path}
+                                                            title="Upload to Remote"
+                                                        >
+                                                            {uploadingBackup === backup.path ? (
+                                                                <RefreshCw size={14} className="spinning" />
+                                                            ) : (
+                                                                <Upload size={14} />
+                                                            )}
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => handleDeleteBackup(backup.path)}
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                    )}
                 </TabsContent>
 
                 {/* Schedules Tab */}
                 <TabsContent value="schedules">
-                    <div className="card">
-                        <div className="card-header">
-                            <h3>Backup Schedules</h3>
-                            <Button size="sm" onClick={() => setShowScheduleModal(true)}>
-                                <Plus size={14} />
-                                Add Schedule
-                            </Button>
-                        </div>
-                        <div className="card-body">
-                            {schedules.length === 0 ? (
-                                <EmptyState
-                                    icon={Clock}
-                                    title="No Schedules"
-                                    description="No backup schedules configured. Add a schedule for automated backups."
-                                    action={<Button onClick={() => setShowScheduleModal(true)}>Add Schedule</Button>}
-                                />
-                            ) : (
-                                <table className="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Type</th>
-                                            <th>Target</th>
-                                            <th>Time</th>
-                                            <th>Days</th>
-                                            <th>Remote</th>
-                                            <th>Last Run</th>
-                                            <th>Status</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {schedules.map((schedule) => (
-                                            <tr key={schedule.id}>
-                                                <td>{schedule.name}</td>
-                                                <td>
-                                                    <Badge variant={schedule.backup_type === 'application' ? 'default' : schedule.backup_type === 'database' ? 'info' : 'warning'}>
-                                                        {schedule.backup_type}
-                                                    </Badge>
-                                                </td>
-                                                <td>{schedule.target}</td>
-                                                <td>{schedule.schedule_time}</td>
-                                                <td>{schedule.days?.join(', ') || 'daily'}</td>
-                                                <td>
-                                                    {schedule.upload_remote ? (
-                                                        <Cloud size={16} className="text-success" />
-                                                    ) : (
-                                                        <CloudOff size={16} className="text-muted" />
-                                                    )}
-                                                </td>
-                                                <td>{schedule.last_run ? formatTimestamp(schedule.last_run) : 'Never'}</td>
-                                                <td>
-                                                    {schedule.last_status === 'success' && (
-                                                        <Badge variant="success"><CheckCircle size={12} /> Success</Badge>
-                                                    )}
-                                                    {schedule.last_status === 'failed' && (
-                                                        <Badge variant="destructive"><XCircle size={12} /> Failed</Badge>
-                                                    )}
-                                                    {!schedule.last_status && (
-                                                        <Badge variant={schedule.enabled ? 'success' : 'secondary'}>
-                                                            {schedule.enabled ? 'Active' : 'Disabled'}
-                                                        </Badge>
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    <div className="action-buttons">
-                                                        <Button
-                                                            size="sm"
-                                                            variant={schedule.enabled ? 'outline' : 'default'}
-                                                            onClick={() => handleToggleSchedule(schedule)}
-                                                            title={schedule.enabled ? 'Disable' : 'Enable'}
-                                                        >
-                                                            {schedule.enabled ? <XCircle size={14} /> : <CheckCircle size={14} />}
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => handleRemoveSchedule(schedule.id)}
-                                                            title="Remove"
-                                                        >
-                                                            <Trash2 size={14} />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
+                    <div className="bk-listhead">
+                        <h2>Backup schedules</h2>
+                        <Button size="sm" onClick={() => setShowScheduleModal(true)}>
+                            <Plus size={14} />
+                            Add Schedule
+                        </Button>
                     </div>
+                    {schedules.length === 0 ? (
+                        <EmptyState
+                            icon={Clock}
+                            title="No Schedules"
+                            description="No backup schedules configured. Add a schedule for automated backups."
+                            action={<Button onClick={() => setShowScheduleModal(true)}>Add Schedule</Button>}
+                        />
+                    ) : (
+                        <div className="bk-card">
+                            <table className="sk-dtable bk-table bk-table--schedules">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Target</th>
+                                        <th>Time</th>
+                                        <th>Days</th>
+                                        <th>Remote</th>
+                                        <th>Last Run</th>
+                                        <th>Status</th>
+                                        <th aria-label="Actions" />
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {schedules.map((schedule) => (
+                                        <tr key={schedule.id} className={schedule.enabled ? undefined : 'is-disabled'}>
+                                            <td>
+                                                <div className="sk-cell-name">
+                                                    <span className={`bk-ico bk-ico--${schedule.backup_type}`}>
+                                                        {getBackupIcon(schedule.backup_type)}
+                                                    </span>
+                                                    <span>{schedule.name}</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`bk-type bk-type--${schedule.backup_type}`}>{schedule.backup_type}</span>
+                                            </td>
+                                            <td className="sk-cell-mono">{schedule.target}</td>
+                                            <td>
+                                                <span className="bk-sched"><Clock size={11} />{schedule.schedule_time}</span>
+                                            </td>
+                                            <td className="sk-cell-mono">{schedule.days?.join(', ') || 'daily'}</td>
+                                            <td>
+                                                {schedule.upload_remote ? (
+                                                    <Cloud size={16} className="bk-remote-on" />
+                                                ) : (
+                                                    <CloudOff size={16} className="bk-remote-off" />
+                                                )}
+                                            </td>
+                                            <td className="bk-when">{schedule.last_run ? formatTimestamp(schedule.last_run) : 'Never'}</td>
+                                            <td>
+                                                {schedule.last_status === 'success' && (
+                                                    <Pill kind="green">Success</Pill>
+                                                )}
+                                                {schedule.last_status === 'failed' && (
+                                                    <Pill kind="red">Failed</Pill>
+                                                )}
+                                                {!schedule.last_status && (
+                                                    <Pill kind={schedule.enabled ? 'green' : 'gray'}>
+                                                        {schedule.enabled ? 'Active' : 'Disabled'}
+                                                    </Pill>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="bk-actions">
+                                                    <Button
+                                                        size="sm"
+                                                        variant={schedule.enabled ? 'outline' : 'default'}
+                                                        onClick={() => handleToggleSchedule(schedule)}
+                                                        title={schedule.enabled ? 'Disable' : 'Enable'}
+                                                    >
+                                                        {schedule.enabled ? <XCircle size={14} /> : <CheckCircle size={14} />}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        onClick={() => handleRemoveSchedule(schedule.id)}
+                                                        title="Remove"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </TabsContent>
 
                 {/* Storage Tab */}
                 <TabsContent value="storage">
+                    <div className="bk-specs">
+                        <div className="sk-spec-card">
+                            <div className="sk-spec-card__label">Provider</div>
+                            <div className="sk-spec-card__value">{PROVIDER_LABELS[storageConfig?.provider] || 'Local only'}</div>
+                            <div className="sk-spec-card__sub">
+                                {storageConfig && storageConfig.provider !== 'local'
+                                    ? (storageConfig.auto_upload ? 'auto-upload on' : 'auto-upload off')
+                                    : 'backups stay on this server'}
+                            </div>
+                        </div>
+                        <div className="sk-spec-card">
+                            <div className="sk-spec-card__label">Local archive</div>
+                            <div className="sk-spec-card__value">{stats?.total_size_human || '0 B'}</div>
+                            <div className="sk-spec-card__sub">{stats?.total_backups || 0} backups on disk</div>
+                        </div>
+                        {storageConfig && storageConfig.provider !== 'local' && (
+                            <div className="sk-spec-card">
+                                <div className="sk-spec-card__label">Remote archive</div>
+                                <div className="sk-spec-card__value">{stats?.remote_size_human || '0 B'}</div>
+                                <div className="sk-spec-card__sub">{stats?.remote_count || 0} backups uploaded</div>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="card">
                         <div className="card-header">
                             <h3>Remote Storage Configuration</h3>
@@ -623,14 +657,16 @@ const Backups = () => {
                             <form onSubmit={handleSaveStorageConfig}>
                                 <div className="form-group">
                                     <label>Storage Provider</label>
-                                    <select
+                                    <SegControl
                                         value={storageForm.provider}
-                                        onChange={(e) => setStorageForm({...storageForm, provider: e.target.value})}
-                                    >
-                                        <option value="local">Local Only</option>
-                                        <option value="s3">S3-Compatible (AWS S3, MinIO, Wasabi)</option>
-                                        <option value="b2">Backblaze B2</option>
-                                    </select>
+                                        onChange={(provider) => setStorageForm({...storageForm, provider})}
+                                        options={[
+                                            { value: 'local', label: 'Local Only' },
+                                            { value: 's3', label: 'S3-Compatible' },
+                                            { value: 'b2', label: 'Backblaze B2' },
+                                        ]}
+                                    />
+                                    <span className="form-help">S3-Compatible works with AWS S3, MinIO and Wasabi.</span>
                                 </div>
 
                                 {storageForm.provider === 's3' && (
@@ -1091,27 +1127,26 @@ const Backups = () => {
                             <button className="modal-close" onClick={() => setShowRestoreModal(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
-                            <div className="restore-warning">
-                                <AlertTriangle size={48} />
-                                <h3>Warning</h3>
-                                <p>Restoring this backup will overwrite existing data. This action cannot be undone.</p>
+                            <div className="bk-restore-warn">
+                                <AlertTriangle size={18} />
+                                <span><b>Warning:</b> restoring this backup will overwrite existing data. This action cannot be undone.</span>
                             </div>
-                            <div className="restore-details">
-                                <div className="detail-row">
-                                    <span className="detail-label">Backup Name:</span>
-                                    <span className="detail-value">{selectedBackup.name || selectedBackup.app_name}</span>
+                            <div className="bk-restore-details">
+                                <div className="sk-info-row">
+                                    <span className="k">Backup Name</span>
+                                    <span className="v">{selectedBackup.name || selectedBackup.app_name}</span>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Type:</span>
-                                    <span className="detail-value">{selectedBackup.type}</span>
+                                <div className="sk-info-row">
+                                    <span className="k">Type</span>
+                                    <span className="v">{selectedBackup.type}</span>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Created:</span>
-                                    <span className="detail-value">{formatTimestamp(selectedBackup.timestamp)}</span>
+                                <div className="sk-info-row">
+                                    <span className="k">Created</span>
+                                    <span className="v">{formatTimestamp(selectedBackup.timestamp)}</span>
                                 </div>
-                                <div className="detail-row">
-                                    <span className="detail-label">Size:</span>
-                                    <span className="detail-value">{formatSize(selectedBackup.size)}</span>
+                                <div className="sk-info-row">
+                                    <span className="k">Size</span>
+                                    <span className="v">{formatSize(selectedBackup.size)}</span>
                                 </div>
                             </div>
                         </div>
