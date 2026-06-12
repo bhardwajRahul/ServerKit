@@ -292,10 +292,13 @@ win: host the existing SSH/xterm console (RemoteTerminal is built but unmounted)
   largest-tables + gauge bars (no table-size endpoint), response-time chart, referrers/devices bars,
   FilesDrawer w/ code viewer.
 
-### 8.5 Files — high parity; 3 visible gaps
-Syntax-highlighted preview (`PreviewDrawer.jsx:113` plain textarea vs `.pv-code` tokens — the planned
-`file-manager/highlight.js`), **Quick-access rail group** (Sites/Stack/Web config/Logs shortcuts), topbar
-subtitle (source host/OS). Cosmetic: breadcrumb `›` icons vs demo mono `/`, ext-badge hidden until hover.
+### 8.5 Files — ✅ **done 2026-06-11**
+Shipped: **`file-manager/highlight.js`** (the demo's `hlCode` line tinting — kw/str/num/cmt/var tokens; PHP/JS
+keywords; escapes before inserting markup) rendered as `.pv-code` (line-number gutter on `--bg-code`) in the
+PreviewDrawer's read view — editing keeps the textarea, files >4000 lines fall back to plain; **Quick-access
+rail group** (Sites `/var/www`, Stack `/opt/serverkit`, Web config `/etc/nginx`, Logs `/var/log`); topbar
+`meta` shows the browse target (remote agent name / "panel host"); breadcrumb `›` icons → demo mono `/`;
+ext-badge on image thumbs now always visible.
 
 ### 8.6 Docker — close; 4 small items
 KPI icon tone-wash not applying (verify `.sk-kpi__icon--*` rules actually color the lucide SVG), per-container

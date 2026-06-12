@@ -4,6 +4,11 @@ import { Button } from '@/components/ui/button';
 import FileIcon from './FileIcon';
 import ImageThumb from './ImageThumb';
 import { getFileType } from './fileTypes';
+import { highlightLine, fileExt } from './highlight';
+
+// Above this the highlighted view would render too many DOM nodes — fall back
+// to the plain read-only textarea.
+const MAX_HIGHLIGHT_LINES = 4000;
 
 export default function PreviewDrawer({
     file,
@@ -129,13 +134,43 @@ export default function PreviewDrawer({
                                     )}
                                 </div>
                             </div>
-                            <textarea
-                                className="file-editor"
-                                value={fileContent}
-                                onChange={(e) => setFileContent(e.target.value)}
-                                readOnly={!editing}
-                                spellCheck={false}
-                            />
+                            {(() => {
+                                if (editing) {
+                                    return (
+                                        <textarea
+                                            className="file-editor"
+                                            value={fileContent}
+                                            onChange={(e) => setFileContent(e.target.value)}
+                                            spellCheck={false}
+                                        />
+                                    );
+                                }
+                                const lines = (fileContent ?? '').split('\n');
+                                if (lines.length > MAX_HIGHLIGHT_LINES) {
+                                    return (
+                                        <textarea
+                                            className="file-editor"
+                                            value={fileContent}
+                                            readOnly
+                                            spellCheck={false}
+                                        />
+                                    );
+                                }
+                                const ext = fileExt(file.name);
+                                return (
+                                    <div className="pv-code" aria-label="File contents">
+                                        {lines.map((l, i) => (
+                                            <div className="pv-code__line" key={i}>
+                                                <span className="pv-code__n">{i + 1}</span>
+                                                <span
+                                                    className="pv-code__c"
+                                                    dangerouslySetInnerHTML={{ __html: highlightLine(l, ext) || '&nbsp;' }}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     ) : (
                         <div className="preview-unavailable">

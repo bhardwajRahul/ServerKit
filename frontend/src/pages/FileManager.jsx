@@ -9,7 +9,7 @@ import {
     Download, Edit3, Trash2, ChevronDown, ChevronRight,
     HardDrive, Clock, PanelLeftClose, PanelLeftOpen,
     LayoutGrid, List, Home, CloudUpload,
-    Check, Copy, ArrowUpDown,
+    Check, Copy, ArrowUpDown, Zap, Globe, Boxes, SlidersHorizontal, FileText,
     FolderTree as FolderTreeIcon,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -26,6 +26,15 @@ import PreviewDrawer from '../components/file-manager/PreviewDrawer';
 import ContextMenu from '../components/file-manager/ContextMenu';
 import TargetPicker from '../components/TargetPicker';
 import { TREE_ROOTS, getFileType, formatBytes } from '../components/file-manager/fileTypes';
+
+// Demo rail shortcuts (Quick access) — one-click jumps to the paths people
+// actually visit on a ServerKit host.
+const QUICK_ACCESS = [
+    { label: 'Sites', path: '/var/www', icon: Globe },
+    { label: 'Stack', path: '/opt/serverkit', icon: Boxes },
+    { label: 'Web config', path: '/etc/nginx', icon: SlidersHorizontal },
+    { label: 'Logs', path: '/var/log', icon: FileText },
+];
 
 // File manager operations that the agent can serve over file:* commands.
 // Anything else (mkdir, delete, rename, copy, chmod, search, disk usage,
@@ -779,6 +788,7 @@ function FileManager() {
             <PageTopbar
                 icon={<FolderOpen size={18} />}
                 title="Files"
+                meta={isRemote ? target.name : 'panel host'}
                 tabs={FILE_TABS}
             />
 
@@ -847,7 +857,7 @@ function FileManager() {
                     <div className="path-breadcrumb">
                         {breadcrumbs.map((crumb, idx) => (
                             <span key={crumb.path + idx} className="crumb-segment">
-                                {idx > 0 && <ChevronRight size={12} className="crumb-separator" />}
+                                {idx > 0 && <span className="crumb-separator">/</span>}
                                 <button
                                     className={`crumb ${idx === breadcrumbs.length - 1 ? 'crumb-active' : ''}`}
                                     onClick={() => navigateTo(crumb.path)}
@@ -949,6 +959,26 @@ function FileManager() {
             <div className="file-manager-body">
                 {sidebarVisible && (
                     <aside className="file-manager-sidebar left">
+                        {/* Quick access (demo rail shortcuts) */}
+                        <div className="sidebar-section">
+                            <div className="sidebar-section-header static">
+                                <Zap size={16} />
+                                <span>Quick access</span>
+                            </div>
+                            <div className="sidebar-section-content quick-access-list">
+                                {QUICK_ACCESS.map(q => (
+                                    <button
+                                        key={q.label}
+                                        className={`quick-access-item ${currentPath === q.path ? 'active' : ''}`}
+                                        onClick={() => navigateTo(q.path)}
+                                    >
+                                        <q.icon size={14} />
+                                        <span>{q.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         {/* Folder Tree */}
                         <div className="sidebar-section">
                             <div className="sidebar-section-header sidebar-section-header--split">
