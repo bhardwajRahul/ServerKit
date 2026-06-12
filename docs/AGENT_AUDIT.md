@@ -65,6 +65,16 @@ Severity counts: **3 High, 5 Medium, 7 Low/Informational.**
   the synchronous waiter resolves) over the poll transport, which shares the
   WebSocket path's auth/registry/routing code. This is the "prove it actually
   works" net the subsystem lacked.
+- **M5 — fixed.** The `register` command now reads the token (and
+  connection-string / server URL) from the environment
+  (`SERVERKIT_REGISTRATION_TOKEN`, etc.) when the flags aren't given, so the
+  installers pass the token via env instead of argv — env is owner/root-only
+  (`/proc/<pid>/environ`), whereas argv is world-readable (`ps`,
+  `/proc/<pid>/cmdline`). `install.sh` (env-passed register, `eval` removed) and
+  `install.ps1` (token via env, made optional) updated accordingly, and both
+  accept the token from the environment so it need not appear in the
+  `curl | bash -s -- --token …` line / shell history. Verified: the agent reads
+  the env token at runtime, both scripts pass syntax checks.
 - **M3 — fixed.** The DEB/RPM units now run as the dedicated unprivileged
   `serverkit-agent` account with the same hardening as `install.sh`
   (`NoNewPrivileges=yes`, `ProtectSystem=strict`, `ProtectHome=yes`,

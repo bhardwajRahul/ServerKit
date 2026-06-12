@@ -62,10 +62,16 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Allow the token / server URL to come from the environment. This lets callers
+# avoid putting the token on the `curl ... | sudo bash -s -- --token <token>`
+# line, which would otherwise land in shell history. An explicit --token wins.
+TOKEN="${TOKEN:-${SERVERKIT_REGISTRATION_TOKEN:-$SERVERKIT_TOKEN}}"
+SERVER_URL="${SERVER_URL:-$SERVERKIT_SERVER_URL}"
+
 # Validate required arguments
 if [ -z "$TOKEN" ]; then
     echo -e "${RED}Error: Registration token is required${NC}"
-    echo "Usage: $0 --token TOKEN --server URL"
+    echo "Usage: $0 --token TOKEN --server URL   (or set SERVERKIT_REGISTRATION_TOKEN)"
     exit 1
 fi
 
@@ -202,14 +208,16 @@ install_agent() {
 register_agent() {
     log_info "Registering agent with ServerKit..."
 
-    REGISTER_CMD="$INSTALL_DIR/serverkit-agent register --token \"$TOKEN\" --server \"$SERVER_URL\""
+    # Pass the token through the environment, not argv: command-line arguments
+    # are world-readable via `ps` / /proc/<pid>/cmdline, while the environment
+    # of this root-run process is readable only by root. The server URL and
+    # name aren't secret, so they stay as flags. (Also drops the old `eval`.)
+    local reg_args=(register --server "$SERVER_URL")
     if [ -n "$NAME" ]; then
-        REGISTER_CMD="$REGISTER_CMD --name \"$NAME\""
+        reg_args+=(--name "$NAME")
     fi
 
-    eval $REGISTER_CMD
-
-    if [ $? -ne 0 ]; then
+    if ! SERVERKIT_REGISTRATION_TOKEN="$TOKEN" "$INSTALL_DIR/serverkit-agent" "${reg_args[@]}"; then
         log_error "Registration failed"
         exit 1
     fi

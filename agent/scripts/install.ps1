@@ -7,8 +7,8 @@
 function Install-ServerKitAgent {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
-        [string]$Token,
+        [Parameter(Mandatory=$false)]
+        [string]$Token = "",
 
         [Parameter(Mandatory=$true)]
         [string]$Server,
@@ -21,6 +21,15 @@ function Install-ServerKitAgent {
     )
 
     $ErrorActionPreference = "Stop"
+
+    # Allow the token to come from the environment so it doesn't have to appear
+    # on the command line (visible to admins via Get-CimInstance Win32_Process).
+    # An explicit -Token wins.
+    if (-not $Token) { $Token = $env:SERVERKIT_REGISTRATION_TOKEN }
+    if (-not $Token) { $Token = $env:SERVERKIT_TOKEN }
+    if (-not $Token) {
+        throw "Registration token required: pass -Token or set SERVERKIT_REGISTRATION_TOKEN"
+    }
 
     # Configuration
     $InstallDir = "$env:ProgramFiles\ServerKit Agent"
@@ -83,12 +92,20 @@ function Install-ServerKitAgent {
 
     # Register with ServerKit
     Write-Info "Registering agent with ServerKit..."
-    $RegisterArgs = @("register", "--token", $Token, "--server", $Server)
+    $RegisterArgs = @("register", "--server", $Server)
     if (-not [string]::IsNullOrEmpty($Name)) {
         $RegisterArgs += @("--name", $Name)
     }
 
-    $process = Start-Process -FilePath $AgentPath -ArgumentList $RegisterArgs -Wait -PassThru -NoNewWindow
+    # Pass the token via the environment, not -ArgumentList, so it isn't exposed
+    # on the child process command line. Start-Process inherits this session's
+    # environment; clear it again afterward.
+    $env:SERVERKIT_REGISTRATION_TOKEN = $Token
+    try {
+        $process = Start-Process -FilePath $AgentPath -ArgumentList $RegisterArgs -Wait -PassThru -NoNewWindow
+    } finally {
+        Remove-Item Env:\SERVERKIT_REGISTRATION_TOKEN -ErrorAction SilentlyContinue
+    }
     if ($process.ExitCode -ne 0) {
         Write-Err "Registration failed with exit code $($process.ExitCode)"
         throw "Registration failed"

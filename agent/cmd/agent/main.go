@@ -110,6 +110,21 @@ func registerCmd() *cobra.Command {
 		Use:   "register",
 		Short: "Register this agent with a ServerKit instance",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Let the secret-bearing inputs come from the environment so the
+			// installer never has to put the registration token in argv —
+			// process arguments are world-readable (`ps`, /proc/<pid>/cmdline),
+			// whereas a process's environment is readable only by its owner and
+			// root. Explicit flags still win when provided.
+			if connStr == "" {
+				connStr = os.Getenv("SERVERKIT_CONNECTION_STRING")
+			}
+			if token == "" {
+				token = os.Getenv("SERVERKIT_REGISTRATION_TOKEN")
+			}
+			if serverURL == "" {
+				serverURL = os.Getenv("SERVERKIT_SERVER_URL")
+			}
+
 			// --connection-string is the modern entry path: a single
 			// pasteable blob from the panel that already contains the
 			// URL and token. When present, it overrides the legacy
@@ -131,7 +146,7 @@ func registerCmd() *cobra.Command {
 	// no shorthand: "c" belongs to the global --config persistent flag, and
 	// pflag panics on shorthand redefinition the moment any command runs
 	cmd.Flags().StringVar(&connStr, "connection-string", "", "panel connection string (single value, replaces --token + --server)")
-	cmd.Flags().StringVarP(&token, "token", "t", "", "registration token (use with --server)")
+	cmd.Flags().StringVarP(&token, "token", "t", "", "registration token (use with --server; or set SERVERKIT_REGISTRATION_TOKEN to keep it out of the process arg list)")
 	cmd.Flags().StringVarP(&serverURL, "server", "s", "", "ServerKit server URL (use with --token)")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "display name for this server")
 
