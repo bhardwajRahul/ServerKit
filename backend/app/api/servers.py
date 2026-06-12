@@ -2115,11 +2115,16 @@ def get_agent_checksums():
 
 @servers_bp.route('/<server_id>/agent/update', methods=['POST'])
 @jwt_required()
+@developer_required
 def trigger_agent_update(server_id):
     """
     Trigger an agent update on a specific server.
 
     Sends a command to the agent to check for and install updates.
+
+    Developer role required — this replaces the agent binary and restarts the
+    service across the fleet, so it must not be reachable by read-only viewers
+    (every other state-changing server route is already @developer_required).
     """
     server = Server.query.get(server_id)
     if not server:
