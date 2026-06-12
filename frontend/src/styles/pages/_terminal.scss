@@ -103,6 +103,11 @@ $lk-default:  #646b7a;
         &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
+    &__ico {
+        flex-shrink: 0;
+        color: var(--text-faint);
+    }
+
     &__dot {
         width: 7px;
         height: 7px;
@@ -131,12 +136,14 @@ $lk-default:  #646b7a;
         min-width: 0;
         min-height: 0;
         display: flex;
-        padding: $space-3;
 
-        // RemoteTerminal brings drawer chrome — flatten it inside the frame
+        // RemoteTerminal brings drawer chrome — flatten it so the shell pane
+        // joins the rail flush (demo con-main: panes meet on 1px borders)
         .remote-terminal-container {
             flex: 1;
             min-width: 0;
+            border: none;
+            border-radius: 0;
             box-shadow: none;
         }
     }

@@ -125,21 +125,41 @@ export default function RemoteTerminal({ serverId, onClose }) {
         createSession();
     }, [serverId]);
 
-    // Handle terminal input
+    // Handle terminal input. Keystrokes MUST be serialized: each send is its
+    // own HTTP POST, and parallel POSTs can reach the agent out of order,
+    // scrambling fast typing. Queue input and flush sequentially, coalescing
+    // whatever arrived while the previous chunk was in flight.
+    const inputQueue = useRef('');
+    const inputSending = useRef(false);
+
     useEffect(() => {
         if (!terminalInstance.current || !sessionId || !connected) return;
 
         const term = terminalInstance.current;
+        inputQueue.current = '';
 
-        // Handle user input
-        const inputDisposable = term.onData(async (data) => {
+        const flushInput = async () => {
+            if (inputSending.current) return;
+            inputSending.current = true;
             try {
-                // Encode data as base64
-                const encoded = btoa(data);
-                await api.sendTerminalInput(sessionId, encoded);
+                while (inputQueue.current) {
+                    const chunk = inputQueue.current;
+                    inputQueue.current = '';
+                    await api.sendTerminalInput(sessionId, btoa(chunk));
+                }
             } catch (err) {
                 console.error('Failed to send terminal input:', err);
+                inputQueue.current = '';
+            } finally {
+                inputSending.current = false;
             }
+            // drain anything that raced the flag reset
+            if (inputQueue.current) flushInput();
+        };
+
+        const inputDisposable = term.onData((data) => {
+            inputQueue.current += data;
+            flushInput();
         });
 
         // Handle resize

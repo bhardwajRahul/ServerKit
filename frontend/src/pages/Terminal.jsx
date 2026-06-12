@@ -10,13 +10,13 @@ import LogFileList from '../components/log-viewer/LogFileList';
 import LogToolbar from '../components/log-viewer/LogToolbar';
 import LogContent from '../components/log-viewer/LogContent';
 import { formatBytes, logKindFromPath } from '../components/log-viewer/logHelpers';
-import { Pill } from '../components/ds';
+import { Pill, PageTopbar } from '../components/ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
     FileText, Clock, AlertCircle, Search, X, RefreshCw, AlertTriangle, Activity,
-    Play, Square, RotateCw, Terminal as TerminalIcon,
+    Play, Square, RotateCw, Terminal as TerminalIcon, Server as ServerIcon,
 } from 'lucide-react';
 
 // 'logs' stays first so the default landing keeps working on installs with no
@@ -28,12 +28,11 @@ const Terminal = () => {
 
     return (
         <div className="page-container terminal-page">
-            <div className="page-header">
-                <div>
-                    <h1>Terminal & Logs</h1>
-                    <p className="page-subtitle">View logs, manage processes and services</p>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<TerminalIcon size={18} />}
+                title="Terminal / Logs"
+                meta="shells · logs · processes · services"
+            />
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
@@ -144,9 +143,10 @@ const TerminalShellTab = () => {
                             disabled={!online}
                             title={online ? `Open a shell on ${s.name}` : `${s.name || s.id} is ${s.status || 'offline'}`}
                         >
-                            <span className={`term-shell__dot ${online ? 'is-on' : ''}`} />
+                            <ServerIcon size={14} className="term-shell__ico" />
                             <span className="term-shell__name">{s.name || s.hostname || s.id}</span>
                             {s.ip_address && <span className="term-shell__sub">{s.ip_address}</span>}
+                            <span className={`term-shell__dot ${online ? 'is-on' : ''}`} />
                         </button>
                     );
                 })}

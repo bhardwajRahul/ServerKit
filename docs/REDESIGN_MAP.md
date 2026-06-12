@@ -285,6 +285,14 @@ the whole output path — `RemoteTerminal` referenced a **nonexistent `SocketCon
 reconnect re-subscribe. 'logs' stays the default landing (shell needs a connected agent; panel-host PTY =
 §5 gap, local is rejected by TerminalService). Still §5: the unified all-targets rail (WP/DBs/containers
 groups) + live non-file log streaming.
+**Verified live end-to-end 2026-06-12** (WSL agent → panel → browser xterm: `echo` round-trip clean). Fixes
+shipped while testing: **keystroke serialization** in RemoteTerminal (each key was its own HTTP POST — parallel
+POSTs reordered fast typing into scrambled input; now queued + flushed sequentially); page header → `PageTopbar`;
+rail rows got server icons + right-aligned glowing dots; shell pane flush against the rail (demo con-main).
+Agent repo fixes found en route: **Linux build was broken** (`agentui/pairer.go` called Windows-only
+`isServiceInstalled`/`waitForServiceStopped` — stubs added to `platform_other.go`) and **`register` panicked**
+(`-c` shorthand collision with global `--config`). NOTE: agent PTY is Unix-only — Windows agents return
+"pty: unsupported" (ConPTY = future agent work).
 
 ### 8.4 WordPress — ✅ **JSX-only parts done 2026-06-11**
 - List: **bulk-select shipped** — header + per-row checkboxes, accent `is-selected` rows, bulkbar with
