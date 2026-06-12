@@ -6,8 +6,8 @@ Endpoints:
   POST   /api/v1/pairing/code/refresh        (enrollment auth)
   POST   /api/v1/pairing/code/freeze         (enrollment auth)
   GET    /api/v1/pairing/poll                (enrollment auth, long-poll)
-  POST   /api/v1/pairing/claim               (operator JWT)
-  GET    /api/v1/pairing/lookup              (operator JWT — pre-flight code check)
+  POST   /api/v1/pairing/claim               (operator JWT, developer role)
+  GET    /api/v1/pairing/lookup              (operator JWT, developer role — pre-flight code check)
 """
 
 import time
@@ -15,6 +15,7 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from app import limiter
+from app.middleware.rbac import developer_required
 from app.services import pairing_service
 from app.services.pairing_service import (
     PairingError,
@@ -145,6 +146,7 @@ def poll():
 
 @pairing_bp.route('/lookup', methods=['POST'])
 @jwt_required()
+@developer_required
 @limiter.limit("20 per minute")
 def lookup():
     """Pre-flight: confirm a code exists (without revealing details)."""
@@ -163,6 +165,7 @@ def lookup():
 
 @pairing_bp.route('/claim', methods=['POST'])
 @jwt_required()
+@developer_required
 @limiter.limit("5 per 10 minute")
 def claim():
     user_id = int(get_jwt_identity())
