@@ -24,14 +24,18 @@ export default function PreviewDrawer({
     onPermissions,
     onDelete,
     onCopyPath,
+    // When true, render as a flush inline pane (file-manager 3rd column)
+    // instead of a fixed-position drawer-over-scrim.
+    inline = false,
 }) {
-    // Lock body scroll while open
+    // Lock body scroll only for the overlay drawer; the inline pane scrolls
+    // within its own column and must not freeze the page.
     useEffect(() => {
-        if (!file) return;
+        if (!file || inline) return;
         const prev = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
         return () => { document.body.style.overflow = prev; };
-    }, [file]);
+    }, [file, inline]);
 
     if (!file) return null;
 
@@ -40,8 +44,12 @@ export default function PreviewDrawer({
 
     return (
         <>
-            <div className="preview-drawer-backdrop" onClick={onClose} />
-            <aside className="preview-drawer" role="dialog" aria-label="File preview">
+            {!inline && <div className="preview-drawer-backdrop" onClick={onClose} />}
+            <aside
+                className={inline ? 'preview-drawer file-preview-pane' : 'preview-drawer'}
+                role={inline ? 'complementary' : 'dialog'}
+                aria-label="File preview"
+            >
                 <header className="preview-drawer-header">
                     <FileIcon entry={file} size={20} />
                     <div className="preview-drawer-title">

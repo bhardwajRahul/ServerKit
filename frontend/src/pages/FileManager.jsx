@@ -956,7 +956,7 @@ function FileManager() {
                 </div>
             )}
 
-            <div className="file-manager-body">
+            <div className={`file-manager-body ${previewFile ? 'has-preview' : ''}`}>
                 {sidebarVisible && (
                     <aside className="file-manager-sidebar left">
                         {/* Quick access (demo rail shortcuts) */}
@@ -1160,6 +1160,7 @@ function FileManager() {
                                     <span className="col-size">Size</span>
                                     <span className="col-modified">Modified</span>
                                     <span className="col-permissions">Permissions</span>
+                                    <span className="col-owner">Owner</span>
                                     <span className="col-actions">Actions</span>
                                 </div>
                                 {sortedFiltered.map((entry) => (
@@ -1181,6 +1182,23 @@ function FileManager() {
                         )}
                     </div>
                 </main>
+
+                <PreviewDrawer
+                    inline
+                    file={previewFile}
+                    fileContent={fileContent}
+                    setFileContent={setFileContent}
+                    editing={editing}
+                    onStartEdit={() => setEditing(true)}
+                    onCancelEdit={() => setEditing(false)}
+                    onSave={handleSaveFile}
+                    onClose={() => { setPreviewFile(null); setEditing(false); }}
+                    onDownload={(e) => api.downloadFile(e.path)}
+                    onRename={openRenameModal}
+                    onPermissions={openPermissionsModal}
+                    onCopyPath={copyPathToClipboard}
+                    onDelete={(e) => handleDelete(e)}
+                />
             </div>
 
             <div className="status-bar">
@@ -1230,22 +1248,6 @@ function FileManager() {
                 onPermissions={openPermissionsModal}
                 onCopyPath={copyPathToClipboard}
                 onDelete={(e) => handleDelete(selectedEntries.length > 1 ? selectedEntries : e)}
-            />
-
-            <PreviewDrawer
-                file={previewFile}
-                fileContent={fileContent}
-                setFileContent={setFileContent}
-                editing={editing}
-                onStartEdit={() => setEditing(true)}
-                onCancelEdit={() => setEditing(false)}
-                onSave={handleSaveFile}
-                onClose={() => { setPreviewFile(null); setEditing(false); }}
-                onDownload={(e) => api.downloadFile(e.path)}
-                onRename={openRenameModal}
-                onPermissions={openPermissionsModal}
-                onCopyPath={copyPathToClipboard}
-                onDelete={(e) => handleDelete(e)}
             />
 
             {/* Modals */}
