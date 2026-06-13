@@ -468,7 +468,7 @@ const FleetMonitor = () => {
                             </div>
                             {alerts.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="table">
+                                    <table className="sk-dtable">
                                         <thead>
                                             <tr>
                                                 <th>Server</th>
@@ -532,7 +532,7 @@ const FleetMonitor = () => {
                                 <div className="card-header"><h2>Alert Thresholds</h2></div>
                                 {thresholds.length > 0 ? (
                                     <div className="overflow-x-auto">
-                                        <table className="table">
+                                        <table className="sk-dtable">
                                             <thead>
                                                 <tr>
                                                     <th>Scope</th>
@@ -626,7 +626,7 @@ const FleetMonitor = () => {
                             <div className="card-header"><h2>Anomaly Detection</h2></div>
                             {anomalies.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="table">
+                                    <table className="sk-dtable">
                                         <thead>
                                             <tr>
                                                 <th>Server</th>
@@ -796,7 +796,7 @@ const FleetMonitor = () => {
 
                             {searchResults.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="table">
+                                    <table className="sk-dtable">
                                         <thead>
                                             <tr>
                                                 <th>Server</th>

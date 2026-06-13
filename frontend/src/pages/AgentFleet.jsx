@@ -308,7 +308,7 @@ const AgentFleet = () => {
                             <h2>Agent Versions</h2>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="table">
+                            <table className="sk-dtable">
                                 <thead>
                                     <tr>
                                         <th>Version</th>
@@ -427,7 +427,7 @@ const AgentFleet = () => {
                             </div>
                             {rollouts.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="table">
+                                    <table className="sk-dtable">
                                         <thead>
                                             <tr>
                                                 <th>Version</th>
@@ -504,7 +504,7 @@ const AgentFleet = () => {
                         </div>
                         {queuedCommands.length > 0 ? (
                             <div className="overflow-x-auto">
-                                <table className="table">
+                                <table className="sk-dtable">
                                     <thead>
                                         <tr>
                                             <th>Server</th>
@@ -623,7 +623,7 @@ const AgentFleet = () => {
                             <h2>Pending Registrations</h2>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="table">
+                            <table className="sk-dtable">
                                 <thead>
                                     <tr>
                                         <th>Server Name</th>
