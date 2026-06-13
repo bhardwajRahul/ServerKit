@@ -27,6 +27,12 @@ const Domains = () => {
     const [filter, setFilter] = useState('all');
     const [drawerDomain, setDrawerDomain] = useState(null);
 
+    // Inline DNS records for the open drawer domain
+    const [dnsRecords, setDnsRecords] = useState([]);
+    const [dnsLoading, setDnsLoading] = useState(false);
+    const [dnsError, setDnsError] = useState('');
+    const [dnsHasZone, setDnsHasZone] = useState(true);
+
     // Modal states
     const [showAddModal, setShowAddModal] = useState(false);
     const [showSslModal, setShowSslModal] = useState(false);
@@ -42,6 +48,41 @@ const Domains = () => {
     useEffect(() => {
         loadData();
     }, []);
+
+    // Load DNS records for the domain shown in the drawer. A domain has no zone
+    // reference, so we match it to a DNS zone by name; unmanaged domains have no
+    // zone and fall back to the empty/hint state rather than erroring.
+    useEffect(() => {
+        if (!drawerDomain) return;
+        let cancelled = false;
+        const domainName = drawerDomain.name;
+
+        async function loadDnsRecords() {
+            setDnsLoading(true);
+            setDnsError('');
+            setDnsRecords([]);
+            setDnsHasZone(true);
+            try {
+                const zonesData = await api.getDNSZones();
+                const zone = (zonesData.zones || []).find(z => z.domain === domainName);
+                if (cancelled) return;
+                if (!zone) {
+                    setDnsHasZone(false);
+                    return;
+                }
+                const recordsData = await api.getDNSRecords(zone.id);
+                if (cancelled) return;
+                setDnsRecords(recordsData.records || []);
+            } catch {
+                if (!cancelled) setDnsError('Failed to load DNS records');
+            } finally {
+                if (!cancelled) setDnsLoading(false);
+            }
+        }
+
+        loadDnsRecords();
+        return () => { cancelled = true; };
+    }, [drawerDomain]);
 
     async function loadData() {
         try {
@@ -351,9 +392,53 @@ const Domains = () => {
                             </div>
                         </div>
 
-                        <div className="dom-drawer__section">
-                            <h3 className="dom-drawer__sectiontitle">DNS records</h3>
-                            <p className="dom-drawer__hint">DNS records for this domain are managed in DNS Zones.</p>
+                        <div className="dom-drawer__section dom-dns">
+                            <h3 className="dom-drawer__sectiontitle">
+                                DNS records
+                                {dnsHasZone && !dnsLoading && !dnsError && (
+                                    <span className="dom-dns__count">· {dnsRecords.length}</span>
+                                )}
+                            </h3>
+
+                            {dnsLoading ? (
+                                <p className="dom-drawer__hint">Loading DNS records…</p>
+                            ) : dnsError ? (
+                                <p className="dom-drawer__hint dom-dns__error">{dnsError}</p>
+                            ) : !dnsHasZone ? (
+                                <p className="dom-drawer__hint">No DNS records — this domain isn&apos;t managed in DNS Zones.</p>
+                            ) : dnsRecords.length === 0 ? (
+                                <p className="dom-drawer__hint">No DNS records.</p>
+                            ) : (
+                                <div className="dom-dns__table">
+                                    <table className="sk-dtable">
+                                        <thead>
+                                            <tr>
+                                                <th className="dom-dns__col-type">Type</th>
+                                                <th>Name</th>
+                                                <th>Value</th>
+                                                <th className="dom-dns__col-ttl">TTL</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {dnsRecords.map(rec => (
+                                                <tr key={rec.id}>
+                                                    <td>
+                                                        <span className={`dns-rtype dns-rtype--${(rec.record_type || '').toLowerCase()}`}>
+                                                            {rec.record_type}
+                                                        </span>
+                                                    </td>
+                                                    <td className="sk-cell-mono">{rec.name}</td>
+                                                    <td className="sk-cell-mono dom-dns__value">
+                                                        {rec.priority ? `${rec.priority} ` : ''}{rec.content}
+                                                    </td>
+                                                    <td className="sk-cell-mono">{rec.ttl}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
                             <Button variant="outline" size="sm" onClick={() => navigate('/dns')}>
                                 <NetworkIcon size={14} /> Manage DNS records
                             </Button>

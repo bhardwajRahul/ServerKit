@@ -120,6 +120,41 @@
     }
 }
 
+// ── Inline DNS records table inside the domain drawer ────────
+.dom-dns {
+    width: 100%;
+
+    &__count {
+        margin-left: $space-2;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-normal;
+        color: var(--text-faint);
+    }
+
+    &__error { color: var(--red); }
+
+    &__table {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    &__col-type { width: 70px; }
+    &__col-ttl { width: 70px; }
+
+    // Truncate long record values (e.g. TXT/SPF) to keep the table dense
+    &__value {
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--text);
+    }
+}
+
 .dom-specs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
