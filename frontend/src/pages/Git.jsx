@@ -7,7 +7,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { DangerZone } from '../components/DangerZone';
 import EmptyState from '../components/EmptyState';
 import { Pill, MetricCard } from '../components/ds';
-import { AlertCircle, FolderGit2, Webhook, Rocket, Server, Globe, Terminal, Tag, X } from 'lucide-react';
+import { AlertCircle, FolderGit2, Webhook, Rocket, Server, Globe, Terminal, Tag, X, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -648,6 +648,17 @@ function Git({ basePath = '/git' }) {
                 </div>
             ) : (
                 <>
+                    <div className="git-hint">
+                        <div className="git-hint__icon"><GitBranch size={20} /></div>
+                        <div className="git-hint__body">
+                            <div className="git-hint__title">Connect any site or service to a repository</div>
+                            <div className="git-hint__sub">
+                                Host it on your built-in Gitea — private, self-hosted inside ServerKit —
+                                or link an external provider. Push to deploy, automatically.
+                            </div>
+                        </div>
+                    </div>
+
                     <div className="git-kpis" aria-label="Git server status">
                         <MetricCard
                             className="git-kpi-text"
