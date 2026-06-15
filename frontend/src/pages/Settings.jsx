@@ -19,8 +19,9 @@ import MigrationHistoryTab from '../components/settings/MigrationHistoryTab';
 import IconReferenceTab from '../components/settings/IconReferenceTab';
 import AISettingsTab from '../components/settings/AISettingsTab';
 import AboutTab from '../components/settings/AboutTab';
-import { Activity, Code, Database, Layers, Link2, PaintBucket, Sparkles } from 'lucide-react';
+import { Activity, Code, Database, Layers, Link2, PaintBucket, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageTopbar } from '@/components/ds';
 import { useNavigate } from 'react-router-dom';
 
 const VALID_TABS = ['profile', 'security', 'connections', 'appearance', 'sidebar', 'whitelabel', 'notifications', 'system', 'users', 'activity', 'site', 'sso', 'api', 'ai', 'migrations', 'developer', 'about'];
@@ -41,12 +42,7 @@ const Settings = () => {
 
     return (
         <div className="page-container settings-page">
-            <div className="page-header">
-                <div>
-                    <h1>Settings</h1>
-                    <p className="page-subtitle">Manage your account and system preferences</p>
-                </div>
-            </div>
+            <PageTopbar icon={<SettingsIcon size={18} />} title="Settings" />
 
             <div className="settings-layout">
                 <nav className="settings-nav">

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { GitBranch, Link, Unlink } from 'lucide-react';
+import { useState } from 'react';
+import { GitBranch, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { RepoProviderStrip, ProviderBadge, detectProvider } from '../git/GitProviders';
 
 const GitConnectForm = ({ gitStatus, onConnect, onDisconnect }) => {
     const [formData, setFormData] = useState({
@@ -17,13 +18,11 @@ const GitConnectForm = ({ gitStatus, onConnect, onDisconnect }) => {
     const [error, setError] = useState('');
 
     const isConnected = gitStatus?.connected;
+    const provider = detectProvider(formData.repoUrl);
 
     function handleChange(e) {
-        const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: type === 'checkbox' ? checked : value
-        }));
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     }
 
     function handlePathsChange(e) {
@@ -66,53 +65,49 @@ const GitConnectForm = ({ gitStatus, onConnect, onDisconnect }) => {
 
     if (isConnected) {
         return (
-            <div className="git-connected-card">
-                <div className="git-connected-header">
-                    <GitBranch size={20} />
-                    <div className="git-connected-info">
-                        <h4>Repository Connected</h4>
+            <div className="git-connect-status">
+                <div className="git-connect-status__header">
+                    <span className="git-connect-status__icon">
+                        <GitBranch size={19} />
+                    </span>
+                    <div className="git-connect-status__title">
+                        <strong>Repository connected</strong>
                         <a
                             href={gitStatus.repo_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="git-repo-url"
+                            className="git-connect-status__url"
                         >
                             {gitStatus.repo_url}
                         </a>
                     </div>
                 </div>
 
-                <div className="git-connected-meta">
-                    <div className="git-meta-item">
-                        <span className="meta-label">Branch</span>
-                        <span className="meta-value">{gitStatus.branch}</span>
+                <div className="git-connect-status__meta">
+                    <div className="git-connect-status__meta-item">
+                        <span>Branch</span>
+                        <strong>{gitStatus.branch}</strong>
                     </div>
-                    <div className="git-meta-item">
-                        <span className="meta-label">Auto Deploy</span>
-                        <span className="meta-value">{gitStatus.auto_deploy ? 'Enabled' : 'Disabled'}</span>
+                    <div className="git-connect-status__meta-item">
+                        <span>Auto Deploy</span>
+                        <strong>{gitStatus.auto_deploy ? 'Enabled' : 'Disabled'}</strong>
                     </div>
                     {gitStatus.last_deploy_commit && (
-                        <div className="git-meta-item">
-                            <span className="meta-label">Last Deploy</span>
-                            <span className="meta-value mono">{gitStatus.last_deploy_commit.substring(0, 7)}</span>
+                        <div className="git-connect-status__meta-item">
+                            <span>Last Deploy</span>
+                            <strong className="mono">{gitStatus.last_deploy_commit.substring(0, 7)}</strong>
                         </div>
                     )}
                     {gitStatus.last_deploy_at && (
-                        <div className="git-meta-item">
-                            <span className="meta-label">Deployed At</span>
-                            <span className="meta-value">
-                                {new Date(gitStatus.last_deploy_at).toLocaleString()}
-                            </span>
+                        <div className="git-connect-status__meta-item">
+                            <span>Deployed At</span>
+                            <strong>{new Date(gitStatus.last_deploy_at).toLocaleString()}</strong>
                         </div>
                     )}
                 </div>
 
-                <div className="git-connected-actions">
-                    <Button
-                        variant="destructive"
-                        onClick={handleDisconnect}
-                        disabled={loading}
-                    >
+                <div className="git-connect-status__actions">
+                    <Button variant="destructive" onClick={handleDisconnect} disabled={loading}>
                         <Unlink size={14} />
                         {loading ? 'Disconnecting...' : 'Disconnect'}
                     </Button>
@@ -122,72 +117,81 @@ const GitConnectForm = ({ gitStatus, onConnect, onDisconnect }) => {
     }
 
     return (
-        <div className="git-connect-form">
-            <h4>Connect Git Repository</h4>
-            <p className="hint">
-                Connect a Git repository to manage themes and plugins via version control.
-            </p>
+        <form className="git-connect git-connect--card" onSubmit={handleConnect}>
+            <div className="git-connect__intro">
+                <span className="git-connect__intro-icon">
+                    <GitBranch size={19} />
+                </span>
+                <div className="git-connect__intro-text">
+                    <strong>Connect a Git repository</strong>
+                    <span>Manage themes and plugins for this site with version control — push to deploy.</span>
+                </div>
+            </div>
+
+            <RepoProviderStrip detected={provider?.key} />
 
             {error && <div className="error-message">{error}</div>}
 
-            <form onSubmit={handleConnect}>
-                <div className="form-group">
-                    <Label>Repository URL *</Label>
-                    <Input
-                        type="text"
-                        name="repoUrl"
-                        value={formData.repoUrl}
-                        onChange={handleChange}
-                        placeholder="https://github.com/user/repo.git"
-                        required
-                    />
-                </div>
+            <div className="git-connect__field">
+                <Label htmlFor="wp-repo-url">Repository URL</Label>
+                <Input
+                    id="wp-repo-url"
+                    type="text"
+                    name="repoUrl"
+                    value={formData.repoUrl}
+                    onChange={handleChange}
+                    placeholder="https://github.com/user/repo.git"
+                    required
+                />
+                {provider && <ProviderBadge provider={provider} />}
+            </div>
 
-                <div className="form-group">
-                    <Label>Branch</Label>
-                    <Input
-                        type="text"
-                        name="branch"
-                        value={formData.branch}
-                        onChange={handleChange}
-                        placeholder="main"
-                    />
-                </div>
+            <div className="git-connect__field">
+                <Label htmlFor="wp-branch">Branch</Label>
+                <Input
+                    id="wp-branch"
+                    type="text"
+                    name="branch"
+                    value={formData.branch}
+                    onChange={handleChange}
+                    placeholder="main"
+                />
+            </div>
 
-                <div className="form-group">
-                    <Label>Tracked Paths (one per line)</Label>
-                    <Textarea
-                        value={formData.paths.join('\n')}
-                        onChange={handlePathsChange}
-                        placeholder={"wp-content/themes\nwp-content/plugins"}
-                        rows={3}
-                    />
-                    <span className="form-hint">
-                        Paths relative to WordPress root that should be tracked
-                    </span>
-                </div>
+            <div className="git-connect__field">
+                <Label htmlFor="wp-paths">Tracked paths (one per line)</Label>
+                <Textarea
+                    id="wp-paths"
+                    value={formData.paths.join('\n')}
+                    onChange={handlePathsChange}
+                    placeholder={"wp-content/themes\nwp-content/plugins"}
+                    rows={3}
+                />
+                <span className="git-connect__field-hint">
+                    Paths relative to the WordPress root that should be tracked.
+                </span>
+            </div>
 
-                <div className="form-group">
-                    <label className="checkbox-label">
-                        <Checkbox
-                            name="autoDeploy"
-                            checked={formData.autoDeploy}
-                            onCheckedChange={(checked) =>
-                                setFormData(prev => ({ ...prev, autoDeploy: checked }))
-                            }
-                        />
-                        <span>Enable auto-deploy on push</span>
-                    </label>
+            <div className="git-connect__toggle">
+                <div>
+                    <strong>Auto-deploy on push</strong>
+                    <span>Automatically deploy when new commits land on this branch.</span>
                 </div>
+                <Switch
+                    checked={formData.autoDeploy}
+                    onCheckedChange={(checked) =>
+                        setFormData(prev => ({ ...prev, autoDeploy: checked }))
+                    }
+                />
+            </div>
 
-                <div className="form-actions">
-                    <Button type="submit" disabled={loading}>
-                        <Link size={14} />
-                        {loading ? 'Connecting...' : 'Connect Repository'}
-                    </Button>
-                </div>
-            </form>
-        </div>
+            <div className="git-connect__actions">
+                <Button type="submit" disabled={loading}>
+                    <GitBranch size={14} />
+                    {loading ? 'Connecting...' : 'Connect Repository'}
+                </Button>
+            </div>
+        </form>
     );
 };
 

@@ -4,9 +4,7 @@ import {
     ArrowRight,
     CheckCircle2,
     ChevronDown,
-    Github,
     GitBranch,
-    KeyRound,
     Link2,
     Lock,
     Package,
@@ -19,6 +17,7 @@ import {
     ShieldCheck,
     Zap,
 } from 'lucide-react';
+import { SiGithub } from 'react-icons/si';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { PageTopbar } from '@/components/ds';
@@ -360,7 +359,7 @@ const NewService = () => {
                     onClick={() => handleSourceModeChange('github')}
                 >
                     <span className="new-service-page__method-icon">
-                        <Github size={21} />
+                        <SiGithub size={21} />
                     </span>
                     <span className="new-service-page__method-title">GitHub</span>
                     <span className="new-service-page__method-sub">Connect with OAuth and choose a repository</span>
@@ -371,7 +370,7 @@ const NewService = () => {
                     onClick={() => handleSourceModeChange('manual')}
                 >
                     <span className="new-service-page__method-icon">
-                        <KeyRound size={21} />
+                        <GitBranch size={21} />
                     </span>
                     <span className="new-service-page__method-title">Other Git Remote</span>
                     <span className="new-service-page__method-sub">GitLab, Bitbucket, Gitea, or SSH</span>
@@ -448,7 +447,7 @@ const NewService = () => {
                             ) : (
                                 <div className="new-service-page__connect-empty">
                                     <span className="new-service-page__connect-icon">
-                                        <Github size={20} />
+                                        <SiGithub size={20} />
                                     </span>
                                     <div>
                                         <h2>{githubConfigured ? 'Connect GitHub' : 'GitHub connection is not configured'}</h2>
@@ -460,7 +459,7 @@ const NewService = () => {
                                     </div>
                                     <div className="new-service-page__connect-actions">
                                         <Button type="button" onClick={handleConnectGithub} disabled={!githubConfigured}>
-                                            <Github size={16} />
+                                            <SiGithub size={16} />
                                             Connect GitHub
                                         </Button>
                                         <Button type="button" variant="outline" asChild>
@@ -573,7 +572,7 @@ const NewService = () => {
 
                     <div className="new-service-page__flow">
                         <div>
-                            <Github size={16} />
+                            <SiGithub size={16} />
                             <span>Connect</span>
                         </div>
                         <ArrowRight size={14} />

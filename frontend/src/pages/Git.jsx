@@ -6,7 +6,7 @@ import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { DangerZone } from '../components/DangerZone';
 import EmptyState from '../components/EmptyState';
-import { Pill, MetricCard } from '../components/ds';
+import { Pill, MetricCard, PageTopbar } from '../components/ds';
 import { AlertCircle, FolderGit2, Webhook, Rocket, Server, Globe, Terminal, Tag, X, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -566,20 +566,20 @@ function Git({ basePath = '/git' }) {
 
     if (loading) {
         return (
-            <div className="page-loading">
-                <Spinner size="lg" />
+            <div className="page-container git-page">
+                <div className="page-loading">
+                    <Spinner size="lg" />
+                </div>
             </div>
         );
     }
 
     return (
         <div className="page-container git-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Git Server</h1>
-                    <p className="page-description">Self-hosted Git repository management with Gitea</p>
-                </div>
-                <div className="page-header-actions">
+            <PageTopbar
+                icon={<GitBranch size={18} />}
+                title="Git Server"
+                actions={<>
                     {!status?.installed ? (
                         <Button onClick={() => setShowInstallModal(true)}>
                             Install Git Server
@@ -611,8 +611,8 @@ function Git({ basePath = '/git' }) {
                             )}
                         </>
                     )}
-                </div>
-            </div>
+                </>}
+            />
 
             {!status?.installed ? (
                 <div className="empty-state-large">

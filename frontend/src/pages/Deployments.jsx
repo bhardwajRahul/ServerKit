@@ -19,10 +19,10 @@ import { PageTopbar } from '@/components/ds';
 import { SERVICE_TABS } from '../components/services/serviceTabs';
 
 const STATUS_COLORS = {
-    pending: { bg: 'rgba(148,163,184,0.15)', fg: '#94a3b8', icon: Clock },
-    running: { bg: 'rgba(99,102,241,0.15)', fg: '#6366f1', icon: Loader2 },
-    succeeded: { bg: 'rgba(34,197,94,0.15)', fg: '#22c55e', icon: CheckCircle2 },
-    failed: { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444', icon: XCircle },
+    pending: { bg: 'var(--surface-3)', fg: 'var(--text-faint)', icon: Clock },
+    running: { bg: 'var(--accent-bg)', fg: 'var(--accent-bright)', icon: Loader2 },
+    succeeded: { bg: 'var(--green-bg)', fg: 'var(--green)', icon: CheckCircle2 },
+    failed: { bg: 'var(--red-bg)', fg: 'var(--red)', icon: XCircle },
 };
 
 const formatDuration = (seconds) => {
@@ -249,7 +249,7 @@ const Deployments = () => {
                                                     style={{
                                                         width: `${job.progress_percent || 0}%`,
                                                         background:
-                                                            job.status === 'failed' ? '#ef4444' : 'var(--accent-primary)',
+                                                            job.status === 'failed' ? 'var(--red)' : 'var(--accent-primary)',
                                                     }}
                                                 />
                                             </div>
@@ -337,10 +337,10 @@ const Deployments = () => {
                                         const stepPrefix = log.step_index ? `[${log.step_index}] ` : '';
                                         const color =
                                             log.level === 'error'
-                                                ? '#fca5a5'
+                                                ? 'var(--red)'
                                                 : log.level === 'debug'
-                                                ? '#94a3b8'
-                                                : '#cbd5e1';
+                                                ? 'var(--text-faint)'
+                                                : 'var(--text-dim)';
                                         return (
                                             <div key={log.id} style={{ color }}>
                                                 <span className="deployments-page__log-time">{ts}</span>{' '}

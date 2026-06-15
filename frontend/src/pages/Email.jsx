@@ -9,7 +9,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Pill, MetricCard } from '@/components/ds';
+import { Pill, MetricCard, PageTopbar } from '@/components/ds';
 
 const VALID_TABS = ['status', 'domains', 'accounts', 'aliases', 'forwarding', 'dns-providers', 'spam', 'webmail', 'queue'];
 
@@ -518,15 +518,12 @@ function Email() {
 
     return (
         <div className="page-container email-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Email Server</h1>
-                    <p className="page-description">Postfix · Dovecot · DKIM · SpamAssassin · Roundcube</p>
-                </div>
-                <div className="page-header-actions">
-                    <Button size="sm" variant="outline" onClick={loadStatus}>Refresh</Button>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Mail size={18} />}
+                title="Email Server"
+                meta={<>Postfix · Dovecot · DKIM · SpamAssassin · Roundcube</>}
+                actions={<Button size="sm" variant="outline" onClick={loadStatus}>Refresh</Button>}
+            />
 
             {!isInstalled ? (
                 <div className="not-installed">

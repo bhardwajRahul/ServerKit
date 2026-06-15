@@ -210,7 +210,11 @@ const CronJobs = () => {
     ));
 
     if (loading) {
-        return <EmptyState loading size="lg" title="Loading cron jobs..." />;
+        return (
+            <div className="page-container cron-page">
+                <EmptyState loading size="lg" title="Loading cron jobs..." />
+            </div>
+        );
     }
 
     return (

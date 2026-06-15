@@ -340,6 +340,14 @@
     display: flex;
     flex-direction: column;
     gap: $space-4;
+
+    // Detail pages (WordPress site/project, etc.) run full-bleed across the
+    // content area — no 1400px cap — so the wide top action bar + tab strip
+    // and the two-column panels have room to breathe.
+    &--wide {
+        width: 100%;
+        max-width: none;
+    }
 }
 
 // Top bar with breadcrumbs and actions

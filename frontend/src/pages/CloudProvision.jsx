@@ -91,7 +91,7 @@ const CloudProvision = () => {
         return 'warning';
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     return (
         <div className="page-container cloud-provision-page">

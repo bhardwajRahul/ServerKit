@@ -1342,6 +1342,54 @@
     margin-top: $space-4;
 }
 
+// Dashed "add environment" tile — an in-grid affordance that reads as
+// intentional, replacing the old full-width empty-state block that looked
+// like an error sitting under the production card.
+.wp-env-add-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $space-2;
+    min-height: 150px;
+    padding: $space-6;
+    text-align: center;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--text);
+        background: var(--accent-bg-soft);
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    &__title {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: var(--text);
+    }
+
+    &__hint {
+        font-size: $font-size-sm;
+        line-height: $line-height-normal;
+        max-width: 280px;
+    }
+}
+
 .wp-env-card {
     background: var(--surface);
     border: 1px solid var(--border-soft);
@@ -1624,110 +1672,6 @@
             margin-left: $space-1;
         }
     }
-}
-
-// Git Connect Form (GitConnectForm.jsx — WP detail Git tab)
-.git-connect-form {
-    max-width: 600px;
-    background: var(--surface);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius);
-    padding: $space-5;
-
-    h4 {
-        margin: 0 0 $space-2;
-        font-size: 14.5px;
-        font-weight: $font-weight-semibold;
-        color: var(--text);
-    }
-
-    .hint {
-        color: var(--text-faint);
-        font-size: 12.5px;
-        margin-bottom: $space-4;
-    }
-}
-
-.git-connected-card {
-    background: var(--surface);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius);
-    padding: $space-5;
-    max-width: 600px;
-}
-
-.git-connected-header {
-    display: flex;
-    align-items: flex-start;
-    gap: $space-3;
-    margin-bottom: $space-4;
-
-    > svg {
-        width: 34px;
-        height: 34px;
-        padding: 8px;
-        border-radius: 9px;
-        background: var(--green-bg);
-        color: var(--green);
-        flex-shrink: 0;
-    }
-
-    h4 {
-        margin: 0 0 $space-1;
-        font-size: 14.5px;
-        font-weight: $font-weight-semibold;
-        color: var(--text);
-    }
-}
-
-.git-repo-url {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    color: var(--accent-bright);
-    text-decoration: none;
-    overflow-wrap: anywhere;
-
-    &:hover {
-        text-decoration: underline;
-    }
-}
-
-.git-connected-meta {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $space-3;
-    padding: $space-4;
-    background: var(--surface-2);
-    border: 1px solid var(--border-soft);
-    border-radius: $radius-md;
-    margin-bottom: $space-4;
-}
-
-.git-meta-item {
-    .meta-label {
-        display: block;
-        font-family: var(--mono);
-        font-size: 10.5px;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: var(--text-faint);
-        margin-bottom: 3px;
-    }
-
-    .meta-value {
-        font-size: 13px;
-        color: var(--text);
-
-        &.mono {
-            font-family: var(--mono);
-            font-size: 12px;
-        }
-    }
-}
-
-.git-connected-actions {
-    display: flex;
-    justify-content: flex-end;
 }
 
 // Commit List

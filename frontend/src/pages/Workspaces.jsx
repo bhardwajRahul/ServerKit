@@ -57,7 +57,7 @@ const Workspaces = () => {
         }
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container workspaces-page"><Spinner /></div>;
 
     return (
         <div className="page-container workspaces-page">

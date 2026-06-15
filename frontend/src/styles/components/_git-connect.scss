@@ -1,0 +1,317 @@
+// ============================================
+// CONNECT A REPOSITORY — shared visual language
+// Used by the service connect modal (GitConnectModal) and the WordPress Git tab
+// (GitConnectForm). Intentionally mirrors _new-service.scss so all three
+// "connect a repo" surfaces read as one product. Brand provider marks come from
+// components/git/GitProviders.jsx.
+// ============================================
+
+.git-connect {
+    display: grid;
+    gap: $space-4;
+
+    // Card variant — for surfaces that sit inline on a page (the WP Git tab),
+    // not inside a Modal (which supplies its own chrome).
+    &--card {
+        max-width: 640px;
+        padding: $space-5;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+    }
+
+    &__intro {
+        display: flex;
+        align-items: flex-start;
+        gap: $space-3;
+    }
+
+    &__intro-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: $radius-lg;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    &__intro-text {
+        strong {
+            display: block;
+            color: $text-primary;
+            font-size: $font-size-base;
+            font-weight: $font-weight-semibold;
+        }
+
+        span {
+            display: block;
+            margin-top: 2px;
+            color: $text-tertiary;
+            font-size: $font-size-xs;
+            line-height: 1.5;
+        }
+    }
+
+    // The "explains the others" provider strip — styled like the new-service
+    // method cards (icon tile dim by default, accent when active).
+    &__providers {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(122px, 1fr));
+        gap: $space-2;
+    }
+
+    &__provider {
+        display: grid;
+        gap: $space-1;
+        padding: $space-3;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        transition: border-color $transition-fast, background $transition-fast;
+
+        &--active {
+            border-color: var(--accent-dim);
+            background: var(--accent-bg);
+        }
+    }
+
+    &__provider-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: $radius-md;
+        background: var(--surface-2);
+        color: var(--text-dim);
+        transition: background $transition-fast, color $transition-fast;
+    }
+    &__provider--active &__provider-icon {
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    &__provider-label {
+        color: $text-primary;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-semibold;
+    }
+
+    &__provider-hint {
+        color: var(--text-faint);
+        font-size: 11.5px;
+        line-height: 1.4;
+    }
+
+    // Inline "detected provider" pill beneath the URL input.
+    &__detected {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        width: max-content;
+        margin-top: $space-1;
+        padding: 3px $space-2;
+        border: 1px solid var(--accent-dim);
+        border-radius: $radius-full;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+        font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
+        line-height: 1;
+    }
+
+    &__field {
+        display: grid;
+        gap: $space-2;
+
+        label {
+            color: $text-secondary;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+        }
+    }
+
+    &__field-hint {
+        color: $text-tertiary;
+        font-size: $font-size-xs;
+        line-height: 1.45;
+    }
+
+    &__toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-4;
+        padding: $space-3;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: $radius-md;
+
+        strong,
+        span {
+            display: block;
+        }
+
+        strong {
+            color: $text-primary;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+        }
+
+        span {
+            margin-top: 2px;
+            color: $text-tertiary;
+            font-size: $font-size-xs;
+            line-height: 1.4;
+        }
+    }
+
+    // Disclosure for secondary fields (deploy scripts) — mirrors the new-service
+    // "Advanced settings" toggle.
+    &__advanced-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-3;
+        min-height: 44px;
+        padding: 0 $space-3;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: $radius-md;
+        color: $text-secondary;
+        cursor: pointer;
+        transition: border-color $transition-fast, background $transition-fast;
+
+        &:hover {
+            background: var(--surface-2);
+            border-color: var(--border-strong);
+        }
+
+        > span {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+        }
+
+        &[aria-expanded='true'] > svg {
+            transform: rotate(180deg);
+        }
+
+        > svg {
+            transition: transform $transition-fast;
+        }
+    }
+
+    &__advanced {
+        display: grid;
+        gap: $space-4;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: $space-2;
+        margin-top: $space-2;
+        padding-top: $space-4;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    &__actions-spacer {
+        margin-right: auto;
+    }
+}
+
+// Connected-state card — shown on the WordPress Git tab once a repo is linked.
+.git-connect-status {
+    display: grid;
+    gap: $space-4;
+    max-width: 640px;
+    padding: $space-5;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        gap: $space-3;
+    }
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: $radius-lg;
+        background: var(--green-bg);
+        color: var(--green);
+    }
+
+    &__title {
+        min-width: 0;
+
+        strong {
+            display: block;
+            color: $text-primary;
+            font-size: $font-size-base;
+            font-weight: $font-weight-semibold;
+        }
+    }
+
+    &__url {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--accent-bright);
+        text-decoration: none;
+        overflow-wrap: anywhere;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: $space-3;
+        padding: $space-4;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: $radius-md;
+    }
+
+    &__meta-item {
+        span {
+            display: block;
+            margin-bottom: 3px;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        strong {
+            color: $text-primary;
+            font-size: 13px;
+            font-weight: $font-weight-normal;
+
+            &.mono {
+                font-family: var(--mono);
+                font-size: 12px;
+            }
+        }
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+}

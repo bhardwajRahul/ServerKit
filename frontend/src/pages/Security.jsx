@@ -19,7 +19,7 @@ import {
 } from '../components/security';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import EmptyState from '../components/EmptyState';
-import { MetricCard } from '@/components/ds';
+import { PageTopbar, MetricCard } from '@/components/ds';
 import { Siren, Bug, ShieldCheck, Radar } from 'lucide-react';
 
 const VALID_TABS = ['overview', 'firewall', 'fail2ban', 'ssh-keys', 'ip-lists', 'scanner', 'quarantine', 'integrity', 'audit', 'vulnerability', 'updates', 'events', 'settings'];
@@ -62,7 +62,11 @@ const Security = () => {
     }
 
     if (loading) {
-        return <EmptyState loading title="Loading security status..." />;
+        return (
+            <div className="page-container security-page">
+                <EmptyState loading title="Loading security status..." />
+            </div>
+        );
     }
 
     const alerts = status?.recent_alerts || {};
@@ -70,12 +74,7 @@ const Security = () => {
 
     return (
         <div className="page-container security-page">
-            <div className="page-header">
-                <div>
-                    <h1>Security</h1>
-                    <p className="page-subtitle">Firewall, malware scanning, file integrity, and security alerts</p>
-                </div>
-            </div>
+            <PageTopbar icon={<ShieldCheck size={18} />} title="Security" />
 
             <div className="sec-kpis" role="group" aria-label="Security overview">
                 <MetricCard

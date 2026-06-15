@@ -16,6 +16,18 @@ def _resolve_app(site_or_app_id):
     return Application.query.get(site_or_app_id)
 
 
+def _is_wp_app(app):
+    """True if `app` is a WordPress-managed site. Containerized WP sites are
+    stored with app_type 'docker' (see WordPressService), so app_type alone is
+    not a reliable signal — a linked WordPressSite record is the source of truth.
+    """
+    if not app:
+        return False
+    if app.app_type == 'wordpress':
+        return True
+    return WordPressSite.query.filter_by(application_id=app.id).first() is not None
+
+
 # ==================== WORDPRESS SITES HUB ENDPOINTS ====================
 
 @wordpress_bp.route('/sites', methods=['GET'])
@@ -786,7 +798,7 @@ def get_wordpress_info(app_id):
     if user.role != 'admin' and app.user_id != current_user_id:
         return jsonify({'error': 'Access denied'}), 403
 
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     info = WordPressService.get_wordpress_info(app.root_path)
@@ -806,7 +818,7 @@ def update_wordpress(app_id):
     if not app:
         return jsonify({'error': 'Application not found'}), 404
 
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     result = WordPressService.update_wordpress(app.root_path)
@@ -1293,7 +1305,7 @@ def wp_auto_login(site_id):
     app = wp_site.application if wp_site else _resolve_app(site_id)
     if not app or not app.root_path:
         return jsonify({'error': 'Application not found'}), 404
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     # Resolve a managed admin tied to the operator's panel email. Prefer the

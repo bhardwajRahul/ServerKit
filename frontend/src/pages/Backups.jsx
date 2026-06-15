@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import useTabParam from '../hooks/useTabParam';
-import { Upload, Check, AlertTriangle, Clock, Database, Package, FolderArchive, HardDrive, Cloud, CloudOff, RefreshCw, Trash2, Plus, CheckCircle, XCircle, FileArchive } from 'lucide-react';
+import { Upload, Check, AlertTriangle, Clock, Database, Package, FolderArchive, HardDrive, Cloud, CloudOff, RefreshCw, Trash2, Plus, CheckCircle, XCircle, FileArchive, Archive } from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../hooks/useConfirm';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { MetricCard, Pill, SegControl } from '@/components/ds';
+import { PageTopbar, MetricCard, Pill, SegControl } from '@/components/ds';
 
 const VALID_TABS = ['backups', 'schedules', 'storage', 'settings'];
 
@@ -363,17 +363,19 @@ const Backups = () => {
         : backups.filter(b => b.type === filterType);
 
     if (loading) {
-        return <EmptyState loading size="lg" title="Loading backup data..." />;
+        return (
+            <div className="page-container backups-page">
+                <EmptyState loading size="lg" title="Loading backup data..." />
+            </div>
+        );
     }
 
     return (
         <div className="page-container backups-page">
-            <div className="page-header">
-                <div>
-                    <h1>Backups</h1>
-                    <p className="page-subtitle">Manage application, database, and file backups with local and remote storage</p>
-                </div>
-                <div className="page-header-actions">
+            <PageTopbar
+                icon={<Archive size={18} />}
+                title="Backups"
+                actions={<>
                     <Button variant="outline" onClick={() => setShowScheduleModal(true)}>
                         <Clock size={16} />
                         Add Schedule
@@ -382,8 +384,8 @@ const Backups = () => {
                         <Plus size={16} />
                         Create Backup
                     </Button>
-                </div>
-            </div>
+                </>}
+            />
 
             {error && (
                 <div className="alert alert-danger">

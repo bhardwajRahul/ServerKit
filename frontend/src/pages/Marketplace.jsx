@@ -261,7 +261,7 @@ const Marketplace = () => {
         return 'outline';
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     const installedIds = new Set(myExtensions.map((extension) => String(extension.extension_id)));
     const localCatalogEntries = builtins.map(getLocalCatalogEntry);

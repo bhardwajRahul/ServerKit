@@ -5,24 +5,6 @@
 // ============================================
 
 .templates-page {
-    .templates-page-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: $space-4;
-        margin-bottom: $space-4;
-
-        h1 {
-            margin: 0;
-            white-space: nowrap;
-        }
-    }
-
-    .page-description {
-        color: $text-secondary;
-        margin-top: $space-2;
-    }
-
     .empty-state {
         grid-column: 1 / -1;
         display: flex;
@@ -805,16 +787,6 @@
 // Responsive
 @media (max-width: $breakpoint-md) {
     .templates-page {
-        .templates-page-header {
-            flex-direction: column;
-            align-items: stretch;
-            gap: $space-3;
-
-            h1 {
-                white-space: normal;
-            }
-        }
-
         .templates-grid {
             grid-template-columns: 1fr;
         }

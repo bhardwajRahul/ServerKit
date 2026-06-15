@@ -1223,8 +1223,11 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             inst = cls.wp_cli(path, ['package', 'install', 'aaemnnosttv/wp-cli-login-command'])
             if not inst.get('success'):
                 return {'success': False, 'error': 'Failed to install wp-cli-login package: ' + (inst.get('error') or '')}
-        # Ensure the companion launcher mu-plugin is present (idempotent).
-        cls.wp_cli(path, ['login', 'install', '--yes'])
+        # Ensure the companion launcher plugin is present AND active (idempotent).
+        # Without --activate the plugin installs but stays inactive, and the
+        # subsequent `wp login create` fails with "requires the companion plugin
+        # to be installed and active".
+        cls.wp_cli(path, ['login', 'install', '--activate', '--yes'])
         return {'success': True}
 
     @classmethod

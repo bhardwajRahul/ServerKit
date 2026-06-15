@@ -36,7 +36,7 @@ const WordPressProjects = () => {
     }
 
     return (
-        <div className="wp-projects-page">
+        <div className="page-container wp-projects-page">
             <PageTopbar icon={<GitBranch size={18} />} title="Pipeline" tabs={WORDPRESS_TABS} />
 
             {projects.length === 0 ? (

@@ -127,7 +127,7 @@ const ServerTemplates = () => {
         general: 'General', web: 'Web Server', database: 'Database', mail: 'Mail Server', custom: 'Custom'
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     return (
         <div className="page-container server-templates-page">

@@ -2,23 +2,6 @@
 // SETTINGS PAGE STYLES
 // ============================================
 
-.settings-page {
-    .page-header {
-        margin-bottom: $space-6;
-
-        h1 {
-            font-size: $font-size-2xl;
-            font-weight: $font-weight-semibold;
-            margin: 0 0 $space-1 0;
-        }
-
-        .page-subtitle {
-            color: $text-secondary;
-            margin: 0;
-        }
-    }
-}
-
 .settings-layout {
     display: grid;
     grid-template-columns: 206px 1fr;

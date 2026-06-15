@@ -4,7 +4,7 @@
     height: 100%;
     min-height: 0;
 
-    .page-header {
+    .sk-topbar {
         flex: 0 0 auto;
     }
 
@@ -79,14 +79,6 @@
 }
 
 .documentation {
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 1rem;
-        flex-wrap: wrap;
-    }
-
     &__search {
         display: flex;
         align-items: center;

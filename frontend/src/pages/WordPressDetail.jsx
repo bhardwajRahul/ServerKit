@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 // Detail Page Skeleton for initial loading
 const DetailPageSkeleton = () => (
-    <div className="app-detail-page wp-detail-page">
+    <div className="app-detail-page app-detail-page--wide wp-detail-page">
         <div className="app-detail-topbar">
             <div className="app-detail-breadcrumbs">
                 <span className="skeleton" style={{ width: 80, height: 16 }} />
@@ -76,7 +76,7 @@ const DetailPageSkeleton = () => (
     </div>
 );
 
-const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'php', 'git', 'backups', 'uptime', 'analytics', 'vulnerabilities', 'security', 'updates', 'reports'];
+const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'git', 'backups', 'uptime', 'analytics', 'vulnerabilities', 'security', 'updates', 'reports'];
 
 // Environment-type → dot tint for the header environment switcher.
 const ENV_DOT_COLORS = {
@@ -263,7 +263,7 @@ const WordPressDetail = () => {
     }
 
     return (
-        <div className="app-detail-page wp-detail-page">
+        <div className="app-detail-page app-detail-page--wide wp-detail-page">
             {/* One-time cloned-admin credentials banner */}
             {clonedCreds && (
                 <div className="wp-creds-banner">
@@ -452,12 +452,6 @@ const WordPressDetail = () => {
                     <Palette size={14} /> Themes
                 </div>
                 <div
-                    className={`app-detail-tab ${activeTab === 'php' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('php')}
-                >
-                    <Settings size={14} /> PHP
-                </div>
-                <div
                     className={`app-detail-tab ${activeTab === 'git' ? 'active' : ''}`}
                     onClick={() => setActiveTab('git')}
                 >
@@ -561,7 +555,6 @@ const WordPressDetail = () => {
                     {activeTab === 'database' && <DatabaseTab siteId={site.id} site={site} />}
                     {activeTab === 'plugins' && <PluginsTab siteId={site.id} />}
                     {activeTab === 'themes' && <ThemesTab siteId={site.id} />}
-                    {activeTab === 'php' && <PhpTab siteId={site.id} />}
                     {activeTab === 'git' && <GitTab siteId={site.id} site={site} onUpdate={loadSite} />}
                     {activeTab === 'backups' && <BackupsTab siteId={site.id} />}
                     {activeTab === 'uptime' && <UptimeTab siteId={site.id} />}
@@ -2748,15 +2741,25 @@ const EnvironmentsTab = ({ siteId, site, onUpdate }) => {
                         onDelete={handleDelete}
                     />
                 ))}
-            </div>
 
-            {childEnvs.length === 0 && site.is_production && (
-                <EmptyState
-                    icon={Layers}
-                    title="No development or staging environments yet"
-                    description="Create an environment to test changes safely before deploying to production."
-                />
-            )}
+                {/* Add-environment tile — sits inline next to the existing
+                    environments instead of a full-width "empty" block. */}
+                {canCreateMore && (
+                    <button
+                        type="button"
+                        className="wp-env-add-tile"
+                        onClick={() => setShowCreateModal(true)}
+                    >
+                        <span className="wp-env-add-tile__icon"><Plus size={22} /></span>
+                        <span className="wp-env-add-tile__title">Create environment</span>
+                        <span className="wp-env-add-tile__hint">
+                            {childEnvs.length === 0
+                                ? 'Spin up a dev or staging copy to test changes safely before deploying to production.'
+                                : 'Add another dev or staging copy.'}
+                        </span>
+                    </button>
+                )}
+            </div>
 
             {showCreateModal && (
                 <CreateEnvironmentModal
@@ -3570,7 +3573,7 @@ const GitTab = ({ siteId, site, onUpdate }) => {
     if (loading) {
         return (
             <div className="git-tab">
-                <div className="git-connect-form">
+                <div className="git-connect git-connect--card">
                     <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 16 }} />
                     <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
                     <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
@@ -3683,18 +3686,18 @@ const BackupsTab = ({ siteId }) => {
                 </Button>
             </div>
 
-            <SnapshotTable
-                snapshots={snapshots}
-                loading={loading}
-                onRestore={handleRestore}
-                onDelete={handleDelete}
-            />
-
-            {snapshots.length === 0 && !loading && (
+            {snapshots.length === 0 && !loading ? (
                 <EmptyState
                     icon={Archive}
                     title="No backups yet"
                     description="Create a backup to protect your site files and database."
+                />
+            ) : (
+                <SnapshotTable
+                    snapshots={snapshots}
+                    loading={loading}
+                    onRestore={handleRestore}
+                    onDelete={handleDelete}
                 />
             )}
         </div>
