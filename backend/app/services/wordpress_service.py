@@ -1441,6 +1441,7 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         from app import db
         from app.models import Application, WordPressSite
         from app.services.template_service import TemplateService
+        from app.services.site_domain_service import SiteDomainService
 
         # Sanitize name for Docker
         safe_name = name.lower().replace(' ', '-')
@@ -1482,7 +1483,16 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             # run the install, so no admin user exists. Do it via the Docker-aware
             # wp_cli bridge (host-filesystem hardening does not apply to volumes).
             admin_password = cls._generate_password()
-            site_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+            # Publish at a real hostname (<slug>.<base_domain>) instead of
+            # localhost:<port>. WordPress bakes whatever --url we pass in as its
+            # canonical home/siteurl, so this is what makes the site usable as an
+            # actual website. Falls back to localhost when no base domain is set
+            # (e.g. an unconfigured production install).
+            site_host = SiteDomainService.subdomain_for(safe_name)
+            if site_host:
+                site_url = SiteDomainService.site_url(site_host)
+            else:
+                site_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
             wp_warning = None
             harden_actions = []
             cache_actions = []
@@ -1536,6 +1546,14 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             # only meaningful if the automated install finalized).
             multisite = cls.is_multisite(app.root_path) if admin_password else False
 
+            # Publish the site at its hostname: a Domain row + nginx reverse-proxy
+            # vhost so <slug>.<base_domain> reaches the container. Best-effort — a
+            # box without nginx (local dev) degrades to a warning, never failing
+            # the create.
+            routing = cls._provision_routing(app, site_host)
+            if routing.get('warning'):
+                wp_warning = (wp_warning + ' ' + routing['warning']) if wp_warning else routing['warning']
+
             # Surface any best-effort cache failures without failing the create.
             if cache_warnings:
                 note = 'Site created, but some caches could not be enabled — ' + '; '.join(cache_warnings) + '.'
@@ -1568,6 +1586,8 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 'message': 'WordPress site created successfully',
                 'site': wp_site.to_dict(),
                 'http_port': http_port,
+                'url': site_url,
+                'domain': site_host,
                 'admin_user': admin_user if admin_password else None,
                 'admin_password': admin_password,
                 'hardening': harden_actions,
@@ -1580,6 +1600,66 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         except Exception as e:
             db.session.rollback()
             return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _provision_routing(cls, app, site_host) -> Dict:
+        """Publish a managed site at ``site_host`` via a primary Domain row + an
+        nginx reverse-proxy vhost to the container's published port.
+
+        Best-effort and never raises: a box without nginx (e.g. local Windows
+        dev) records the Domain and returns a warning rather than failing site
+        creation. Returns ``{'domain', 'nginx', 'warning'}``.
+        """
+        from app import db
+        from app.models.domain import Domain
+        from app.services.nginx_service import NginxService
+
+        if not site_host:
+            return {'domain': None, 'nginx': None, 'warning': None}
+
+        warning = None
+        try:
+            if not Domain.query.filter_by(name=site_host).first():
+                Domain.query.filter_by(application_id=app.id, is_primary=True).update({'is_primary': False})
+                db.session.add(Domain(name=site_host, is_primary=True, application_id=app.id))
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            warning = f'could not record domain {site_host}: {e}'
+
+        nginx_result = None
+        if app.port:
+            try:
+                domains = [d.name for d in Domain.query.filter_by(application_id=app.id).all()] or [site_host]
+                nginx_result = NginxService.create_site(
+                    name=app.name, app_type='docker', domains=domains,
+                    root_path=app.root_path or '', port=app.port,
+                )
+                if nginx_result.get('success'):
+                    en = NginxService.enable_site(app.name)
+                    if not en.get('success'):
+                        nginx_result['warning'] = f"vhost written but not enabled: {en.get('error')}"
+                else:
+                    msg = f"nginx vhost not created: {nginx_result.get('error')}"
+                    warning = (warning + '; ' + msg) if warning else msg
+            except Exception as e:
+                msg = f'nginx vhost error: {e}'
+                warning = (warning + '; ' + msg) if warning else msg
+        return {'domain': site_host, 'nginx': nginx_result, 'warning': warning}
+
+    @classmethod
+    def _canonical_site_url(cls, app) -> str:
+        """The URL WordPress serves under — its primary domain if one exists,
+        else the legacy localhost:<port> address. Used to build correct
+        search-replace pairs when cloning."""
+        from app.models.domain import Domain
+        d = (Domain.query.filter_by(application_id=app.id, is_primary=True).first()
+             or Domain.query.filter_by(application_id=app.id).first())
+        if d:
+            return f'http://{d.name}'
+        if app.port:
+            return f'http://localhost:{app.port}'
+        return None
 
     @classmethod
     def clone_site(cls, source_site_id: int, new_name: str, user_id: int) -> Dict:
@@ -1615,11 +1695,10 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         new_root = new_site.application.root_path
         new_compose = os.path.join(new_root, 'docker-compose.yml')
         http_port = create_res.get('http_port')
-        new_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+        new_url = create_res.get('url') or (f'http://localhost:{http_port}' if http_port else 'http://localhost')
 
         try:
-            src_port = source.application.port
-            source_url = f'http://localhost:{src_port}' if src_port else None
+            source_url = cls._canonical_site_url(source.application)
 
             # 2) Clone the source DB into the new stack (root user for a clean overwrite;
             #    both stacks use db name 'wordpress'; root pw lives in each .env DB_PASSWORD).
@@ -1629,10 +1708,14 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 'truncate_tables': ['actionscheduler_actions', 'actionscheduler_logs'],
             }
             if source_url and new_url and source_url != new_url:
-                clone_options['search_replace'] = {
-                    source_url: new_url,
-                    f'localhost:{src_port}': f'localhost:{http_port}',
-                }
+                # Rewrite the source's URL to the clone's, both with and without
+                # scheme so host-only and serialized references are covered.
+                sr = {source_url: new_url}
+                src_host = source_url.split('://', 1)[-1]
+                new_host = new_url.split('://', 1)[-1]
+                if src_host != new_host:
+                    sr[src_host] = new_host
+                clone_options['search_replace'] = sr
             clone_res = DatabaseSyncService.clone_between_containers(
                 source_compose_path=source_compose,
                 target_compose_path=new_compose,
@@ -1923,6 +2006,7 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         """Tear down Docker stack and delete records for a WordPressSite."""
         from app import db
         from app.services.docker_service import DockerService
+        from app.services.nginx_service import NginxService
 
         if wp_site.application and wp_site.application.root_path:
             root_path = wp_site.application.root_path
@@ -1931,6 +2015,13 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 shutil.rmtree(root_path, ignore_errors=True)
 
         if wp_site.application:
+            # Remove the reverse-proxy vhost we provisioned so a deleted site
+            # doesn't leave dangling nginx config. The Domain rows cascade-delete
+            # with the Application (Application.domains is delete-orphan).
+            try:
+                NginxService.delete_site(wp_site.application.name)
+            except Exception:
+                pass
             db.session.delete(wp_site.application)
 
         db.session.delete(wp_site)

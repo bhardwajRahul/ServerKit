@@ -1,0 +1,65 @@
+"""Resolve the public address of a managed site.
+
+A bare published port (``127.0.0.1:8300``) is reachable on the box but is
+useless as a public website URL. Instead every managed site is given a real
+hostname ``<slug>.<base_domain>`` and the operator points a single wildcard DNS
+record (``*.<base_domain>``) at the server — so a new site is reachable the
+moment it is created, with no per-site DNS work.
+
+The base domain is a one-time operator setting (``system_settings`` key
+``sites_base_domain``), falling back to ``SITES_BASE_DOMAIN`` in config. In
+development that defaults to ``lvh.me``, a public resolver that maps
+``*.lvh.me -> 127.0.0.1``, so subdomain routing can be exercised locally with
+zero DNS setup. When no base domain is configured the helpers return ``None``
+and callers fall back to the legacy ``localhost:<port>`` behaviour.
+"""
+import re
+
+from flask import current_app
+
+from app.models.system_settings import SystemSettings
+
+
+class SiteDomainService:
+    DEFAULT_BASE_DOMAIN = 'lvh.me'
+
+    @classmethod
+    def base_domain(cls):
+        """The configured base domain, or '' when site routing is not set up.
+
+        Prefers the runtime setting (editable in-app) over the config default so
+        an operator can change it without redeploying.
+        """
+        val = SystemSettings.get('sites_base_domain')
+        if val:
+            return str(val).strip().lstrip('.').lower()
+        return (current_app.config.get('SITES_BASE_DOMAIN') or '').strip().lstrip('.').lower()
+
+    @classmethod
+    def server_ip(cls):
+        """Public IP that wildcard/custom A-records should point at (Phase 3)."""
+        return SystemSettings.get('server_public_ip') or current_app.config.get('SERVER_PUBLIC_IP') or None
+
+    @staticmethod
+    def slugify(name):
+        """Turn a site name into a DNS-safe label (a-z, 0-9, single dashes)."""
+        s = (name or '').strip().lower()
+        s = re.sub(r'[^a-z0-9-]', '-', s)
+        s = re.sub(r'-+', '-', s).strip('-')
+        return s or 'site'
+
+    @classmethod
+    def subdomain_for(cls, name):
+        """``<slug>.<base_domain>`` for a site name, or ``None`` when no base
+        domain is configured (site routing disabled)."""
+        base = cls.base_domain()
+        if not base:
+            return None
+        return f'{cls.slugify(name)}.{base}'
+
+    @classmethod
+    def site_url(cls, host, ssl=False):
+        """Canonical URL for a host. HTTP for now; the wildcard-cert phase flips
+        managed subdomains to HTTPS."""
+        scheme = 'https' if ssl else 'http'
+        return f'{scheme}://{host}'

@@ -46,9 +46,24 @@ class Config:
     if _public_url and _public_url not in CORS_ORIGINS:
         CORS_ORIGINS.append(_public_url)
 
+    # ── Managed-site routing ────────────────────────────────────────────
+    # Each managed site is published at <slug>.<SITES_BASE_DOMAIN>; the
+    # operator points a wildcard DNS record (*.<SITES_BASE_DOMAIN>) at the
+    # server so new sites are reachable with no per-site DNS work. Empty by
+    # default so production must opt in explicitly — when empty, site
+    # provisioning falls back to the legacy localhost:<port> URL. The runtime
+    # 'sites_base_domain' setting overrides this (see SiteDomainService).
+    SITES_BASE_DOMAIN = os.environ.get('SITES_BASE_DOMAIN', '')
+    # Public IP the wildcard/custom A-records should point at when auto-creating
+    # DNS records via a connected provider.
+    SERVER_PUBLIC_IP = os.environ.get('SERVER_PUBLIC_IP', '')
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    # lvh.me resolves *.lvh.me -> 127.0.0.1, so subdomain routing works locally
+    # with zero DNS setup.
+    SITES_BASE_DOMAIN = os.environ.get('SITES_BASE_DOMAIN', 'lvh.me')
 
     @classmethod
     def init_app(cls, app):
@@ -65,6 +80,9 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///:memory:')
     # Reduce noise during tests
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=5)
+    # Deterministic base domain so subdomain-provisioning tests don't depend on
+    # the developer's shell environment.
+    SITES_BASE_DOMAIN = 'lvh.me'
 
 
 class ProductionConfig(Config):
