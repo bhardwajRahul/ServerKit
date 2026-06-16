@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
+import { Activity, Rocket, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../../services/api';
 import { useDeployments } from '../../hooks/useDeployments';
 import { getDeployStatus, formatRelativeTime, formatDuration } from '../../utils/serviceTypes';
+import { MetricCard, Pill, Gauge, EnvTag } from '@/components/ds';
+
+// Deployment status → semantic tone (ds Pill kind / dot modifier)
+const DEPLOY_TONE = {
+    success: 'green',
+    failed: 'red',
+    in_progress: 'amber',
+    rolled_back: 'gray',
+    pending: 'cyan',
+};
+
+// environment_type → short EnvTag label
+const ENV_LABEL = {
+    production: 'PROD',
+    development: 'DEV',
+    staging: 'STAGING',
+};
 
 const OverviewTab = ({ app, deployConfig }) => {
     const [metrics, setMetrics] = useState(null);
@@ -55,63 +73,34 @@ const OverviewTab = ({ app, deployConfig }) => {
     const successfulDeploys = deployments.filter(d => d.status === 'success');
     const failedDeploys = deployments.filter(d => d.status === 'failed');
 
-    function getBarColor(percent) {
-        if (percent > 80) return 'var(--danger, #ef4444)';
-        if (percent > 60) return 'var(--warning, #f59e0b)';
-        return 'var(--success, #10b981)';
-    }
-
     return (
         <div className="overview-tab">
-            {/* Quick Stats Row */}
-            <div className="overview-tab__stats-row">
-                <div className="overview-tab__stat-card">
-                    <div className="overview-tab__stat-icon overview-tab__stat-icon--status">
-                        <span className={`overview-tab__pulse overview-tab__pulse--${app.isRunning ? 'live' : 'stopped'}`} />
-                    </div>
-                    <div className="overview-tab__stat-info">
-                        <span className="overview-tab__stat-value">{app.isRunning ? 'Live' : 'Stopped'}</span>
-                        <span className="overview-tab__stat-label">Status</span>
-                    </div>
-                </div>
-
-                <div className="overview-tab__stat-card">
-                    <div className="overview-tab__stat-icon overview-tab__stat-icon--deploys">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
-                        </svg>
-                    </div>
-                    <div className="overview-tab__stat-info">
-                        <span className="overview-tab__stat-value">{deployments.length}</span>
-                        <span className="overview-tab__stat-label">Total Deploys</span>
-                    </div>
-                </div>
-
-                <div className="overview-tab__stat-card">
-                    <div className="overview-tab__stat-icon overview-tab__stat-icon--success">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                    </div>
-                    <div className="overview-tab__stat-info">
-                        <span className="overview-tab__stat-value">{successfulDeploys.length}</span>
-                        <span className="overview-tab__stat-label">Successful</span>
-                    </div>
-                </div>
-
-                <div className="overview-tab__stat-card">
-                    <div className="overview-tab__stat-icon overview-tab__stat-icon--failed">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <line x1="18" y1="6" x2="6" y2="18"/>
-                            <line x1="6" y1="6" x2="18" y2="18"/>
-                        </svg>
-                    </div>
-                    <div className="overview-tab__stat-info">
-                        <span className="overview-tab__stat-value">{failedDeploys.length}</span>
-                        <span className="overview-tab__stat-label">Failed</span>
-                    </div>
-                </div>
+            {/* KPI Strip */}
+            <div className="overview-tab__kpis">
+                <MetricCard
+                    tone={app.isRunning ? 'green' : 'amber'}
+                    icon={<Activity size={16} />}
+                    value={app.isRunning ? 'Live' : 'Stopped'}
+                    label="Status"
+                />
+                <MetricCard
+                    tone="accent"
+                    icon={<Rocket size={16} />}
+                    value={deployments.length}
+                    label="Total Deploys"
+                />
+                <MetricCard
+                    tone="green"
+                    icon={<CheckCircle2 size={16} />}
+                    value={successfulDeploys.length}
+                    label="Successful"
+                />
+                <MetricCard
+                    tone="red"
+                    icon={<XCircle size={16} />}
+                    value={failedDeploys.length}
+                    label="Failed"
+                />
             </div>
 
             <div className="overview-tab__grid">
@@ -119,61 +108,65 @@ const OverviewTab = ({ app, deployConfig }) => {
                 <div className="overview-tab__card">
                     <h3 className="overview-tab__card-title">Service Info</h3>
                     <div className="overview-tab__info-list">
-                        <div className="overview-tab__info-row">
-                            <span className="overview-tab__info-label">Type</span>
-                            <span
-                                className="overview-tab__info-badge"
-                                style={{ backgroundColor: app.typeInfo.bgColor, color: app.typeInfo.color, borderColor: app.typeInfo.borderColor }}
-                            >
-                                {app.typeInfo.label}
+                        <div className="sk-info-row">
+                            <span className="k">Type</span>
+                            <span className="v">
+                                <span
+                                    className="overview-tab__info-badge"
+                                    style={{ backgroundColor: app.typeInfo.bgColor, color: app.typeInfo.color, borderColor: app.typeInfo.borderColor }}
+                                >
+                                    {app.typeInfo.label}
+                                </span>
                             </span>
                         </div>
                         {app.domain && (
-                            <div className="overview-tab__info-row">
-                                <span className="overview-tab__info-label">Domain</span>
-                                <a
-                                    href={`https://${app.domain}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="overview-tab__info-link"
-                                >
-                                    {app.domain}
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                                        <polyline points="15 3 21 3 21 9"/>
-                                        <line x1="10" y1="14" x2="21" y2="3"/>
-                                    </svg>
-                                </a>
+                            <div className="sk-info-row">
+                                <span className="k">Domain</span>
+                                <span className="v">
+                                    <a
+                                        href={`https://${app.domain}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="overview-tab__info-link"
+                                    >
+                                        {app.domain}
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                            <polyline points="15 3 21 3 21 9"/>
+                                            <line x1="10" y1="14" x2="21" y2="3"/>
+                                        </svg>
+                                    </a>
+                                </span>
                             </div>
                         )}
                         {app.port && (
-                            <div className="overview-tab__info-row">
-                                <span className="overview-tab__info-label">Port</span>
-                                <span className="overview-tab__info-value mono">{app.port}</span>
+                            <div className="sk-info-row">
+                                <span className="k">Port</span>
+                                <span className="v">{app.port}</span>
                             </div>
                         )}
-                        <div className="overview-tab__info-row">
-                            <span className="overview-tab__info-label">Created</span>
-                            <span className="overview-tab__info-value">
+                        <div className="sk-info-row">
+                            <span className="k">Created</span>
+                            <span className="v">
                                 {new Date(app.created_at).toLocaleDateString('en-US', {
                                     year: 'numeric', month: 'short', day: 'numeric'
                                 })}
                             </span>
                         </div>
                         {deployConfig && (
-                            <div className="overview-tab__info-row">
-                                <span className="overview-tab__info-label">Repository</span>
-                                <span className="overview-tab__info-value mono">
+                            <div className="sk-info-row">
+                                <span className="k">Repository</span>
+                                <span className="v">
                                     {extractRepoDisplay(deployConfig.repo_url)}
                                     <span className="overview-tab__branch">{deployConfig.branch || 'main'}</span>
                                 </span>
                             </div>
                         )}
                         {app.environment_type && app.environment_type !== 'standalone' && (
-                            <div className="overview-tab__info-row">
-                                <span className="overview-tab__info-label">Environment</span>
-                                <span className={`overview-tab__env-badge overview-tab__env-badge--${app.environment_type}`}>
-                                    {app.environment_type}
+                            <div className="sk-info-row">
+                                <span className="k">Environment</span>
+                                <span className="v">
+                                    <EnvTag env={ENV_LABEL[app.environment_type] || app.environment_type.toUpperCase()} />
                                 </span>
                             </div>
                         )}
@@ -192,24 +185,14 @@ const OverviewTab = ({ app, deployConfig }) => {
                                     <span>CPU</span>
                                     <span className="overview-tab__metric-value">{metrics.cpu.toFixed(1)}%</span>
                                 </div>
-                                <div className="overview-tab__metric-bar">
-                                    <div
-                                        className="overview-tab__metric-bar-fill"
-                                        style={{ width: `${Math.min(metrics.cpu, 100)}%`, backgroundColor: getBarColor(metrics.cpu) }}
-                                    />
-                                </div>
+                                <Gauge value={metrics.cpu} />
                             </div>
                             <div className="overview-tab__metric">
                                 <div className="overview-tab__metric-header">
                                     <span>Memory</span>
                                     <span className="overview-tab__metric-value">{metrics.memory.toFixed(1)}%</span>
                                 </div>
-                                <div className="overview-tab__metric-bar">
-                                    <div
-                                        className="overview-tab__metric-bar-fill"
-                                        style={{ width: `${Math.min(metrics.memory, 100)}%`, backgroundColor: getBarColor(metrics.memory) }}
-                                    />
-                                </div>
+                                <Gauge value={metrics.memory} />
                                 <span className="overview-tab__metric-detail">{metrics.memUsage}</span>
                             </div>
                             <div className="overview-tab__metric-row">
@@ -235,7 +218,7 @@ const OverviewTab = ({ app, deployConfig }) => {
                                 {metrics.pid && (
                                     <div className="overview-tab__metric-item">
                                         <span className="overview-tab__metric-item-label">PID</span>
-                                        <span className="overview-tab__metric-item-value mono">{metrics.pid}</span>
+                                        <span className="overview-tab__metric-item-value">{metrics.pid}</span>
                                     </div>
                                 )}
                             </div>
@@ -290,13 +273,11 @@ const OverviewTab = ({ app, deployConfig }) => {
                     <div className="overview-tab__deploy-list">
                         {deployments.slice(0, 5).map((deploy, idx) => {
                             const statusInfo = getDeployStatus(deploy.status);
+                            const tone = DEPLOY_TONE[deploy.status] || 'cyan';
                             const isLatest = idx === 0 && deploy.status === 'success';
                             return (
                                 <div key={deploy.id} className="overview-tab__deploy-row">
-                                    <div
-                                        className="overview-tab__deploy-dot"
-                                        style={{ backgroundColor: statusInfo.color }}
-                                    />
+                                    <div className={`overview-tab__deploy-dot overview-tab__deploy-dot--${tone}`} />
                                     <div className="overview-tab__deploy-info">
                                         <span className="overview-tab__deploy-message">
                                             {deploy.commitMessage || deploy.version || `Deployment #${deployments.length - idx}`}
@@ -310,12 +291,9 @@ const OverviewTab = ({ app, deployConfig }) => {
                                             <span>{formatRelativeTime(deploy.timestamp)}</span>
                                         </span>
                                     </div>
-                                    <span
-                                        className="overview-tab__deploy-badge"
-                                        style={{ backgroundColor: statusInfo.color + '1a', color: statusInfo.color }}
-                                    >
+                                    <Pill kind={isLatest ? 'green' : tone}>
                                         {isLatest ? 'Live' : statusInfo.label}
-                                    </span>
+                                    </Pill>
                                 </div>
                             );
                         })}

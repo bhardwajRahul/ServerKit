@@ -1,124 +1,459 @@
-// Workspaces page styles
+// ============================================
+// WORKSPACES PAGE (redesign — infra console look)
+// ============================================
 
 .workspaces-page {
-    .workspaces-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: $spacing-lg;
-        margin-top: $spacing-lg;
+
+    // ── list section head (mono eyebrow) ────────────────────
+    .ws-listhead {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: $space-4;
+        margin: $space-5 0 $space-3;
+
+        h2 {
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        &__hint {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-ghost);
+        }
     }
 
-    .workspace-card {
-        padding: $spacing-lg;
+    // ── workspace cards (prototype .ws-card) ────────────────
+    .ws-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: $space-4;
+    }
+
+    .ws-card {
         display: flex;
         flex-direction: column;
-        gap: $spacing-sm;
+        padding: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        transition: border-color 0.14s, transform 0.14s, box-shadow 0.14s;
 
-        &__header {
+        &:hover {
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        &__top {
             display: flex;
+            align-items: flex-start;
             justify-content: space-between;
-            align-items: center;
+            gap: $space-3;
+            margin-bottom: 10px;
+
+            .sk-tile { border-radius: 11px; }
         }
 
-        &__title {
-            display: flex;
-            align-items: center;
-            gap: $spacing-sm;
-
-            h3 { margin: 0; }
-        }
-
-        &__color {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        &__desc {
-            color: $text-secondary;
-            font-size: 0.9rem;
-            margin: 0;
+        &__name {
+            font-size: 15px;
+            font-weight: $font-weight-semibold;
+            color: var(--text);
         }
 
         &__meta {
-            display: flex;
-            gap: $spacing-md;
-            font-size: 0.85rem;
-            color: $text-muted;
+            margin-top: 2px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
         }
 
-        &__quotas {
-            display: flex;
-            gap: $spacing-sm;
-            font-size: 0.8rem;
+        &__desc {
+            margin: $space-2 0 0;
+            font-size: 12.5px;
+            line-height: 1.5;
+            color: var(--text-dim);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
 
-            span {
-                padding: 2px 8px;
-                background: $hover-bg;
-                border-radius: $radius-sm;
+        // count strip (prototype .ws-stat) — member count + quota caps
+        &__stats {
+            display: flex;
+            gap: 18px;
+            margin: 14px 0;
+
+            .v {
+                font-family: var(--mono);
+                font-size: 17px;
+                font-weight: $font-weight-semibold;
+                color: var(--text);
+            }
+
+            .l {
+                margin-top: 2px;
+                font-size: 10.5px;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: var(--text-faint);
             }
         }
 
-        &__actions {
+        &.is-clickable { cursor: pointer; }
+
+        // the active (scoped) workspace — prototype `.ws-card.active`
+        &.active {
+            border-color: var(--accent-dim);
+            background:
+                linear-gradient(160deg, var(--accent-bg-soft), transparent 70%),
+                var(--surface);
+        }
+
+        // bottom-right "Open ›" affordance (prototype card footer)
+        &__open {
             display: flex;
-            gap: $spacing-sm;
-            margin-top: $spacing-sm;
-            padding-top: $spacing-sm;
-            border-top: 1px solid $border-color;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+            margin-top: auto; // pin to bottom → equal-height cards
+            padding-top: 14px;
+            font-size: 12.5px;
+            color: var(--text-faint);
+            transition: color 0.14s;
+        }
+
+        &:hover .ws-card__open { color: var(--accent-bright); }
+    }
+
+    // ── modals: mono eyebrow headings + soft separators ─────
+    .modal-body {
+        h4 {
+            margin: 0 0 $space-3;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        hr {
+            margin: $space-5 0;
+            border: none;
+            border-top: 1px solid var(--border-soft);
+        }
+
+        .form-group label {
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        .form-hint {
+            display: block;
+            margin-top: $space-2;
+            font-family: var(--mono);
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--text-faint);
         }
     }
 
-    .members-list {
+    // ── modal entity rows (members / grants / resources) ────
+    .ws-rows {
         display: flex;
         flex-direction: column;
-        gap: $spacing-sm;
     }
 
-    .member-row {
+    .ws-row {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: $spacing-sm 0;
-        border-bottom: 1px solid $border-color;
+        gap: 11px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border-soft);
 
         &:last-child { border-bottom: none; }
+
+        // round member/grant avatars (apps/servers keep the square tile)
+        &__av { border-radius: 50%; }
+
+        &__id {
+            flex: 1;
+            min-width: 0;
+
+            strong {
+                font-size: 13px;
+                font-weight: 550;
+                color: var(--text);
+            }
+
+            .sk-tag { margin-left: $space-2; }
+        }
+
+        &__sub {
+            margin-top: 2px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+            @include truncate();
+        }
     }
 
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: $spacing-md;
+    // ── clickable "add / move into this workspace" lists ────
+    .ws-pick-label {
+        margin: $space-4 0 $space-2;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-ghost);
     }
 
-    .server-select-list {
+    .ws-pick {
         max-height: 200px;
         overflow-y: auto;
-    }
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
+        background: var(--surface-2);
+        @include custom-scrollbar();
 
-    .server-select-item {
-        padding: $spacing-sm $spacing-md;
-        cursor: pointer;
-        border-radius: $radius-md;
-        &:hover { background: $hover-bg; }
+        &__item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            cursor: pointer;
+            transition: background 0.12s;
+
+            + .ws-pick__item { border-top: 1px solid var(--border-soft); }
+
+            &:hover {
+                background: var(--surface-hover);
+
+                .ws-pick__plus { color: var(--accent-bright); }
+            }
+        }
+
+        &__name {
+            flex: 1;
+            min-width: 0;
+            font-size: 13px;
+            color: var(--text);
+            @include truncate();
+        }
+
+        &__plus {
+            flex-shrink: 0;
+            color: var(--text-ghost);
+            transition: color 0.12s;
+        }
     }
 }
 
-// Brand-color picker in the workspace create modal (#33). Top-level because the
-// modal renders outside the .workspaces page block.
+// ============================================
+// WORKSPACE DETAIL (/workspaces/:id — prototype WorkspaceDetail)
+// ============================================
+.ws-detail {
+
+    &__back {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin: $space-4 0 $space-3;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-faint);
+        text-decoration: none;
+        transition: color 0.14s;
+
+        &:hover { color: var(--accent-bright); }
+    }
+
+    // hero header (prototype .site-header)
+    &__header {
+        display: flex;
+        align-items: center;
+        gap: $space-4;
+        padding: 18px 20px;
+        background: linear-gradient(135deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+
+        .ws-detail__tile { border-radius: 14px; flex-shrink: 0; }
+    }
+
+    &__info { flex: 1; min-width: 0; }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+
+        h1 {
+            margin: 0;
+            font-size: 21px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.01em;
+            color: var(--text);
+        }
+    }
+
+    &__meta {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-top: 5px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-faint);
+
+        .dotsep { color: var(--text-ghost); }
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: $space-2;
+        flex-shrink: 0;
+    }
+
+    &__desc {
+        margin: $space-3 0 0;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--text-dim);
+        max-width: 720px;
+    }
+
+    // info + resources band (prototype dash-grid span-2 cards)
+    &__grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: $space-4;
+        margin: $space-4 0 $space-5;
+
+        @media (max-width: $breakpoint-md) { grid-template-columns: 1fr; }
+    }
+
+    &__card {
+        padding: 16px 18px;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+
+        h3 {
+            margin: 0 0 $space-2;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+
+    &__stats { margin: $space-3 0 0; }
+
+    // tab strip (prototype wp-tabs: accent underline + mono counts)
+    &__tabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    &__tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 13px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        font-size: 13px;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: color 0.14s, border-color 0.14s;
+
+        &:hover { color: var(--text); }
+
+        &.is-active {
+            color: var(--accent-bright);
+            border-bottom-color: var(--accent);
+            font-weight: $font-weight-medium;
+        }
+    }
+
+    &__tabcount {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-ghost);
+    }
+
+    &__pane { margin-top: $space-4; }
+
+    &__tablecard {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    &__rowactions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: $space-2;
+    }
+
+    &__manage {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: var(--text-faint);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: color 0.14s;
+
+        &:hover { color: var(--accent-bright); }
+    }
+
+    @media (max-width: $breakpoint-md) {
+        &__header { flex-wrap: wrap; }
+        &__actions { width: 100%; }
+        &__tabs { overflow-x: auto; }
+    }
+}
+
+// Brand-color picker in the workspace create modal (#33). Top-level so it also
+// applies if the modal is ever portaled outside the page block.
 .workspace-color-input {
     width: 48px;
     height: 32px;
     padding: 2px;
-    border: 1px solid $border-color;
-    border-radius: $radius-md;
-    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
     cursor: pointer;
 }
 
 // Per-app row actions (Share + Remove) in the workspace Resources modal (#33).
 .workspace-row-actions {
     display: flex;
-    gap: $spacing-sm;
+    gap: $space-2;
     flex-shrink: 0;
 }

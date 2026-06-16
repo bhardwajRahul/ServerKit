@@ -36,6 +36,126 @@
     }
 }
 
+// --- Server switcher (title becomes a clickable name + chevron) ---
+// Visual parity with the design's `.srv-switch` + `.env-menu` popover.
+.srv-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 4px;
+    border: none;
+    background: transparent;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    color: $text-primary;
+    @include focus-ring();
+
+    &__name {
+        font-size: 1.5rem;
+        font-weight: $font-weight-bold;
+        letter-spacing: -0.02em;
+        font-family: $font-mono;
+        color: $text-primary;
+    }
+
+    &__chev {
+        color: var(--text-faint);
+        transition: transform 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    &--open &__chev {
+        transform: rotate(180deg);
+    }
+}
+
+// Popover menu listing connected servers (PopoverContent className="env-menu").
+// Plain SCSS class overrides the primitive's baked-in utilities — same pattern
+// as `.ui-popover-content`.
+.env-menu {
+    min-width: 280px;
+    padding: 7px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    color: var(--text);
+
+    &__head {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-ghost);
+        padding: 7px 10px 5px;
+    }
+}
+
+.env-opt {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    @include focus-ring();
+
+    &:hover {
+        background: var(--surface-3);
+    }
+
+    &__dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+
+        &--online {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        &--offline {
+            background: var(--red);
+        }
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__name {
+        font-weight: $font-weight-semibold;
+        font-size: 13px;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__meta {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+        margin-top: 1px;
+    }
+
+    &__check {
+        margin-left: auto;
+        color: var(--accent-bright);
+        flex-shrink: 0;
+        display: inline-flex;
+    }
+}
+
 // Connection status: dot + text label (never color alone), announced to
 // screen readers via role="status". The label stays a readable neutral
 // (contrast-safe in both themes); the dot carries the status color.
@@ -142,6 +262,20 @@
         background: linear-gradient(90deg, $accent-primary, transparent);
         opacity: 0.5;
     }
+
+    @media (max-width: $breakpoint-xl) {
+        grid-column: span 6;
+    }
+
+    @media (max-width: $breakpoint-md) {
+        grid-column: span 12;
+    }
+}
+
+// KPI cards (redesign) use the shared `.sk-kpi` primitive; this just places
+// them on the dashboard's 12-col grid (4-up, like the old metric tiles).
+.dash-kpi {
+    grid-column: span 3;
 
     @media (max-width: $breakpoint-xl) {
         grid-column: span 6;
@@ -333,12 +467,74 @@
 }
 
 // --- Process Table ---
+// Pairs side-by-side with the Recent Activity panel (8/4 split, mirroring the
+// prototype's 1.55fr/1fr). Collapses to full width when activity stacks below.
 .table-panel {
-    grid-column: span 12;
+    grid-column: span 8;
     background: $bg-card;
     border: 1px solid $border-subtle;
     border-radius: $radius-sm;
     overflow: hidden;
+
+    @media (max-width: $breakpoint-lg) {
+        grid-column: span 12;
+    }
+}
+
+// --- Recent Activity Panel ---
+// Admin-only audit feed. Rows are rendered by the DS <Feed>/<FeedItem>
+// primitives (.sk-feed*); this only provides the card shell + header + placement.
+.activity-panel {
+    grid-column: span 4;
+    background: $bg-card;
+    border: 1px solid $border-subtle;
+    border-radius: $radius-sm;
+    padding: $space-5;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    @media (max-width: $breakpoint-lg) {
+        grid-column: span 12;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: $space-3;
+    }
+
+    &__title {
+        font-size: $font-size-sm;
+        text-transform: uppercase;
+        color: $text-tertiary;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.05em;
+    }
+
+    &__link {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-1;
+        font-size: $font-size-xs;
+        color: $text-tertiary;
+        text-decoration: none;
+        border-radius: $radius-sm;
+        transition: color $transition-fast;
+        @include focus-ring();
+
+        &:hover {
+            color: $accent-primary;
+        }
+    }
+
+    &__empty {
+        padding: $space-5 0;
+        text-align: center;
+        font-size: $font-size-sm;
+        color: $text-tertiary;
+    }
 }
 
 .table-header {

@@ -13,14 +13,15 @@ import UsersTab from '../components/settings/UsersTab';
 import ActivityTab from '../components/settings/ActivityTab';
 import SiteSettingsTab from '../components/settings/SiteSettingsTab';
 import SSOConfigTab from '../components/settings/SSOConfigTab';
-import SourceConnectionsTab from '../components/settings/SourceConnectionsTab';
+import ConnectionsHub from '../components/settings/connections/ConnectionsHub';
 import ApiSettingsTab from '../components/settings/ApiSettingsTab';
 import MigrationHistoryTab from '../components/settings/MigrationHistoryTab';
 import IconReferenceTab from '../components/settings/IconReferenceTab';
 import AISettingsTab from '../components/settings/AISettingsTab';
 import AboutTab from '../components/settings/AboutTab';
-import { Activity, Code, Database, Layers, Link2, PaintBucket, Sparkles } from 'lucide-react';
+import { Activity, Code, Database, Layers, Link2, PaintBucket, Sparkles, Settings as SettingsIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { PageTopbar } from '@/components/ds';
 import { useNavigate } from 'react-router-dom';
 
 const VALID_TABS = ['profile', 'security', 'connections', 'appearance', 'sidebar', 'whitelabel', 'notifications', 'system', 'users', 'activity', 'site', 'sso', 'api', 'ai', 'migrations', 'developer', 'about'];
@@ -41,12 +42,7 @@ const Settings = () => {
 
     return (
         <div className="page-container settings-page">
-            <div className="page-header">
-                <div>
-                    <h1>Settings</h1>
-                    <p className="page-subtitle">Manage your account and system preferences</p>
-                </div>
-            </div>
+            <PageTopbar icon={<SettingsIcon size={18} />} title="Settings" />
 
             <div className="settings-layout">
                 <nav className="settings-nav">
@@ -266,7 +262,7 @@ const Settings = () => {
                 <div className="settings-content">
                     {activeTab === 'profile' && <ProfileTab />}
                     {activeTab === 'security' && <SecuritySettingsTab />}
-                    {activeTab === 'connections' && <SourceConnectionsTab />}
+                    {activeTab === 'connections' && <ConnectionsHub />}
                     {activeTab === 'appearance' && <AppearanceTab />}
                     {activeTab === 'sidebar' && <SidebarSettings />}
                     {activeTab === 'whitelabel' && <WhiteLabelTab />}

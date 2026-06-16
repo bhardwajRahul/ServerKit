@@ -3,15 +3,17 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { StatCard, StatsGrid } from '../components/StatCard';
 import EmptyState from '../components/EmptyState';
-import { Clock, FileText, CheckCircle, Monitor } from 'lucide-react';
+import {
+    Clock, CheckCircle, Monitor, Activity, Plus, RefreshCw,
+    Play, Pause, Pencil, Trash2, Search,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MetricCard, Pill, SegControl, PageTopbar } from '@/components/ds';
 
 const CronJobs = () => {
     const toast = useToast();
@@ -21,6 +23,10 @@ const CronJobs = () => {
     const [presets, setPresets] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // List filters (client-side, over already-loaded jobs)
+    const [filter, setFilter] = useState('all');
+    const [query, setQuery] = useState('');
 
     // Modal states
     const [showJobModal, setShowJobModal] = useState(false);
@@ -188,35 +194,47 @@ const CronJobs = () => {
         return descriptions[schedule] || schedule;
     };
 
+    const enabledCount = jobs.filter(j => j.enabled).length;
+    const disabledCount = jobs.length - enabledCount;
+
+    const serviceSub = status?.type === 'cron'
+        ? (status?.running ? 'daemon running' : 'daemon stopped')
+        : (status?.type === 'serverkit_scheduler' ? 'internal scheduler' : null);
+
+    const q = query.trim().toLowerCase();
+    const shownJobs = jobs.filter(job => (
+        (filter === 'all' || (filter === 'enabled' ? job.enabled : !job.enabled))
+        && (!q
+            || (job.name || '').toLowerCase().includes(q)
+            || (job.command || '').toLowerCase().includes(q))
+    ));
+
     if (loading) {
-        return <EmptyState loading size="lg" title="Loading cron jobs..." />;
+        return (
+            <div className="page-container cron-page">
+                <EmptyState loading size="lg" title="Loading cron jobs..." />
+            </div>
+        );
     }
 
     return (
         <div className="page-container cron-page">
-            <div className="page-header">
-                <div>
-                    <h1>Cron Jobs</h1>
-                    <p className="page-subtitle">Manage scheduled tasks and automated jobs</p>
-                </div>
-                <div className="page-header-actions">
-                    <Button variant="outline" onClick={loadData}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <polyline points="1 20 1 14 7 14"/>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                        Refresh
-                    </Button>
-                    <Button onClick={openCreateModal}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Create Job
-                    </Button>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Clock size={18} />}
+                title="Cron Jobs"
+                actions={(
+                    <>
+                        <Button variant="outline" onClick={loadData}>
+                            <RefreshCw size={15} />
+                            Refresh
+                        </Button>
+                        <Button onClick={openCreateModal}>
+                            <Plus size={15} />
+                            Create Job
+                        </Button>
+                    </>
+                )}
+            />
 
             {error && (
                 <div className="alert alert-danger">
@@ -225,126 +243,158 @@ const CronJobs = () => {
                 </div>
             )}
 
-            {/* Status Cards */}
-            <StatsGrid>
-                <StatCard icon={Clock} iconVariant="cron" label="Cron Service" value={status?.available ? 'Available' : 'Not Available'} />
-                <StatCard icon={FileText} iconVariant="jobs" label="Total Jobs" value={jobs.length} />
-                <StatCard icon={CheckCircle} iconVariant="active" label="Active Jobs" value={jobs.filter(j => j.enabled).length} />
-                <StatCard icon={Monitor} iconVariant="platform" label="Platform" value={status?.platform || 'Unknown'} />
-            </StatsGrid>
+            {/* KPI strip */}
+            <div className="cron-kpis">
+                <MetricCard tone="accent" icon={<Clock size={16} />} value={jobs.length} label="Cron jobs">
+                    <div className="sk-kpi__sub"><span>{enabledCount} enabled</span></div>
+                </MetricCard>
+                <MetricCard tone="green" icon={<CheckCircle size={16} />} value={enabledCount} label="Active jobs">
+                    {disabledCount > 0 && (
+                        <div className="sk-kpi__sub"><span>{disabledCount} disabled</span></div>
+                    )}
+                </MetricCard>
+                <MetricCard
+                    tone={status?.available ? 'green' : 'amber'}
+                    icon={<Activity size={16} />}
+                    value={status?.available ? 'Available' : 'Not Available'}
+                    label="Cron service"
+                >
+                    {serviceSub && (
+                        <div className="sk-kpi__sub"><span>{serviceSub}</span></div>
+                    )}
+                </MetricCard>
+                <MetricCard tone="cyan" icon={<Monitor size={16} />} value={status?.platform || 'Unknown'} label="Platform" />
+            </div>
 
-            {/* Jobs List */}
-            <div className="card">
-                <div className="card-header">
-                    <h3>Scheduled Jobs</h3>
-                </div>
-                <div className="card-body">
-                    {jobs.length === 0 ? (
-                        <EmptyState
-                            icon={Clock}
-                            title="No Cron Jobs"
-                            description="No scheduled jobs found. Create your first cron job to automate tasks."
-                            action={<Button onClick={openCreateModal}>Create Job</Button>}
+            {/* Jobs list */}
+            {jobs.length === 0 ? (
+                <EmptyState
+                    icon={Clock}
+                    title="No Cron Jobs"
+                    description="No scheduled jobs found. Create your first cron job to automate tasks."
+                    action={<Button onClick={openCreateModal}>Create Job</Button>}
+                />
+            ) : (
+                <>
+                    <div className="cron-listhead">
+                        <h2>Scheduled jobs</h2>
+                        <div className="cron-search">
+                            <Search size={15} />
+                            <input
+                                type="text"
+                                placeholder="Search jobs or commands…"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                            />
+                        </div>
+                        <SegControl
+                            value={filter}
+                            onChange={setFilter}
+                            options={[
+                                { value: 'all', label: 'All' },
+                                { value: 'enabled', label: 'Enabled' },
+                                { value: 'disabled', label: 'Disabled' },
+                            ]}
                         />
+                    </div>
+
+                    {shownJobs.length === 0 ? (
+                        <div className="cron-empty">No jobs match the current filter.</div>
                     ) : (
-                        <div className="cron-list">
-                            {jobs.map((job) => (
-                                <div
-                                    key={job.id}
-                                    className={`cron-item ${!job.enabled ? 'disabled' : ''}`}
-                                    onClick={() => openEditModal(job)}
-                                >
-                                    <div className="cron-item-info">
-                                        <div className="cron-item-icon">
-                                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2">
-                                                <circle cx="12" cy="12" r="10"/>
-                                                <polyline points="12 6 12 12 16 14"/>
-                                            </svg>
-                                        </div>
-                                        <div className="cron-item-details">
-                                            <h3>{job.name || 'Unnamed Job'}</h3>
-                                            <div className="cron-item-meta">
-                                                <span className="mono" title={job.schedule}>
-                                                    {getScheduleDescription(job.schedule)}
-                                                </span>
-                                                {job.description && (
-                                                    <span className="description">{job.description}</span>
-                                                )}
-                                            </div>
-                                            <div className="cron-item-command">
-                                                <code>{job.command}</code>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="cron-item-status">
-                                        <Badge variant={job.enabled ? 'success' : 'secondary'}>
-                                            {job.enabled ? 'Active' : 'Disabled'}
-                                        </Badge>
-                                    </div>
-
-                                    <div className="cron-item-actions" onClick={e => e.stopPropagation()}>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleRunJob(job.id)}
-                                            disabled={runningJobId === job.id}
-                                            title="Run now"
-                                        >
-                                            {runningJobId === job.id ? (
-                                                <span className="spinner-inline"></span>
-                                            ) : (
-                                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                                </svg>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => openEditModal(job)}
-                                            title="Edit"
-                                        >
-                                            <svg viewBox="0 0 24 24" width="14" height="14">
-                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                            </svg>
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => handleToggleJob(job.id, job.enabled)}
-                                            title={job.enabled ? 'Disable' : 'Enable'}
-                                        >
-                                            {job.enabled ? (
-                                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                                    <rect x="6" y="4" width="4" height="16"/>
-                                                    <rect x="14" y="4" width="4" height="16"/>
-                                                </svg>
-                                            ) : (
-                                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                                    <polygon points="5 3 19 12 5 21 5 3"/>
-                                                </svg>
-                                            )}
-                                        </Button>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDeleteJob(job.id)}
-                                            title="Delete"
-                                        >
-                                            <svg viewBox="0 0 24 24" width="14" height="14">
-                                                <polyline points="3 6 5 6 21 6"/>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                            </svg>
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="cron-card">
+                            <table className="sk-dtable cron-table">
+                                <thead>
+                                    <tr>
+                                        <th>Job</th>
+                                        <th>Schedule</th>
+                                        <th>Status</th>
+                                        <th aria-label="Actions" />
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {shownJobs.map((job) => {
+                                        const readable = getScheduleDescription(job.schedule);
+                                        return (
+                                            <tr
+                                                key={job.id}
+                                                className={`is-clickable${job.enabled ? '' : ' is-disabled'}`}
+                                                onClick={() => openEditModal(job)}
+                                            >
+                                                <td>
+                                                    <div className="sk-cell-name">
+                                                        <span className="cron-ico"><Clock size={15} /></span>
+                                                        <div className="cron-jobcell">
+                                                            <div className="cron-jobcell__name">{job.name || 'Unnamed Job'}</div>
+                                                            {job.description && (
+                                                                <div className="cron-jobcell__desc">{job.description}</div>
+                                                            )}
+                                                            <div className="sk-cell-sub cron-jobcell__cmd" title={job.command}>
+                                                                {job.command}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span className="cron-sched"><Clock size={11} />{job.schedule}</span>
+                                                    {readable !== job.schedule && (
+                                                        <div className="cron-sched-readable">{readable}</div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <Pill kind={job.enabled ? 'green' : 'gray'}>
+                                                        {job.enabled ? 'Enabled' : 'Disabled'}
+                                                    </Pill>
+                                                </td>
+                                                <td onClick={e => e.stopPropagation()}>
+                                                    <div className="cron-actions">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleRunJob(job.id)}
+                                                            disabled={runningJobId === job.id}
+                                                            title="Run now"
+                                                        >
+                                                            {runningJobId === job.id ? (
+                                                                <span className="spinner-inline"></span>
+                                                            ) : (
+                                                                <Play size={14} />
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => openEditModal(job)}
+                                                            title="Edit"
+                                                        >
+                                                            <Pencil size={14} />
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleToggleJob(job.id, job.enabled)}
+                                                            title={job.enabled ? 'Disable' : 'Enable'}
+                                                        >
+                                                            {job.enabled ? <Pause size={14} /> : <Play size={14} />}
+                                                        </Button>
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteJob(job.id)}
+                                                            title="Delete"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
                     )}
-                </div>
-            </div>
+                </>
+            )}
 
             {/* Create/Edit Job Modal */}
             {showJobModal && (
@@ -459,9 +509,9 @@ const CronJobs = () => {
                             <div className="run-output">
                                 <div className="run-output-exit">
                                     <span className="run-output-label">Exit Code</span>
-                                    <Badge variant={runOutput.exitCode === 0 ? 'success' : 'destructive'}>
+                                    <Pill kind={runOutput.exitCode === 0 ? 'green' : 'red'}>
                                         {runOutput.exitCode}
-                                    </Badge>
+                                    </Pill>
                                 </div>
                                 {runOutput.stdout && (
                                     <div className="run-output-section">

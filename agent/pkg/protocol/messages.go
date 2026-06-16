@@ -10,9 +10,9 @@ type MessageType string
 
 const (
 	// Authentication
-	TypeAuth       MessageType = "auth"
-	TypeAuthOK     MessageType = "auth_ok"
-	TypeAuthFail   MessageType = "auth_fail"
+	TypeAuth     MessageType = "auth"
+	TypeAuthOK   MessageType = "auth_ok"
+	TypeAuthFail MessageType = "auth_fail"
 
 	// Heartbeat
 	TypeHeartbeat    MessageType = "heartbeat"
@@ -330,6 +330,30 @@ const (
 	ActionCloudflaredTunnelRoute  = "cloudflared:tunnel:route"
 	ActionCloudflaredTunnelDelete = "cloudflared:tunnel:delete"
 
+	// WireGuard actions — manage a WireGuard interface so the panel can
+	// pair two agents into a NAT-traversing tunnel (edge ↔ private). The
+	// agent generates its keypair locally and returns ONLY the public
+	// key; private keys never reach the panel. Linux-only until the
+	// userspace backend (roadmap #6) lands. See
+	// docs/REMOTE_ACCESS_ROADMAP.md.
+	ActionWireguardKeygen        = "wireguard:keygen"
+	ActionWireguardInterfaceUp   = "wireguard:interface:up"
+	ActionWireguardInterfaceDown = "wireguard:interface:down"
+	ActionWireguardPeerSet       = "wireguard:peer:set"
+	ActionWireguardPeerRemove    = "wireguard:peer:remove"
+	ActionWireguardStatus        = "wireguard:status"
+	// wireguard:forward starts a TCP forwarder on the private peer so a
+	// connection arriving over the tunnel reaches the real local service
+	// (roadmap #13). Essential for the userspace/netstack backend.
+	ActionWireguardForward   = "wireguard:forward"
+	ActionWireguardUnforward = "wireguard:unforward"
+
+	// Firewall actions — minimal host-firewall control so the tunnel
+	// broker can open the edge's inbound WireGuard UDP port (#10).
+	// Linux-only (ufw / firewalld / iptables).
+	ActionFirewallAllowPort = "firewall:allow_port"
+	ActionFirewallDenyPort  = "firewall:deny_port"
+
 	// File actions
 	ActionFileRead  = "file:read"
 	ActionFileWrite = "file:write"
@@ -374,8 +398,10 @@ const (
 // CredentialUpdateMessage is sent by server to rotate credentials.
 //
 // HMACSig is computed by the panel as
-//   hex(HMAC-SHA256("rotation_id:agent_id:new_api_key:new_api_secret",
-//                   current_api_secret))
+//
+//	hex(HMAC-SHA256("rotation_id:agent_id:new_api_key:new_api_secret",
+//	                current_api_secret))
+//
 // where current_api_secret is the agent's secret prior to rotation.
 // The agent recomputes this with its own current secret and rejects
 // the rotation if they don't match. This prevents a panel session

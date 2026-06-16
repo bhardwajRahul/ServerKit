@@ -388,3 +388,42 @@ mailbox_size_limit = 0
             return {'success': False, 'error': result.stderr or 'Restart failed'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    POSTFIX_SASL_PASSWD = '/etc/postfix/sasl_passwd'
+
+    @classmethod
+    def configure_relay(cls, host: str, port: int = 587, username: str = None,
+                        password: str = None, use_tls: bool = True) -> Dict:
+        """Route outbound mail through an external SMTP smarthost (relayhost).
+
+        Sets relayhost + SASL auth in main.cf and writes the credential map. Linux
+        / Postfix only — the caller persists the config regardless of platform.
+        """
+        try:
+            relay = f'[{host}]:{port}'
+            run_privileged(['postconf', '-e', f'relayhost={relay}'])
+            if username:
+                run_privileged(['postconf', '-e', 'smtp_sasl_auth_enable=yes'])
+                run_privileged(['postconf', '-e', f'smtp_sasl_password_maps=hash:{cls.POSTFIX_SASL_PASSWD}'])
+                run_privileged(['postconf', '-e', 'smtp_sasl_security_options=noanonymous'])
+                run_privileged(['tee', cls.POSTFIX_SASL_PASSWD], input=f'{relay} {username}:{password or ""}\n')
+                run_privileged(['chmod', '600', cls.POSTFIX_SASL_PASSWD])
+                run_privileged(['postmap', cls.POSTFIX_SASL_PASSWD])
+            run_privileged(['postconf', '-e', f'smtp_tls_security_level={"encrypt" if use_tls else "may"}'])
+            run_privileged(['postfix', 'reload'])
+            return {'success': True, 'message': f'Relaying outbound mail through {relay}'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def disable_relay(cls) -> Dict:
+        """Stop relaying through a smarthost (revert to direct delivery)."""
+        try:
+            run_privileged(['postconf', '-e', 'relayhost='])
+            run_privileged(['postconf', '-e', 'smtp_sasl_auth_enable=no'])
+            run_privileged(['postconf', '-e', 'smtp_sasl_password_maps='])
+            run_privileged(['rm', '-f', cls.POSTFIX_SASL_PASSWD, cls.POSTFIX_SASL_PASSWD + '.db'], check=False)
+            run_privileged(['postfix', 'reload'])
+            return {'success': True, 'message': 'Outbound relay disabled'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}

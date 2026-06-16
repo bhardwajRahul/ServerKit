@@ -48,3 +48,21 @@ export async function updateGithubSourceConfig(config) {
         body: config,
     });
 }
+
+// GitLab mirrors the GitHub surface (same generic connect/disconnect helpers
+// above, which already take a `provider` argument).
+
+export async function getGitlabSourceStatus() {
+    return this.request('/source-connections/gitlab/status');
+}
+
+export async function getGitlabSourceConfig() {
+    return this.request('/source-connections/admin/gitlab');
+}
+
+export async function updateGitlabSourceConfig(config) {
+    return this.request('/source-connections/admin/gitlab', {
+        method: 'PUT',
+        body: config,
+    });
+}

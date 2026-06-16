@@ -81,7 +81,7 @@ const ShellTab = ({ appId, appName }) => {
         <div className="shell-tab">
             <div className="shell-tab__container">
                 <div className="shell-tab__header">
-                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Container Shell</span>
+                    <span className="shell-tab__title">Container Shell</span>
                     {containers.length > 1 && (
                         <Select
                             value={selectedContainer || ''}
@@ -103,7 +103,7 @@ const ShellTab = ({ appId, appName }) => {
 
                 <div className="shell-tab__terminal" ref={terminalRef}>
                     {history.length === 0 && (
-                        <div style={{ color: '#8b949e' }}>
+                        <div className="shell-tab__hint">
                             Type a command below to execute it in the container.
                         </div>
                     )}
@@ -113,7 +113,7 @@ const ShellTab = ({ appId, appName }) => {
                             {line.text}
                         </div>
                     ))}
-                    {running && <div style={{ color: '#8b949e' }}>Running...</div>}
+                    {running && <div className="shell-tab__hint">Running...</div>}
                 </div>
 
                 <form className="shell-tab__input-row" onSubmit={handleExec}>

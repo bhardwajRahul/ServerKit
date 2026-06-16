@@ -46,23 +46,21 @@
         }
     }
 
-    &__mode-strip {
+    // Redesign: the demo's horizontal "method card" chooser (.method-grid).
+    &__method-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: $space-3;
+        gap: 14px;
         margin-bottom: $space-4;
     }
 
-    &__mode-card {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        align-items: center;
-        gap: $space-3;
-        min-height: 72px;
-        padding: $space-4;
-        background: $bg-card;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-lg;
+    &__method-card {
+        display: block;
+        position: relative;
+        padding: 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         color: $text-primary;
         font: inherit;
         text-align: left;
@@ -71,37 +69,47 @@
         transition: border-color $transition-fast, background $transition-fast, transform $transition-fast;
 
         &:hover {
-            background: $bg-hover;
-            border-color: $border-default;
-            transform: translateY(-1px);
+            background: var(--surface-2);
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
         }
 
-        &--active {
-            border-color: rgba(20, 184, 166, 0.5);
-            background:
-                linear-gradient(135deg, rgba(20, 184, 166, 0.1), rgba(99, 102, 241, 0.08)),
-                $bg-card;
-        }
-
-        strong,
-        small {
-            display: block;
-        }
-
-        strong {
-            font-size: $font-size-sm;
-            font-weight: $font-weight-semibold;
-        }
-
-        small {
-            margin-top: 2px;
-            color: $text-tertiary;
-            font-size: $font-size-xs;
-            line-height: 1.4;
+        &--on {
+            border-color: var(--accent-dim);
+            background: var(--accent-bg);
         }
     }
 
-    &__mode-icon,
+    // method-card icon tile: dim by default, accent when its card is selected
+    &__method-icon {
+        width: 42px;
+        height: 42px;
+        margin-bottom: 13px;
+        border-radius: 11px;
+        background: var(--surface-2);
+        color: var(--text-dim);
+        transition: background $transition-fast, color $transition-fast;
+    }
+    &__method-card--on &__method-icon {
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    &__method-title {
+        display: block;
+        font-size: 14px;
+        font-weight: $font-weight-semibold;
+    }
+
+    &__method-sub {
+        display: block;
+        margin-top: 4px;
+        color: var(--text-faint);
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    &__method-icon,
     &__provider-title svg,
     &__connect-icon,
     &__deploy-icon {
@@ -111,7 +119,6 @@
         flex-shrink: 0;
     }
 
-    &__mode-icon,
     &__connect-icon,
     &__deploy-icon {
         width: 36px;
@@ -893,7 +900,7 @@
             display: grid;
         }
 
-        &__mode-strip,
+        &__method-grid,
         &__provider-grid,
         &__repo-preview,
         &__repo-search,

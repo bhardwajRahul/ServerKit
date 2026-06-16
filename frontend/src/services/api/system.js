@@ -35,6 +35,18 @@ export async function getAdminStats() {
     return this.request('/admin/stats');
 }
 
+// Managed-sites domain & HTTPS (Phase 5)
+export async function getSitesHttpsStatus() {
+    return this.request('/admin/sites-https/status');
+}
+
+export async function setupSitesHttps(providerId, email) {
+    return this.request('/admin/sites-https/setup', {
+        method: 'POST',
+        body: { provider_id: providerId, email }
+    });
+}
+
 // System endpoints
 export async function getSystemMetrics() {
     return this.request('/system/metrics');
@@ -727,6 +739,12 @@ export async function addEmailDNSProvider(data) { return this.request('/email/dn
 export async function deleteEmailDNSProvider(providerId) { return this.request(`/email/dns-providers/${providerId}`, { method: 'DELETE' }); }
 export async function testEmailDNSProvider(providerId) { return this.request(`/email/dns-providers/${providerId}/test`, { method: 'POST' }); }
 export async function getEmailDNSZones(providerId) { return this.request(`/email/dns-providers/${providerId}/zones`); }
+
+// Outbound SMTP relay (smarthost)
+export async function getEmailRelay() { return this.request('/email/relay'); }
+export async function updateEmailRelay(data) { return this.request('/email/relay', { method: 'PUT', body: JSON.stringify(data) }); }
+export async function testEmailRelay(data) { return this.request('/email/relay/test', { method: 'POST', body: JSON.stringify(data) }); }
+export async function disableEmailRelay() { return this.request('/email/relay', { method: 'DELETE' }); }
 
 // SpamAssassin
 export async function getSpamConfig() { return this.request('/email/spam/config'); }

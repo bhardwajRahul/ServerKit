@@ -73,34 +73,46 @@ const IPListsTab = () => {
         });
     };
 
-    const renderList = (title, listType, items, badgeClass) => (
-        <div className="card">
+    const renderList = (title, listType, items, tone) => (
+        <div className="card sec-flush">
             <div className="card-header">
-                <h3>{title}</h3>
+                <h3 className={`sec-listtitle sec-listtitle--${tone}`}>
+                    {title} <span className="sec-count">· {items.length}</span>
+                </h3>
                 <Button variant="default" size="sm" onClick={() => setShowAddModal(listType)}>
                     Add IP
                 </Button>
             </div>
-            <div className="card-body">
-                {items.length === 0 ? (
+            {items.length === 0 ? (
+                <div className="card-body">
                     <p className="text-muted">No IPs in {listType}.</p>
-                ) : (
-                    <div className="ip-list">
+                </div>
+            ) : (
+                <table className="sk-dtable">
+                    <thead>
+                        <tr>
+                            <th>IP / CIDR</th>
+                            <th>Comment</th>
+                            <th>Added</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         {items.map((item, index) => (
-                            <div key={index} className="ip-list-item">
-                                <div className="ip-info">
-                                    <code className={badgeClass}>{item.ip}</code>
-                                    {item.comment && <span className="ip-comment">{item.comment}</span>}
-                                    <span className="ip-date">{new Date(item.added_at).toLocaleDateString()}</span>
-                                </div>
-                                <Button variant="destructive" size="sm" onClick={() => handleRemove(item.ip, listType)}>
-                                    Remove
-                                </Button>
-                            </div>
+                            <tr key={index}>
+                                <td className={`sk-cell-mono sec-ip--${tone}`}>{item.ip}</td>
+                                <td>{item.comment || <span className="sec-dash">—</span>}</td>
+                                <td className="sk-cell-mono sec-faint">{new Date(item.added_at).toLocaleDateString()}</td>
+                                <td className="sec-rowend">
+                                    <Button variant="destructive" size="sm" onClick={() => handleRemove(item.ip, listType)}>
+                                        Remove
+                                    </Button>
+                                </td>
+                            </tr>
                         ))}
-                    </div>
-                )}
-            </div>
+                    </tbody>
+                </table>
+            )}
         </div>
     );
 
@@ -111,8 +123,8 @@ const IPListsTab = () => {
     return (
         <div className="ip-lists-tab">
             <div className="ip-lists-grid">
-                {renderList('Allowlist', 'allowlist', lists.allowlist, 'ip-allowed')}
-                {renderList('Blocklist', 'blocklist', lists.blocklist, 'ip-blocked')}
+                {renderList('Allowlist', 'allowlist', lists.allowlist, 'green')}
+                {renderList('Blocklist', 'blocklist', lists.blocklist, 'red')}
             </div>
 
             <Modal open={!!showAddModal} onClose={() => setShowAddModal(null)} title={`Add to ${showAddModal || ''}`}>

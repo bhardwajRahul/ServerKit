@@ -22,8 +22,8 @@ const ServerKitLogo = ({ width = 64, height = 64, className = '' }) => {
         >
             <defs>
                 <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="var(--accent-primary, #6366f1)" />
-                    <stop offset="100%" stopColor="var(--accent-hover, #4f46e5)" />
+                    <stop offset="0%" stopColor="var(--accent-primary, #6d7cff)" />
+                    <stop offset="100%" stopColor="var(--accent-hover, #5a67e8)" />
                 </linearGradient>
             </defs>
             <rect x="150" y="150" width="1748" height="1748" rx="150" fill="white" />

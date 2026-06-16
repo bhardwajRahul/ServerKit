@@ -2,26 +2,9 @@
 // SETTINGS PAGE STYLES
 // ============================================
 
-.settings-page {
-    .page-header {
-        margin-bottom: $space-6;
-
-        h1 {
-            font-size: $font-size-2xl;
-            font-weight: $font-weight-semibold;
-            margin: 0 0 $space-1 0;
-        }
-
-        .page-subtitle {
-            color: $text-secondary;
-            margin: 0;
-        }
-    }
-}
-
 .settings-layout {
     display: grid;
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 206px 1fr;
     gap: $space-6;
     min-height: calc(100vh - 200px);
 
@@ -99,11 +82,11 @@
     }
 
     &.active {
-        background: $accent-primary;
-        color: white;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
 
         svg {
-            stroke: white;
+            stroke: var(--accent-bright);
         }
     }
 
@@ -131,6 +114,10 @@
     gap: $space-5;
 
     .section-header {
+        // Reset the global `.section-header { @include flex-between(); }` from
+        // _cards.scss — settings sections stack their title over the description
+        // instead of pushing the description to the far right.
+        display: block;
         margin-bottom: $space-2;
 
         h2 {
@@ -534,15 +521,15 @@
         border: 1px solid $border-subtle;
 
         .preview-sidebar {
-            background: #0f0f11;
+            background: #0d0f15;
         }
 
         .preview-content {
-            background: #09090b;
+            background: #0a0b0e;
         }
 
         .preview-card {
-            background: #18181b;
+            background: #101218;
         }
     }
 
@@ -564,10 +551,10 @@
 
     &.system {
         border: 1px solid $border-subtle;
-        background: linear-gradient(135deg, #09090b 50%, #ffffff 50%);
+        background: linear-gradient(135deg, #0a0b0e 50%, #ffffff 50%);
 
         .preview-sidebar {
-            background: linear-gradient(180deg, #0f0f11 50%, #f5f5f5 50%);
+            background: linear-gradient(180deg, #0d0f15 50%, #f1f3f9 50%);
         }
 
         .preview-content {
@@ -575,7 +562,7 @@
         }
 
         .preview-card {
-            background: linear-gradient(135deg, #18181b 50%, #f5f5f5 50%);
+            background: linear-gradient(135deg, #101218 50%, #f1f3f9 50%);
         }
     }
 }
@@ -653,7 +640,7 @@
         height: 0;
 
         &:checked + .toggle-slider {
-            background: $accent-primary;
+            background: linear-gradient(160deg, var(--accent-bright), var(--accent-primary));
 
             &::before {
                 transform: translateX(20px);
@@ -661,7 +648,7 @@
         }
 
         &:focus + .toggle-slider {
-            box-shadow: 0 0 0 2px fade($accent-primary-raw, 30%);
+            box-shadow: 0 0 0 2px var(--accent-bg);
         }
     }
 
@@ -672,7 +659,8 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: $border-active;
+        background: var(--surface-3);
+        border: 1px solid var(--border);
         border-radius: 24px;
         transition: all $transition-fast;
 
@@ -695,14 +683,16 @@
 .toggle-switch:not(:has(input)) {
     width: 44px;
     height: 24px;
-    background: $border-active;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
     border-radius: 24px;
     cursor: pointer;
     transition: background $transition-fast;
     flex-shrink: 0;
 
     &.on {
-        background: $accent-primary;
+        background: linear-gradient(160deg, var(--accent-bright), var(--accent-primary));
+        border-color: transparent;
 
         .toggle-knob {
             transform: translateX(20px);

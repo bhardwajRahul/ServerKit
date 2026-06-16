@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { ShieldOff, ShieldCheck, Filter } from 'lucide-react';
+import { ShieldOff, ShieldCheck, Filter, Shield } from 'lucide-react';
 import { api } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { StatStrip, Stat } from '../components/StatCard';
+import { PageTopbar } from '@/components/ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -234,20 +235,20 @@ function Firewall() {
 
     if (loading) {
         return (
-            <div className="page-loading">
-                <Spinner size="lg" />
+            <div className="page-container firewall-page">
+                <div className="page-loading">
+                    <Spinner size="lg" />
+                </div>
             </div>
         );
     }
 
     return (
         <div className="page-container firewall-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Firewall</h1>
-                    <p className="page-description">Manage firewall rules and IP blocking</p>
-                </div>
-                <div className="page-header-actions">
+            <PageTopbar
+                icon={<Shield size={18} />}
+                title="Firewall"
+                actions={<>
                     {!status?.any_installed ? (
                         <Button onClick={() => setShowInstallModal(true)}>
                             Install Firewall
@@ -284,8 +285,8 @@ function Firewall() {
                             )}
                         </>
                     )}
-                </div>
-            </div>
+                </>}
+            />
 
             {!status?.any_installed ? (
                 <EmptyState

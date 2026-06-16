@@ -1,193 +1,174 @@
 // ============================================
-// DOMAINS & SSL PAGE
+// DOMAINS PAGE (redesign — top-bar layout, see docs/REDESIGN_MAP.md)
 // ============================================
 
-// SSL Status Bar
-.ssl-status-bar {
+.domains-page {
     display: flex;
-    gap: $space-6;
-    margin-bottom: $space-8;
-
-    @media (max-width: $breakpoint-md) {
-        flex-direction: column;
-    }
+    flex-direction: column;
 }
 
-.ssl-status-item {
-    @include flex-start();
+.domains-body {
+    max-width: 1320px;
+    width: 100%;
+    margin: 0 auto;
+    padding-top: $space-5;
+}
+
+// KPI strip
+.dom-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
     gap: $space-4;
-    padding: $space-5;
-    background: $bg-card;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-xl;
-    flex: 1;
+    margin-bottom: $space-5;
+
+    @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
 }
 
-.ssl-status-icon {
-    @include icon-box(48px);
-    border-radius: $radius-xl - 2;
-
-    &.active {
-        background: $success-bg;
-        color: $success;
-    }
-
-    &.inactive {
-        background: $danger-bg;
-        color: $danger;
-    }
-}
-
-.ssl-status-info {
-    h4 {
-        font-size: $font-size-md;
-        font-weight: $font-weight-semibold;
-        margin-bottom: $space-1;
-    }
-
-    span {
-        font-size: $font-size-sm + 1;
-        color: $text-secondary;
-    }
-}
-
-// Domain List
-.domain-list {
-    @include flex-column-gap($space-3);
-}
-
-.domain-item {
-    @include list-item-base();
-}
-
-.domain-item-info {
-    @include flex-start();
+// List header + segmented filter
+.dom-listhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: $space-4;
-    flex: 1;
-    min-width: 0;
-}
+    margin-bottom: $space-3;
 
-.domain-item-icon {
-    @include icon-box();
-    background: $bg-hover;
-    border-radius: $radius-lg;
-    color: $text-secondary;
-
-    &.ssl {
-        background: $success-bg;
-        color: $success;
-    }
-}
-
-.domain-item-details {
-    min-width: 0;
-
-    h3 {
-        font-size: $font-size-base;
+    &__title {
+        margin: 0;
+        font-size: 15px;
         font-weight: $font-weight-semibold;
         color: $text-primary;
-        margin-bottom: $space-1;
-        @include flex-start();
-        gap: $space-2;
     }
 }
 
-.primary-badge {
-    background: $accent-glow;
-    color: $accent-primary;
-    padding: $space-1 - 2 $space-2;
+// Table card
+.dom-card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.dom-empty {
+    padding: $space-10;
+    text-align: center;
+    color: $text-tertiary;
+    font-size: $font-size-sm;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+}
+
+// Domain cell bits
+.dom-fav {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--accent-bg);
+    color: var(--accent-bright);
+}
+
+.dom-primary {
+    margin-left: $space-2;
+    padding: 1px 6px;
     border-radius: $radius-sm;
-    font-size: $font-size-xs;
+    background: var(--accent-bg);
+    color: var(--accent-bright);
+    font-family: var(--mono);
+    font-size: 10px;
     font-weight: $font-weight-semibold;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.domain-item-meta {
-    @include flex-start();
-    gap: $space-4;
-    font-size: $font-size-sm;
-    color: $text-tertiary;
-
-    span {
-        @include flex-start();
-        gap: $space-1;
-    }
+.dom-dash {
+    color: var(--text-ghost);
+    font-family: var(--mono);
+    font-size: 12px;
 }
 
-.app-link {
-    color: $text-secondary;
-}
+.dom-chev { color: var(--text-ghost); }
 
-.ssl-badge {
-    color: $success;
-}
-
-.domain-item-actions {
+// ── Detail drawer body ──────────────────────────────────────
+.dom-drawer {
+    padding: $space-5 $space-5 $space-8;
     display: flex;
-    gap: $space-2;
-    flex-shrink: 0;
-    flex-wrap: wrap;
-}
+    flex-direction: column;
+    gap: $space-5;
 
-// Certificate List
-.cert-list {
-    @include flex-column-gap($space-3);
-}
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-2;
+    }
 
-.cert-item {
-    @include list-item-base();
-}
-
-.cert-item-info {
-    @include flex-start();
-    gap: $space-4;
-    flex: 1;
-    min-width: 0;
-}
-
-.cert-item-icon {
-    @include icon-box();
-    background: $success-bg;
-    border-radius: $radius-lg;
-    color: $success;
-}
-
-.cert-item-details {
-    min-width: 0;
-
-    h3 {
-        font-size: $font-size-base;
+    &__section { display: flex; flex-direction: column; align-items: flex-start; gap: $space-2; }
+    &__sectiontitle {
+        margin: 0;
+        font-size: 14px;
         font-weight: $font-weight-semibold;
         color: $text-primary;
-        margin-bottom: $space-1;
+    }
+    &__hint { margin: 0; font-size: $font-size-sm; color: $text-tertiary; }
+
+    &__danger {
+        padding-top: $space-4;
+        border-top: 1px solid var(--border-soft);
     }
 }
 
-.cert-item-meta {
-    @include flex-start();
-    gap: $space-4;
-    font-size: $font-size-sm;
-    color: $text-tertiary;
+// ── Inline DNS records table inside the domain drawer ────────
+.dom-dns {
+    width: 100%;
 
-    span {
-        @include flex-start();
-        gap: $space-1;
+    &__count {
+        margin-left: $space-2;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-normal;
+        color: var(--text-faint);
+    }
 
-        &.valid {
-            color: $success;
-        }
+    &__error { color: var(--red); }
 
-        &.expiring {
-            color: $warning;
-        }
+    &__table {
+        width: 100%;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    &__col-type { width: 70px; }
+    &__col-ttl { width: 70px; }
+
+    // Truncate long record values (e.g. TXT/SPF) to keep the table dense
+    &__value {
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--text);
     }
 }
 
-.cert-status {
-    flex-shrink: 0;
+.dom-specs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: $space-3;
+
+    @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
 }
 
-// SSL Info Box (in modal)
+.dom-delete-btn {
+    color: $danger;
+    &:hover { background: var(--red-bg); color: $danger; }
+}
+
+// ── Kept: modal styles used by Add-Domain + Enable-SSL forms ─
 .ssl-info-box {
     @include flex-start();
     gap: $space-4;
@@ -208,13 +189,10 @@
         font-size: $font-size-sm;
         color: $text-secondary;
 
-        strong {
-            color: $text-primary;
-        }
+        strong { color: $text-primary; }
     }
 }
 
-// Checkbox label
 .checkbox-label {
     @include flex-start();
     gap: $space-2;

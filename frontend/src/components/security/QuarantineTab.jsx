@@ -50,15 +50,17 @@ const QuarantineTab = () => {
                 </div>
             )}
 
-            <div className="card">
+            <div className="card sec-flush">
                 <div className="card-header">
-                    <h3>Quarantined Files</h3>
+                    <h3>Quarantined Files {!loading && files.length > 0 && <span className="sec-count">· {files.length}</span>}</h3>
                     <Button variant="outline" size="sm" onClick={loadFiles}>Refresh</Button>
                 </div>
-                <div className="card-body">
-                    {loading ? (
+                {loading ? (
+                    <div className="card-body">
                         <div className="loading-sm">Loading...</div>
-                    ) : files.length === 0 ? (
+                    </div>
+                ) : files.length === 0 ? (
+                    <div className="card-body">
                         <div className="empty-state">
                             <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" fill="none" strokeWidth="1">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -67,37 +69,37 @@ const QuarantineTab = () => {
                             <p>No files in quarantine</p>
                             <span className="text-muted">Infected files will appear here when detected</span>
                         </div>
-                    ) : (
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Filename</th>
-                                    <th>Size</th>
-                                    <th>Quarantined</th>
-                                    <th>Actions</th>
+                    </div>
+                ) : (
+                    <table className="sk-dtable">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Size</th>
+                                <th>Quarantined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {files.map((file, index) => (
+                                <tr key={index}>
+                                    <td className="sk-cell-mono sec-path sec-path--red">{file.name}</td>
+                                    <td className="sk-cell-mono">{formatBytes(file.size)}</td>
+                                    <td className="sk-cell-mono sec-faint">{new Date(file.quarantined_at).toLocaleString()}</td>
+                                    <td>
+                                        <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={() => handleDelete(file.name)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {files.map((file, index) => (
-                                    <tr key={index}>
-                                        <td className="path-cell">{file.name}</td>
-                                        <td>{formatBytes(file.size)}</td>
-                                        <td>{new Date(file.quarantined_at).toLocaleString()}</td>
-                                        <td>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDelete(file.name)}
-                                            >
-                                                Delete
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
         </div>
     );

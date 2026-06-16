@@ -51,6 +51,7 @@ function FileRow({
                 {new Date(entry.modified).toLocaleDateString()}
             </span>
             <span className="col-permissions">{entry.permissions}</span>
+            <span className="col-owner">{entry.owner}</span>
             <span className="col-actions" onClick={(e) => e.stopPropagation()}>
                 {!entry.is_dir && (
                     <button className="row-action" onClick={() => onDownload(entry)} title="Download">

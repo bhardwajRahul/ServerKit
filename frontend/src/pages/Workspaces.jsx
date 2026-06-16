@@ -1,33 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/Spinner';
-import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
-import { LayoutGrid } from 'lucide-react';
+import { LayoutGrid, Plus, ChevronRight } from 'lucide-react';
+import { PageTopbar, Pill, ServiceTile } from '@/components/ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+
+// Matches WorkspaceSwitcher: the active workspace id lives in localStorage.
+const ACTIVE_KEY = 'active_workspace_id';
+
+// "since Jun 2026" card meta from the workspace's real created_at.
+const formatSince = (iso) => {
+    if (!iso) return null;
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+        ? null
+        : d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+};
 
 const Workspaces = () => {
     const toast = useToast();
-    const { user } = useAuth();
+    const navigate = useNavigate();
     const [workspaces, setWorkspaces] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showMembersModal, setShowMembersModal] = useState(null);
-    const [members, setMembers] = useState([]);
-    const [deleteConfirm, setDeleteConfirm] = useState(null);
-    const [allUsers, setAllUsers] = useState([]);
-    const [showResourcesModal, setShowResourcesModal] = useState(null);
-    const [apps, setApps] = useState([]);
-    const [servers, setServers] = useState([]);
-    const [sharingApp, setSharingApp] = useState(null);
-    const [grants, setGrants] = useState([]);
-    const [grantRole, setGrantRole] = useState('editor');
-    const [form, setForm] = useState({ name: '', description: '', max_servers: 0, max_users: 0, primary_color: '#6366f1' });
+    const [form, setForm] = useState({ name: '', description: '', max_servers: 0, max_users: 0, primary_color: '#6d7cff' });
+
+    const activeId = localStorage.getItem(ACTIVE_KEY);
 
     const loadWorkspaces = useCallback(async () => {
         try {
@@ -47,212 +50,90 @@ const Workspaces = () => {
             await api.createWorkspace(form);
             toast.success('Workspace created');
             setShowCreateModal(false);
-            setForm({ name: '', description: '', max_servers: 0, max_users: 0, primary_color: '#6366f1' });
+            setForm({ name: '', description: '', max_servers: 0, max_users: 0, primary_color: '#6d7cff' });
             loadWorkspaces();
         } catch (err) {
             toast.error(err.message);
         }
     };
 
-    const handleDelete = async (id) => {
-        try {
-            await api.deleteWorkspace(id);
-            toast.success('Workspace deleted');
-            setDeleteConfirm(null);
-            loadWorkspaces();
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const handleArchive = async (id) => {
-        try {
-            await api.archiveWorkspace(id);
-            toast.success('Workspace archived');
-            loadWorkspaces();
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const loadMembers = async (wsId) => {
-        try {
-            const [mData, uData] = await Promise.all([
-                api.getWorkspaceMembers(wsId),
-                api.getUsers().catch(() => ({ users: [] }))
-            ]);
-            setMembers(mData.members || []);
-            setAllUsers(uData.users || []);
-            setShowMembersModal(wsId);
-        } catch (err) {
-            toast.error('Failed to load members');
-        }
-    };
-
-    const handleAddMember = async (wsId, userId) => {
-        try {
-            await api.addWorkspaceMember(wsId, userId);
-            toast.success('Member added');
-            loadMembers(wsId);
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const handleRemoveMember = async (memberId) => {
-        try {
-            await api.removeWorkspaceMember(memberId);
-            toast.success('Member removed');
-            if (showMembersModal) loadMembers(showMembersModal);
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const asServerList = (data) => (Array.isArray(data) ? data : (data?.servers || []));
-
-    const loadResources = async (wsId) => {
-        try {
-            // allWorkspaces so we can see resources in OTHER workspaces to move them in.
-            const [appData, srvData] = await Promise.all([
-                api.getApps({ allWorkspaces: true }),
-                api.getServers({ allWorkspaces: true }).catch(() => []),
-            ]);
-            setApps(appData.apps || []);
-            setServers(asServerList(srvData));
-            setShowResourcesModal(wsId);
-        } catch (err) {
-            toast.error('Failed to load resources');
-        }
-    };
-
-    const handleMoveApp = async (appId, workspaceId) => {
-        try {
-            await api.setAppWorkspace(appId, workspaceId);
-            toast.success('Application moved');
-            const data = await api.getApps({ allWorkspaces: true });
-            setApps(data.apps || []);
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const handleMoveServer = async (serverId, workspaceId) => {
-        try {
-            await api.setServerWorkspace(serverId, workspaceId);
-            toast.success('Server moved');
-            setServers(asServerList(await api.getServers({ allWorkspaces: true })));
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    // Per-app sharing (#33 per-site ACL) — inline sub-view of the Resources modal.
-    const loadSharing = async (appObj) => {
-        try {
-            const [gData, uData] = await Promise.all([
-                api.getAppGrants(appObj.id),
-                api.getUsers().catch(() => ({ users: [] })),
-            ]);
-            setGrants(gData.grants || []);
-            setAllUsers(uData.users || []);
-            setSharingApp(appObj);
-        } catch (err) {
-            toast.error('Failed to load sharing');
-        }
-    };
-
-    const refreshGrants = async (appId) => {
-        const gData = await api.getAppGrants(appId);
-        setGrants(gData.grants || []);
-    };
-
-    const handleGrant = async (userId) => {
-        try {
-            await api.grantAppAccess(sharingApp.id, userId, grantRole);
-            toast.success('Access granted');
-            await refreshGrants(sharingApp.id);
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const handleRevoke = async (grantId) => {
-        try {
-            await api.revokeAppAccess(sharingApp.id, grantId);
-            toast.success('Access revoked');
-            await refreshGrants(sharingApp.id);
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const closeResources = () => {
-        setShowResourcesModal(null);
-        setSharingApp(null);
-    };
-
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container workspaces-page"><Spinner /></div>;
 
     return (
         <div className="page-container workspaces-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Workspaces</h1>
-                    <p className="page-description">{workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''}</p>
-                </div>
-                <div className="page-header-actions">
-                    <Button onClick={() => setShowCreateModal(true)}>
-                        Create Workspace
+            <PageTopbar
+                icon={<LayoutGrid size={18} />}
+                title="Workspaces"
+                meta={`${workspaces.length} workspace${workspaces.length !== 1 ? 's' : ''}`}
+                actions={(
+                    <Button size="sm" onClick={() => setShowCreateModal(true)}>
+                        <Plus size={16} />
+                        New Workspace
                     </Button>
-                </div>
-            </div>
-
-            <div className="workspaces-grid">
-                {workspaces.map(ws => (
-                    <div key={ws.id} className="workspace-card card">
-                        <div className="workspace-card__header">
-                            <div className="workspace-card__title">
-                                {ws.primary_color && (
-                                    <span className="workspace-card__color" style={{ backgroundColor: ws.primary_color }} />
-                                )}
-                                <h3>{ws.name}</h3>
-                            </div>
-                            <Badge variant={ws.status === 'active' ? 'success' : 'warning'}>
-                                {ws.status}
-                            </Badge>
-                        </div>
-                        {ws.description && <p className="workspace-card__desc">{ws.description}</p>}
-                        <div className="workspace-card__meta">
-                            <span>{ws.member_count} member{ws.member_count !== 1 ? 's' : ''}</span>
-                            <span className="text-muted">/{ws.slug}</span>
-                        </div>
-                        {(ws.max_servers > 0 || ws.max_users > 0) && (
-                            <div className="workspace-card__quotas">
-                                {ws.max_servers > 0 && <span>Max {ws.max_servers} servers</span>}
-                                {ws.max_users > 0 && <span>Max {ws.max_users} users</span>}
-                            </div>
-                        )}
-                        <div className="workspace-card__actions">
-                            <Button size="sm" variant="outline" onClick={() => loadMembers(ws.id)}>Members</Button>
-                            <Button size="sm" variant="outline" onClick={() => loadResources(ws.id)}>Resources</Button>
-                            {ws.status === 'active' && (
-                                <Button size="sm" variant="secondary" onClick={() => handleArchive(ws.id)}>Archive</Button>
-                            )}
-                            {user?.is_admin && (
-                                <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm(ws)}>Delete</Button>
-                            )}
-                        </div>
-                    </div>
-                ))}
-                {workspaces.length === 0 && (
-                    <EmptyState
-                        icon={LayoutGrid}
-                        title="No workspaces yet"
-                        description="Create one to isolate servers by team or project."
-                    />
                 )}
-            </div>
+            />
+
+            {workspaces.length === 0 ? (
+                <EmptyState
+                    icon={LayoutGrid}
+                    title="No workspaces yet"
+                    description="Create one to isolate servers by team or project."
+                />
+            ) : (
+                <>
+                    <div className="ws-listhead">
+                        <h2>Your Workspaces</h2>
+                        <span className="ws-listhead__hint">open a workspace to manage its resources</span>
+                    </div>
+                    <div className="ws-grid">
+                        {workspaces.map(ws => {
+                            const since = formatSince(ws.created_at);
+                            const isCurrent = activeId === String(ws.id);
+                            return (
+                                <div
+                                    key={ws.id}
+                                    className={`ws-card is-clickable ${isCurrent ? 'active' : ''}`}
+                                    role="link"
+                                    tabIndex={0}
+                                    onClick={() => navigate(`/workspaces/${ws.id}`)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/workspaces/${ws.id}`); }}
+                                >
+                                    <div className="ws-card__top">
+                                        <ServiceTile name={ws.name} size={38} gradient={ws.primary_color || undefined} />
+                                        {isCurrent
+                                            ? <Pill kind="green">active</Pill>
+                                            : <Pill kind={ws.status === 'active' ? 'green' : 'amber'}>{ws.status}</Pill>}
+                                    </div>
+                                    <div className="ws-card__name">{ws.name}</div>
+                                    <div className="ws-card__meta">/{ws.slug}{since ? ` · since ${since}` : ''}</div>
+                                    {ws.description && <p className="ws-card__desc">{ws.description}</p>}
+                                    <div className="ws-card__stats">
+                                        <div>
+                                            <div className="v">{ws.member_count}</div>
+                                            <div className="l">Member{ws.member_count !== 1 ? 's' : ''}</div>
+                                        </div>
+                                        {ws.max_servers > 0 && (
+                                            <div>
+                                                <div className="v">{ws.max_servers}</div>
+                                                <div className="l">Max Servers</div>
+                                            </div>
+                                        )}
+                                        {ws.max_users > 0 && (
+                                            <div>
+                                                <div className="v">{ws.max_users}</div>
+                                                <div className="l">Max Users</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="ws-card__open">
+                                        Open <ChevronRight size={14} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </>
+            )}
 
             {showCreateModal && (
                 <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
@@ -298,153 +179,6 @@ const Workspaces = () => {
                         </div>
                     </div>
                 </div>
-            )}
-
-            {showMembersModal && (
-                <div className="modal-overlay" onClick={() => setShowMembersModal(null)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Workspace Members</h2>
-                            <button className="modal-close" onClick={() => setShowMembersModal(null)}>&times;</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="members-list">
-                                {members.map(m => (
-                                    <div key={m.id} className="member-row">
-                                        <div>
-                                            <strong>{m.username || m.email}</strong>
-                                            <Badge variant="outline" className="ml-2">{m.role}</Badge>
-                                        </div>
-                                        {m.role !== 'owner' && (
-                                            <Button size="sm" variant="destructive" onClick={() => handleRemoveMember(m.id)}>Remove</Button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                            <hr />
-                            <h4>Add Member</h4>
-                            <div className="server-select-list">
-                                {allUsers.filter(u => !members.find(m => m.user_id === u.id)).map(u => (
-                                    <div key={u.id} className="server-select-item" onClick={() => handleAddMember(showMembersModal, u.id)}>
-                                        <span>{u.username || u.email}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showResourcesModal && (() => {
-                const appsIn = apps.filter(a => a.workspace_id === showResourcesModal);
-                const appsOut = apps.filter(a => a.workspace_id !== showResourcesModal);
-                const srvIn = servers.filter(s => s.workspace_id === showResourcesModal);
-                const srvOut = servers.filter(s => s.workspace_id !== showResourcesModal);
-                return (
-                    <div className="modal-overlay" onClick={closeResources}>
-                        <div className="modal" onClick={e => e.stopPropagation()}>
-                            {sharingApp ? (
-                                <>
-                                    <div className="modal-header">
-                                        <h2>Sharing: {sharingApp.name}</h2>
-                                        <button className="modal-close" onClick={closeResources}>&times;</button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <Button size="sm" variant="outline" onClick={() => setSharingApp(null)}>&larr; Back</Button>
-                                        <p className="form-hint">Grant a user access to this application (and its WordPress site, databases, and domains) without transferring ownership.</p>
-                                        <div className="members-list">
-                                            {grants.length === 0 && <p className="form-hint">Not shared with anyone yet.</p>}
-                                            {grants.map(g => (
-                                                <div key={g.id} className="member-row">
-                                                    <div><strong>{g.username || g.email}</strong> <Badge variant="outline" className="ml-2">{g.role}</Badge></div>
-                                                    <Button size="sm" variant="destructive" onClick={() => handleRevoke(g.id)}>Revoke</Button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <hr />
-                                        <h4>Grant Access</h4>
-                                        <div className="form-group">
-                                            <label>Role for new grants</label>
-                                            <select value={grantRole} onChange={e => setGrantRole(e.target.value)}>
-                                                <option value="editor">Editor (view + operate)</option>
-                                                <option value="viewer">Viewer (read-only)</option>
-                                            </select>
-                                        </div>
-                                        <div className="server-select-list">
-                                            {allUsers.filter(u => u.id !== sharingApp.user_id && !grants.find(g => g.user_id === u.id)).map(u => (
-                                                <div key={u.id} className="server-select-item" onClick={() => handleGrant(u.id)}>
-                                                    <span>{u.username || u.email}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="modal-header">
-                                        <h2>Workspace Resources</h2>
-                                        <button className="modal-close" onClick={closeResources}>&times;</button>
-                                    </div>
-                                    <div className="modal-body">
-                                        <h4>Applications</h4>
-                                        <div className="members-list">
-                                            {appsIn.length === 0 && <p className="form-hint">No applications in this workspace yet.</p>}
-                                            {appsIn.map(a => (
-                                                <div key={a.id} className="member-row">
-                                                    <div><strong>{a.name}</strong> <Badge variant="outline" className="ml-2">{a.app_type}</Badge></div>
-                                                    <div className="workspace-row-actions">
-                                                        <Button size="sm" variant="outline" onClick={() => loadSharing(a)}>Share</Button>
-                                                        <Button size="sm" variant="destructive" onClick={() => handleMoveApp(a.id, null)}>Remove</Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {appsOut.length > 0 && (
-                                            <div className="server-select-list">
-                                                {appsOut.map(a => (
-                                                    <div key={a.id} className="server-select-item" onClick={() => handleMoveApp(a.id, showResourcesModal)}>
-                                                        <span>{a.name}</span>
-                                                        <Badge variant="outline" className="ml-2">{a.app_type}</Badge>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <hr />
-                                        <h4>Servers</h4>
-                                        <div className="members-list">
-                                            {srvIn.length === 0 && <p className="form-hint">No servers in this workspace yet.</p>}
-                                            {srvIn.map(s => (
-                                                <div key={s.id} className="member-row">
-                                                    <div><strong>{s.name}</strong></div>
-                                                    <Button size="sm" variant="destructive" onClick={() => handleMoveServer(s.id, null)}>Remove</Button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        {srvOut.length > 0 && (
-                                            <div className="server-select-list">
-                                                {srvOut.map(s => (
-                                                    <div key={s.id} className="server-select-item" onClick={() => handleMoveServer(s.id, showResourcesModal)}>
-                                                        <span>{s.name}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                );
-            })()}
-
-            {deleteConfirm && (
-                <ConfirmDialog
-                    title="Delete Workspace"
-                    message={`Delete "${deleteConfirm.name}"? All data will be lost.`}
-                    onConfirm={() => handleDelete(deleteConfirm.id)}
-                    onCancel={() => setDeleteConfirm(null)}
-                    variant="danger"
-                />
             )}
         </div>
     );

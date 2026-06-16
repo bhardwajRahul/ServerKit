@@ -153,6 +153,36 @@ class NginxService:
 }}
 '''
 
+    # Reverse proxy to a service reached over a WireGuard tunnel (roadmap
+    # #12). The upstream is a peer's WG IP:port; the private agent forwards
+    # it to the real service. proxy_buffering off keeps media/streaming
+    # (e.g. Jellyfin) responsive.
+    REMOTE_UPSTREAM_TEMPLATE = '''server {{
+    listen 80;
+    listen [::]:80;
+    server_name {domains};
+
+    access_log /var/log/nginx/{name}.access.log;
+    error_log /var/log/nginx/{name}.error.log;
+
+    location / {{
+        proxy_pass http://{upstream};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_buffering off;
+        proxy_read_timeout 86400;
+        proxy_connect_timeout 60;
+        proxy_send_timeout 60;
+    }}
+}}
+'''
+
     SSL_BLOCK = '''
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
@@ -389,8 +419,15 @@ location /p/ {{
 
     @classmethod
     def create_site(cls, name: str, app_type: str, domains: List[str],
-                    root_path: str, port: int = None, php_version: str = '8.2') -> Dict:
-        """Create a new site configuration."""
+                    root_path: str, port: int = None, php_version: str = '8.2',
+                    ssl_cert: str = None, ssl_key: str = None,
+                    upstream: str = None) -> Dict:
+        """Create a new site configuration.
+
+        When ``ssl_cert``/``ssl_key`` are given the generated vhost serves HTTPS
+        (443) from that cert with an HTTP->HTTPS redirect — used to point managed
+        subdomains at the base-domain wildcard cert.
+        """
         if not domains:
             return {'success': False, 'error': 'At least one domain is required'}
 
@@ -432,6 +469,14 @@ location /p/ {{
                 domains=domains_str,
                 port=port
             )
+        elif app_type == 'remote':
+            if not upstream:
+                return {'success': False, 'error': 'upstream (host:port) is required for remote apps'}
+            config = cls.REMOTE_UPSTREAM_TEMPLATE.format(
+                name=name,
+                domains=domains_str,
+                upstream=upstream,
+            )
         elif app_type == 'static':
             config = cls.STATIC_SITE_TEMPLATE.format(
                 name=name,
@@ -440,6 +485,9 @@ location /p/ {{
             )
         else:
             return {'success': False, 'error': f'Unknown app type: {app_type}'}
+
+        if ssl_cert and ssl_key:
+            config = cls._with_ssl(config, domains_str, ssl_cert, ssl_key)
 
         # Write config file
         config_path = os.path.join(cls.SITES_AVAILABLE, name)
@@ -455,6 +503,20 @@ location /p/ {{
             return {'success': True, 'message': f'Site {name} created', 'path': config_path}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _with_ssl(cls, http_config: str, domains: str, ssl_cert: str, ssl_key: str) -> str:
+        """Turn an HTTP server block into HTTPS: swap the :80 listens for the TLS
+        block (so the existing server serves 443) and prepend an HTTP->HTTPS
+        redirect. Idempotent because create_site regenerates the whole file."""
+        ssl_block = cls.SSL_BLOCK.format(ssl_cert=ssl_cert, ssl_key=ssl_key)
+        https_config = http_config.replace(
+            '    listen 80;\n    listen [::]:80;',
+            ssl_block.strip('\n'),
+            1,
+        )
+        redirect = cls.SSL_REDIRECT_TEMPLATE.format(domains=domains)
+        return redirect + '\n' + https_config
 
     @classmethod
     def enable_site(cls, name: str) -> Dict:

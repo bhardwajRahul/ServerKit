@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Download } from 'lucide-react';
 import api from '../services/api';
 import { Button } from '@/components/ui/button';
+import { PageTopbar } from '@/components/ds';
+import { MARKET_TABS } from '../components/marketplace/marketTabs';
 
 // Platform icons as SVG components
 const LinuxIcon = () => (
@@ -140,9 +143,7 @@ function Downloads() {
     if (loading) {
         return (
             <div className="page-container downloads-page">
-                <div className="page-header">
-                    <h1>Downloads</h1>
-                </div>
+                <PageTopbar icon={<Download size={18} />} title="Downloads" tabs={MARKET_TABS} />
                 <div className="loading-container">
                     <div className="loading-spinner"></div>
                     <p>Loading version information...</p>
@@ -153,18 +154,19 @@ function Downloads() {
 
     return (
         <div className="page-container downloads-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>ServerKit Agent Downloads</h1>
-                    <p className="page-subtitle">
-                        Download and install the ServerKit Agent on your servers to enable remote management.
-                    </p>
-                </div>
-                <Button variant="outline" onClick={fetchVersionInfo}>
-                    <RefreshIcon />
-                    Refresh
-                </Button>
-            </div>
+            <PageTopbar
+                icon={<Download size={18} />}
+                title="Downloads"
+                tabs={MARKET_TABS}
+                actions={(
+                    <>
+                        <Button size="sm" variant="outline" onClick={fetchVersionInfo}>
+                            <RefreshIcon />
+                            Refresh
+                        </Button>
+                    </>
+                )}
+            />
 
             {error && (
                 <div className="alert alert-error">

@@ -3,14 +3,61 @@ import { useNavigate, Link } from 'react-router-dom';
 import {
     HardDrive, Activity,
     RefreshCw, Zap,
-    Database, Container, Globe, Code, Layers, Server, Terminal
+    Database, Container, Globe, Code, Layers, Server, Terminal,
+    ChevronDown, Check, ChevronRight,
+    Plus, Trash2, Pencil, LogIn, Power, Shield, AlertTriangle, History
 } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import { useMetrics } from '../hooks/useMetrics';
 import MetricsGraph from '../components/MetricsGraph';
 import useDashboardLayout from '../hooks/useDashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { MetricCard, Pill, Feed, FeedItem } from '@/components/ds';
+
+// Map an audit action verb to a tinted icon + semantic tone token.
+// Falls back to a neutral history icon for unrecognised actions.
+function getActivityVisual(action = '') {
+    const a = action.toLowerCase();
+    if (a.includes('login_failed')) return { tone: 'red', icon: <AlertTriangle size={15} /> };
+    if (a.includes('login') || a.includes('logout') || a.includes('auth')) return { tone: 'cyan', icon: <LogIn size={15} /> };
+    if (a.includes('delete') || a.includes('remove') || a.includes('disable')) return { tone: 'red', icon: <Trash2 size={15} /> };
+    if (a.includes('create') || a.includes('add') || a.includes('enable')) return { tone: 'green', icon: <Plus size={15} /> };
+    if (a.includes('update') || a.includes('edit') || a.includes('permission')) return { tone: 'amber', icon: <Pencil size={15} /> };
+    if (a.includes('start') || a.includes('restart') || a.includes('stop')) return { tone: 'violet', icon: <Power size={15} /> };
+    if (a.includes('security') || a.includes('firewall') || a.includes('ssl') || a.includes('cert')) return { tone: 'accent', icon: <Shield size={15} /> };
+    return { tone: 'accent', icon: <History size={15} /> };
+}
+
+// Build a readable "actor verb target" sentence from an audit-log item.
+// action is dotted (e.g. "user.create"); we humanise the verb and append the
+// target_type/id when present.
+function describeActivity(item) {
+    const actor = item.username || (item.user_id ? `user #${item.user_id}` : 'System');
+    const verb = (item.action || '').split('.').slice(1).join(' ').replace(/_/g, ' ') || (item.action || 'activity');
+    const target = item.target_type
+        ? `${item.target_type}${item.target_id ? ` #${item.target_id}` : ''}`
+        : '';
+    return { actor, verb, target };
+}
+
+// Short relative time from an ISO timestamp ("just now", "5m ago", "3h ago",
+// "2d ago"), falling back to a localized date for older entries.
+function formatRelativeTime(iso) {
+    if (!iso) return '';
+    const then = new Date(iso);
+    if (isNaN(then)) return '';
+    const secs = Math.floor((Date.now() - then.getTime()) / 1000);
+    if (secs < 60) return 'just now';
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days}d ago`;
+    return then.toLocaleDateString();
+}
 
 // Refresh interval options in seconds
 const REFRESH_OPTIONS = [
@@ -21,22 +68,18 @@ const REFRESH_OPTIONS = [
     { label: '1m', value: 60 },
 ];
 
-const ServerSelectorIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
-        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
-        <line x1="6" y1="6" x2="6.01" y2="6"/>
-        <line x1="6" y1="18" x2="6.01" y2="18"/>
-    </svg>
-);
-
 const Dashboard = () => {
     const navigate = useNavigate();
+    const { isAdmin } = useAuth();
     const { metrics: localMetrics, loading: metricsLoading, connected, refresh: refreshMetrics } = useMetrics(true);
     const { widgets } = useDashboardLayout();
     const [apps, setApps] = useState([]);
     const [systemInfo, setSystemInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Recent activity feed (admin-only — endpoint is /admin/activity/feed)
+    const [activity, setActivity] = useState([]);
+    const [activityLoading, setActivityLoading] = useState(true);
     const [refreshInterval, setRefreshInterval] = useState(() => {
         const saved = localStorage.getItem('dashboard_refresh_interval');
         return saved ? parseInt(saved, 10) : 10;
@@ -49,6 +92,7 @@ const Dashboard = () => {
     // Server selector state
     const [servers, setServers] = useState([]);
     const [selectedServer, setSelectedServer] = useState({ id: 'local', name: 'Local (this server)' });
+    const [serverMenuOpen, setServerMenuOpen] = useState(false);
     const isRemote = selectedServer.id !== 'local';
 
     // Remote metrics (when a non-local server is selected)
@@ -141,6 +185,27 @@ const Dashboard = () => {
         loadData();
     }, []);
 
+    // Load the recent-activity feed — admins only (avoids a 403 for others)
+    useEffect(() => {
+        if (!isAdmin) {
+            setActivityLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setActivityLoading(true);
+        api.getActivityFeed({ per_page: 8 })
+            .then(data => {
+                if (!cancelled) setActivity(data?.logs || []);
+            })
+            .catch(err => {
+                if (!cancelled) console.error('Failed to load activity feed:', err);
+            })
+            .finally(() => {
+                if (!cancelled) setActivityLoading(false);
+            });
+        return () => { cancelled = true; };
+    }, [isAdmin]);
+
     // Polling fallback when WebSocket is not connected (local only)
     useEffect(() => {
         if (refreshInterval > 0 && !connected && !isRemote) {
@@ -157,8 +222,7 @@ const Dashboard = () => {
         localStorage.setItem('dashboard_refresh_interval', value.toString());
     }, []);
 
-    function handleServerChange(e) {
-        const serverId = e.target.value;
+    function handleServerChange(serverId) {
         const server = servers.find(s => s.id === serverId) || { id: 'local', name: 'Local (this server)' };
         setSelectedServer(server);
         // Reset ticking counters when switching servers
@@ -236,7 +300,55 @@ const Dashboard = () => {
             {/* Top Bar */}
             <div className="top-bar">
                 <div className="server-identity">
-                    <h1>{hostname}</h1>
+                    <Popover open={serverMenuOpen} onOpenChange={setServerMenuOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                type="button"
+                                className={`srv-switch${serverMenuOpen ? ' srv-switch--open' : ''}`}
+                                aria-label="Switch server"
+                            >
+                                <span className="srv-switch__name">{hostname}</span>
+                                <ChevronDown size={18} className="srv-switch__chev" aria-hidden="true" />
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                            align="start"
+                            sideOffset={7}
+                            className="env-menu"
+                        >
+                            <div className="env-menu__head">Connected servers · {servers.length}</div>
+                            {servers.map(server => {
+                                const online = server.status === 'online';
+                                const active = server.id === selectedServer.id;
+                                return (
+                                    <button
+                                        type="button"
+                                        key={server.id}
+                                        className="env-opt"
+                                        onClick={() => { handleServerChange(server.id); setServerMenuOpen(false); }}
+                                    >
+                                        <span
+                                            className={`env-opt__dot env-opt__dot--${online ? 'online' : 'offline'}`}
+                                            aria-hidden="true"
+                                        ></span>
+                                        <span className="env-opt__body">
+                                            <span className="env-opt__name">{server.name}</span>
+                                            <span className="env-opt__meta">
+                                                {server.group_name || (server.is_local ? 'local' : server.id)}
+                                                {' · '}
+                                                {online ? 'online' : 'offline'}
+                                            </span>
+                                        </span>
+                                        {active && (
+                                            <span className="env-opt__check" aria-hidden="true">
+                                                <Check size={15} />
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </PopoverContent>
+                    </Popover>
                     <div className="server-details">
                         <span
                             className={`conn-status conn-status--${isConnected ? 'live' : 'down'}`}
@@ -245,27 +357,15 @@ const Dashboard = () => {
                             <span className="conn-status__dot" aria-hidden="true"></span>
                             {isConnected ? 'Live' : 'Reconnecting'}
                         </span>
-                        <span className="detail-separator">|</span>
+                        <span className="detail-separator">·</span>
                         <span>IP: {ipAddress}</span>
-                        <span className="detail-separator">|</span>
+                        <span className="detail-separator">·</span>
                         <span>KERNEL: {kernelVersion}</span>
-                        <span className="detail-separator">|</span>
+                        <span className="detail-separator">·</span>
                         <span>UPTIME: {uptimeFormatted.days}d {String(uptimeFormatted.hours).padStart(2, '0')}h {String(uptimeFormatted.minutes).padStart(2, '0')}m</span>
                     </div>
                 </div>
                 <div className="top-bar-right">
-                    {servers.length > 1 && (
-                        <div className="server-selector">
-                            <ServerSelectorIcon />
-                            <select value={selectedServer.id} onChange={handleServerChange}>
-                                {servers.map(server => (
-                                    <option key={server.id} value={server.id} disabled={server.status === 'offline'}>
-                                        {server.name} {server.status === 'offline' ? '(Offline)' : ''}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
                     <div className="clock-widget">
                         <span className="clock-time">{displayTime}</span>
                         <span className="clock-zone">{serverTime?.timezone_id || 'UTC'}</span>
@@ -297,61 +397,66 @@ const Dashboard = () => {
                 {widgets.filter(w => w.visible).map(w => {
                     const WIDGET_RENDERERS = {
                         cpu: () => (
-                            <div key="cpu" className="metric-tile">
-                                <div className="tile-head">
-                                    <span className="tile-title">CPU</span>
-                                    <Zap size={16} className="tile-icon cpu" />
+                            <MetricCard
+                                key="cpu"
+                                className="dash-kpi"
+                                tone="accent"
+                                icon={<Zap size={16} />}
+                                value={(metrics?.cpu?.percent || 0).toFixed(1)}
+                                unit="%"
+                                label="CPU"
+                            >
+                                <div className="sk-kpi__sub">
+                                    <span>Cores {metrics?.cpu?.count_logical || 0}</span>
                                 </div>
-                                <div className="tile-val">{(metrics?.cpu?.percent || 0).toFixed(1)}%</div>
-                                <div className="tile-sub">
-                                    <span>Cores: {metrics?.cpu?.count_logical || 0}</span>
-                                </div>
-                            </div>
+                            </MetricCard>
                         ),
                         ram: () => (
-                            <div key="ram" className="metric-tile">
-                                <div className="tile-head">
-                                    <span className="tile-title">RAM</span>
-                                    <Database size={16} className="tile-icon memory" />
+                            <MetricCard
+                                key="ram"
+                                className="dash-kpi"
+                                tone="green"
+                                icon={<Database size={16} />}
+                                value={metrics?.memory?.ram?.used_human || '0 GB'}
+                                label="RAM"
+                            >
+                                <div className="sk-kpi__sub">
+                                    <span>Total {metrics?.memory?.ram?.total_human || '0 GB'}</span>
+                                    <span>Cached {metrics?.memory?.ram?.cached_human || '0 GB'}</span>
                                 </div>
-                                <div className="tile-val">{metrics?.memory?.ram?.used_human || '0 GB'}</div>
-                                <div className="tile-sub">
-                                    <span>Total: {metrics?.memory?.ram?.total_human || '0 GB'}</span>
-                                    <span>Cached: {metrics?.memory?.ram?.cached_human || '0 GB'}</span>
-                                </div>
-                            </div>
+                            </MetricCard>
                         ),
                         network: () => (
-                            <div key="network" className="metric-tile">
-                                <div className="tile-head">
-                                    <span className="tile-title">Network</span>
-                                    <Activity size={16} className="tile-icon network" />
+                            <MetricCard
+                                key="network"
+                                className="dash-kpi"
+                                tone="cyan"
+                                icon={<Activity size={16} />}
+                                value={metrics?.network?.io?.bytes_sent_human || '0 B'}
+                                unit="sent"
+                                label="Network"
+                            >
+                                <div className="sk-kpi__sub">
+                                    <span>In {metrics?.network?.io?.bytes_recv_human || '0 B'}</span>
+                                    <span>Out {metrics?.network?.io?.bytes_sent_human || '0 B'}</span>
                                 </div>
-                                <div className="tile-val">
-                                    {metrics?.network?.io?.bytes_sent_human || '0 B'}
-                                    <span className="tile-val-unit">sent</span>
-                                </div>
-                                <div className="tile-sub">
-                                    <span>In: {metrics?.network?.io?.bytes_recv_human || '0 B'}</span>
-                                    <span>Out: {metrics?.network?.io?.bytes_sent_human || '0 B'}</span>
-                                </div>
-                            </div>
+                            </MetricCard>
                         ),
                         disk: () => (
-                            <div key="disk" className="metric-tile">
-                                <div className="tile-head">
-                                    <span className="tile-title">Disk</span>
-                                    <HardDrive size={16} className="tile-icon disk" />
+                            <MetricCard
+                                key="disk"
+                                className="dash-kpi"
+                                tone="amber"
+                                icon={<HardDrive size={16} />}
+                                value={(metrics?.disk?.partitions?.[0]?.percent || 0).toFixed(1)}
+                                unit="%"
+                                label="Disk"
+                            >
+                                <div className="sk-kpi__sub">
+                                    <span>Used {metrics?.disk?.partitions?.[0]?.used_human || '0 GB'}</span>
+                                    <span>Free {metrics?.disk?.partitions?.[0]?.free_human || '0 GB'}</span>
                                 </div>
-                                <div className="tile-val">
-                                    {(metrics?.disk?.partitions?.[0]?.percent || 0).toFixed(1)}%
-                                    <span className="tile-val-unit">used</span>
-                                </div>
-                                <div className="tile-sub">
-                                    <span>Used: {metrics?.disk?.partitions?.[0]?.used_human || '0 GB'}</span>
-                                    <span>Free: {metrics?.disk?.partitions?.[0]?.free_human || '0 GB'}</span>
-                                </div>
-                            </div>
+                            </MetricCard>
                         ),
                         chart: () => (
                             <div key="chart" className="chart-panel">
@@ -432,9 +537,9 @@ const Dashboard = () => {
                                                     </td>
                                                     <td>{app.app_type}</td>
                                                     <td>
-                                                        <Badge variant={app.status === 'running' ? 'success' : 'warning'}>
+                                                        <Pill kind={app.status === 'running' ? 'green' : 'amber'}>
                                                             {app.status?.toUpperCase()}
-                                                        </Badge>
+                                                        </Pill>
                                                     </td>
                                                     <td>{app.domains?.[0]?.name || '-'}</td>
                                                 </tr>
@@ -447,6 +552,41 @@ const Dashboard = () => {
                     };
                     return WIDGET_RENDERERS[w.id]?.();
                 })}
+
+                {/* Recent activity — admin-only audit feed, paired with Applications */}
+                {isAdmin && (
+                    <div className="activity-panel">
+                        <div className="activity-panel__head">
+                            <h3 className="activity-panel__title">Recent Activity</h3>
+                            <Link to="/security/audit" className="activity-panel__link">
+                                Audit log <ChevronRight size={14} aria-hidden="true" />
+                            </Link>
+                        </div>
+                        {activityLoading ? (
+                            <div className="activity-panel__empty">Loading activity…</div>
+                        ) : activity.length === 0 ? (
+                            <div className="activity-panel__empty">No recent activity</div>
+                        ) : (
+                            <Feed>
+                                {activity.map(item => {
+                                    const { tone, icon } = getActivityVisual(item.action);
+                                    const { actor, verb, target } = describeActivity(item);
+                                    return (
+                                        <FeedItem
+                                            key={item.id}
+                                            icon={icon}
+                                            tone={tone}
+                                            time={formatRelativeTime(item.created_at)}
+                                        >
+                                            <b>{actor}</b> {verb}
+                                            {target && <> · {target}</>}
+                                        </FeedItem>
+                                    );
+                                })}
+                            </Feed>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

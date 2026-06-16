@@ -151,6 +151,122 @@
     padding: $space-4;
 }
 
+// Redesign: dense WordPress site table (replaces the .wp-site-card grid).
+.wp-list {
+    padding: $space-4;
+
+    &__toolbar {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        flex-wrap: wrap;
+        margin-bottom: $space-3;
+
+        .wp-tag-filter { margin: 0; }
+    }
+
+    // Client-side site search (name / title / domain). Mirrors the demo's
+    // .input: leading icon + borderless field on a quiet surface.
+    &__search {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-2;
+        margin-left: auto;
+        padding: 0 10px;
+        width: 240px;
+        max-width: 100%;
+        height: 32px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: 8px;
+        color: var(--text-faint);
+        transition: border-color 0.14s;
+
+        &:focus-within { border-color: var(--accent-dim); }
+
+        svg { flex-shrink: 0; }
+
+        input {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            background: none;
+            color: var(--text);
+            font-size: 13px;
+
+            &::placeholder { color: var(--text-faint); }
+            &:focus { outline: none; }
+        }
+    }
+
+    // Count subtitle accent ("M running") in the PageTopbar meta slot.
+    &__meta-running { color: var(--green); }
+
+    // bulk-select bar (demo's bulkbar) — appears once any row is checked
+    &__bulkbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-3;
+        flex-wrap: wrap;
+        padding: $space-2 $space-4;
+        margin-bottom: $space-3;
+        background: var(--accent-bg-soft);
+        border: 1px solid var(--accent-dim);
+        border-radius: var(--radius);
+    }
+
+    &__bulkcount {
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: $font-weight-medium;
+        color: var(--accent-bright);
+    }
+
+    &__bulkactions {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        flex-wrap: wrap;
+    }
+
+    &__ck {
+        width: 36px;
+        padding-right: 0;
+    }
+
+    &__card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    // Per-site gradient initial avatar (ds ServiceTile / .sk-tile). The tile
+    // brings its own size + hue-hashed gradient inline; we only soften the
+    // corner to the demo's small rounded-square look.
+    &__tile {
+        border-radius: 8px;
+    }
+
+    &__links {
+        display: inline-flex;
+        gap: $space-2;
+
+        a {
+            display: inline-flex;
+            color: var(--text-faint);
+            transition: color 0.14s;
+            &:hover { color: var(--accent-bright); }
+        }
+    }
+
+    &__dash { color: var(--text-ghost); font-family: var(--mono); font-size: 12px; }
+    &__chev { color: var(--text-ghost); }
+
+    .sk-tag + .sk-tag { margin-left: 4px; }
+}
+
 // Site tags / labels (chips + filter bar)
 .wp-tag-filter {
     display: flex;
@@ -375,33 +491,925 @@
     }
 }
 
-// WordPress Detail Page
+// ============================================
+// WORDPRESS DETAIL PAGE (redesign — infra console look)
+// ============================================
+// Everything here is scoped under .wp-detail-page on purpose: the base
+// `app-*` classes (.app-panel, .app-info-grid, .app-detail-tabs, …) live in
+// _applications.scss and are ALSO rendered by the Applications detail page,
+// which keeps its current look until its own pass. Same pattern as the
+// `.server-detail-page` block in _servers.scss.
 .wp-detail-page {
+
+    // ---- Breadcrumbs (mono trail) ----
+    .app-detail-breadcrumbs {
+        font-family: var(--mono);
+        font-size: $font-size-sm;
+
+        a {
+            color: var(--text-faint);
+
+            &:hover {
+                color: var(--accent-bright);
+            }
+        }
+
+        > span {
+            color: var(--text-ghost);
+        }
+
+        .current {
+            color: var(--text-dim);
+            font-weight: $font-weight-medium;
+        }
+    }
+
+    // ---- Header (demo .site-header: gradient surface + accent wash) ----
+    .app-detail-header {
+        position: relative;
+        gap: $space-4;
+        padding: 20px 22px;
+        background: linear-gradient(120deg, var(--surface) 0%, var(--surface-2) 100%);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-lg);
+
+        // No overflow:hidden (the env-switch menu must escape the header),
+        // so the wash inherits the radius instead.
+        &::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: var(--radius-lg);
+            background: radial-gradient(420px 200px at 0% 0%, var(--accent-bg-soft), transparent 70%);
+            pointer-events: none;
+        }
+    }
+
+    .app-detail-icon {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        border-radius: 13px;
+        border: 1px solid fade(#fff, 8%);
+        box-shadow: var(--shadow-sm);
+    }
+
     .wp-icon {
-        background: $color-wordpress !important;
+        background: linear-gradient(150deg, lighten($color-wordpress, 12%), $color-wordpress) !important;
+    }
+
+    // Status dot pinned to the favicon corner (demo .site-favicon .badge)
+    .wp-head-dot {
+        position: absolute;
+        bottom: -4px;
+        right: -4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2.5px solid var(--surface);
+        background: var(--text-faint);
+
+        &.running {
+            background: var(--green);
+        }
+
+        &.stopped {
+            background: var(--red);
+        }
+    }
+
+    .app-detail-title-block h1 {
+        font-size: 21px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: -0.02em;
+        gap: 11px;
+        flex-wrap: wrap;
+    }
+
+    .app-detail-subtitle {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+
+        a {
+            color: var(--accent-bright);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+
+        .separator {
+            color: var(--text-ghost);
+        }
+    }
+
+    // ---- Tab strip (14 flat tabs — accent underline, ids untouched) ----
+    .app-detail-tabs {
+        gap: 2px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border-soft);
+        border-radius: 0;
+        padding: 0;
+        overflow-x: auto;
+
+        &::-webkit-scrollbar {
+            height: 0;
+        }
+    }
+
+    .app-detail-tab {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 11px 14px;
+        border-radius: 0;
+        border-bottom: 2px solid transparent;
+        color: var(--text-faint);
+        font-size: 13px;
+        font-weight: $font-weight-normal;
+        white-space: nowrap;
+        transition: color 0.14s;
+
+        svg {
+            color: var(--text-ghost);
+            transition: color 0.14s;
+            flex-shrink: 0;
+        }
+
+        &:hover {
+            background: none;
+            color: var(--text-dim);
+
+            svg {
+                color: var(--text-faint);
+            }
+        }
+
+        &.active {
+            background: none;
+            color: var(--text);
+            border-bottom-color: var(--accent);
+            font-weight: $font-weight-medium;
+
+            svg {
+                color: var(--accent-bright);
+            }
+        }
+    }
+
+    // ---- Panels (quiet surface + mono eyebrow header) ----
+    .app-panel {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+    }
+
+    .app-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 7px;
+        padding: 12px 17px;
+        border-bottom: 1px solid var(--border-soft);
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+
+        svg {
+            width: 13px;
+            height: 13px;
+            color: var(--accent-bright);
+        }
+    }
+
+    .app-panel-body {
+        padding: $space-4 17px;
+
+        .hint:last-child {
+            margin-bottom: 0;
+        }
+
+        .app-detail-actions {
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: $space-3;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .app-info-grid + .app-detail-actions,
+        .app-info-grid + .hint {
+            margin-top: $space-3;
+        }
+    }
+
+    // ---- Info grids → k/v spec rows (.sk-info-row look, CSS-only) ----
+    .app-info-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .app-info-item {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-4;
+        padding: 10px 0;
+        border-top: 1px solid var(--border-soft);
+
+        &:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        &:last-child {
+            padding-bottom: 0;
+        }
+    }
+
+    .app-info-label {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-faint);
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .app-info-value {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: $space-2;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--text);
+        text-align: right;
+        min-width: 0;
+        overflow-wrap: anywhere;
+
+        a {
+            color: var(--accent-bright);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+
+    // ---- Section headers → mono eyebrows ----
+    .section-header {
+        margin-bottom: $space-4;
+
+        h3 {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 0;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+
+    // ---- KPI strip (ds MetricCard rows) ----
+    .wp-kpis {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: $space-4;
+    }
+
+    .wp-overview {
+        display: flex;
+        flex-direction: column;
+        gap: $space-4;
+    }
+
+    // ---- Dense table chrome shared by plugins/themes/vulns ----
+    .wp-asset-table,
+    .wp-vuln-table {
+        .sk-cell-name {
+            font-size: 13px;
+        }
+
+        .sk-cell-sub {
+            margin-top: 2px;
+        }
+    }
+
+    .wp-vuln-title {
+        font-size: 12.5px;
+        color: var(--text-dim);
+        max-width: 360px;
+        overflow-wrap: anywhere;
+    }
+
+    // app-panel hosting a flush table (Findings)
+    .app-panel > .sk-dtable {
+        border-radius: 0 0 var(--radius) var(--radius);
+        overflow: hidden;
+    }
+
+    // ---- Severity chips (prototype .sev / security ramp) ----
+    .wp-sev {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-semibold;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+
+        .d {
+            width: 9px;
+            height: 9px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            background: var(--text-ghost);
+        }
+
+        &--critical {
+            color: var(--red);
+
+            .d {
+                background: var(--red);
+                box-shadow: 0 0 6px var(--red);
+            }
+        }
+
+        &--high {
+            color: var(--red);
+
+            .d {
+                background: var(--red);
+            }
+        }
+
+        &--medium {
+            color: var(--amber);
+
+            .d {
+                background: var(--amber);
+            }
+        }
+
+        &--low {
+            color: var(--cyan);
+
+            .d {
+                background: var(--cyan);
+            }
+        }
+
+        &--unknown {
+            color: var(--text-faint);
+
+            .d {
+                background: var(--text-faint);
+            }
+        }
+    }
+
+    .wp-fix-chip {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
+        white-space: nowrap;
+    }
+
+    .wp-no-fix {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    .wp-advisory-link {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--accent-bright);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    // ---- Update chips + bulk bar (amber wash, mono) ----
+    .wp-update-badge {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-medium;
+        color: var(--amber);
+        background: var(--amber-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
+        margin-left: $space-2;
+    }
+
+    .bulk-update-bar {
+        background: var(--amber-bg);
+        border: 1px solid fade($warning, 25%);
+        border-radius: var(--radius);
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--amber);
+    }
+
+    .install-form {
+        margin-bottom: $space-4;
+    }
+
+    // ---- Security posture (ScoreGauge ring + checklist, demo Posture panel) ----
+    .wp-posture {
+        display: flex;
+        align-items: center;
+        gap: $space-6;
+
+        &__checks {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &__check {
+            display: flex;
+            align-items: center;
+            gap: $space-3;
+            padding: 10px 0;
+            border-top: 1px solid var(--border-soft);
+            font-size: 13px;
+
+            &:first-child { border-top: none; }
+        }
+
+        &__label {
+            flex: 1;
+            min-width: 0;
+            color: var(--text);
+        }
+
+        &__detail {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
+            white-space: nowrap;
+        }
+
+        @media (max-width: $breakpoint-md) {
+            flex-direction: column;
+            align-items: flex-start;
+
+            &__checks { width: 100%; }
+        }
+    }
+
+    // ---- Mono code well (integrity issue lines) ----
+    .wp-code-list {
+        margin-top: $space-3;
+        padding: $space-3 $space-4;
+        background: var(--bg-code);
+        border: 1px solid var(--border-soft);
+        border-radius: $radius-md;
+        max-height: 320px;
+        overflow-y: auto;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.7;
+        color: var(--text-code);
+        overflow-wrap: anywhere;
+    }
+
+    // ---- Run-history / incident rows (Updates + Reports) ----
+    .wp-run-row {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 11px 0;
+        border-top: 1px solid var(--border-soft);
+
+        &:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .form-hint {
+            margin-top: 0;
+        }
+    }
+
+    .wp-run-row-head {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        flex-wrap: wrap;
+
+        strong {
+            font-size: 13px;
+        }
+    }
+
+    .wp-run-row-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    .wp-run-component {
+        font-family: var(--mono);
+    }
+
+    // ---- Analytics head (eyebrow + SegControl) ----
+    .wp-analytics-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-3;
+        flex-wrap: wrap;
+    }
+
+    .wp-eyebrow {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
+
+    // Recharts default tooltip → surface tokens (recharts inline-styles it)
+    .recharts-default-tooltip {
+        background: var(--surface-2) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-sm);
+        box-shadow: var(--shadow-md);
+        font-family: var(--mono);
+        font-size: 11.5px;
+    }
+
+    .recharts-tooltip-label {
+        color: var(--text-faint) !important;
+    }
+
+    // ---- Report header actions keep normal type inside the eyebrow bar ----
+    .wp-report-actions {
+        font-family: $font-main;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    // ---- Commit list (scoped: Git.jsx renders .commit-item too) ----
+    .commit-list {
+        gap: 0;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+        max-width: 860px;
+    }
+
+    .commit-item {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: 12px $space-4;
+        transition: background 0.12s;
+
+        & + .commit-item {
+            border-top: 1px solid var(--border-soft);
+        }
+
+        &:hover {
+            background: var(--surface-2);
+        }
+
+        &.current {
+            background: fade($success, 5%);
+        }
+    }
+
+    .commit-icon {
+        color: var(--text-faint);
+
+        .current-icon {
+            color: var(--green);
+        }
+    }
+
+    .commit-sha {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
+    }
+
+    .current-badge {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: $font-weight-semibold;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: var(--green-bg);
+        color: var(--green);
+        padding: 2px 7px;
+        border-radius: 5px;
+    }
+
+    .commit-date {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+    }
+
+    .commit-message {
+        font-size: 13px;
+        font-weight: $font-weight-medium;
+    }
+
+    .commit-author {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    // ---- DiskUsageBar container re-tint (styles live in _wordpress-pipeline) ----
+    .app-health-disk .disk-usage-bar-container {
+        background: var(--surface-2);
+        border-color: var(--border-soft);
     }
 }
 
-// Environment Cards
+// ---- Header environment switcher (prototype .env-switch / .env-menu) ----
+.wp-envswitch-wrap {
+    position: relative;
+    display: inline-flex;
+}
+
+.wp-envswitch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px 5px 11px;
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-family: $font-main;
+    font-size: 12.5px;
+    font-weight: $font-weight-medium;
+    letter-spacing: normal;
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color 0.14s, background 0.14s;
+
+    .ed {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .chev {
+        color: var(--text-faint);
+        transition: transform 0.15s;
+    }
+
+    &.open .chev {
+        transform: rotate(180deg);
+    }
+
+    &:hover {
+        background: var(--surface-3);
+        border-color: var(--border-strong);
+    }
+}
+
+.wp-envswitch-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 7px;
+    z-index: $z-dropdown + 5;
+    min-width: 280px;
+    background: var(--surface-2);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    padding: 7px;
+}
+
+.wp-envswitch-head {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-ghost);
+    padding: 7px 10px 5px;
+}
+
+.wp-envswitch-opt {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 9px;
+    background: none;
+    color: var(--text);
+    font-family: $font-main;
+    letter-spacing: normal;
+    text-transform: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &:hover {
+        background: var(--surface-3);
+    }
+
+    .ed {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .check {
+        margin-left: auto;
+        color: var(--accent-bright);
+        flex-shrink: 0;
+    }
+}
+
+.wp-envswitch-opt-body {
+    flex: 1;
+    min-width: 0;
+
+    .nm {
+        display: block;
+        font-weight: $font-weight-medium;
+        font-size: 13px;
+    }
+
+    .meta {
+        display: block;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+// ---- Surface card wrapper for dense tables (SnapshotTable & friends) ----
+.wp-table-card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.wp-th-right {
+    text-align: right !important;
+}
+
+.wp-cell-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.wp-row-action {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s;
+
+    &:hover:not(:disabled) {
+        background: var(--surface-3);
+        color: var(--text);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    &--danger:hover:not(:disabled) {
+        background: var(--red-bg);
+        color: var(--red);
+    }
+}
+
+// Environment Cards (EnvironmentCard.jsx — WP detail Environments tab).
+// Restyled to the prototype's .env-card: quiet surface, accent border on
+// production, EnvTag/Pill rendered by the ds components.
 .environments-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: $space-4;
     margin-top: $space-4;
 }
 
+// Dashed "add environment" tile — an in-grid affordance that reads as
+// intentional, replacing the old full-width empty-state block that looked
+// like an error sitting under the production card.
+.wp-env-add-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $space-2;
+    min-height: 150px;
+    padding: $space-6;
+    text-align: center;
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+    &:hover {
+        border-color: var(--accent);
+        color: var(--text);
+        background: var(--accent-bg-soft);
+    }
+
+    &__icon {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius);
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    &__title {
+        font-size: $font-size-base;
+        font-weight: $font-weight-semibold;
+        color: var(--text);
+    }
+
+    &__hint {
+        font-size: $font-size-sm;
+        line-height: $line-height-normal;
+        max-width: 280px;
+    }
+}
+
 .wp-env-card {
-    background: $bg-card;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-lg;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    transition: border-color 0.15s;
+
+    &:hover {
+        border-color: var(--border-strong);
+    }
 
     &.production {
-        border-color: fade($color-danger, 45%);
+        border-color: var(--accent-dim);
+
+        &:hover {
+            border-color: var(--accent-dim);
+        }
     }
 
     &.stale {
-        border-color: fade($color-warning, 40%);
-        background: fade($color-warning, 3%);
+        border-color: fade($warning, 35%);
     }
 }
 
@@ -415,12 +1423,13 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: $font-size-xs;
+    font-family: var(--mono);
+    font-size: 10.5px;
     font-weight: $font-weight-medium;
-    padding: 2px 8px;
-    border-radius: $radius-sm;
-    background: fade($color-warning, 15%);
-    color: $color-warning;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--amber-bg);
+    color: var(--amber);
 
     svg {
         flex-shrink: 0;
@@ -428,23 +1437,12 @@
 }
 
 .text-warning {
-    color: $color-warning !important;
+    color: var(--amber) !important;
 }
 
-.wp-env-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: $space-4;
-    border-bottom: 1px solid $border-subtle;
-}
-
-.wp-env-info {
-    display: flex;
-    align-items: center;
-    gap: $space-3;
-}
-
+// Kept for the pipeline surfaces: PipelineView / WordPressProjects /
+// EnvironmentStatusBadge still render these classes (EnvironmentCard itself
+// now uses the ds EnvTag/Pill components instead).
 .wp-env-badge {
     font-size: $font-size-xs;
     font-weight: $font-weight-bold;
@@ -467,13 +1465,6 @@
         background: fade($color-info, 12%);
         color: $color-info;
     }
-}
-
-.wp-env-name {
-    font-size: $font-size-base;
-    font-weight: $font-weight-semibold;
-    color: $text-primary;
-    margin: 0;
 }
 
 .wp-env-status {
@@ -506,17 +1497,45 @@
     }
 }
 
+.wp-env-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $space-2;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.wp-env-info {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    min-width: 0;
+}
+
+.wp-env-name {
+    font-size: 14px;
+    font-weight: $font-weight-semibold;
+    color: var(--text);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .wp-env-body {
-    padding: $space-4;
+    padding: 14px 16px;
 }
 
 .wp-env-url {
     margin-bottom: $space-3;
 
     a {
-        font-size: $font-size-sm;
-        color: $color-primary;
-        font-family: $font-family-mono;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--accent-bright);
+        text-decoration: none;
+        overflow-wrap: anywhere;
 
         &:hover {
             text-decoration: underline;
@@ -527,7 +1546,7 @@
 .wp-env-meta {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: $space-2;
+    gap: $space-3 $space-2;
 }
 
 .wp-env-meta-item {
@@ -535,168 +1554,124 @@
         display: flex;
         align-items: center;
         gap: 4px;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-        margin-bottom: 2px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin-bottom: 3px;
+
+        svg {
+            color: var(--text-ghost);
+        }
     }
 
     .meta-value {
-        font-size: $font-size-sm;
-        color: $text-primary;
+        font-size: 12.5px;
+        color: var(--text);
 
         &.mono {
-            font-family: $font-family-mono;
+            font-family: var(--mono);
+            font-size: 12px;
         }
     }
 }
 
 .wp-env-footer {
     display: flex;
-    gap: $space-2;
-    padding: $space-3 $space-4;
-    border-top: 1px solid $border-subtle;
-    background: $bg-tertiary;
-    border-radius: 0 0 $radius-lg $radius-lg;
+    gap: $space-1;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-soft);
+    background: transparent;
+    border-radius: 0 0 var(--radius) var(--radius);
 }
 
-// Snapshot Table
+// Snapshot Table (SnapshotTable.jsx — now a .sk-dtable inside .wp-table-card)
 .wp-snapshot-table {
     .snapshot-name-cell {
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
     }
 
     .snapshot-name {
-        font-weight: $font-weight-medium;
-        color: $text-primary;
+        font-weight: 550;
+        font-size: 13px;
+        color: var(--text);
     }
 
     .snapshot-tag {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        font-size: $font-size-xs;
-        color: $color-info;
-        background: fade($color-info, 10%);
-        padding: 2px 6px;
-        border-radius: $radius-sm;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--cyan);
+        background: var(--cyan-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
         width: fit-content;
     }
 
     .snapshot-desc {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    .snapshot-date {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+    }
+
+    .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
     }
 
     .compressed-badge {
         display: inline-block;
+        font-family: var(--mono);
         font-size: 10px;
-        background: fade($color-success, 10%);
-        color: $color-success;
-        padding: 1px 4px;
-        border-radius: 3px;
+        background: var(--green-bg);
+        color: var(--green);
+        padding: 1px 5px;
+        border-radius: 4px;
         margin-left: $space-2;
+    }
+
+    .text-muted {
+        color: var(--text-ghost);
+        font-family: var(--mono);
     }
 
     .git-context {
         display: flex;
         align-items: center;
         gap: 6px;
-        color: $text-secondary;
+        color: var(--text-dim);
 
         svg {
-            color: $text-tertiary;
+            color: var(--text-faint);
+            flex-shrink: 0;
+        }
+
+        .git-context-sha {
+            color: var(--accent-bright);
+            background: var(--accent-bg);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 11px;
         }
 
         .commit-msg {
-            font-size: $font-size-xs;
-            color: $text-tertiary;
-            margin-left: $space-2;
+            font-size: 11.5px;
+            color: var(--text-faint);
+            margin-left: $space-1;
         }
     }
-}
-
-// Git Connect Form
-.git-connect-form {
-    max-width: 600px;
-
-    h4 {
-        margin: 0 0 $space-2;
-    }
-
-    .hint {
-        color: $text-tertiary;
-        margin-bottom: $space-4;
-    }
-}
-
-.git-connected-card {
-    background: $bg-card;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-lg;
-    padding: $space-5;
-    max-width: 600px;
-}
-
-.git-connected-header {
-    display: flex;
-    align-items: flex-start;
-    gap: $space-4;
-    margin-bottom: $space-4;
-
-    > svg {
-        color: $color-success;
-        flex-shrink: 0;
-    }
-
-    h4 {
-        margin: 0 0 $space-1;
-        font-size: $font-size-base;
-    }
-}
-
-.git-repo-url {
-    font-size: $font-size-sm;
-    font-family: $font-family-mono;
-    color: $text-secondary;
-
-    &:hover {
-        color: $color-primary;
-    }
-}
-
-.git-connected-meta {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $space-3;
-    padding: $space-4;
-    background: $bg-tertiary;
-    border-radius: $radius-md;
-    margin-bottom: $space-4;
-}
-
-.git-meta-item {
-    .meta-label {
-        display: block;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-        margin-bottom: 2px;
-    }
-
-    .meta-value {
-        font-size: $font-size-sm;
-        color: $text-primary;
-
-        &.mono {
-            font-family: $font-family-mono;
-        }
-    }
-}
-
-.git-connected-actions {
-    display: flex;
-    justify-content: flex-end;
 }
 
 // Commit List
@@ -804,7 +1779,7 @@
     border-top: 1px solid $border-subtle;
 }
 
-// Quick Actions
+// Quick Actions (WP detail Overview — exclusive to this page)
 .quick-actions-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -815,21 +1790,37 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: $space-2;
-    padding: $space-3;
-    background: $bg-tertiary;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-md;
-    color: $text-secondary;
-    font-size: $font-size-sm;
+    gap: 7px;
+    padding: 10px $space-2;
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 12.5px;
     font-weight: $font-weight-medium;
     text-decoration: none;
-    transition: all 0.15s ease;
+    cursor: pointer;
+    transition: background 0.14s, border-color 0.14s, color 0.14s;
 
-    &:hover {
-        background: $bg-hover;
-        border-color: $border-hover;
-        color: $text-primary;
+    svg {
+        color: var(--text-faint);
+        flex-shrink: 0;
+        transition: color 0.14s;
+    }
+
+    &:hover:not(:disabled) {
+        background: var(--accent-bg-soft);
+        border-color: var(--accent-dim);
+        color: var(--text);
+
+        svg {
+            color: var(--accent-bright);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.55;
+        cursor: default;
     }
 }
 
@@ -1623,4 +2614,275 @@
 
 .ssl-action-btn {
     margin-top: $space-3;
+}
+
+// Plugin / Theme card grids (WP detail — replace the dense asset tables)
+.wp-detail-page {
+    .wp-asset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 14px;
+    }
+
+    .wp-asset-card {
+        display: flex;
+        gap: 13px;
+        align-items: flex-start;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: 16px;
+        transition: border-color 0.15s;
+
+        &:hover { border-color: var(--border-strong); }
+        &.is-active { border-color: var(--accent-dim); }
+
+        &__body { flex: 1; min-width: 0; }
+        &__name { font-weight: 600; font-size: 14px; }
+        &__sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+            margin-top: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        &__foot {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        &__ver { font-family: var(--mono); font-size: 11px; color: var(--text-faint); }
+
+        &__toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        &__state {
+            font-family: var(--mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-faint);
+            &.is-on { color: var(--green); }
+        }
+    }
+
+    .wp-update-flag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--amber);
+        background: var(--amber-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.12s;
+
+        &:hover { opacity: 0.85; }
+        &:disabled { opacity: 0.55; cursor: default; }
+    }
+
+    .wp-theme-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+    }
+
+    .wp-theme-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: border-color 0.15s, transform 0.15s;
+
+        &:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+        &.is-active { border-color: var(--accent-dim); }
+
+        &__shot {
+            position: relative;
+            height: 128px;
+            display: grid;
+            place-items: center;
+            border-bottom: 1px solid var(--border-soft);
+            background:
+                repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.018) 0 12px, transparent 12px 24px),
+                var(--surface-2);
+
+            svg { color: var(--text-ghost); }
+            .pill { position: absolute; top: 10px; right: 10px; }
+        }
+
+        &__meta { padding: 14px 16px; }
+        &__name { font-weight: 600; font-size: 14px; }
+        &__sub {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+            margin-top: 3px;
+        }
+        &__actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        &__current {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--green);
+        }
+    }
+}
+
+// Change Site URL modal (URL-swap tool)
+.wp-url-swap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 4px 0 8px;
+
+    &__warning {
+        display: flex;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: var(--radius);
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        font-size: 12.5px;
+        line-height: 1.5;
+        color: var(--text-faint);
+
+        svg { flex-shrink: 0; color: var(--amber); margin-top: 1px; }
+    }
+
+    &__fromto {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+
+        code {
+            font-family: var(--mono);
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-soft);
+            color: var(--text-faint);
+            word-break: break-all;
+
+            &.is-new { color: var(--green); border-color: var(--accent-dim); }
+        }
+        svg { color: var(--text-ghost); flex-shrink: 0; }
+    }
+
+    &__keep {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        cursor: pointer;
+
+        > span {
+            display: flex;
+            flex-direction: column;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        small {
+            font-weight: 400;
+            font-size: 11.5px;
+            color: var(--text-faint);
+            margin-top: 2px;
+        }
+    }
+
+    &__preview {
+        border-top: 1px solid var(--border-soft);
+        padding-top: 12px;
+    }
+
+    &__preview-total {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 8px;
+    }
+
+    &__preview-pairs {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11.5px;
+
+            code {
+                font-family: var(--mono);
+                color: var(--text-faint);
+                word-break: break-all;
+            }
+            svg { color: var(--text-ghost); flex-shrink: 0; }
+        }
+    }
+
+    &__count {
+        margin-left: auto;
+        font-family: var(--mono);
+        font-size: 11px;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        color: var(--text-faint);
+        flex-shrink: 0;
+    }
+
+    &__preview-error {
+        font-size: 12.5px;
+        color: var(--red);
+    }
+
+    &__result {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        font-size: 13px;
+
+        svg { color: var(--green); flex-shrink: 0; }
+        code { font-family: var(--mono); color: var(--green); word-break: break-all; }
+    }
+
+    &__dns-manual {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12.5px;
+    }
+
+    &__record {
+        font-family: var(--mono);
+        font-size: 12px;
+        padding: 8px 10px;
+        border-radius: 6px;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        color: var(--text);
+        word-break: break-all;
+    }
 }

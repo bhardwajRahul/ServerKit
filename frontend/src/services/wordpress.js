@@ -11,13 +11,15 @@ const wordpressApi = {
         body: data
     }),
 
-    // Import an existing WP site from an uploaded SQL dump (multipart upload).
-    importSite: ({ name, adminEmail, oldUrl, sqlFile }) => {
+    // Import an existing WP site from an uploaded SQL dump, plus an optional
+    // wp-content/full-site .zip (plugins/themes/uploads). Multipart upload.
+    importSite: ({ name, adminEmail, oldUrl, sqlFile, wpContentFile }) => {
         const fd = new FormData();
         fd.append('name', name);
         fd.append('adminEmail', adminEmail || '');
         fd.append('oldUrl', oldUrl);
         fd.append('sql', sqlFile);
+        if (wpContentFile) fd.append('wp_content', wpContentFile);
         return api.request(`${BASE_PATH}/import`, { method: 'POST', body: fd });
     },
 
@@ -28,6 +30,26 @@ const wordpressApi = {
     }),
 
     getSite: (id) => api.request(`${BASE_PATH}/${id}`),
+
+    // Preview a site URL change (dry-run: per-pair DB replacement counts, no mutation).
+    previewUrlChange: (id, newUrl) => api.request(`${BASE_PATH}/${id}/url/preview`, {
+        method: 'POST',
+        body: { new_url: newUrl }
+    }),
+
+    // Change a site's URL: backup + serialization-safe DB rewrite + re-point routing.
+    changeUrl: (id, newUrl, keepOldRedirect = true) => api.request(`${BASE_PATH}/${id}/url`, {
+        method: 'POST',
+        body: { new_url: newUrl, keep_old_redirect: keepOldRedirect }
+    }),
+
+    // Attach a custom domain: auto-create DNS (or return the record to add) +
+    // optional HTTPS, then migrate the site to it.
+    attachDomain: (id, { domain, migrate = true, issueSsl = false, email } = {}) =>
+        api.request(`${BASE_PATH}/${id}/domain`, {
+            method: 'POST',
+            body: { domain, migrate, issue_ssl: issueSsl, email }
+        }),
 
     // Replace the tag list for a site (agency organization labels)
     setTags: (id, tags) => api.request(`${BASE_PATH}/${id}/tags`, {
@@ -116,12 +138,26 @@ const wordpressApi = {
         body: data
     }),
 
+    // Activate / deactivate an installed plugin (WP-CLI).
+    activatePlugin: (siteId, plugin) => api.request(`${BASE_PATH}/${siteId}/plugins/${encodeURIComponent(plugin)}/activate`, {
+        method: 'POST'
+    }),
+
+    deactivatePlugin: (siteId, plugin) => api.request(`${BASE_PATH}/${siteId}/plugins/${encodeURIComponent(plugin)}/deactivate`, {
+        method: 'POST'
+    }),
+
     // Themes
     getThemes: (siteId) => api.request(`${BASE_PATH}/${siteId}/themes`),
 
     installTheme: (siteId, data) => api.request(`${BASE_PATH}/${siteId}/themes`, {
         method: 'POST',
         body: data
+    }),
+
+    // Activate an installed theme (WP-CLI).
+    activateTheme: (siteId, theme) => api.request(`${BASE_PATH}/${siteId}/themes/${encodeURIComponent(theme)}/activate`, {
+        method: 'POST'
     }),
 
     // WordPress Core Update
@@ -139,6 +175,12 @@ const wordpressApi = {
     setPhpVersion: (siteId, version) => api.request(`${BASE_PATH}/${siteId}/php`, {
         method: 'POST',
         body: { version }
+    }),
+
+    // Durably set per-site PHP ini limits (conf.d drop-in + bind-mount; #24).
+    setPhpLimits: (siteId, limits) => api.request(`${BASE_PATH}/${siteId}/php/limits`, {
+        method: 'POST',
+        body: { limits }
     }),
 
     // Update plugins. Pass an array of slugs to update specific ones, omit for all.

@@ -40,8 +40,8 @@ const CommandsTab = ({ appId, appType }) => {
 
     return (
         <div>
-            <h3>Run Commands</h3>
-            <p className="hint">Commands run in the app's virtual environment context.</p>
+            <h3 className="svc-eyebrow">Run Commands</h3>
+            <p className="hint">Commands run in the app&apos;s virtual environment context.</p>
 
             <div className="quick-commands">
                 {quickCommands.map(({ label, cmd }) => (

@@ -1,0 +1,89 @@
+name: Agent CI
+
+# Validates the Go agent on every change: it must vet clean, pass its unit
+# tests, and — critically — still COMPILE for every platform it ships on. The
+# cross-compile matrix is what catches "this builds on my machine but breaks
+# the Windows/macOS build" before it reaches a release, which the
+# build-only release workflow did not guard on PRs.
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/agent-ci.yml'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'agent/**'
+      - '.github/workflows/agent-ci.yml'
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  test:
+    name: vet & test (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      # The agent embeds the desktop UI via //go:embed all:dist, so the
+      # React app must be built into agent/internal/agentui/dist before any
+      # `go` command — otherwise the embed fails with "no matching files".
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: agent/ui/package-lock.json
+      - name: Build agent UI (required by //go:embed)
+        working-directory: agent/ui
+        run: npm ci && npm run build
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./... -count=1
+
+  build:
+    name: build (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    # darwin is intentionally NOT in this matrix: the tray dependency
+    # (fyne.io/systray) needs the macOS Cocoa toolchain and cannot be
+    # cross-compiled from Linux. It is built on a macOS host at release time
+    # (and is treated as best-effort there). These three targets cover the
+    # real deployment surface — Linux servers and Windows.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+      # Build the embedded desktop UI before `go build` (see //go:embed
+      # all:dist in internal/agentui/embed.go).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: agent/ui/package-lock.json
+      - name: Build agent UI (required by //go:embed)
+        working-directory: agent/ui
+        run: npm ci && npm run build
+      - name: go build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build ./...

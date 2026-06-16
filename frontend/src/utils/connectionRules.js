@@ -77,17 +77,6 @@ export const connectionLabels = {
     'logic_if-notification': 'If so notify'
 };
 
-// Colors for connection types
-export const connectionColors = {
-    'domain-dockerApp': '#10b981',
-    'domain-service': '#10b981',
-    'dockerApp-dockerApp': '#2496ed',
-    'dockerApp-database': '#f59e0b',
-    'service-dockerApp': '#6366f1',
-    'service-database': '#f59e0b',
-    'service-service': '#6366f1'
-};
-
 /**
  * Find a node by ID from the nodes array
  */
@@ -219,6 +208,5 @@ export default {
     isValidConnection,
     getConnectionError,
     getConnectionType,
-    connectionLabels,
-    connectionColors
+    connectionLabels
 };

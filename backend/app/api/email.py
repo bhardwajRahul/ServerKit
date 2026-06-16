@@ -7,6 +7,7 @@ from ..services.dns_provider_service import DNSProviderService
 from ..services.spamassassin_service import SpamAssassinService
 from ..services.roundcube_service import RoundcubeService
 from ..services.postfix_service import PostfixService
+from ..services.email_relay_service import EmailRelayService
 
 email_bp = Blueprint('email', __name__)
 
@@ -311,6 +312,43 @@ def list_dns_zones(provider_id):
     """List DNS zones from a provider."""
     result = DNSProviderService.list_zones(provider_id)
     return jsonify(result), 200 if result.get('success') else 400
+
+
+# ── Outbound SMTP Relay (smarthost) ──
+
+@email_bp.route('/relay', methods=['GET'])
+@viewer_required
+def get_relay():
+    """Get the outbound SMTP relay configuration (password masked)."""
+    return jsonify(EmailRelayService.get_config()), 200
+
+
+@email_bp.route('/relay', methods=['PUT'])
+@admin_required
+def save_relay():
+    """Save the relay configuration and apply it to Postfix (if installed)."""
+    data = request.get_json() or {}
+    if not data.get('host'):
+        return jsonify({'success': False, 'error': 'A relay host is required'}), 400
+    result = EmailRelayService.save_config(data)
+    return jsonify(result), 200
+
+
+@email_bp.route('/relay/test', methods=['POST'])
+@admin_required
+def test_relay():
+    """Open a real SMTP connection to validate the relay credentials."""
+    data = request.get_json() or {}
+    result = EmailRelayService.test(data)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@email_bp.route('/relay', methods=['DELETE'])
+@admin_required
+def disable_relay():
+    """Disable the outbound relay (revert Postfix to direct delivery)."""
+    result = EmailRelayService.disable()
+    return jsonify(result), 200
 
 
 # ── SpamAssassin Config ──

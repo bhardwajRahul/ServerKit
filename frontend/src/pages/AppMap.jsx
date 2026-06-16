@@ -12,6 +12,7 @@ import {
     Map as MapIcon, Layers, Compass, Network, Info,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageTopbar } from '@/components/ds';
 import useTabParam from '../hooks/useTabParam';
 
 const VIEWS = [
@@ -284,17 +285,7 @@ export default function AppMap() {
 
     return (
         <div className="app-map">
-            <div className="page-header">
-                <div>
-                    <h1>
-                        <MapIcon size={22} style={{ verticalAlign: '-4px', marginRight: 8 }} />
-                        App Map
-                    </h1>
-                    <p className="subtitle">
-                        Visual map of how the panel is wired together &mdash; dev only
-                    </p>
-                </div>
-            </div>
+            <PageTopbar icon={<MapIcon size={18} />} title="App Map" />
 
             <Tabs value={activeView} onValueChange={setActiveView}>
                 <TabsList>

@@ -141,3 +141,135 @@ def _github_error(exc):
         return data.get('message') or str(exc)
     except Exception:
         return response.text or str(exc)
+
+
+@source_connections_bp.route('/gitlab/status', methods=['GET'])
+@jwt_required()
+def gitlab_status():
+    user_id = int(get_jwt_identity())
+    return jsonify(SourceConnectionService.get_gitlab_status(user_id)), 200
+
+
+@source_connections_bp.route('/gitlab/authorize', methods=['GET'])
+@jwt_required()
+def gitlab_authorize():
+    redirect_uri = request.args.get('redirect_uri', '')
+    if not redirect_uri:
+        return jsonify({'error': 'redirect_uri is required'}), 400
+
+    try:
+        auth_url, state = SourceConnectionService.generate_gitlab_authorize_url(redirect_uri)
+        return jsonify({'auth_url': auth_url, 'state': state}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+
+
+@source_connections_bp.route('/gitlab/callback', methods=['POST'])
+@jwt_required()
+def gitlab_callback():
+    user_id = int(get_jwt_identity())
+    data = request.get_json() or {}
+    code = data.get('code', '')
+    state = data.get('state', '')
+    redirect_uri = data.get('redirect_uri', '')
+
+    if not code or not state or not redirect_uri:
+        return jsonify({'error': 'code, state, and redirect_uri are required'}), 400
+
+    try:
+        connection = SourceConnectionService.complete_gitlab_callback(
+            user_id=user_id,
+            code=code,
+            state=state,
+            redirect_uri=redirect_uri,
+        )
+        return jsonify({'connection': connection.to_dict()}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except HTTPError as exc:
+        return jsonify({'error': _gitlab_error(exc)}), 400
+
+
+@source_connections_bp.route('/gitlab/repos', methods=['GET'])
+@jwt_required()
+def gitlab_repositories():
+    user_id = int(get_jwt_identity())
+    search = request.args.get('search', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 50, type=int)
+
+    try:
+        repos = SourceConnectionService.list_gitlab_repositories(user_id, search, page, per_page)
+        return jsonify({'repos': repos}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except HTTPError as exc:
+        return jsonify({'error': _gitlab_error(exc)}), 400
+
+
+@source_connections_bp.route('/gitlab/repos/<path:full_name>/branches', methods=['GET'])
+@jwt_required()
+def gitlab_branches(full_name):
+    user_id = int(get_jwt_identity())
+
+    try:
+        branches = SourceConnectionService.list_gitlab_branches(user_id, full_name)
+        return jsonify({'branches': branches}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except HTTPError as exc:
+        return jsonify({'error': _gitlab_error(exc)}), 400
+
+
+@source_connections_bp.route('/gitlab/repos/<path:full_name>/manifest', methods=['GET'])
+@jwt_required()
+def gitlab_repository_manifest(full_name):
+    user_id = int(get_jwt_identity())
+    ref = request.args.get('ref') or None
+
+    try:
+        manifest = SourceConnectionService.get_gitlab_repository_manifest(user_id, full_name, ref)
+        return jsonify({'manifest': manifest}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 400
+    except HTTPError as exc:
+        return jsonify({'error': _gitlab_error(exc)}), 400
+
+
+@source_connections_bp.route('/gitlab', methods=['DELETE'])
+@jwt_required()
+def disconnect_gitlab():
+    user_id = int(get_jwt_identity())
+    try:
+        SourceConnectionService.disconnect(user_id, 'gitlab')
+        return jsonify({'message': 'GitLab disconnected'}), 200
+    except ValueError as exc:
+        return jsonify({'error': str(exc)}), 404
+
+
+@source_connections_bp.route('/admin/gitlab', methods=['GET'])
+@admin_required
+def gitlab_admin_config():
+    return jsonify({'config': SourceConnectionService.get_gitlab_config(redacted=True)}), 200
+
+
+@source_connections_bp.route('/admin/gitlab', methods=['PUT'])
+@admin_required
+def update_gitlab_admin_config():
+    user = User.query.get(get_jwt_identity())
+    result = SourceConnectionService.update_gitlab_config(
+        request.get_json() or {},
+        user_id=user.id if user else None,
+    )
+    return jsonify(result), 200
+
+
+def _gitlab_error(exc):
+    response = getattr(exc, 'response', None)
+    if response is None:
+        return str(exc)
+    try:
+        data = response.json()
+        return data.get('message') or data.get('error_description') or data.get('error') or str(exc)
+    except Exception:
+        return response.text or str(exc)

@@ -58,7 +58,9 @@ const PackagesTab = ({ appId }) => {
     return (
         <div>
             <div className="section-header">
-                <h3>Installed Packages</h3>
+                <h3 className="svc-eyebrow">
+                    Installed Packages <span className="svc-eyebrow__count">&middot; {packages.length}</span>
+                </h3>
                 <Button variant="outline" size="sm" onClick={handleFreeze}>
                     Freeze to requirements.txt
                 </Button>
@@ -76,13 +78,23 @@ const PackagesTab = ({ appId }) => {
                 </Button>
             </form>
 
-            <div className="packages-list">
-                {packages.map(pkg => (
-                    <div key={pkg.name} className="package-item">
-                        <span className="package-name">{pkg.name}</span>
-                        <span className="package-version">{pkg.version}</span>
-                    </div>
-                ))}
+            <div className="svc-card">
+                <table className="sk-dtable">
+                    <thead>
+                        <tr>
+                            <th>Package</th>
+                            <th>Version</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {packages.map(pkg => (
+                            <tr key={pkg.name}>
+                                <td className="sk-cell-mono svc-pkg-name">{pkg.name}</td>
+                                <td className="sk-cell-mono">{pkg.version}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

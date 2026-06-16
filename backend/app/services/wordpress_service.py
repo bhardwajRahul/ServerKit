@@ -285,6 +285,121 @@ define('WP_AUTO_UPDATE_CORE', 'minor');
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    # --- Per-site PHP ini limits (#24 write side) -------------------------------
+    # The official wordpress:*-apache image is Apache + mod_php and scans
+    # /usr/local/etc/php/conf.d for *.ini drop-ins. We persist a host-side ini and
+    # BIND-MOUNT it into conf.d so it survives container recreate — a plain
+    # `docker exec` write would be lost on the next `compose up`. Every directive is
+    # whitelisted + regex-validated because the value is written as a raw php.ini line.
+    PHP_LIMIT_SPEC = {
+        'memory_limit':        r'^(-1|\d{1,5}[KMGkmg]?)$',
+        'upload_max_filesize': r'^\d{1,5}[KMGkmg]?$',
+        'post_max_size':       r'^\d{1,5}[KMGkmg]?$',
+        'max_execution_time':  r'^\d{1,5}$',
+        'max_input_time':      r'^-?\d{1,5}$',
+        'max_input_vars':      r'^\d{1,6}$',
+    }
+    PHP_CONF_DIR = 'php-conf'
+    PHP_CONF_FILE = 'zz-serverkit.ini'
+    PHP_CONF_CONTAINER = '/usr/local/etc/php/conf.d/zz-serverkit.ini'
+
+    @classmethod
+    def get_php_limit_spec(cls) -> Dict:
+        """The editable php.ini directives (key -> validation regex) the limits
+        panel may set. Exposed so the frontend renders exactly the safe set."""
+        return dict(cls.PHP_LIMIT_SPEC)
+
+    @staticmethod
+    def _read_php_ini(ini_path: str) -> Dict:
+        """Parse a simple `key = value` ini into a dict (comments/blank lines skipped).
+        Never raises — a missing/garbled file just yields {}."""
+        out = {}
+        if os.path.exists(ini_path):
+            try:
+                with open(ini_path, 'r') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith(';') or '=' not in line:
+                            continue
+                        k, v = line.split('=', 1)
+                        out[k.strip()] = v.strip()
+            except Exception:
+                pass
+        return out
+
+    @classmethod
+    def set_php_limits(cls, path: str, limits: Dict) -> Dict:
+        """Durably set per-site PHP ini limits for a Docker WP site.
+
+        Writes a host-side conf.d drop-in, bind-mounts it into the container's
+        php conf.d (so it survives recreate), then reloads: a newly-added mount is
+        applied via `compose up -d` (recreates the app container); a content-only
+        change restarts the `wordpress` service so mod_php re-reads php.ini.
+        Partial updates merge with any previously-set directives.
+        """
+        import re as _re
+        import yaml
+        from app.services.docker_service import DockerService
+
+        compose_file = os.path.join(path, 'docker-compose.yml')
+        if not os.path.exists(compose_file):
+            return {'success': False, 'error': 'Not a Docker-stack site (no docker-compose.yml)'}
+
+        # 1) Validate + sanitize against the whitelist (values become raw ini lines).
+        clean = {}
+        for k, v in (limits or {}).items():
+            if k not in cls.PHP_LIMIT_SPEC:
+                return {'success': False, 'error': f'Unknown PHP limit: {k}'}
+            val = str(v).strip()
+            # fullmatch (not match) so a value like "256M\nevil = 1" can never
+            # smuggle an extra ini directive past the `$` anchor into the file.
+            if not _re.fullmatch(cls.PHP_LIMIT_SPEC[k], val):
+                return {'success': False, 'error': f'Invalid value for {k}: {val}'}
+            clean[k] = val
+        if not clean:
+            return {'success': False, 'error': 'No valid limits provided'}
+
+        try:
+            # 2) Write the host ini FIRST — a single-file bind-mount needs the
+            #    source to exist before `compose up`, else Docker makes a dir.
+            conf_dir = os.path.join(path, cls.PHP_CONF_DIR)
+            os.makedirs(conf_dir, exist_ok=True)
+            ini_path = os.path.join(conf_dir, cls.PHP_CONF_FILE)
+            merged = cls._read_php_ini(ini_path)
+            merged.update(clean)
+            body = ['; Managed by ServerKit (#24) — per-site PHP limits. Do not edit by hand.']
+            body += [f'{k} = {v}' for k, v in merged.items()]
+            with open(ini_path, 'w') as f:
+                f.write('\n'.join(body) + '\n')
+
+            # 3) Ensure the wordpress service bind-mounts the ini into conf.d.
+            with open(compose_file, 'r') as f:
+                compose = yaml.safe_load(f) or {}
+            wp = (compose.get('services') or {}).get('wordpress')
+            if not isinstance(wp, dict):
+                return {'success': False, 'error': 'wordpress service not found in compose file'}
+            mount = f'./{cls.PHP_CONF_DIR}/{cls.PHP_CONF_FILE}:{cls.PHP_CONF_CONTAINER}:ro'
+            vols = wp.get('volumes') or []
+            mount_added = mount not in vols
+            if mount_added:
+                vols.append(mount)
+                wp['volumes'] = vols
+                with open(compose_file, 'w') as f:
+                    yaml.dump(compose, f, default_flow_style=False, sort_keys=False)
+
+            # 4) Apply: recreate if the mount is new, else restart so php.ini reloads.
+            if mount_added:
+                res = DockerService.compose_up(path, detach=True, build=False)
+            else:
+                res = DockerService.compose_restart(path, service='wordpress')
+            if not res.get('success'):
+                return {'success': False, 'error': res.get('error') or 'Failed to apply PHP limits'}
+            cls._wait_for_wp_ready(path)
+            return {'success': True, 'message': 'PHP limits updated', 'limits': merged,
+                    'applied': cls.get_php_info(path).get('limits', {})}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
     @classmethod
     def is_multisite(cls, path: str) -> bool:
         """Return True if the WordPress install at ``path`` is a multisite network.
@@ -748,6 +863,260 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         result = cls.wp_cli(path, cmd)
         return result
 
+    # ── URL swap tool ────────────────────────────────────────────────────────
+    # Changing a WordPress site's URL is not a single UPDATE: the URL is embedded
+    # across wp_options, post content, and PHP-serialized blobs whose byte-length
+    # prefixes break under a naive REPLACE. WP-CLI `search-replace` is
+    # serialization-safe, so it is the engine here (the pure-SQL path in
+    # db_sync_service is the fallback for offline dumps only). We dry-run first,
+    # back up before mutating, and roll back on failure.
+
+    @staticmethod
+    def _normalize_url(url: str) -> Optional[str]:
+        """Canonicalise a user-supplied URL to ``scheme://host[/path]`` with no
+        trailing slash. Returns None if it isn't a usable http(s) URL."""
+        import re
+        from urllib.parse import urlparse
+        if not url:
+            return None
+        url = url.strip().rstrip('/')
+        if '://' not in url:
+            url = 'http://' + url
+        p = urlparse(url)
+        if p.scheme not in ('http', 'https') or not p.netloc:
+            return None
+        # Reject obviously-invalid hosts (spaces, etc.); allow hostname[:port].
+        if not re.match(r'^[A-Za-z0-9.\-]+(:\d+)?$', p.netloc):
+            return None
+        return f'{p.scheme}://{p.netloc}{p.path.rstrip("/")}'
+
+    @staticmethod
+    def _host_of(url: str) -> str:
+        from urllib.parse import urlparse
+        return urlparse(url).netloc
+
+    @classmethod
+    def _url_swap_pairs(cls, old_url: str, new_url: str) -> List[tuple]:
+        """search→replace pairs for a URL change: the full URL (covers scheme
+        changes) plus a host-only pair (covers protocol-relative and bare-host
+        references) when the host actually changes."""
+        pairs = [(old_url, new_url)]
+        old_host, new_host = cls._host_of(old_url), cls._host_of(new_url)
+        if old_host and new_host and old_host != new_host:
+            pairs.append((old_host, new_host))
+        return pairs
+
+    @staticmethod
+    def _parse_sr_count(output: str) -> int:
+        """Pull the replacement total out of WP-CLI search-replace output
+        ('Success: 12 replacements to be made.' / 'Success: Made 12 replacements.')."""
+        import re
+        if not output:
+            return 0
+        for line in output.splitlines():
+            if 'Success' in line:
+                m = re.search(r'(\d[\d,]*)\s+replacement', line)
+                if m:
+                    return int(m.group(1).replace(',', ''))
+        return 0
+
+    @classmethod
+    def _site_current_url(cls, app) -> Optional[str]:
+        """The site's live URL: prefer WordPress's own stored siteurl (source of
+        truth for what must be search-replaced), else the canonical domain/port."""
+        if app and app.root_path:
+            res = cls.wp_cli(app.root_path, ['option', 'get', 'siteurl'])
+            if res.get('success') and (res.get('output') or '').strip():
+                return cls._normalize_url(res['output'].strip())
+        return cls._canonical_site_url(app) if app else None
+
+    @classmethod
+    def preview_url_change(cls, app, new_url: str) -> Dict:
+        """Dry-run a URL change: per-pair replacement counts, no mutation."""
+        if not app or not app.root_path:
+            return {'success': False, 'error': 'Site has no application/root path'}
+        new_url = cls._normalize_url(new_url)
+        if not new_url:
+            return {'success': False, 'error': 'A valid new URL (including http:// or https://) is required'}
+        old_url = cls._site_current_url(app)
+        if not old_url:
+            return {'success': False, 'error': 'Could not determine the current site URL'}
+        if new_url == old_url:
+            return {'success': False, 'error': 'The new URL is the same as the current one'}
+
+        rows, total = [], 0
+        for search, replace in cls._url_swap_pairs(old_url, new_url):
+            res = cls.wp_cli(app.root_path, ['search-replace', search, replace,
+                                             '--all-tables', '--skip-columns=guid',
+                                             '--dry-run', '--report-changed-only'])
+            if not res.get('success'):
+                return {'success': False, 'error': res.get('error') or 'Preview failed',
+                        'current_url': old_url, 'new_url': new_url}
+            count = cls._parse_sr_count(res.get('output'))
+            total += count
+            rows.append({'search': search, 'replace': replace, 'replacements': count})
+        return {'success': True, 'current_url': old_url, 'new_url': new_url,
+                'pairs': rows, 'total': total}
+
+    @classmethod
+    def change_site_url(cls, app, new_url: str, keep_old_redirect: bool = True) -> Dict:
+        """Change a site's URL end to end: back up, serialization-safe DB rewrite,
+        update home/siteurl, flush caches, then re-point the Domain row + nginx
+        vhost. Rolls the database back from the backup if the rewrite fails.
+
+        With ``keep_old_redirect`` the previous host keeps resolving (its vhost
+        entry stays) so WordPress 301s it to the new canonical URL.
+        """
+        if not app or not app.root_path:
+            return {'success': False, 'error': 'Site has no application/root path'}
+        new_url = cls._normalize_url(new_url)
+        if not new_url:
+            return {'success': False, 'error': 'A valid new URL (including http:// or https://) is required'}
+        old_url = cls._site_current_url(app)
+        if not old_url:
+            return {'success': False, 'error': 'Could not determine the current site URL'}
+        if new_url == old_url:
+            return {'success': False, 'error': 'The new URL is the same as the current one'}
+
+        # 1) Backup first — this is the rollback point.
+        backup = cls.backup_wordpress(app.root_path, include_db=True)
+        if not backup.get('success'):
+            return {'success': False, 'error': f"Backup failed, aborting URL change: {backup.get('error')}"}
+
+        # 2) Serialization-safe DB rewrite, then finalize options + caches.
+        total = 0
+        try:
+            for search, replace in cls._url_swap_pairs(old_url, new_url):
+                res = cls.wp_cli(app.root_path, ['search-replace', search, replace,
+                                                 '--all-tables', '--skip-columns=guid'])
+                if not res.get('success'):
+                    raise RuntimeError(res.get('error') or 'search-replace failed')
+                total += cls._parse_sr_count(res.get('output'))
+            cls.wp_cli(app.root_path, ['option', 'update', 'home', new_url])
+            cls.wp_cli(app.root_path, ['option', 'update', 'siteurl', new_url])
+            cls.wp_cli(app.root_path, ['cache', 'flush'])
+            cls.wp_cli(app.root_path, ['rewrite', 'flush'])
+        except Exception as e:
+            restore = cls.restore_backup(backup['backup_name'], app.root_path)
+            return {'success': False,
+                    'error': f'URL change failed and the database was rolled back: {e}',
+                    'rolled_back': restore.get('success', False),
+                    'backup': backup['backup_name']}
+
+        # 3) Re-point routing (best-effort; the DB change has already succeeded).
+        warnings = []
+        new_host = cls._host_of(new_url)
+        rp = cls._repoint_primary_domain(app, new_host, keep_old=keep_old_redirect)
+        if rp:
+            warnings.append(rp)
+        vhost = cls._write_app_vhost(app)
+        if vhost.get('warning'):
+            warnings.append(vhost['warning'])
+
+        return {'success': True, 'old_url': old_url, 'new_url': new_url,
+                'replacements': total, 'backup': backup['backup_name'],
+                'kept_old_host': keep_old_redirect,
+                'warning': '; '.join(warnings) if warnings else None}
+
+    @classmethod
+    def _repoint_primary_domain(cls, app, new_host: str, keep_old: bool = True) -> Optional[str]:
+        """Make ``new_host`` the app's primary Domain. With ``keep_old`` the other
+        host rows are demoted (kept, so they still resolve); otherwise removed.
+        Returns a warning string on failure, else None."""
+        from app import db
+        from app.models.domain import Domain
+        if not new_host:
+            return None
+        try:
+            found_new = False
+            for d in Domain.query.filter_by(application_id=app.id).all():
+                if d.name == new_host:
+                    d.is_primary = True
+                    found_new = True
+                elif keep_old:
+                    d.is_primary = False
+                else:
+                    db.session.delete(d)
+            if not found_new:
+                db.session.add(Domain(name=new_host, is_primary=True, application_id=app.id))
+            db.session.commit()
+            return None
+        except Exception as e:
+            db.session.rollback()
+            return f'could not update domain rows: {e}'
+
+    @classmethod
+    def attach_custom_domain(cls, app, domain: str, migrate: bool = True,
+                             issue_ssl: bool = False, email: str = None) -> Dict:
+        """Point a user-owned domain at a site, end to end.
+
+        Auto-creates the domain's A record via a connected DNS provider (or
+        returns the record to add manually), optionally obtains a Let's Encrypt
+        certificate, then migrates the site URL to the domain by reusing
+        ``change_site_url``. External steps (DNS, SSL) degrade to warnings rather
+        than failing the attach; only a requested migration that errors aborts.
+        """
+        from app import db
+        from app.models.domain import Domain
+        from app.services.site_domain_service import SiteDomainService
+        from app.services.dns_provider_service import DNSProviderService
+
+        if not app or not app.root_path:
+            return {'success': False, 'error': 'Site has no application/root path'}
+
+        # Accept a bare host or a full URL; reduce to the host.
+        host = cls._host_of(cls._normalize_url(domain) or '') or (domain or '').strip().lower().rstrip('/')
+        if not host or '.' not in host:
+            return {'success': False, 'error': 'A valid custom domain (e.g. example.com) is required'}
+
+        # 1) DNS: auto-create the A record, or report what to add manually.
+        dns = DNSProviderService.ensure_a_record(host, SiteDomainService.server_ip())
+
+        # 2) Optional HTTPS. certbot --nginx validates over the host's :80 vhost,
+        #    so the host must already be served before the cert is requested.
+        ssl_result = None
+        use_https = False
+        if issue_ssl:
+            from app.services.ssl_service import SSLService
+            if not Domain.query.filter_by(name=host).first():
+                db.session.add(Domain(name=host, is_primary=False, application_id=app.id))
+                db.session.commit()
+            cls._write_app_vhost(app)
+            ssl_result = SSLService.obtain_certificate([host], email or f'admin@{host}')
+            use_https = bool(ssl_result and ssl_result.get('success'))
+
+        # 3) Migrate the site URL to the domain (single rewrite to the final scheme).
+        scheme = 'https' if use_https else 'http'
+        migration = None
+        if migrate:
+            migration = cls.change_site_url(app, f'{scheme}://{host}', keep_old_redirect=True)
+            if not migration.get('success'):
+                return {'success': False,
+                        'error': f"DNS handled but moving the site to {host} failed: {migration.get('error')}",
+                        'dns': dns, 'ssl': ssl_result, 'migration': migration}
+        else:
+            # Attach the domain (primary + vhost) without rewriting WordPress.
+            cls._repoint_primary_domain(app, host, keep_old=True)
+            cls._write_app_vhost(app)
+
+        warnings = []
+        if not dns.get('created'):
+            warnings.append(dns.get('message') or 'Add the DNS record manually.')
+        if issue_ssl and not use_https:
+            warnings.append('HTTPS is not set up yet — enable SSL once DNS has propagated to this server.')
+        if migration and migration.get('warning'):
+            warnings.append(migration['warning'])
+
+        return {
+            'success': True,
+            'domain': host,
+            'url': (migration or {}).get('new_url') or f'{scheme}://{host}',
+            'dns': dns,
+            'ssl': ssl_result,
+            'migration': migration,
+            'warning': '; '.join(warnings) if warnings else None,
+        }
+
     @classmethod
     def optimize_database(cls, path: str) -> Dict:
         """Optimize WordPress database."""
@@ -969,8 +1338,11 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             inst = cls.wp_cli(path, ['package', 'install', 'aaemnnosttv/wp-cli-login-command'])
             if not inst.get('success'):
                 return {'success': False, 'error': 'Failed to install wp-cli-login package: ' + (inst.get('error') or '')}
-        # Ensure the companion launcher mu-plugin is present (idempotent).
-        cls.wp_cli(path, ['login', 'install', '--yes'])
+        # Ensure the companion launcher plugin is present AND active (idempotent).
+        # Without --activate the plugin installs but stays inactive, and the
+        # subsequent `wp login create` fails with "requires the companion plugin
+        # to be installed and active".
+        cls.wp_cli(path, ['login', 'install', '--activate', '--yes'])
         return {'success': True}
 
     @classmethod
@@ -1035,6 +1407,86 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             return {'success': True}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    @staticmethod
+    def _safe_extract_zip(zip_path: str, dest_dir: str) -> Dict:
+        """Extract a zip into dest_dir, rejecting any member whose path would
+        escape it (zip-slip / absolute-path / `..` traversal). Returns {success}.
+        """
+        import zipfile
+        try:
+            dest_abs = os.path.abspath(dest_dir)
+            with zipfile.ZipFile(zip_path) as zf:
+                for member in zf.namelist():
+                    target = os.path.abspath(os.path.join(dest_abs, member))
+                    if target != dest_abs and not target.startswith(dest_abs + os.sep):
+                        return {'success': False, 'error': f'Unsafe path in archive: {member}'}
+                zf.extractall(dest_abs)
+            return {'success': True}
+        except zipfile.BadZipFile:
+            return {'success': False, 'error': 'Not a valid zip archive'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @staticmethod
+    def _resolve_wp_content_dir(extracted_dir: str) -> Optional[str]:
+        """Locate the wp-content directory inside an extracted archive — handles a
+        zip OF wp-content, a full-site zip, or a single wrapper folder. Returns the
+        path to use as wp-content, or None if none is recognizable."""
+        markers = {'plugins', 'themes', 'uploads', 'mu-plugins'}
+        candidates = [extracted_dir]
+        try:
+            for entry in os.listdir(extracted_dir):
+                p = os.path.join(extracted_dir, entry)
+                if os.path.isdir(p):
+                    candidates.append(p)
+        except OSError:
+            pass
+        # 1) An explicit wp-content dir at the root or one level down.
+        for base in candidates:
+            wpc = os.path.join(base, 'wp-content')
+            if os.path.isdir(wpc):
+                return wpc
+        # 2) The root (or a wrapper dir) IS wp-content (has plugins/themes/uploads).
+        for base in candidates:
+            try:
+                if set(os.listdir(base)) & markers:
+                    return base
+            except OSError:
+                continue
+        return None
+
+    @classmethod
+    def _import_wp_content_zip(cls, zip_path: str, target_container: str) -> Dict:
+        """Extract an uploaded wp-content/full-site zip (zip-slip-guarded) and copy
+        its wp-content into the target WordPress container via `docker cp`, then
+        hand the files to the web user. Never raises."""
+        import tempfile
+        tmp = tempfile.mkdtemp(prefix='wpimport_')
+        try:
+            ext = cls._safe_extract_zip(zip_path, tmp)
+            if not ext.get('success'):
+                return ext
+            wpc = cls._resolve_wp_content_dir(tmp)
+            if not wpc:
+                return {'success': False, 'error': 'No wp-content found in the archive'}
+            cp = subprocess.run(
+                ['docker', 'cp', f'{wpc}/.', f'{target_container}:/var/www/html/wp-content'],
+                capture_output=True, text=True, timeout=600,
+            )
+            if cp.returncode != 0:
+                return {'success': False, 'error': cp.stderr or 'docker cp failed'}
+            # Imported files land root-owned; hand wp-content to the web user.
+            subprocess.run(
+                ['docker', 'exec', target_container, 'chown', '-R', 'www-data:www-data',
+                 '/var/www/html/wp-content'],
+                capture_output=True, text=True, timeout=300,
+            )
+            return {'success': True}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     # ========================================
     # WORDPRESS STANDALONE (DOCKER) MANAGEMENT
@@ -1397,6 +1849,21 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             cls.wp_cli(root_path, ['option', 'update', 'home', new_url])
             cls.wp_cli(root_path, ['option', 'update', 'siteurl', new_url])
             sr = cls.search_replace(root_path, old_url, new_url, dry_run=False)
+
+            warnings = []
+            if not sr.get('success'):
+                warnings.append('Search-replace reported an issue; verify links inside wp-admin.')
+
+            # 3.5) Optionally import wp-content (plugins/themes/uploads) from a zip.
+            wp_content_imported = False
+            if wp_content_zip_path:
+                wpc = cls._import_wp_content_zip(wp_content_zip_path, wp_site.application.name)
+                if wpc.get('success'):
+                    wp_content_imported = True
+                else:
+                    warnings.append('Database imported, but wp-content import failed: '
+                                    + (wpc.get('error') or 'unknown error'))
+
             cls.wp_cli(root_path, ['cache', 'flush'])
             cls.wp_cli(root_path, ['rewrite', 'flush'])
 
@@ -1413,11 +1880,10 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 'http_port': http_port,
                 'old_url': old_url,
                 'new_url': new_url,
+                'wp_content_imported': wp_content_imported,
             }
-            if not sr.get('success'):
-                out['warning'] = 'Search-replace reported an issue; verify links inside wp-admin.'
-            if wp_content_zip_path:
-                out['warning'] = 'wp-content import is not yet supported; only the database was imported.'
+            if warnings:
+                out['warning'] = '; '.join(warnings)
             return out
         except Exception as e:
             return {'success': False, 'error': str(e),
@@ -1441,6 +1907,7 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         from app import db
         from app.models import Application, WordPressSite
         from app.services.template_service import TemplateService
+        from app.services.site_domain_service import SiteDomainService
 
         # Sanitize name for Docker
         safe_name = name.lower().replace(' ', '-')
@@ -1482,7 +1949,16 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             # run the install, so no admin user exists. Do it via the Docker-aware
             # wp_cli bridge (host-filesystem hardening does not apply to volumes).
             admin_password = cls._generate_password()
-            site_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+            # Publish at a real hostname (<slug>.<base_domain>) instead of
+            # localhost:<port>. WordPress bakes whatever --url we pass in as its
+            # canonical home/siteurl, so this is what makes the site usable as an
+            # actual website. Falls back to localhost when no base domain is set
+            # (e.g. an unconfigured production install).
+            site_host = SiteDomainService.subdomain_for(safe_name)
+            if site_host:
+                site_url = SiteDomainService.site_url(site_host, ssl=SiteDomainService.https_enabled())
+            else:
+                site_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
             wp_warning = None
             harden_actions = []
             cache_actions = []
@@ -1536,6 +2012,14 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             # only meaningful if the automated install finalized).
             multisite = cls.is_multisite(app.root_path) if admin_password else False
 
+            # Publish the site at its hostname: a Domain row + nginx reverse-proxy
+            # vhost so <slug>.<base_domain> reaches the container. Best-effort — a
+            # box without nginx (local dev) degrades to a warning, never failing
+            # the create.
+            routing = cls._provision_routing(app, site_host)
+            if routing.get('warning'):
+                wp_warning = (wp_warning + ' ' + routing['warning']) if wp_warning else routing['warning']
+
             # Surface any best-effort cache failures without failing the create.
             if cache_warnings:
                 note = 'Site created, but some caches could not be enabled — ' + '; '.join(cache_warnings) + '.'
@@ -1568,6 +2052,8 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 'message': 'WordPress site created successfully',
                 'site': wp_site.to_dict(),
                 'http_port': http_port,
+                'url': site_url,
+                'domain': site_host,
                 'admin_user': admin_user if admin_password else None,
                 'admin_password': admin_password,
                 'hardening': harden_actions,
@@ -1580,6 +2066,84 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         except Exception as e:
             db.session.rollback()
             return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _provision_routing(cls, app, site_host) -> Dict:
+        """Publish a managed site at ``site_host`` via a primary Domain row + an
+        nginx reverse-proxy vhost to the container's published port.
+
+        Best-effort and never raises: a box without nginx (e.g. local Windows
+        dev) records the Domain and returns a warning rather than failing site
+        creation. Returns ``{'domain', 'nginx', 'warning'}``.
+        """
+        from app import db
+        from app.models.domain import Domain
+
+        if not site_host:
+            return {'domain': None, 'nginx': None, 'warning': None}
+
+        warning = None
+        try:
+            if not Domain.query.filter_by(name=site_host).first():
+                Domain.query.filter_by(application_id=app.id, is_primary=True).update({'is_primary': False})
+                db.session.add(Domain(name=site_host, is_primary=True, application_id=app.id))
+                db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            warning = f'could not record domain {site_host}: {e}'
+
+        v = cls._write_app_vhost(app)
+        if v.get('warning'):
+            warning = (warning + '; ' + v['warning']) if warning else v['warning']
+        return {'domain': site_host, 'nginx': v.get('nginx'), 'warning': warning}
+
+    @classmethod
+    def _write_app_vhost(cls, app) -> Dict:
+        """Write + enable the nginx reverse-proxy vhost for a docker app from its
+        current Domain rows (server_name = every domain). Best-effort and never
+        raises; returns ``{'nginx', 'warning'}``."""
+        from app.models.domain import Domain
+        from app.services.nginx_service import NginxService
+        from app.services.site_domain_service import SiteDomainService
+
+        if not app.port:
+            return {'nginx': None, 'warning': None}
+        domains = [d.name for d in Domain.query.filter_by(application_id=app.id).all()]
+        if not domains:
+            return {'nginx': None, 'warning': None}
+        # Serve the wildcard cert when HTTPS is set up and every vhost domain is a
+        # managed subdomain it covers (custom domains carry their own cert).
+        ssl_cert = ssl_key = None
+        if SiteDomainService.https_enabled() and all(SiteDomainService.covers(d) for d in domains):
+            ssl_cert, ssl_key = SiteDomainService.wildcard_cert_paths()
+        try:
+            res = NginxService.create_site(
+                name=app.name, app_type='docker', domains=domains,
+                root_path=app.root_path or '', port=app.port,
+                ssl_cert=ssl_cert, ssl_key=ssl_key,
+            )
+            if res.get('success'):
+                en = NginxService.enable_site(app.name)
+                if not en.get('success'):
+                    res['warning'] = f"vhost written but not enabled: {en.get('error')}"
+                return {'nginx': res, 'warning': None}
+            return {'nginx': res, 'warning': f"nginx vhost not created: {res.get('error')}"}
+        except Exception as e:
+            return {'nginx': None, 'warning': f'nginx vhost error: {e}'}
+
+    @classmethod
+    def _canonical_site_url(cls, app) -> str:
+        """The URL WordPress serves under — its primary domain if one exists,
+        else the legacy localhost:<port> address. Used to build correct
+        search-replace pairs when cloning."""
+        from app.models.domain import Domain
+        d = (Domain.query.filter_by(application_id=app.id, is_primary=True).first()
+             or Domain.query.filter_by(application_id=app.id).first())
+        if d:
+            return f'http://{d.name}'
+        if app.port:
+            return f'http://localhost:{app.port}'
+        return None
 
     @classmethod
     def clone_site(cls, source_site_id: int, new_name: str, user_id: int) -> Dict:
@@ -1615,11 +2179,10 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         new_root = new_site.application.root_path
         new_compose = os.path.join(new_root, 'docker-compose.yml')
         http_port = create_res.get('http_port')
-        new_url = f'http://localhost:{http_port}' if http_port else 'http://localhost'
+        new_url = create_res.get('url') or (f'http://localhost:{http_port}' if http_port else 'http://localhost')
 
         try:
-            src_port = source.application.port
-            source_url = f'http://localhost:{src_port}' if src_port else None
+            source_url = cls._canonical_site_url(source.application)
 
             # 2) Clone the source DB into the new stack (root user for a clean overwrite;
             #    both stacks use db name 'wordpress'; root pw lives in each .env DB_PASSWORD).
@@ -1629,10 +2192,14 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 'truncate_tables': ['actionscheduler_actions', 'actionscheduler_logs'],
             }
             if source_url and new_url and source_url != new_url:
-                clone_options['search_replace'] = {
-                    source_url: new_url,
-                    f'localhost:{src_port}': f'localhost:{http_port}',
-                }
+                # Rewrite the source's URL to the clone's, both with and without
+                # scheme so host-only and serialized references are covered.
+                sr = {source_url: new_url}
+                src_host = source_url.split('://', 1)[-1]
+                new_host = new_url.split('://', 1)[-1]
+                if src_host != new_host:
+                    sr[src_host] = new_host
+                clone_options['search_replace'] = sr
             clone_res = DatabaseSyncService.clone_between_containers(
                 source_compose_path=source_compose,
                 target_compose_path=new_compose,
@@ -1923,6 +2490,7 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         """Tear down Docker stack and delete records for a WordPressSite."""
         from app import db
         from app.services.docker_service import DockerService
+        from app.services.nginx_service import NginxService
 
         if wp_site.application and wp_site.application.root_path:
             root_path = wp_site.application.root_path
@@ -1931,6 +2499,13 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
                 shutil.rmtree(root_path, ignore_errors=True)
 
         if wp_site.application:
+            # Remove the reverse-proxy vhost we provisioned so a deleted site
+            # doesn't leave dangling nginx config. The Domain rows cascade-delete
+            # with the Application (Application.domains is delete-orphan).
+            try:
+                NginxService.delete_site(wp_site.application.name)
+            except Exception:
+                pass
             db.session.delete(wp_site.application)
 
         db.session.delete(wp_site)

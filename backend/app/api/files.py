@@ -3,6 +3,7 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required
 from ..services.file_service import FileService
+from ..services.storage_provider_service import StorageProviderService
 import os
 import tempfile
 
@@ -413,3 +414,76 @@ def upload_file():
         return jsonify({'error': 'Permission denied'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# ── S3 / object-storage browser (reuses the configured backup storage creds) ──
+
+@files_bp.route('/s3/browse', methods=['GET'])
+@jwt_required()
+def s3_browse():
+    """List a bucket prefix in the same entry shape as the local browser."""
+    path = request.args.get('path', '/')
+    result = StorageProviderService.s3_browse(path)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@files_bp.route('/s3/read', methods=['GET'])
+@jwt_required()
+def s3_read():
+    """Read a text object for in-app editing."""
+    path = request.args.get('path')
+    if not path:
+        return jsonify({'error': 'Path is required'}), 400
+    result = StorageProviderService.s3_read(path)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@files_bp.route('/s3/write', methods=['POST'])
+@jwt_required()
+def s3_write():
+    """Write (create or overwrite) an object from text content."""
+    data = request.get_json() or {}
+    path = data.get('path')
+    content = data.get('content')
+    if not path:
+        return jsonify({'error': 'Path is required'}), 400
+    if content is None:
+        return jsonify({'error': 'Content is required'}), 400
+    result = StorageProviderService.s3_write(path, content)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@files_bp.route('/s3/delete', methods=['DELETE'])
+@jwt_required()
+def s3_delete():
+    """Delete an object (or every object beneath a prefix)."""
+    path = request.args.get('path')
+    if not path:
+        return jsonify({'error': 'Path is required'}), 400
+    result = StorageProviderService.s3_delete(path)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@files_bp.route('/s3/download-url', methods=['GET'])
+@jwt_required()
+def s3_download_url():
+    """Return a short-lived presigned URL the browser can download directly."""
+    path = request.args.get('path')
+    if not path:
+        return jsonify({'error': 'Path is required'}), 400
+    result = StorageProviderService.s3_presigned_get(path)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@files_bp.route('/s3/upload', methods=['POST'])
+@jwt_required()
+def s3_upload():
+    """Upload a file into the bucket at the given prefix."""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    file = request.files['file']
+    destination = request.form.get('destination', '/')
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    result = StorageProviderService.s3_upload(destination, file.filename, file.stream)
+    return jsonify(result), 201 if result.get('success') else 400

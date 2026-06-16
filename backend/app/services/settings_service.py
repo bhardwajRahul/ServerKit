@@ -43,6 +43,24 @@ class SettingsService:
             'type': 'integer',
             'description': 'Starting host port when auto-assigning ports to managed apps/sites (0 = use each template\'s own default). The scanner still skips ports already in use.'
         },
+        # Managed-site routing & HTTPS (Phases 1/3/5). Base domain + server IP
+        # drive subdomain publishing and auto-DNS; sites_https_enabled is set by
+        # the wildcard-HTTPS setup, after which managed subdomains serve TLS.
+        'sites_base_domain': {
+            'value': '',
+            'type': 'string',
+            'description': 'Base domain for managed sites — each is published at <slug>.<base_domain>. Point a wildcard DNS record (*.<base_domain>) at this server.'
+        },
+        'server_public_ip': {
+            'value': '',
+            'type': 'string',
+            'description': 'Public IP of this server, used to auto-create DNS A records for managed domains.'
+        },
+        'sites_https_enabled': {
+            'value': False,
+            'type': 'boolean',
+            'description': 'Whether the wildcard certificate for the sites base domain is set up; managed subdomains serve HTTPS when true.'
+        },
         # SSO / OAuth settings
         'sso_google_enabled': {'value': False, 'type': 'boolean', 'description': 'Enable Google OAuth login'},
         'sso_google_client_id': {'value': '', 'type': 'string', 'description': 'Google OAuth client ID'},

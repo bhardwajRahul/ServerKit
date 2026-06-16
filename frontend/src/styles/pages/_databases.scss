@@ -18,8 +18,10 @@ $dbx-sqlite: #3d8fd1;
     width: 100%;
     max-width: none;
     margin: 0;
-    padding: $space-3;
-    gap: $space-2;
+    // flush full-height console (demo `.db-layout`): panes join on 1px borders,
+    // no outer padding / gaps / card radii
+    padding: 0;
+    gap: 0;
     box-sizing: border-box;
     overflow: hidden;
 
@@ -92,10 +94,10 @@ $dbx-sqlite: #3d8fd1;
         align-items: center;
         justify-content: space-between;
         gap: $space-3;
+        min-height: 54px;
         padding: $space-2 $space-3;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-bottom: 1px solid $border-default;
         flex-shrink: 0;
     }
 
@@ -169,7 +171,7 @@ $dbx-sqlite: #3d8fd1;
     .dbx-body {
         display: grid;
         grid-template-columns: 280px 1fr;
-        gap: $space-2;
+        gap: 0;
         flex: 1;
         min-height: 0;
         overflow: hidden;
@@ -189,9 +191,13 @@ $dbx-sqlite: #3d8fd1;
         flex-direction: column;
         min-height: 0;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-right: 1px solid $border-default;
         overflow: hidden;
+
+        @media (max-width: $breakpoint-md) {
+            border-right: none;
+            border-bottom: 1px solid $border-default;
+        }
     }
 
     .dbx-tree-search {
@@ -344,8 +350,8 @@ $dbx-sqlite: #3d8fd1;
         color: $text-tertiary;
 
         .dbx-status-dot { width: 7px; height: 7px; border-radius: $radius-full; background: currentColor; }
-        &.is-active { color: $success; }
-        &.is-inactive { color: $warning; }
+        &.is-active { color: $success; .dbx-status-dot { box-shadow: 0 0 6px currentColor; } }
+        &.is-inactive { color: $warning; .dbx-status-dot { box-shadow: 0 0 6px currentColor; } }
         &.is-missing { color: $text-tertiary; }
     }
 
@@ -380,8 +386,6 @@ $dbx-sqlite: #3d8fd1;
         min-width: 0;
         min-height: 0;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
         overflow: hidden;
     }
 
@@ -437,6 +441,17 @@ $dbx-sqlite: #3d8fd1;
     }
 
     .dbx-tab-title { @include dbx-trunc; }
+
+    // demo's `+` new-tab pill at the end of the strip
+    .dbx-tab-new {
+        padding: $space-2;
+        align-self: center;
+        border-radius: $radius-md;
+        color: $text-tertiary;
+
+        &:disabled { opacity: 0.4; cursor: not-allowed; }
+        &:hover:not(:disabled) { background: $bg-hover; color: $text-primary; }
+    }
 
     .dbx-tab-close {
         display: flex;
@@ -554,22 +569,75 @@ $dbx-sqlite: #3d8fd1;
 
     .dbx-editor-wrap { position: relative; flex: 1; min-width: 0; }
 
-    .dbx-editor {
-        width: 100%;
+    // SQL editor (demo .sql-editor): line-number gutter + keyword tints. A
+    // transparent textarea sits over a highlighted <pre>; gutter/pre/textarea
+    // MUST share identical font metrics or the overlay drifts.
+    .dbx-sqled {
+        display: flex;
         height: 184px;
         min-height: 96px;
         max-height: 50vh;
         resize: vertical;
-        padding: $space-3 $space-4;
+        overflow: hidden;
         background: $bg-body;
-        border: none;
         border-bottom: 1px solid $border-default;
-        color: $text-primary;
-        font-family: $font-mono;
-        font-size: $font-size-sm;
-        line-height: $line-height-relaxed;
-        outline: none;
-        &::placeholder { color: $text-tertiary; }
+
+        &__gutter {
+            flex-shrink: 0;
+            min-width: 40px;
+            padding: $space-3 10px $space-3 $space-3;
+            overflow: hidden;
+            text-align: right;
+            font-family: $font-mono;
+            font-size: $font-size-sm;
+            line-height: $line-height-relaxed;
+            color: $text-tertiary;
+            border-right: 1px solid $border-subtle;
+            user-select: none;
+        }
+
+        &__stack {
+            position: relative;
+            flex: 1;
+            min-width: 0;
+        }
+
+        &__hl,
+        &__input {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: $space-3 $space-4;
+            font-family: $font-mono;
+            font-size: $font-size-sm;
+            line-height: $line-height-relaxed;
+            white-space: pre;
+            tab-size: 4;
+        }
+
+        &__hl {
+            overflow: hidden;
+            pointer-events: none;
+            color: $text-primary;
+
+            .tok-kw { color: var(--accent-bright); font-weight: $font-weight-semibold; }
+            .tok-str { color: $success; }
+            .tok-num { color: $warning; }
+            .tok-cmt { color: var(--text-ghost); font-style: italic; }
+        }
+
+        &__input {
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+            color: transparent;
+            caret-color: $text-primary;
+            overflow: auto;
+
+            &::placeholder { color: $text-tertiary; }
+            &::selection { background: fade($accent-primary-raw, 28%); }
+        }
     }
 
     .dbx-editor-badge {
@@ -647,7 +715,7 @@ $dbx-sqlite: #3d8fd1;
         background: $bg-elevated;
         border-bottom: 1px solid $border-subtle;
         flex-shrink: 0;
-        .dbx-results-count { font-size: $font-size-xs; color: $text-secondary; }
+        .dbx-results-count { font-size: $font-size-xs; color: $success; font-weight: $font-weight-medium; }
         .dbx-results-time { font-family: $font-mono; font-size: $font-size-xs; color: $text-tertiary; }
     }
 
@@ -772,6 +840,9 @@ $dbx-sqlite: #3d8fd1;
             @include dbx-trunc;
             &:last-child { border-right: none; }
             &.is-null { color: $text-tertiary; font-style: italic; }
+            &.is-strv { color: $success; }
+            &.is-pos { color: $success; }
+            &.is-neg { color: $warning; }
         }
 
         tbody tr:hover td { background: $bg-hover; }
@@ -855,10 +926,10 @@ $dbx-sqlite: #3d8fd1;
         align-items: center;
         justify-content: space-between;
         gap: $space-3;
+        min-height: 32px;
         padding: $space-1 $space-3;
         background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border-top: 1px solid $border-default;
         flex-shrink: 0;
         flex-wrap: wrap;
     }
@@ -873,6 +944,20 @@ $dbx-sqlite: #3d8fd1;
         svg { color: $text-tertiary; }
         &.is-write { color: $warning; font-weight: $font-weight-medium; }
         &.dbx-status-muted { color: $text-tertiary; }
+
+        // Green "● Connected" segment (matches the prototype status bar)
+        &.is-connected {
+            color: $success;
+            font-family: $font-mono;
+            &::before {
+                content: '';
+                width: 6px;
+                height: 6px;
+                border-radius: $radius-full;
+                background: currentColor;
+                box-shadow: 0 0 6px currentColor;
+            }
+        }
     }
 
     // ─── Context menu ─────────────────────────────────────

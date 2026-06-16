@@ -19,7 +19,8 @@ import {
 } from '../components/security';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import EmptyState from '../components/EmptyState';
-import { StatStrip, Stat } from '../components/StatCard';
+import { PageTopbar, MetricCard } from '@/components/ds';
+import { Siren, Bug, ShieldCheck, Radar } from 'lucide-react';
 
 const VALID_TABS = ['overview', 'firewall', 'fail2ban', 'ssh-keys', 'ip-lists', 'scanner', 'quarantine', 'integrity', 'audit', 'vulnerability', 'updates', 'events', 'settings'];
 
@@ -61,7 +62,11 @@ const Security = () => {
     }
 
     if (loading) {
-        return <EmptyState loading title="Loading security status..." />;
+        return (
+            <div className="page-container security-page">
+                <EmptyState loading title="Loading security status..." />
+            </div>
+        );
     }
 
     const alerts = status?.recent_alerts || {};
@@ -69,35 +74,36 @@ const Security = () => {
 
     return (
         <div className="page-container security-page">
-            <div className="page-header">
-                <div>
-                    <h1>Security</h1>
-                    <p className="page-subtitle">Firewall, malware scanning, file integrity, and security alerts</p>
-                </div>
-            </div>
+            <PageTopbar icon={<ShieldCheck size={18} />} title="Security" />
 
-            <StatStrip ariaLabel="Security overview">
-                <Stat
-                    label="Alerts (24h)"
+            <div className="sec-kpis" role="group" aria-label="Security overview">
+                <MetricCard
+                    tone={alerts.total > 0 ? 'amber' : 'green'}
+                    icon={<Siren size={16} />}
                     value={alerts.total || 0}
-                    state={alerts.total > 0 ? 'warning' : 'success'}
+                    label="Alerts (24h)"
                 />
-                <Stat
-                    label="Malware Detected"
+                <MetricCard
+                    tone={alerts.malware_detections > 0 ? 'red' : 'green'}
+                    icon={<Bug size={16} />}
                     value={alerts.malware_detections || 0}
-                    state={alerts.malware_detections > 0 ? 'danger' : 'success'}
+                    label="Malware detected"
                 />
-                <Stat
-                    label="ClamAV"
+                <MetricCard
+                    className="sec-kpi-text"
+                    tone={clamav?.installed ? 'green' : 'amber'}
+                    icon={<ShieldCheck size={16} />}
                     value={clamav?.installed ? 'Active' : 'Not installed'}
-                    state={clamav?.installed ? 'success' : 'warning'}
+                    label="ClamAV"
                 />
-                <Stat
-                    label="Scan Status"
+                <MetricCard
+                    className="sec-kpi-text"
+                    tone={scanRunning ? 'cyan' : 'accent'}
+                    icon={<Radar size={16} />}
                     value={capitalize(status?.scan_status) || 'Idle'}
-                    state={scanRunning ? 'info' : undefined}
+                    label="Scan status"
                 />
-            </StatStrip>
+            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>

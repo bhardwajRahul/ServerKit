@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock, Copy, Zap, Activity, Globe, Layers, BarChart3, FileBarChart, Printer, Download } from 'lucide-react';
+import { ExternalLink, Settings, RefreshCw, Plus, Database, GitBranch, Package, Palette, Archive, Trash2, Replace, ShieldCheck, FolderOpen, FileText, Lock, Copy, Zap, Activity, Globe, Layers, BarChart3, FileBarChart, Printer, Download, ChevronDown, Check, AlertTriangle, HardDrive } from 'lucide-react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import useTabParam from '../hooks/useTabParam';
 import wordpressApi from '../services/wordpress';
@@ -8,7 +8,10 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useLogsDrawer } from '../contexts/LogsDrawerContext';
 import { EnvironmentCard, SnapshotTable, GitConnectForm, CommitList, DiskUsageBar } from '../components/wordpress';
+import ChangeUrlModal from '../components/wordpress/ChangeUrlModal';
+import AttachDomainModal from '../components/wordpress/AttachDomainModal';
 import { HealthDot } from '../components/wordpress/HealthStatusPanel';
+import { Pill, EnvTag, MetricCard, SegControl, ScoreGauge, ServiceTile } from '../components/ds';
 import { ErrorBoundary, ErrorState } from '../components/ErrorBoundary';
 import { useConfirm } from '../hooks/useConfirm';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -16,13 +19,13 @@ import { DangerZone } from '../components/DangerZone';
 import EmptyState from '../components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 
 // Detail Page Skeleton for initial loading
 const DetailPageSkeleton = () => (
-    <div className="app-detail-page wp-detail-page">
+    <div className="app-detail-page app-detail-page--wide wp-detail-page">
         <div className="app-detail-topbar">
             <div className="app-detail-breadcrumbs">
                 <span className="skeleton" style={{ width: 80, height: 16 }} />
@@ -73,7 +76,75 @@ const DetailPageSkeleton = () => (
     </div>
 );
 
-const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'php', 'git', 'backups', 'uptime', 'analytics', 'vulnerabilities', 'security', 'updates', 'reports'];
+const VALID_TABS = ['overview', 'environments', 'database', 'plugins', 'themes', 'git', 'backups', 'uptime', 'analytics', 'vulnerabilities', 'security', 'updates', 'php', 'reports'];
+
+// Environment-type → dot tint for the header environment switcher.
+const ENV_DOT_COLORS = {
+    production: 'var(--green)',
+    staging: 'var(--amber)',
+    development: 'var(--cyan)',
+    multidev: 'var(--violet)',
+};
+
+// Short label for an environment type tag (PROD / STAGING / DEV).
+const envTagLabel = (type) => (
+    type === 'production' ? 'PROD' : type === 'staging' ? 'STAGING' : 'DEV'
+);
+
+const ENV_TYPE_LABELS = { production: 'Production', staging: 'Staging', development: 'Development', multidev: 'Multidev' };
+
+// Compact header environment switcher — navigates between the environment
+// site ids already present in the loaded payload (no extra fetches).
+const EnvSwitcher = ({ options, onSelect }) => {
+    const [open, setOpen] = useState(false);
+
+    useEffect(() => {
+        if (!open) return undefined;
+        const close = () => setOpen(false);
+        window.addEventListener('click', close);
+        return () => window.removeEventListener('click', close);
+    }, [open]);
+
+    const current = options.find(o => o.current) || options[0];
+
+    return (
+        <div className="wp-envswitch-wrap">
+            <button
+                type="button"
+                className={`wp-envswitch ${open ? 'open' : ''}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+                title="Switch environment"
+            >
+                <span className="ed" style={{ background: ENV_DOT_COLORS[current.type] || 'var(--text-faint)' }} />
+                {ENV_TYPE_LABELS[current.type] || current.name}
+                <ChevronDown size={13} className="chev" />
+            </button>
+            {open && (
+                <div className="wp-envswitch-menu" onClick={e => e.stopPropagation()}>
+                    <div className="wp-envswitch-head">Switch environment</div>
+                    {options.map(o => (
+                        <button
+                            type="button"
+                            className="wp-envswitch-opt"
+                            key={o.id}
+                            onClick={() => { setOpen(false); if (!o.current) onSelect(o.id); }}
+                        >
+                            <span className="ed" style={{ background: ENV_DOT_COLORS[o.type] || 'var(--text-faint)' }} />
+                            <span className="wp-envswitch-opt-body">
+                                <span className="nm">{o.name}</span>
+                                <span className="meta">
+                                    {envTagLabel(o.type)}
+                                    {o.url ? ` · ${o.url.replace(/^https?:\/\//, '')}` : ''}
+                                </span>
+                            </span>
+                            {o.current && <Check size={14} className="check" />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const WordPressDetail = () => {
     const { id } = useParams();
@@ -85,11 +156,16 @@ const WordPressDetail = () => {
     const [activeTab, setActiveTab] = useTabParam(`/wordpress/${id}`, VALID_TABS);
     const [autoLoggingIn, setAutoLoggingIn] = useState(false);
     const [showCloneModal, setShowCloneModal] = useState(false);
+    const [showChangeUrl, setShowChangeUrl] = useState(false);
+    const [showAddDomain, setShowAddDomain] = useState(false);
     const [cloning, setCloning] = useState(false);
     const [cloneName, setCloneName] = useState('');
     const [clonedCreds, setClonedCreds] = useState(null);
 
     useEffect(() => {
+        // Show the skeleton again when navigating between environment site ids
+        // (env switcher / "Open new site") so stale data never renders.
+        setLoading(true);
         loadSite();
     }, [id]);
 
@@ -165,8 +241,29 @@ const WordPressDetail = () => {
 
     const isRunning = site.status === 'running';
 
+    // Environment switcher options from data already in the payload:
+    // production sites carry `environments`; child envs carry `production_site_id`.
+    let envOptions = null;
+    if (site.is_production && (site.environments || []).length > 0) {
+        envOptions = [
+            { id: site.id, name: site.name, type: 'production', url: site.url, current: true },
+            ...site.environments.map(e => ({
+                id: e.id,
+                name: e.name || e.environment_type || `Environment ${e.id}`,
+                type: e.environment_type || 'development',
+                url: e.url,
+                current: false,
+            })),
+        ];
+    } else if (!site.is_production && site.production_site_id) {
+        envOptions = [
+            { id: site.production_site_id, name: 'Production', type: 'production', current: false },
+            { id: site.id, name: site.name, type: site.environment_type || 'development', url: site.url, current: true },
+        ];
+    }
+
     return (
-        <div className="app-detail-page wp-detail-page">
+        <div className="app-detail-page app-detail-page--wide wp-detail-page">
             {/* One-time cloned-admin credentials banner */}
             {clonedCreds && (
                 <div className="wp-creds-banner">
@@ -243,6 +340,22 @@ const WordPressDetail = () => {
                     )}
                     <Button
                         variant="ghost"
+                        onClick={() => setShowAddDomain(true)}
+                        title="Point a custom domain you own at this site (auto-DNS + migrate)"
+                    >
+                        <Plus size={16} />
+                        Add Domain
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        onClick={() => setShowChangeUrl(true)}
+                        title="Change this site's URL (serialization-safe database rewrite + re-point routing)"
+                    >
+                        <Globe size={16} />
+                        Change URL
+                    </Button>
+                    <Button
+                        variant="ghost"
                         onClick={() => setShowCloneModal(true)}
                         title="Duplicate this site as a new independent site with fresh admin credentials"
                     >
@@ -267,27 +380,39 @@ const WordPressDetail = () => {
                     <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
                         <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 19.542c-5.261 0-9.542-4.281-9.542-9.542S6.739 2.458 12 2.458 21.542 6.739 21.542 12 17.261 21.542 12 21.542z"/>
                     </svg>
+                    <span className={`wp-head-dot ${isRunning ? 'running' : 'stopped'}`} />
                 </div>
                 <div className="app-detail-title-block">
                     <h1>
                         {site.name}
-                        <span className={`app-status-badge ${isRunning ? 'running' : 'stopped'}`}>
-                            <span className="pulse-dot" />
-                            {isRunning ? 'Running' : 'Stopped'}
-                        </span>
-                        {site.is_production && (
-                            <span className="env-badge env-production">PROD</span>
-                        )}
-                        {!site.is_production && site.production_site_id && (
-                            <span className="env-badge env-development">DEV</span>
+                        <Pill kind={isRunning ? 'green' : 'gray'}>{isRunning ? 'Running' : 'Stopped'}</Pill>
+                        {site.is_production ? (
+                            <EnvTag env="PROD" />
+                        ) : site.production_site_id ? (
+                            <EnvTag env={envTagLabel(site.environment_type)} />
+                        ) : null}
+                        {envOptions && envOptions.length > 1 && (
+                            <EnvSwitcher options={envOptions} onSelect={(envId) => navigate(`/wordpress/${envId}`)} />
                         )}
                     </h1>
                     <div className="app-detail-subtitle">
-                        <span>WordPress {site.wp_version || ''}</span>
+                        <span>WordPress {site.wp_version || '—'}</span>
+                        {site.application?.php_version && (
+                            <>
+                                <span className="separator">·</span>
+                                <span>PHP {site.application.php_version}</span>
+                            </>
+                        )}
                         {site.url && (
                             <>
-                                <span className="separator">•</span>
-                                <span className="mono">{site.url}</span>
+                                <span className="separator">·</span>
+                                <a href={site.url} target="_blank" rel="noopener noreferrer">{site.url}</a>
+                            </>
+                        )}
+                        {site.multisite && (
+                            <>
+                                <span className="separator">·</span>
+                                <span>multisite</span>
                             </>
                         )}
                     </div>
@@ -325,12 +450,6 @@ const WordPressDetail = () => {
                     onClick={() => setActiveTab('themes')}
                 >
                     <Palette size={14} /> Themes
-                </div>
-                <div
-                    className={`app-detail-tab ${activeTab === 'php' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('php')}
-                >
-                    <Settings size={14} /> PHP
                 </div>
                 <div
                     className={`app-detail-tab ${activeTab === 'git' ? 'active' : ''}`}
@@ -375,12 +494,34 @@ const WordPressDetail = () => {
                     <RefreshCw size={14} /> Updates
                 </div>
                 <div
+                    className={`app-detail-tab ${activeTab === 'php' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('php')}
+                >
+                    <Settings size={14} /> PHP
+                </div>
+                <div
                     className={`app-detail-tab ${activeTab === 'reports' ? 'active' : ''}`}
                     onClick={() => setActiveTab('reports')}
                 >
                     <FileBarChart size={14} /> Reports
                 </div>
             </div>
+
+            {showChangeUrl && (
+                <ChangeUrlModal
+                    site={site}
+                    onClose={() => setShowChangeUrl(false)}
+                    onChanged={loadSite}
+                />
+            )}
+
+            {showAddDomain && (
+                <AttachDomainModal
+                    site={site}
+                    onClose={() => setShowAddDomain(false)}
+                    onChanged={loadSite}
+                />
+            )}
 
             {/* Clone Site Modal */}
             {showCloneModal && (
@@ -420,7 +561,6 @@ const WordPressDetail = () => {
                     {activeTab === 'database' && <DatabaseTab siteId={site.id} site={site} />}
                     {activeTab === 'plugins' && <PluginsTab siteId={site.id} />}
                     {activeTab === 'themes' && <ThemesTab siteId={site.id} />}
-                    {activeTab === 'php' && <PhpTab siteId={site.id} />}
                     {activeTab === 'git' && <GitTab siteId={site.id} site={site} onUpdate={loadSite} />}
                     {activeTab === 'backups' && <BackupsTab siteId={site.id} />}
                     {activeTab === 'uptime' && <UptimeTab siteId={site.id} />}
@@ -428,6 +568,7 @@ const WordPressDetail = () => {
                     {activeTab === 'vulnerabilities' && <VulnerabilitiesTab siteId={site.id} />}
                     {activeTab === 'security' && <SecurityTab siteId={site.id} />}
                     {activeTab === 'updates' && <UpdatesTab siteId={site.id} />}
+                    {activeTab === 'php' && <PhpTab siteId={site.id} />}
                     {activeTab === 'reports' && <ReportsTab siteId={site.id} />}
                 </ErrorBoundary>
             </div>
@@ -435,19 +576,38 @@ const WordPressDetail = () => {
     );
 };
 
+// Friendly labels for the editable php.ini directives (#24 limits panel).
+const PHP_LIMIT_LABELS = {
+    memory_limit: 'Memory Limit',
+    upload_max_filesize: 'Upload Max Filesize',
+    post_max_size: 'Post Max Size',
+    max_execution_time: 'Max Execution Time',
+    max_input_time: 'Max Input Time',
+    max_input_vars: 'Max Input Vars',
+};
+
 // PHP Tab — live PHP version + ini limits for the Docker (apache/mod_php) site.
 // Version is the image tag; switching recreates the container (volumes persist).
+// Limits are written as a durable conf.d drop-in (bind-mounted), editable below.
 const PhpTab = ({ siteId }) => {
     const toast = useToast();
     const [php, setPhp] = useState(null);
     const [loading, setLoading] = useState(true);
     const [switching, setSwitching] = useState(false);
+    const [form, setForm] = useState({});
+    const [saving, setSaving] = useState(false);
 
     const load = React.useCallback(async () => {
         setLoading(true);
         try {
             const data = await wordpressApi.getPhpInfo(siteId);
-            setPhp(data.php || data);
+            const info = data.php || data;
+            setPhp(info);
+            // Seed the edit form from live values for the editable directives.
+            const lim = info?.limits || {};
+            const seed = {};
+            (info?.editable_limits || []).forEach(k => { seed[k] = lim[k] || ''; });
+            setForm(seed);
         } catch (err) {
             toast.error(err.message || 'Failed to load PHP info');
         } finally {
@@ -473,11 +633,35 @@ const PhpTab = ({ siteId }) => {
         }
     }
 
+    async function handleSaveLimits() {
+        // Send only the directives that changed from the live value (partial update).
+        const live = php?.limits || {};
+        const changed = {};
+        Object.entries(form).forEach(([k, v]) => {
+            const val = (v ?? '').toString().trim();
+            if (val && val !== (live[k] || '')) changed[k] = val;
+        });
+        if (Object.keys(changed).length === 0) { toast.info('No changes to save'); return; }
+        if (!window.confirm('Apply these PHP limits? The container reloads (brief downtime; database and files are preserved).')) return;
+        setSaving(true);
+        try {
+            const res = await wordpressApi.setPhpLimits(siteId, changed);
+            if (res.success === false) { toast.error(res.error || 'Failed to update PHP limits'); return; }
+            toast.success(res.message || 'PHP limits updated');
+            await load();
+        } catch (err) {
+            toast.error(err.message || 'Failed to update PHP limits');
+        } finally {
+            setSaving(false);
+        }
+    }
+
     if (loading) return <div className="tab-loading"><p className="hint">Loading PHP info...</p></div>;
 
     const limits = php?.limits || {};
     const current = php?.php_version || 'Unknown';
     const versions = php?.available_versions || [];
+    const editableKeys = php?.editable_limits || [];
 
     return (
         <div className="app-overview-grid">
@@ -525,6 +709,25 @@ const PhpTab = ({ siteId }) => {
                                         {current.startsWith(v) ? `PHP ${v} (current)` : `PHP ${v}`}
                                     </Button>
                                 ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {editableKeys.length > 0 && (
+                    <div className="app-panel">
+                        <div className="app-panel-header">Edit PHP Limits</div>
+                        <div className="app-panel-body">
+                            <p className="hint">Saved as a durable conf.d drop-in bind-mounted into the container, so limits survive a container recreate. Saving reloads the container (brief downtime).</p>
+                            {editableKeys.map(k => (
+                                <div className="form-group" key={k}>
+                                    <Label>{PHP_LIMIT_LABELS[k] || k}</Label>
+                                    <Input value={form[k] ?? ''} placeholder={limits[k] || ''} disabled={saving}
+                                        onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} />
+                                </div>
+                            ))}
+                            <div className="app-detail-actions">
+                                <Button size="sm" onClick={handleSaveLimits} disabled={saving}>{saving ? 'Saving…' : 'Save limits'}</Button>
                             </div>
                         </div>
                     </div>
@@ -618,11 +821,11 @@ const UptimeTab = ({ siteId }) => {
                         <div className="app-panel-header">Uptime</div>
                         <div className="app-panel-body">
                             {comp.last_check_at ? (
-                                <div className="app-info-grid">
-                                    <div className="app-info-item"><span className="app-info-label">24 hours</span><span className="app-info-value">{pct(comp.uptime_24h)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">7 days</span><span className="app-info-value">{pct(comp.uptime_7d)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">30 days</span><span className="app-info-value">{pct(comp.uptime_30d)}</span></div>
-                                    <div className="app-info-item"><span className="app-info-label">90 days</span><span className="app-info-value">{pct(comp.uptime_90d)}</span></div>
+                                <div className="wp-kpis">
+                                    <MetricCard icon={<Activity size={16} />} tone="green" value={pct(comp.uptime_24h)} label="Uptime · 24 hours" />
+                                    <MetricCard icon={<Activity size={16} />} tone="green" value={pct(comp.uptime_7d)} label="Uptime · 7 days" />
+                                    <MetricCard icon={<Activity size={16} />} tone="cyan" value={pct(comp.uptime_30d)} label="Uptime · 30 days" />
+                                    <MetricCard icon={<Activity size={16} />} tone="cyan" value={pct(comp.uptime_90d)} label="Uptime · 90 days" />
                                 </div>
                             ) : (
                                 <p className="hint">Awaiting the first health check (runs within 5 minutes).</p>
@@ -723,7 +926,7 @@ const UpdatesTab = ({ siteId }) => {
 
     const runs = data?.runs || [];
     const running = data?.running;
-    const statusVariant = (s) => ({ completed: 'success', rolled_back: 'warning', failed: 'destructive', running: 'info' }[s] || 'secondary');
+    const statusPill = (s) => ({ completed: 'green', rolled_back: 'amber', failed: 'red', running: 'cyan' }[s] || 'gray');
 
     return (
         <div className="app-overview-grid">
@@ -769,10 +972,10 @@ const UpdatesTab = ({ siteId }) => {
                             const d = r.details || {};
                             const n = (d.updated || []).length;
                             return (
-                                <div className="form-group" key={r.id}>
-                                    <div>
-                                        <Badge variant={statusVariant(r.status)}>{r.status.replace('_', ' ')}</Badge>{' '}
-                                        <span className="form-hint">{r.started_at ? new Date(r.started_at).toLocaleString() : ''} · {r.trigger}</span>
+                                <div className="wp-run-row" key={r.id}>
+                                    <div className="wp-run-row-head">
+                                        <Pill kind={statusPill(r.status)}>{r.status.replace('_', ' ')}</Pill>
+                                        <span className="wp-run-row-meta">{r.started_at ? new Date(r.started_at).toLocaleString() : ''} · {r.trigger}</span>
                                     </div>
                                     <span className="form-hint">
                                         {n === 0 ? 'No components needed updating' : `${n} component${n === 1 ? '' : 's'} updated`}
@@ -781,7 +984,7 @@ const UpdatesTab = ({ siteId }) => {
                                     </span>
                                     {d.warning && <span className="form-hint">⚠ {d.warning}</span>}
                                     {(d.updated || []).slice(0, 10).map((u, i) => (
-                                        <span className="form-hint" key={i}>{u.type} {u.slug}: {u.from} → {u.to}</span>
+                                        <span className="form-hint wp-run-component" key={i}>{u.type} {u.slug}: {u.from} → {u.to}</span>
                                     ))}
                                 </div>
                             );
@@ -800,17 +1003,19 @@ const SecurityTab = ({ siteId }) => {
     const [integrity, setIntegrity] = useState(null);
     const [debug, setDebug] = useState(null);
     const [cron, setCron] = useState(null);
+    const [vulns, setVulns] = useState(null);
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
 
     const loadAll = React.useCallback(async () => {
         try {
-            const [i, d, c] = await Promise.all([
+            const [i, d, c, v] = await Promise.all([
                 wordpressApi.getIntegrity(siteId).catch(() => null),
                 wordpressApi.getDebug(siteId).catch(() => null),
                 wordpressApi.getCron(siteId).catch(() => null),
+                wordpressApi.getVulnerabilities(siteId).catch(() => null),
             ]);
-            setIntegrity(i); setDebug(d); setCron(c);
+            setIntegrity(i); setDebug(d); setCron(c); setVulns(v);
         } finally {
             setLoading(false);
         }
@@ -862,9 +1067,58 @@ const SecurityTab = ({ siteId }) => {
     const intRunning = integrity?.status === 'running';
     const issues = integrity?.issues || [];
 
+    // Posture checks — real signals only; checks that haven't run yet stay out
+    // of the score (demo's posture ring, computed client-side).
+    const vsum = vulns?.summary || {};
+    const checks = [
+        {
+            label: 'Core & plugin files verified',
+            state: integrity?.status === 'completed' ? (issues.length === 0 ? 'pass' : 'fail') : 'unknown',
+            detail: integrity?.status === 'completed'
+                ? (issues.length === 0 ? 'checksums clean' : `${issues.length} issue${issues.length === 1 ? '' : 's'}`)
+                : 'not checked yet',
+        },
+        {
+            label: 'WP_DEBUG disabled',
+            state: debug ? (debug.debug?.WP_DEBUG ? 'fail' : 'pass') : 'unknown',
+            detail: debug ? (debug.debug?.WP_DEBUG ? 'debug is on' : 'off') : 'unavailable',
+        },
+        {
+            label: 'No critical / high vulnerabilities',
+            state: vulns?.scanned_at ? (((vsum.critical ?? 0) + (vsum.high ?? 0)) === 0 ? 'pass' : 'fail') : 'unknown',
+            detail: vulns?.scanned_at
+                ? `${(vsum.critical ?? 0) + (vsum.high ?? 0)} found`
+                : 'no scan yet',
+        },
+    ];
+    const scored = checks.filter(c => c.state !== 'unknown');
+    const score = scored.length ? Math.round(scored.filter(c => c.state === 'pass').length / scored.length * 100) : null;
+    const scoreColor = score >= 80 ? 'var(--green)' : score >= 50 ? 'var(--amber)' : 'var(--red)';
+    const CHECK_PILL = { pass: 'green', fail: 'red', unknown: 'gray' };
+
     return (
         <div className="app-overview-grid">
             <div className="app-overview-left">
+                <div className="app-panel">
+                    <div className="app-panel-header">Security posture</div>
+                    <div className="app-panel-body wp-posture">
+                        {score !== null ? (
+                            <ScoreGauge value={score} size={110} stroke={9} color={scoreColor} label="posture" />
+                        ) : (
+                            <p className="hint">Run the checks below to compute a posture score.</p>
+                        )}
+                        <div className="wp-posture__checks">
+                            {checks.map(c => (
+                                <div key={c.label} className="wp-posture__check">
+                                    <span className="wp-posture__label">{c.label}</span>
+                                    <span className="wp-posture__detail">{c.detail}</span>
+                                    <Pill kind={CHECK_PILL[c.state]}>{c.state === 'unknown' ? 'pending' : c.state}</Pill>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="app-panel">
                     <div className="app-panel-header">File integrity</div>
                     <div className="app-panel-body">
@@ -877,8 +1131,10 @@ const SecurityTab = ({ siteId }) => {
                             issues.length === 0
                                 ? <p className="hint">All core and plugin files verify against official checksums.</p>
                                 : <>
-                                    <div className="app-detail-actions"><Badge variant="destructive">{issues.length} issue{issues.length === 1 ? '' : 's'}</Badge></div>
-                                    {issues.slice(0, 50).map((line, i) => <div className="form-hint" key={i}>{line}</div>)}
+                                    <div className="app-detail-actions"><Pill kind="red">{issues.length} issue{issues.length === 1 ? '' : 's'}</Pill></div>
+                                    <div className="wp-code-list">
+                                        {issues.slice(0, 50).map((line, i) => <div key={i}>{line}</div>)}
+                                    </div>
                                 </>
                         )}
                     </div>
@@ -888,7 +1144,7 @@ const SecurityTab = ({ siteId }) => {
                     <div className="app-panel-header">Debug mode</div>
                     <div className="app-panel-body">
                         <div className="app-info-grid">
-                            <div className="app-info-item"><span className="app-info-label">WP_DEBUG</span><span className="app-info-value"><Badge variant={debug?.debug?.WP_DEBUG ? 'warning' : 'secondary'}>{debug?.debug?.WP_DEBUG ? 'on' : 'off'}</Badge></span></div>
+                            <div className="app-info-item"><span className="app-info-label">WP_DEBUG</span><span className="app-info-value"><Pill kind={debug?.debug?.WP_DEBUG ? 'amber' : 'gray'}>{debug?.debug?.WP_DEBUG ? 'on' : 'off'}</Pill></span></div>
                             <div className="app-info-item"><span className="app-info-label">Debug log</span><span className="app-info-value">{debug?.debug?.WP_DEBUG_LOG ? 'on' : 'off'}</span></div>
                             <div className="app-info-item"><span className="app-info-label">Script debug</span><span className="app-info-value">{debug?.debug?.SCRIPT_DEBUG ? 'on' : 'off'}</span></div>
                         </div>
@@ -962,7 +1218,6 @@ const VulnerabilitiesTab = ({ siteId }) => {
     const running = data?.scan_status === 'running';
     const summary = data?.summary || {};
     const vulns = data?.vulnerabilities || [];
-    const sevVariant = (s) => ({ critical: 'destructive', high: 'destructive', medium: 'warning', low: 'info' }[s] || 'secondary');
 
     return (
         <div className="app-overview-grid">
@@ -979,19 +1234,22 @@ const VulnerabilitiesTab = ({ siteId }) => {
                             <div className="app-info-item"><span className="app-info-label">Last scan</span><span className="app-info-value">{data?.scanned_at ? new Date(data.scanned_at).toLocaleString() : 'Never'}</span></div>
                             <div className="app-info-item"><span className="app-info-label">Findings</span><span className="app-info-value">{summary.total ?? 0}</span></div>
                         </div>
-                        {summary.total > 0 && (
-                            <div className="app-detail-actions">
-                                {summary.critical > 0 && <Badge variant="destructive">{summary.critical} critical</Badge>}
-                                {summary.high > 0 && <Badge variant="destructive">{summary.high} high</Badge>}
-                                {summary.medium > 0 && <Badge variant="warning">{summary.medium} medium</Badge>}
-                                {summary.low > 0 && <Badge variant="info">{summary.low} low</Badge>}
-                                {summary.unknown > 0 && <Badge variant="secondary">{summary.unknown} unrated</Badge>}
-                            </div>
-                        )}
                         {data?.scan_error && <p className="hint">Last scan error: {data.scan_error}</p>}
                         <p className="hint">Cross-references installed plugin, theme, and core versions against the WPVulnerability community database. Re-run after updating.</p>
                     </div>
                 </div>
+
+                {data?.scanned_at && (
+                    <div className="wp-kpis">
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="red" value={summary.critical ?? 0} label="Critical" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="red" value={summary.high ?? 0} label="High" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="amber" value={summary.medium ?? 0} label="Medium" />
+                        <MetricCard icon={<AlertTriangle size={16} />} tone="cyan" value={summary.low ?? 0} label="Low" />
+                        {summary.unknown > 0 && (
+                            <MetricCard icon={<AlertTriangle size={16} />} tone="violet" value={summary.unknown} label="Unrated" />
+                        )}
+                    </div>
+                )}
 
                 {vulns.length === 0 ? (
                     <div className="app-panel">
@@ -1002,25 +1260,41 @@ const VulnerabilitiesTab = ({ siteId }) => {
                 ) : (
                     <div className="app-panel">
                         <div className="app-panel-header">Findings</div>
-                        <div className="app-panel-body">
-                            {vulns.map(v => (
-                                <div className="form-group" key={v.id}>
-                                    <div>
-                                        <Badge variant={sevVariant(v.severity)}>{v.severity}</Badge>{' '}
-                                        <strong>{v.name}</strong>
-                                    </div>
-                                    {v.title && <span className="form-hint">{v.title}</span>}
-                                    <span className="form-hint">
-                                        {v.source}{v.slug ? ` · ${v.slug}` : ''} · installed {v.installed_version}
-                                        {v.fixed_in ? ` · fixed in ${v.fixed_in}` : ' · no fix yet'}
-                                        {v.advisory_id ? ` · ${v.advisory_id}` : ''}
-                                    </span>
-                                    {v.reference_url && (
-                                        <a href={v.reference_url} target="_blank" rel="noopener noreferrer" className="form-hint">View advisory ↗</a>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                        <table className="sk-dtable wp-vuln-table">
+                            <thead>
+                                <tr>
+                                    <th>Severity</th>
+                                    <th>Component</th>
+                                    <th>Issue</th>
+                                    <th>Installed</th>
+                                    <th>Fixed in</th>
+                                    <th>Advisory</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {vulns.map(v => (
+                                    <tr key={v.id}>
+                                        <td><span className={`wp-sev wp-sev--${v.severity || 'unknown'}`}><span className="d" />{v.severity || 'unrated'}</span></td>
+                                        <td>
+                                            <div className="sk-cell-name">{v.name}</div>
+                                            <div className="sk-cell-sub">{v.source}{v.slug ? ` · ${v.slug}` : ''}</div>
+                                        </td>
+                                        <td className="wp-vuln-title">{v.title || '—'}</td>
+                                        <td><span className="sk-cell-mono">{v.installed_version}</span></td>
+                                        <td>
+                                            {v.fixed_in
+                                                ? <span className="wp-fix-chip">{v.fixed_in}</span>
+                                                : <span className="wp-no-fix">no fix yet</span>}
+                                        </td>
+                                        <td>
+                                            {v.reference_url
+                                                ? <a className="wp-advisory-link" href={v.reference_url} target="_blank" rel="noopener noreferrer">{v.advisory_id || 'advisory'} ↗</a>
+                                                : <span className="sk-cell-mono">{v.advisory_id || '—'}</span>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>
@@ -1062,29 +1336,29 @@ const AnalyticsTab = ({ siteId }) => {
             : d.toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
     const clip = (p) => (p && p.length > 48 ? `${p.slice(0, 48)}…` : p);
+    const clipMsg = (m) => (m && m.length > 80 ? `${m.slice(0, 80)}…` : m);
     const s = data?.status || {};
+    const phpErr = data?.php_errors;
 
     return (
         <div className="app-overview-grid">
             <div className="app-overview-left">
-                <div className="app-panel">
-                    <div className="app-panel-header">Traffic ({hours <= 24 ? 'last 24 hours' : 'last 7 days'})</div>
-                    <div className="app-panel-body">
-                        <div className="app-detail-actions">
-                            {ANALYTICS_PERIODS.map(p => (
-                                <Button key={p.hours} variant={hours === p.hours ? 'default' : 'outline'} size="sm" onClick={() => setHours(p.hours)}>{p.label}</Button>
-                            ))}
-                        </div>
-                        {data?.note && <p className="hint">{data.note}</p>}
-                        <div className="app-info-grid">
-                            <div className="app-info-item"><span className="app-info-label">Requests</span><span className="app-info-value">{(data?.requests ?? 0).toLocaleString()}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Unique Visitors</span><span className="app-info-value">{(data?.unique_visitors ?? 0).toLocaleString()}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Bandwidth</span><span className="app-info-value">{data?.bytes_human || '0 B'}</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Error Rate</span><span className="app-info-value">{data?.error_rate ?? 0}%</span></div>
-                            <div className="app-info-item"><span className="app-info-label">Bot Traffic</span><span className="app-info-value">{data?.bot_pct ?? 0}%</span></div>
-                            <div className="app-info-item"><span className="app-info-label">404s</span><span className="app-info-value">{(data?.not_found ?? 0).toLocaleString()}</span></div>
-                        </div>
-                    </div>
+                <div className="wp-analytics-head">
+                    <h3 className="wp-eyebrow">Traffic · {hours <= 24 ? 'last 24 hours' : 'last 7 days'}</h3>
+                    <SegControl
+                        options={ANALYTICS_PERIODS.map(p => ({ value: p.hours, label: p.label }))}
+                        value={hours}
+                        onChange={setHours}
+                    />
+                </div>
+                {data?.note && <p className="hint">{data.note}</p>}
+                <div className="wp-kpis">
+                    <MetricCard icon={<BarChart3 size={16} />} tone="accent" value={(data?.requests ?? 0).toLocaleString()} label="Requests" />
+                    <MetricCard icon={<Globe size={16} />} tone="cyan" value={(data?.unique_visitors ?? 0).toLocaleString()} label="Unique visitors" />
+                    <MetricCard icon={<HardDrive size={16} />} tone="violet" value={data?.bytes_human || '0 B'} label="Bandwidth" />
+                    <MetricCard icon={<AlertTriangle size={16} />} tone={(data?.error_rate ?? 0) > 5 ? 'red' : 'amber'} value={`${data?.error_rate ?? 0}%`} label="Error rate" />
+                    <MetricCard icon={<Activity size={16} />} tone="green" value={`${data?.bot_pct ?? 0}%`} label="Bot traffic" />
+                    <MetricCard icon={<FileText size={16} />} tone="red" value={(data?.not_found ?? 0).toLocaleString()} label="404s" />
                 </div>
 
                 <div className="app-panel">
@@ -1094,20 +1368,20 @@ const AnalyticsTab = ({ siteId }) => {
                             <AreaChart data={data?.series || []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="wpReq" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#6d7cff" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#6d7cff" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="wpErr" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#fb6f6f" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#fb6f6f" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.15} />
-                                <XAxis dataKey="hour" tickFormatter={fmtHour} tick={{ fontSize: 11, fill: '#888' }} minTickGap={24} />
-                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#888' }} width={36} />
+                                <XAxis dataKey="hour" tickFormatter={fmtHour} tick={{ fontSize: 11, fill: '#888' }} minTickGap={24} axisLine={false} tickLine={false} />
+                                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#888' }} width={36} axisLine={false} tickLine={false} />
                                 <Tooltip labelFormatter={fmtHour} />
-                                <Area type="monotone" dataKey="requests" name="Requests" stroke="#6366f1" fill="url(#wpReq)" strokeWidth={2} />
-                                <Area type="monotone" dataKey="errors" name="Errors" stroke="#ef4444" fill="url(#wpErr)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="requests" name="Requests" stroke="#8b93ff" fill="url(#wpReq)" strokeWidth={2} />
+                                <Area type="monotone" dataKey="errors" name="Errors" stroke="#fb6f6f" fill="url(#wpErr)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -1137,7 +1411,39 @@ const AnalyticsTab = ({ siteId }) => {
                                     </div>
                                 ))}
                             </div>
-                            <p className="hint">Read live from the container access log; PHP fatals and response-time metrics are not captured by the default log.</p>
+                            <p className="hint">Read live from the container access log; response-time metrics are not captured by the default log.</p>
+                        </div>
+                    </div>
+                )}
+
+                {phpErr && (
+                    <div className="app-panel">
+                        <div className="app-panel-header">PHP errors</div>
+                        <div className="app-panel-body">
+                            {!phpErr.available ? (
+                                <p className="hint">{phpErr.note || 'PHP error logging is off.'}</p>
+                            ) : (
+                                <>
+                                    <div className="app-info-grid">
+                                        <div className="app-info-item"><span className="app-info-label">Fatal</span><span className="app-info-value">{(phpErr.counts?.fatal ?? 0).toLocaleString()}</span></div>
+                                        <div className="app-info-item"><span className="app-info-label">Warning</span><span className="app-info-value">{(phpErr.counts?.warning ?? 0).toLocaleString()}</span></div>
+                                        <div className="app-info-item"><span className="app-info-label">Notice</span><span className="app-info-value">{(phpErr.counts?.notice ?? 0).toLocaleString()}</span></div>
+                                        <div className="app-info-item"><span className="app-info-label">Deprecated</span><span className="app-info-value">{(phpErr.counts?.deprecated ?? 0).toLocaleString()}</span></div>
+                                    </div>
+                                    {phpErr.recent?.length > 0 ? (
+                                        <div className="app-info-grid">
+                                            {phpErr.recent.map((e, i) => (
+                                                <div className="app-info-item" key={i}>
+                                                    <span className="app-info-label" title={e.message}>{e.level}: {clipMsg(e.message)}</span>
+                                                    <span className="app-info-value">{e.time}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="hint">{phpErr.note || 'No PHP errors recorded.'}</p>
+                                    )}
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1319,8 +1625,8 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
     const vulns = d.vulnerabilities || {};
     const health = d.health || {};
     const sev = vulns.by_severity || {};
-    const sevVariant = (s) => ({ critical: 'destructive', high: 'destructive', medium: 'warning', low: 'info' }[s] || 'secondary');
-    const impactVariant = (i) => ({ critical: 'destructive', major: 'destructive', minor: 'warning' }[i] || 'secondary');
+    const sevTone = (s) => ({ critical: 'red', high: 'red', medium: 'amber', low: 'cyan' }[s] || 'gray');
+    const impactTone = (i) => ({ critical: 'red', major: 'red', minor: 'amber' }[i] || 'gray');
     const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
     const fmtDay = (key) => {
         if (!key) return '';
@@ -1366,9 +1672,9 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     </div>
                     {(updates.rolled_back > 0 || updates.failed > 0) && (
                         <div className="app-detail-actions">
-                            {updates.completed > 0 && <Badge variant="success">{updates.completed} completed</Badge>}
-                            {updates.rolled_back > 0 && <Badge variant="warning">{updates.rolled_back} rolled back</Badge>}
-                            {updates.failed > 0 && <Badge variant="destructive">{updates.failed} failed</Badge>}
+                            {updates.completed > 0 && <Pill kind="green">{updates.completed} completed</Pill>}
+                            {updates.rolled_back > 0 && <Pill kind="amber">{updates.rolled_back} rolled back</Pill>}
+                            {updates.failed > 0 && <Pill kind="red">{updates.failed} failed</Pill>}
                         </div>
                     )}
                 </div>
@@ -1382,15 +1688,15 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                             <AreaChart data={d.uptime_daily || []} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="wpUptime" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#3ddc97" stopOpacity={0.35} />
+                                        <stop offset="95%" stopColor="#3ddc97" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#888" strokeOpacity={0.15} />
-                                <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 11, fill: '#888' }} minTickGap={16} />
-                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#888' }} width={36} />
+                                <XAxis dataKey="date" tickFormatter={fmtDay} tick={{ fontSize: 11, fill: '#888' }} minTickGap={16} axisLine={false} tickLine={false} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#888' }} width={36} axisLine={false} tickLine={false} />
                                 <Tooltip formatter={(v) => (v === null ? 'no data' : `${v}%`)} />
-                                <Area connectNulls type="monotone" dataKey="percent" name="Uptime %" stroke="#10b981" fill="url(#wpUptime)" strokeWidth={2} />
+                                <Area connectNulls type="monotone" dataKey="percent" name="Uptime %" stroke="#3ddc97" fill="url(#wpUptime)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
                         <p className="hint">Uptime recomputed from recorded health-check samples ({uptime.samples} this month). Rolling 30-day: {uptime.rolling_30d ?? '—'}%.</p>
@@ -1403,9 +1709,9 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     <div className="app-panel-header">Incidents</div>
                     <div className="app-panel-body">
                         {d.incidents.map(inc => (
-                            <div className="form-group" key={inc.id}>
-                                <div>
-                                    <Badge variant={impactVariant(inc.impact)}>{inc.impact}</Badge>{' '}
+                            <div className="wp-run-row" key={inc.id}>
+                                <div className="wp-run-row-head">
+                                    <Pill kind={impactTone(inc.impact)}>{inc.impact}</Pill>
                                     <strong>{inc.title}</strong>
                                 </div>
                                 <span className="form-hint">
@@ -1423,12 +1729,12 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     <div className="app-panel-body">
                         {updates.runs.map(r => {
                             const n = (r.updated || []).length;
-                            const sv = ({ completed: 'success', rolled_back: 'warning', failed: 'destructive', running: 'info' }[r.status] || 'secondary');
+                            const kind = ({ completed: 'green', rolled_back: 'amber', failed: 'red', running: 'cyan' }[r.status] || 'gray');
                             return (
-                                <div className="form-group" key={r.id}>
-                                    <div>
-                                        <Badge variant={sv}>{r.status.replace('_', ' ')}</Badge>{' '}
-                                        <span className="form-hint">{fmt(r.started_at)} · {r.trigger}</span>
+                                <div className="wp-run-row" key={r.id}>
+                                    <div className="wp-run-row-head">
+                                        <Pill kind={kind}>{r.status.replace('_', ' ')}</Pill>
+                                        <span className="wp-run-row-meta">{fmt(r.started_at)} · {r.trigger}</span>
                                     </div>
                                     <span className="form-hint">
                                         {n === 0 ? 'No components needed updating' : `${n} component${n === 1 ? '' : 's'} updated`}
@@ -1462,15 +1768,15 @@ const ReportView = ({ report, onPrint, onDownload, onDelete }) => {
                     {vulns.total > 0 ? (
                         <>
                             <div className="app-detail-actions">
-                                {sev.critical > 0 && <Badge variant="destructive">{sev.critical} critical</Badge>}
-                                {sev.high > 0 && <Badge variant="destructive">{sev.high} high</Badge>}
-                                {sev.medium > 0 && <Badge variant="warning">{sev.medium} medium</Badge>}
-                                {sev.low > 0 && <Badge variant="info">{sev.low} low</Badge>}
-                                {sev.unknown > 0 && <Badge variant="secondary">{sev.unknown} unrated</Badge>}
+                                {sev.critical > 0 && <Pill kind="red">{sev.critical} critical</Pill>}
+                                {sev.high > 0 && <Pill kind="red">{sev.high} high</Pill>}
+                                {sev.medium > 0 && <Pill kind="amber">{sev.medium} medium</Pill>}
+                                {sev.low > 0 && <Pill kind="cyan">{sev.low} low</Pill>}
+                                {sev.unknown > 0 && <Pill kind="gray">{sev.unknown} unrated</Pill>}
                             </div>
                             {(vulns.items || []).map((v, i) => (
-                                <div className="form-group" key={i}>
-                                    <div><Badge variant={sevVariant(v.severity)}>{v.severity}</Badge>{' '}<strong>{v.name}</strong></div>
+                                <div className="wp-run-row" key={i}>
+                                    <div className="wp-run-row-head"><Pill kind={sevTone(v.severity)}>{v.severity}</Pill><strong>{v.name}</strong></div>
                                     <span className="form-hint">
                                         {v.source}{v.slug ? ` · ${v.slug}` : ''} · installed {v.installed_version}
                                         {v.fixed_in ? ` · fixed in ${v.fixed_in}` : ' · no fix yet'}
@@ -1773,8 +2079,20 @@ const OverviewTab = ({ site, onUpdate }) => {
         }
     }
 
+    const statusTone = site.status === 'running' ? 'green' : site.status === 'archived' ? 'violet' : 'amber';
+    const statusLabel = (site.status || 'unknown').replace(/^./, c => c.toUpperCase());
+
     return (
-        <div className="app-overview-grid">
+        <div className="wp-overview">
+            <div className="wp-kpis">
+                <MetricCard icon={<Activity size={16} />} tone={statusTone} value={statusLabel} label="Status" />
+                <MetricCard icon={<Globe size={16} />} tone="accent" value={wpInfo?.version || site.wp_version || '—'} label="WordPress core" />
+                <MetricCard icon={<HardDrive size={16} />} tone="cyan" value={site.disk_usage_human || '—'} label="Disk usage" />
+                {site.is_production && (
+                    <MetricCard icon={<Layers size={16} />} tone="violet" value={1 + (site.environments || []).length} label="Environments" />
+                )}
+            </div>
+            <div className="app-overview-grid">
             <div className="app-overview-left">
                 <div className="app-panel">
                     <div className="app-panel-header">Site Information</div>
@@ -2129,6 +2447,7 @@ const OverviewTab = ({ site, onUpdate }) => {
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
             />
+            </div>
         </div>
     );
 };
@@ -2195,8 +2514,10 @@ const SiteSSLPanel = ({ site }) => {
                     </div>
                     <div className="app-info-item">
                         <span className="app-info-label">Status</span>
-                        <span className={`app-status-badge ${issued ? 'running' : 'stopped'}`}>
-                            {checking ? 'Checking...' : issued ? `Active (${health.grade})` : 'Not Secured'}
+                        <span className="app-info-value">
+                            <Pill kind={checking ? 'gray' : issued ? 'green' : 'amber'}>
+                                {checking ? 'Checking...' : issued ? `Active (${health.grade})` : 'Not Secured'}
+                            </Pill>
                         </span>
                     </div>
                     {issued && health.expires_at && (
@@ -2523,15 +2844,25 @@ const EnvironmentsTab = ({ siteId, site, onUpdate }) => {
                         onDelete={handleDelete}
                     />
                 ))}
-            </div>
 
-            {childEnvs.length === 0 && site.is_production && (
-                <EmptyState
-                    icon={Layers}
-                    title="No development or staging environments yet"
-                    description="Create an environment to test changes safely before deploying to production."
-                />
-            )}
+                {/* Add-environment tile — sits inline next to the existing
+                    environments instead of a full-width "empty" block. */}
+                {canCreateMore && (
+                    <button
+                        type="button"
+                        className="wp-env-add-tile"
+                        onClick={() => setShowCreateModal(true)}
+                    >
+                        <span className="wp-env-add-tile__icon"><Plus size={22} /></span>
+                        <span className="wp-env-add-tile__title">Create environment</span>
+                        <span className="wp-env-add-tile__hint">
+                            {childEnvs.length === 0
+                                ? 'Spin up a dev or staging copy to test changes safely before deploying to production.'
+                                : 'Add another dev or staging copy.'}
+                        </span>
+                    </button>
+                )}
+            </div>
 
             {showCreateModal && (
                 <CreateEnvironmentModal
@@ -2909,6 +3240,7 @@ const PluginsTab = ({ siteId }) => {
     const [installing, setInstalling] = useState(false);
     const [updating, setUpdating] = useState(null); // plugin name being updated, or 'all'
     const [newPlugin, setNewPlugin] = useState('');
+    const [toggling, setToggling] = useState(null); // plugin name being activated/deactivated
 
     useEffect(() => {
         loadPlugins();
@@ -2960,6 +3292,26 @@ const PluginsTab = ({ siteId }) => {
             toast.error(err.message || 'Plugin update failed');
         } finally {
             setUpdating(null);
+        }
+    }
+
+    async function handleToggle(plugin) {
+        const activating = plugin.status !== 'active';
+        setToggling(plugin.name);
+        try {
+            const res = activating
+                ? await wordpressApi.activatePlugin(siteId, plugin.name)
+                : await wordpressApi.deactivatePlugin(siteId, plugin.name);
+            if (res && res.success === false) {
+                toast.error(res.error || `Failed to ${activating ? 'activate' : 'deactivate'} ${plugin.name}`);
+                return;
+            }
+            toast.success(`${plugin.title || plugin.name} ${activating ? 'activated' : 'deactivated'}`);
+            loadPlugins();
+        } catch (err) {
+            toast.error(err.message || `Failed to ${activating ? 'activate' : 'deactivate'} plugin`);
+        } finally {
+            setToggling(null);
         }
     }
 
@@ -3021,40 +3373,49 @@ const PluginsTab = ({ siteId }) => {
                 </div>
             )}
 
-            <div className="plugins-list">
-                {plugins.length === 0 ? (
-                    <EmptyState icon={Package} title="No plugins installed" description="Install a plugin by entering its slug above." />
-                ) : (
-                    plugins.map(plugin => (
-                        <div key={plugin.name} className={`plugin-item ${plugin.status === 'active' ? 'active' : ''}`}>
-                            <div className="plugin-info">
-                                <span className="plugin-name">{plugin.title || plugin.name}</span>
-                                <span className="plugin-version">{plugin.version}</span>
-                                {plugin.update === 'available' && (
-                                    <span className="wp-update-badge">
-                                        Update{plugin.update_version ? `: ${plugin.update_version}` : ''}
+            {plugins.length === 0 ? (
+                <EmptyState icon={Package} title="No plugins installed" description="Install a plugin by entering its slug above." />
+            ) : (
+                <div className="wp-asset-grid">
+                    {plugins.map(plugin => {
+                        const isActive = plugin.status === 'active';
+                        return (
+                            <div className={`wp-asset-card ${isActive ? 'is-active' : ''}`} key={plugin.name}>
+                                <ServiceTile name={plugin.title || plugin.name} size={42} />
+                                <div className="wp-asset-card__body">
+                                    <div className="wp-asset-card__name">{plugin.title || plugin.name}</div>
+                                    <div className="wp-asset-card__sub">{plugin.name}</div>
+                                    <div className="wp-asset-card__foot">
+                                        <span className="wp-asset-card__ver">v{plugin.version}</span>
+                                        {plugin.update === 'available' && (
+                                            <button
+                                                type="button"
+                                                className="wp-update-flag"
+                                                onClick={() => handleUpdate(plugin.name)}
+                                                disabled={updating !== null}
+                                            >
+                                                <Download size={11} />
+                                                {updating === plugin.name ? 'Updating…' : `Update${plugin.update_version ? ` ${plugin.update_version}` : ''}`}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="wp-asset-card__toggle">
+                                    <Switch
+                                        checked={isActive}
+                                        disabled={toggling === plugin.name}
+                                        onCheckedChange={() => handleToggle(plugin)}
+                                        aria-label={isActive ? `Deactivate ${plugin.name}` : `Activate ${plugin.name}`}
+                                    />
+                                    <span className={`wp-asset-card__state ${isActive ? 'is-on' : ''}`}>
+                                        {isActive ? 'Active' : 'Inactive'}
                                     </span>
-                                )}
+                                </div>
                             </div>
-                            <div className="plugin-actions">
-                                {plugin.update === 'available' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleUpdate(plugin.name)}
-                                        disabled={updating !== null}
-                                    >
-                                        {updating === plugin.name ? 'Updating...' : 'Update'}
-                                    </Button>
-                                )}
-                                <span className={`plugin-status ${plugin.status}`}>
-                                    {plugin.status === 'active' ? 'Active' : 'Inactive'}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -3068,6 +3429,7 @@ const ThemesTab = ({ siteId }) => {
     const [installing, setInstalling] = useState(false);
     const [updating, setUpdating] = useState(null); // theme name being updated, or 'all'
     const [newTheme, setNewTheme] = useState('');
+    const [activating, setActivating] = useState(null); // theme name being activated
 
     useEffect(() => {
         loadThemes();
@@ -3119,6 +3481,23 @@ const ThemesTab = ({ siteId }) => {
             toast.error(err.message || 'Theme update failed');
         } finally {
             setUpdating(null);
+        }
+    }
+
+    async function handleActivate(theme) {
+        setActivating(theme.name);
+        try {
+            const res = await wordpressApi.activateTheme(siteId, theme.name);
+            if (res && res.success === false) {
+                toast.error(res.error || `Failed to activate ${theme.name}`);
+                return;
+            }
+            toast.success(`${theme.title || theme.name} activated`);
+            loadThemes();
+        } catch (err) {
+            toast.error(err.message || 'Failed to activate theme');
+        } finally {
+            setActivating(null);
         }
     }
 
@@ -3180,40 +3559,51 @@ const ThemesTab = ({ siteId }) => {
                 </div>
             )}
 
-            <div className="themes-list">
-                {themes.length === 0 ? (
-                    <EmptyState icon={Palette} title="No themes installed" description="Install a theme by entering its slug above." />
-                ) : (
-                    themes.map(theme => (
-                        <div key={theme.name} className={`theme-item ${theme.status === 'active' ? 'active' : ''}`}>
-                            <div className="theme-info">
-                                <span className="theme-name">{theme.title || theme.name}</span>
-                                <span className="theme-version">{theme.version}</span>
-                                {theme.update === 'available' && (
-                                    <span className="wp-update-badge">
-                                        Update{theme.update_version ? `: ${theme.update_version}` : ''}
-                                    </span>
-                                )}
+            {themes.length === 0 ? (
+                <EmptyState icon={Palette} title="No themes installed" description="Install a theme by entering its slug above." />
+            ) : (
+                <div className="wp-theme-grid">
+                    {themes.map(theme => {
+                        const isActive = theme.status === 'active';
+                        return (
+                            <div className={`wp-theme-card ${isActive ? 'is-active' : ''}`} key={theme.name}>
+                                <div className="wp-theme-card__shot">
+                                    <Palette size={26} />
+                                    {isActive && <Pill kind="green">Active</Pill>}
+                                </div>
+                                <div className="wp-theme-card__meta">
+                                    <div className="wp-theme-card__name">{theme.title || theme.name}</div>
+                                    <div className="wp-theme-card__sub">{theme.name} · v{theme.version}</div>
+                                    <div className="wp-theme-card__actions">
+                                        {isActive ? (
+                                            <span className="wp-theme-card__current">Current theme</span>
+                                        ) : (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleActivate(theme)}
+                                                disabled={activating === theme.name}
+                                            >
+                                                {activating === theme.name ? 'Activating…' : 'Activate'}
+                                            </Button>
+                                        )}
+                                        {theme.update === 'available' && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleUpdate(theme.name)}
+                                                disabled={updating !== null}
+                                            >
+                                                {updating === theme.name ? 'Updating…' : 'Update'}
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="theme-actions">
-                                {theme.update === 'available' && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => handleUpdate(theme.name)}
-                                        disabled={updating !== null}
-                                    >
-                                        {updating === theme.name ? 'Updating...' : 'Update'}
-                                    </Button>
-                                )}
-                                {theme.status === 'active' && (
-                                    <span className="active-badge">Active</span>
-                                )}
-                            </div>
-                        </div>
-                    ))
-                )}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -3286,7 +3676,7 @@ const GitTab = ({ siteId, site, onUpdate }) => {
     if (loading) {
         return (
             <div className="git-tab">
-                <div className="git-connect-form">
+                <div className="git-connect git-connect--card">
                     <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 16 }} />
                     <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
                     <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
@@ -3399,18 +3789,18 @@ const BackupsTab = ({ siteId }) => {
                 </Button>
             </div>
 
-            <SnapshotTable
-                snapshots={snapshots}
-                loading={loading}
-                onRestore={handleRestore}
-                onDelete={handleDelete}
-            />
-
-            {snapshots.length === 0 && !loading && (
+            {snapshots.length === 0 && !loading ? (
                 <EmptyState
                     icon={Archive}
                     title="No backups yet"
                     description="Create a backup to protect your site files and database."
+                />
+            ) : (
+                <SnapshotTable
+                    snapshots={snapshots}
+                    loading={loading}
+                    onRestore={handleRestore}
+                    onDelete={handleDelete}
                 />
             )}
         </div>

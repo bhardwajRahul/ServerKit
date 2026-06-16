@@ -70,9 +70,9 @@ const SSHKeysTab = () => {
 
     return (
         <div className="ssh-keys-tab">
-            <div className="card">
+            <div className="card sec-flush">
                 <div className="card-header">
-                    <h3>SSH Authorized Keys</h3>
+                    <h3>SSH Authorized Keys {!loading && keys.length > 0 && <span className="sec-count">· {keys.length}</span>}</h3>
                     <div className="card-actions">
                         <Button variant="default" size="sm" onClick={() => setShowAddModal(true)}>
                             Add Key
@@ -82,43 +82,45 @@ const SSHKeysTab = () => {
                         </Button>
                     </div>
                 </div>
-                <div className="card-body">
-                    {loading ? (
+                {loading ? (
+                    <div className="card-body">
                         <div className="loading-sm">Loading...</div>
-                    ) : keys.length === 0 ? (
+                    </div>
+                ) : keys.length === 0 ? (
+                    <div className="card-body">
                         <div className="empty-state-sm">
                             <p>No SSH keys configured for root user.</p>
                             <Button variant="default" onClick={() => setShowAddModal(true)}>
                                 Add SSH Key
                             </Button>
                         </div>
-                    ) : (
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Fingerprint</th>
-                                    <th>Comment</th>
-                                    <th>Actions</th>
+                    </div>
+                ) : (
+                    <table className="sk-dtable">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Fingerprint</th>
+                                <th>Comment</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {keys.map((key) => (
+                                <tr key={key.id}>
+                                    <td><span className="sk-tag">{key.type}</span></td>
+                                    <td className="sk-cell-mono sec-fp">{key.fingerprint}</td>
+                                    <td>{key.comment || <span className="sec-dash">—</span>}</td>
+                                    <td>
+                                        <Button variant="destructive" size="sm" onClick={() => handleRemoveKey(key.id, key.comment)}>
+                                            Remove
+                                        </Button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {keys.map((key) => (
-                                    <tr key={key.id}>
-                                        <td><code>{key.type}</code></td>
-                                        <td><code className="fingerprint">{key.fingerprint}</code></td>
-                                        <td>{key.comment || '-'}</td>
-                                        <td>
-                                            <Button variant="destructive" size="sm" onClick={() => handleRemoveKey(key.id, key.comment)}>
-                                                Remove
-                                            </Button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
             </div>
 
             <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Add SSH Public Key" size="lg">

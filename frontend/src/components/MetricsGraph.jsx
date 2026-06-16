@@ -6,11 +6,15 @@ import {
 import { Cpu, MemoryStick, HardDrive, TrendingUp } from 'lucide-react';
 import api from '../services/api';
 
-// Chart colors - matching new_dashboard_3 style
+// Chart series colors — redesign "infra console" palette (see
+// docs/REDESIGN_MAP.md). Kept as hex (not CSS var()) on purpose: var() does not
+// reliably resolve inside SVG presentation attributes, so hardcoding keeps the
+// series from rendering blank. Grid/axis/ticks ARE themed via CSS overrides in
+// _metrics-graph.scss.
 const CHART_COLORS = {
-    cpu: '#6366f1',      // Purple/Indigo
-    memory: '#10b981',   // Green (RAM)
-    disk: '#f59e0b'      // Amber/Orange (Disk)
+    cpu: '#8b93ff',      // accent-bright (periwinkle)
+    memory: '#3ddc97',   // green (RAM)
+    disk: '#f5b945'      // amber (Disk)
 };
 
 const MetricsGraph = ({ compact = false, timezone, serverId }) => {

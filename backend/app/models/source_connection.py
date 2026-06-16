@@ -4,7 +4,12 @@ from app import db
 
 
 class SourceConnection(db.Model):
-    """External source-code provider connection for repository imports."""
+    """External source-code provider connection for repository imports.
+
+    The ``provider`` column is a plain string and accepts any supported
+    provider value (e.g. ``'github'`` or ``'gitlab'``); there is no enum or
+    allow-list to extend.
+    """
 
     __tablename__ = 'source_connections'
 

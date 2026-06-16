@@ -169,3 +169,35 @@ class DNSProviderConfig(db.Model):
 
     def __repr__(self):
         return f'<DNSProviderConfig {self.name} ({self.provider})>'
+
+
+class EmailRelayConfig(db.Model):
+    """Outbound SMTP relay (smarthost) for the mail server — routes outgoing mail
+    through a third-party provider (Postmark, SES, Mailgun, …). Single-row config;
+    the password is Fernet-encrypted (see app.utils.crypto)."""
+    __tablename__ = 'email_relay_config'
+
+    id = db.Column(db.Integer, primary_key=True)
+    enabled = db.Column(db.Boolean, default=False)
+    host = db.Column(db.String(255))
+    port = db.Column(db.Integer, default=587)
+    username = db.Column(db.String(255))
+    password_encrypted = db.Column(db.Text)
+    use_tls = db.Column(db.Boolean, default=True)
+    provider_hint = db.Column(db.String(40))  # 'postmark' | 'ses' | 'mailgun' | 'sendgrid' | 'custom'
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'enabled': bool(self.enabled),
+            'host': self.host or '',
+            'port': self.port or 587,
+            'username': self.username or '',
+            'use_tls': self.use_tls if self.use_tls is not None else True,
+            'provider_hint': self.provider_hint,
+            'password_set': bool(self.password_encrypted),
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+    def __repr__(self):
+        return f'<EmailRelayConfig {self.host or "(unset)"}>'

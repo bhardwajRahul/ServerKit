@@ -843,10 +843,13 @@ class AgentRegistry:
         if ip_address:
             anomaly_detection_service.track_auth_attempt(server.id, True, ip_address)
 
-        # TODO: Implement per-message session token validation. Currently, the session
-        # token is issued at auth time but not verified on each subsequent message.
-        # Full session-per-message validation requires protocol changes on both the
-        # agent (Go) and backend sides.
+        # NOTE (accepted limitation, not a bug): the session token is issued at
+        # auth time but not re-verified on every subsequent message. This is
+        # acceptable under the current model — a WS connection is authenticated
+        # by HMAC+nonce at connect and then rides an authenticated TLS channel,
+        # and the poll transport re-presents the token on each call. Per-message
+        # token validation would add defence in depth but needs protocol changes
+        # on both the agent (Go) and panel sides; tracked as a future hardening.
 
         return server
 

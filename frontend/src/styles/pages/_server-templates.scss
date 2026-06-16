@@ -2,27 +2,27 @@
 
 .server-templates-page {
     .compliance-bar {
-        margin: $spacing-lg 0;
-        padding: $spacing-lg;
-        background: $card-bg;
+        margin: $space-6 0;
+        padding: $space-6;
+        background: $bg-card;
         border-radius: $radius-lg;
-        border: 1px solid $border-color;
+        border: 1px solid $border-default;
 
         &__stats {
             display: flex;
-            gap: $spacing-xl;
-            margin-bottom: $spacing-md;
+            gap: $space-8;
+            margin-bottom: $space-4;
         }
 
         &__progress {
             height: 8px;
-            background: $border-color;
+            background: $border-default;
             border-radius: 4px;
             overflow: hidden;
 
             .progress-fill {
                 height: 100%;
-                background: $success-color;
+                background: $success;
                 border-radius: 4px;
                 transition: width 0.3s ease;
             }
@@ -40,32 +40,32 @@
 
         &__label {
             font-size: 0.8rem;
-            color: $text-muted;
+            color: $text-tertiary;
             text-transform: uppercase;
         }
 
-        &--success .stat-item__value { color: $success-color; }
-        &--danger .stat-item__value { color: $danger-color; }
-        &--muted .stat-item__value { color: $text-muted; }
+        &--success .stat-item__value { color: $success; }
+        &--danger .stat-item__value { color: $danger; }
+        &--muted .stat-item__value { color: $text-tertiary; }
     }
 
     .templates-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: $spacing-lg;
-        margin-top: $spacing-lg;
+        gap: $space-6;
+        margin-top: $space-6;
     }
 
     .template-card {
-        padding: $spacing-lg;
+        padding: $space-6;
         display: flex;
         flex-direction: column;
-        gap: $spacing-sm;
+        gap: $space-2;
         cursor: pointer;
         transition: border-color 0.15s;
 
         &:hover {
-            border-color: $primary-color;
+            border-color: $accent-primary;
         }
 
         &__header {
@@ -84,37 +84,37 @@
 
         &__meta {
             display: flex;
-            gap: $spacing-md;
+            gap: $space-4;
             font-size: 0.85rem;
-            color: $text-muted;
+            color: $text-tertiary;
         }
 
         &__spec {
             display: flex;
             flex-wrap: wrap;
-            gap: $spacing-xs;
+            gap: $space-1;
 
             span {
                 font-size: 0.8rem;
                 padding: 2px 8px;
-                background: $hover-bg;
+                background: $bg-hover;
                 border-radius: $radius-sm;
             }
         }
 
         &__actions {
             display: flex;
-            gap: $spacing-sm;
-            margin-top: $spacing-sm;
-            padding-top: $spacing-sm;
-            border-top: 1px solid $border-color;
+            gap: $space-2;
+            margin-top: $space-2;
+            padding-top: $space-2;
+            border-top: 1px solid $border-default;
         }
     }
 
     .server-select-list {
         display: flex;
         flex-direction: column;
-        gap: $spacing-xs;
+        gap: $space-1;
         max-height: 300px;
         overflow-y: auto;
     }
@@ -122,12 +122,12 @@
     .server-select-item {
         display: flex;
         align-items: center;
-        gap: $spacing-sm;
-        padding: $spacing-sm $spacing-md;
+        gap: $space-2;
+        padding: $space-2 $space-4;
         border-radius: $radius-md;
         cursor: pointer;
         transition: background-color 0.15s;
 
-        &:hover { background: $hover-bg; }
+        &:hover { background: $bg-hover; }
     }
 }

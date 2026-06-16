@@ -44,7 +44,7 @@ const GunicornTab = ({ appId }) => {
     return (
         <div>
             <div className="section-header">
-                <h3>Gunicorn Configuration</h3>
+                <h3 className="svc-eyebrow">Gunicorn Configuration</h3>
                 <Button onClick={handleSave} disabled={saving}>
                     {saving ? 'Saving...' : 'Save'}
                 </Button>

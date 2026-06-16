@@ -34,13 +34,15 @@
         gap: $space-2;
         margin-bottom: $space-3;
         color: $accent-primary;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-semibold;
-        letter-spacing: 0;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-medium;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
 
         svg {
-            width: 16px;
-            height: 16px;
+            width: 15px;
+            height: 15px;
         }
     }
 
@@ -104,6 +106,41 @@
         height: 40px;
     }
 
+    .cat-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-2;
+        margin-bottom: $space-5;
+    }
+
+    .cat-chip {
+        padding: $space-1 $space-3;
+        border: 1px solid $border-subtle;
+        border-radius: $radius-md;
+        background: $bg-elevated;
+        color: $text-tertiary;
+        font-family: inherit;
+        font-size: $font-size-sm + 0.5;
+        font-weight: $font-weight-medium;
+        text-transform: capitalize;
+        cursor: pointer;
+        transition:
+            color $transition-base,
+            background $transition-base,
+            border-color $transition-base;
+
+        &:hover {
+            border-color: $border-active;
+            color: $text-primary;
+        }
+
+        &--active {
+            border-color: var(--accent-dim);
+            background: var(--accent-bg);
+            color: var(--accent-bright);
+        }
+    }
+
     .marketplace-browse-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 292px;
@@ -141,10 +178,11 @@
 
     .marketplace-kicker {
         margin: 0 0 $space-1;
-        color: $text-tertiary;
+        color: var(--text-ghost);
+        font-family: var(--mono);
         font-size: $font-size-xs;
-        font-weight: $font-weight-semibold;
-        letter-spacing: 0;
+        font-weight: $font-weight-medium;
+        letter-spacing: 0.12em;
         text-transform: uppercase;
     }
 
@@ -169,7 +207,7 @@
         &:hover {
             transform: translateY(-2px);
             border-color: $border-active;
-            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+            box-shadow: var(--shadow-lg);
         }
     }
 
@@ -375,15 +413,16 @@
             height: 15px;
         }
 
-        &:hover,
-        &--active {
+        &:hover {
             border-color: $border-active;
             background: $bg-hover;
             color: $text-primary;
         }
 
         &--active {
-            border-color: $accent-primary;
+            border-color: var(--accent-dim);
+            background: var(--accent-bg);
+            color: var(--accent-bright);
         }
     }
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe } from 'lucide-react';
+import { Globe, Network } from 'lucide-react';
+import { PageTopbar } from '@/components/ds';
+import { DOMAIN_TABS } from '../components/domains/domainTabs';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,7 +11,6 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectTrigger,
@@ -172,21 +173,19 @@ const DNSZones = () => {
         }
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     return (
         <div className="page-container dns-zones-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>DNS Zones</h1>
-                    <p className="page-description">{zones.length} zone{zones.length !== 1 ? 's' : ''} configured</p>
-                </div>
-                <div className="page-header-actions">
-                    {user?.is_admin && (
-                        <Button onClick={() => setShowCreateZone(true)}>Add Zone</Button>
-                    )}
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Network size={18} />}
+                title="DNS Zones"
+                meta={`${zones.length} zone${zones.length !== 1 ? 's' : ''}`}
+                tabs={DOMAIN_TABS}
+                actions={user?.is_admin && (
+                    <Button size="sm" onClick={() => setShowCreateZone(true)}>Add Zone</Button>
+                )}
+            />
 
             <div className="dns-layout">
                 <div className="dns-zones-list">
@@ -220,7 +219,7 @@ const DNSZones = () => {
                                 )}
                             </div>
                         </div>
-                        <table className="table">
+                        <table className="sk-dtable dns-records-table">
                             <thead>
                                 <tr>
                                     <th>Type</th>
@@ -234,9 +233,9 @@ const DNSZones = () => {
                             <tbody>
                                 {records.map(rec => (
                                     <tr key={rec.id}>
-                                        <td><Badge variant="outline">{rec.record_type}</Badge></td>
+                                        <td><span className={`dns-rtype dns-rtype--${(rec.record_type || '').toLowerCase()}`}>{rec.record_type}</span></td>
                                         <td>{rec.name}</td>
-                                        <td className="text-mono">{rec.content}</td>
+                                        <td className="sk-cell-mono">{rec.content}</td>
                                         <td>{rec.ttl}</td>
                                         <td>{rec.priority || '-'}</td>
                                         <td>

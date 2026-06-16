@@ -1,4 +1,10 @@
-// Terminal & Logs Page Styles
+// ============================================
+// TERMINAL & LOGS — flush "infra console" look (REDESIGN_MAP §4 #12).
+// Tab bodies: Log Files + System Journal (lv-*), Processes (proc-*),
+// Services (svc-*). The lv-* viewer classes are also rendered by
+// components/log-viewer/*, and .lv-icon-btn is reused by Docker.jsx —
+// keep their shapes stable.
+// ============================================
 
 .terminal-page {
     .tabs {
@@ -17,46 +23,181 @@
 }
 
 // ============================================
-// LOG VIEWER (LOG FILES TAB)
+// LOG VIEWER (LOG FILES + JOURNAL TABS)
 // ============================================
 
-// Severity palette for log lines
-$lv-fatal: #ef4444;
-$lv-error: #f87171;
-$lv-warn:  #f59e0b;
-$lv-info:  #60a5fa;
-$lv-debug: #94a3b8;
+// Severity palette for log lines — categorical tints aligned to the redesign
+// palette (literal hex: these feed SCSS fade(), which can't take var()).
+$lv-fatal: #fb6f6f;
+$lv-error: #fc8d8d;
+$lv-warn:  #f5b945;
+$lv-info:  #49c7f0;
+$lv-debug: #9aa1af;
 
-// Log-kind dot palette (file list + viewer header)
-$lk-error:    #ef4444;
-$lk-access:   #10b981;
-$lk-nginx:    #6366f1;
-$lk-apache:   #d97706;
-$lk-database: #a855f7;
+// Log-kind dot palette (file rail + viewer header) — categorical tints.
+$lk-error:    #fb6f6f;
+$lk-access:   #3ddc97;
+$lk-nginx:    #6d7cff;
+$lk-apache:   #f59e0b;
+$lk-database: #b07bf5;
 $lk-php:      #777bb4;
-$lk-system:   #94a3b8;
+$lk-system:   #9aa1af;
 $lk-security: #ec4899;
 $lk-mail:     #14b8a6;
-$lk-default:  #71717a;
+$lk-default:  #646b7a;
 
-// Spinning animation reused by various refresh icons
+// Spinning animation reused by the various refresh icons
+.terminal-page .spinning,
 .lv-page .spinning { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 
+// ─── Interactive terminal tab (demo console: target rail + shell pane) ───
+.term-shell {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    height: calc(100vh - 220px);
+    min-height: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+
+    &__rail {
+        border-right: 1px solid var(--border-soft);
+        overflow-y: auto;
+        padding: $space-2 0;
+    }
+
+    &__grp {
+        padding: 8px 14px 6px;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-ghost);
+    }
+
+    &__hint {
+        padding: 8px 14px;
+        font-size: 12.5px;
+        color: var(--text-faint);
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        width: 100%;
+        padding: 8px 14px;
+        background: transparent;
+        border: none;
+        text-align: left;
+        font-size: 13px;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+
+        &:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+        &.is-active { background: var(--accent-bg); color: var(--accent-bright); }
+        &:disabled { opacity: 0.5; cursor: not-allowed; }
+    }
+
+    &__ico {
+        flex-shrink: 0;
+        color: var(--text-faint);
+    }
+
+    &__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-ghost);
+        flex-shrink: 0;
+
+        &.is-on { background: var(--green); box-shadow: 0 0 5px var(--green); }
+    }
+
+    &__name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__sub {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-ghost);
+    }
+
+    &__main {
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+
+        // RemoteTerminal brings drawer chrome — flatten it so the shell pane
+        // joins the rail flush (demo con-main: panes meet on 1px borders)
+        .remote-terminal-container {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+    }
+
+    &__empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: $space-3;
+        padding: $space-6;
+        color: var(--text-faint);
+        text-align: center;
+
+        p {
+            max-width: 400px;
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+    }
+
+    @media (max-width: $breakpoint-md) {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+
+        &__rail {
+            border-right: none;
+            border-bottom: 1px solid var(--border-soft);
+            max-height: 180px;
+        }
+    }
+}
+
+// ─── Console frame (panes joined by 1px borders) ──────
 .lv-page {
     display: flex;
     flex-direction: column;
-    gap: $space-3;
     height: calc(100vh - 220px);
     min-height: 540px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 
     &.fullscreen {
         position: fixed;
         inset: 0;
         z-index: $z-modal;
         height: 100vh;
-        background: $bg-body;
-        padding: $space-4;
+        min-height: 0;
+        border: none;
+        border-radius: 0;
     }
 }
 
@@ -66,11 +207,11 @@ $lk-default:  #71717a;
     justify-content: space-between;
     align-items: center;
     gap: $space-4;
-    padding: $space-2 $space-3;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    padding: 9px $space-4;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .lv-header-target {
@@ -81,23 +222,33 @@ $lk-default:  #71717a;
 }
 
 .lv-header-label {
-    font-size: 9px;
+    font-family: var(--mono);
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     font-weight: $font-weight-semibold;
-    color: $text-tertiary;
+    color: var(--text-ghost);
 }
 
 .lv-header-hint {
     display: inline-flex;
     align-items: center;
     gap: $space-1;
-    padding: 2px $space-2;
+    padding: 3px $space-2;
     background: $warning-bg;
     border: 1px solid $warning-border;
-    border-radius: $radius-sm;
+    border-radius: $radius-md;
     color: $warning;
-    font-size: $font-size-xs;
+    font-family: var(--mono);
+    font-size: 11px;
+
+    svg { flex-shrink: 0; }
+
+    &--info {
+        background: $info-bg;
+        border-color: $info-border;
+        color: $info;
+    }
 }
 
 .lv-header-stats {
@@ -105,49 +256,51 @@ $lk-default:  #71717a;
     align-items: center;
     gap: $space-3;
     flex-wrap: wrap;
-    color: $text-tertiary;
-    font-size: $font-size-xs;
+    color: var(--text-faint);
+    font-size: $font-size-sm;
 }
 
 .lv-stat {
     display: inline-flex;
     align-items: center;
     gap: $space-1;
-    color: $text-secondary;
+    color: var(--text-dim);
 
-    svg { color: $text-tertiary; }
+    svg { color: var(--text-faint); }
 }
 
 .lv-stat-label {
-    font-size: 9px;
+    font-family: var(--mono);
+    font-size: 9.5px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.08em;
     font-weight: $font-weight-semibold;
-    color: $text-tertiary;
+    color: var(--text-ghost);
 }
 
 .lv-stat-value {
-    font-family: $font-mono;
-    color: $text-secondary;
+    font-family: var(--mono);
+    font-size: $font-size-sm;
+    color: var(--text-dim);
 }
 
 .lv-stat-divider {
     width: 1px;
     height: 12px;
-    background: $border-default;
+    background: var(--border);
 }
 
-// ─── Inline error banner ─────────────────────────────
+// ─── Inline error banner (flush strip under the header) ─
 .lv-error {
     display: flex;
     align-items: center;
     gap: $space-2;
-    padding: $space-2 $space-3;
+    padding: $space-2 $space-4;
     background: $danger-bg;
-    border: 1px solid $danger-border;
-    border-radius: $radius-md;
+    border-bottom: 1px solid $danger-border;
     color: $danger;
     font-size: $font-size-sm;
+    flex-shrink: 0;
 
     > svg { flex-shrink: 0; }
     > span { flex: 1; }
@@ -166,25 +319,29 @@ $lk-default:  #71717a;
     }
 }
 
-// ─── Layout ──────────────────────────────────────────
+// ─── Layout: target rail | viewer ─────────────────────
 .lv-layout {
     display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: $space-3;
+    grid-template-columns: 280px 1fr;
+    gap: 0;
     flex: 1;
     min-height: 0;
 
     @media (max-width: $breakpoint-lg) {
         grid-template-columns: 1fr;
         grid-template-rows: 240px 1fr;
+
+        .lv-sidebar {
+            border-right: none;
+            border-bottom: 1px solid var(--border-soft);
+        }
     }
 }
 
-// ─── Sidebar (file list) ─────────────────────────────
+// ─── Rail (file / unit list) ──────────────────────────
 .lv-sidebar {
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: $bg-sidebar;
+    border-right: 1px solid var(--border-soft);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -196,8 +353,8 @@ $lk-default:  #71717a;
     align-items: center;
     gap: $space-2;
     padding: $space-2;
-    background: $bg-elevated;
-    border-bottom: 1px solid $border-default;
+    border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0;
 }
 
 .lv-search {
@@ -209,25 +366,25 @@ $lk-default:  #71717a;
     .lv-search-icon {
         position: absolute;
         left: $space-2;
-        color: $text-tertiary;
+        color: var(--text-faint);
         pointer-events: none;
     }
 
     input {
         width: 100%;
-        background: $bg-tertiary;
-        border: 1px solid transparent;
-        border-radius: $radius-sm;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
         padding: 6px 8px 6px 28px;
-        font-size: $font-size-sm;
+        font-size: $font-size-sm + 0.5;
         color: $text-primary;
         @include transition(all);
 
-        &::placeholder { color: $text-tertiary; }
+        &::placeholder { color: var(--text-faint); }
         &:focus {
             outline: none;
-            border-color: $accent-primary;
-            background: $bg-body;
+            border-color: var(--accent-dim);
+            background: var(--surface);
         }
     }
 }
@@ -239,7 +396,7 @@ $lk-default:  #71717a;
     scrollbar-width: thin;
 
     &::-webkit-scrollbar { width: 4px; }
-    &::-webkit-scrollbar-thumb { background: $border-default; border-radius: $radius-sm; }
+    &::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: $radius-sm; }
 }
 
 .lv-empty-hint {
@@ -249,14 +406,14 @@ $lk-default:  #71717a;
     justify-content: center;
     gap: $space-2;
     padding: $space-6 $space-3;
-    color: $text-tertiary;
+    color: var(--text-faint);
     text-align: center;
 
     svg { opacity: 0.6; }
     p { margin: 0; font-size: $font-size-sm; }
 }
 
-// ─── Group section ───────────────────────────────────
+// ─── Rail group (mono eyebrow header) ─────────────────
 .lv-group {
     display: flex;
     flex-direction: column;
@@ -267,33 +424,35 @@ $lk-default:  #71717a;
     display: flex;
     align-items: center;
     gap: $space-1;
-    padding: 4px 6px;
+    padding: 9px 6px 4px;
     background: transparent;
     border: none;
-    color: $text-secondary;
-    font-size: $font-size-xs;
+    color: var(--text-ghost);
+    font-family: var(--mono);
+    font-size: 10px;
     font-weight: $font-weight-semibold;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.1em;
     cursor: pointer;
     border-radius: $radius-sm;
-    @include transition(background);
+    @include transition(color);
 
-    &:hover { background: $bg-hover; color: $text-primary; }
+    &:hover { background: transparent; color: var(--text-faint); }
 
-    > svg:first-of-type { color: $text-tertiary; }
-    .lv-group-icon { color: $accent-primary; margin-right: 2px; }
+    > svg:first-of-type { color: inherit; }
+    .lv-group-icon { color: inherit; margin-right: 2px; }
     > span { flex: 1; text-align: left; }
 }
 
 .lv-group-count {
-    background: $bg-tertiary;
-    color: $text-tertiary;
-    border-radius: $radius-full;
-    padding: 1px 6px;
-    font-size: 9px;
+    font-family: var(--mono);
+    background: transparent;
+    color: var(--text-ghost);
+    padding: 0 2px;
+    font-size: 10px;
     font-weight: $font-weight-semibold;
     line-height: 14px;
+    letter-spacing: 0;
     text-transform: none;
 }
 
@@ -304,7 +463,7 @@ $lk-default:  #71717a;
     padding: 2px 0 $space-2;
 }
 
-// ─── File row ────────────────────────────────────────
+// ─── Target row (demo con-target look) ────────────────
 .lv-file {
     display: grid;
     grid-template-columns: 8px 1fr auto;
@@ -314,33 +473,29 @@ $lk-default:  #71717a;
         'dot name time';
     align-items: center;
     gap: 2px $space-2;
-    padding: 6px 8px;
+    padding: 6px 9px;
     background: transparent;
-    border: 1px solid transparent;
-    border-radius: $radius-md;
-    color: $text-primary;
-    font-size: $font-size-sm;
+    border: none;
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 13px;
     text-align: left;
     cursor: pointer;
-    @include transition(all);
+    @include transition(background);
 
-    &:hover {
-        background: $bg-hover;
-        border-color: $border-active;
-    }
+    &:hover { background: var(--surface-2); }
 
     &.active {
-        background: $accent-glow;
-        border-color: fade($accent-primary-raw, 40%);
+        background: var(--accent-bg);
 
-        .lv-file-name { color: $accent-primary; }
+        .lv-file-name { color: var(--text); font-weight: $font-weight-medium; }
     }
 }
 
 .lv-file-dot {
     grid-area: dot;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: $lk-default;
 
@@ -357,54 +512,56 @@ $lk-default:  #71717a;
 
 .lv-file-name {
     grid-area: name;
-    font-weight: $font-weight-medium;
     @include truncate();
 }
 
 .lv-file-size {
     grid-area: size;
-    font-family: $font-mono;
-    font-size: $font-size-xs;
-    color: $text-tertiary;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-ghost);
 }
 
 .lv-file-time {
     grid-area: time;
+    font-family: var(--mono);
     font-size: 10px;
-    color: $text-tertiary;
+    color: var(--text-ghost);
 }
 
-// ─── Viewer pane ─────────────────────────────────────
+// ─── Viewer pane ──────────────────────────────────────
 .lv-viewer {
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: var(--surface);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
 }
 
+// Session header (demo con-head): kind dot + mono path
 .lv-viewer-path {
     display: flex;
     align-items: center;
     gap: $space-2;
-    padding: $space-2 $space-3;
-    background: $bg-elevated;
-    border-bottom: 1px solid $border-default;
+    padding: $space-2 $space-4;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0;
 
     code {
-        font-family: $font-mono;
-        font-size: $font-size-xs;
-        color: $text-secondary;
+        font-family: var(--mono);
+        font-size: $font-size-sm;
+        color: var(--text-dim);
         background: transparent;
         padding: 0;
+        min-width: 0;
+        @include truncate();
     }
 }
 
 .lv-viewer-path-dot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: $lk-default;
     flex-shrink: 0;
@@ -420,16 +577,17 @@ $lk-default:  #71717a;
     &.kind-mail     { background: $lk-mail; }
 }
 
-// ─── Toolbar ─────────────────────────────────────────
+// ─── Toolbar ──────────────────────────────────────────
 .lv-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: $space-3;
     padding: $space-2 $space-3;
-    border-bottom: 1px solid $border-default;
-    background: $bg-card;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--surface);
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .lv-toolbar-left,
@@ -444,21 +602,21 @@ $lk-default:  #71717a;
     position: relative;
     display: flex;
     align-items: center;
-    background: $bg-tertiary;
-    border: 1px solid transparent;
-    border-radius: $radius-md;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     min-width: 220px;
     @include transition(all);
 
     &:focus-within {
-        border-color: $accent-primary;
-        background: $bg-body;
+        border-color: var(--accent-dim);
+        background: var(--surface);
     }
 
     .lv-search-field-icon {
         position: absolute;
         left: $space-3;
-        color: $text-tertiary;
+        color: var(--text-faint);
         pointer-events: none;
     }
 
@@ -466,11 +624,11 @@ $lk-default:  #71717a;
         background: transparent;
         border: none;
         padding: 6px $space-3 6px 30px;
-        font-size: $font-size-sm;
+        font-size: $font-size-sm + 0.5;
         color: $text-primary;
         width: 100%;
 
-        &::placeholder { color: $text-tertiary; }
+        &::placeholder { color: var(--text-faint); }
         &:focus { outline: none; }
     }
 
@@ -480,28 +638,28 @@ $lk-default:  #71717a;
         background: transparent;
         border: none;
         padding: 4px;
-        color: $text-tertiary;
+        color: var(--text-faint);
         cursor: pointer;
         border-radius: $radius-sm;
         display: flex;
         align-items: center;
 
-        &:hover { background: $bg-hover; color: $text-primary; }
+        &:hover { background: var(--surface-3); color: var(--text); }
     }
 }
 
 .lv-select {
-    background: $bg-tertiary;
-    border: 1px solid transparent;
-    border-radius: $radius-md;
-    padding: 6px $space-3;
-    font-size: $font-size-sm;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px $space-2;
+    font-size: $font-size-sm + 0.5;
     color: $text-primary;
     cursor: pointer;
     @include transition(all);
 
     &:focus, &:hover {
-        border-color: $border-hover;
+        border-color: var(--border-strong);
         outline: none;
     }
 }
@@ -510,8 +668,8 @@ $lk-default:  #71717a;
     background: transparent;
     border: none;
     padding: 6px;
-    border-radius: $radius-md;
-    color: $text-secondary;
+    border-radius: 8px;
+    color: var(--text-dim);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -519,14 +677,14 @@ $lk-default:  #71717a;
     @include transition(all);
 
     &:hover:not(:disabled) {
-        background: $bg-hover;
-        color: $text-primary;
+        background: var(--surface-2);
+        color: var(--text);
     }
     &:disabled { opacity: 0.4; cursor: not-allowed; }
 
     &.active {
-        background: $accent-glow;
-        color: $accent-primary;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
     }
 
     &.danger:hover:not(:disabled) {
@@ -539,22 +697,22 @@ $lk-default:  #71717a;
     display: inline-flex;
     align-items: center;
     gap: $space-2;
-    padding: 5px 10px;
-    background: $bg-tertiary;
-    border: 1px solid transparent;
-    border-radius: $radius-md;
-    color: $text-secondary;
-    font-size: $font-size-sm;
+    padding: 5px 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: $font-size-sm + 0.5;
     font-weight: $font-weight-medium;
     cursor: pointer;
     @include transition(all);
 
-    &:hover:not(:disabled) { background: $bg-hover; color: $text-primary; }
+    &:hover:not(:disabled) { color: var(--text); border-color: var(--border-strong); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
     &.active {
-        background: $accent-glow;
-        border-color: fade($accent-primary-raw, 30%);
-        color: $accent-primary;
+        background: var(--accent-bg);
+        border-color: var(--accent-dim);
+        color: var(--accent-bright);
     }
 }
 
@@ -562,10 +720,10 @@ $lk-default:  #71717a;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $text-tertiary;
+    background: var(--text-faint);
 
     &.on {
-        background: $success;
+        background: var(--green);
         box-shadow: 0 0 0 0 fade($success, 60%);
         animation: lv-pulse 1.6s ease-out infinite;
     }
@@ -577,20 +735,20 @@ $lk-default:  #71717a;
     100% { box-shadow: 0 0 0 0 fade($success, 0%); }
 }
 
-// ─── Content (lines) ─────────────────────────────────
+// ─── Content (the log well) ───────────────────────────
 .lv-content {
     flex: 1;
     overflow: auto;
-    background: $bg-body;
-    font-family: $font-mono;
+    background: var(--bg-code);
+    font-family: var(--mono);
     font-size: $font-size-sm;
-    line-height: 1.55;
+    line-height: 1.65;
     min-height: 0;
     scrollbar-width: thin;
 
     &::-webkit-scrollbar { width: 8px; height: 8px; }
-    &::-webkit-scrollbar-thumb { background: $border-default; border-radius: $radius-sm; }
-    &::-webkit-scrollbar-thumb:hover { background: $border-hover; }
+    &::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: $radius-sm; }
+    &::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
     &.wrap {
         .lv-line-text { white-space: pre-wrap; word-break: break-word; }
@@ -605,7 +763,7 @@ $lk-default:  #71717a;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: $text-tertiary;
+    color: var(--text-faint);
     text-align: center;
     padding: $space-8;
 
@@ -619,8 +777,8 @@ $lk-default:  #71717a;
 .lv-line {
     display: flex;
     align-items: flex-start;
-    padding: 0 $space-3;
-    color: $text-primary;
+    padding: 0 $space-4;
+    color: var(--text-code);
     @include transition(background);
 
     &:hover { background: fade($accent-primary-raw, 4%); }
@@ -638,13 +796,12 @@ $lk-default:  #71717a;
 
 .lv-line-no {
     flex-shrink: 0;
-    width: 56px;
+    width: 52px;
     padding-right: $space-3;
     text-align: right;
-    color: $text-tertiary;
-    opacity: 0.6;
+    color: var(--text-ghost);
     user-select: none;
-    font-size: $font-size-xs;
+    font-size: 11px;
     line-height: inherit;
 }
 
@@ -662,14 +819,17 @@ $lk-default:  #71717a;
 }
 
 // ============================================
-// PROCESSES TAB (proc-*)
+// PROCESSES TAB (proc-*) — flush console frame
 // ============================================
 .proc-page {
     display: flex;
     flex-direction: column;
-    gap: $space-3;
     height: calc(100vh - 220px);
     min-height: 540px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
 }
 
 .proc-toolbar {
@@ -677,17 +837,52 @@ $lk-default:  #71717a;
     justify-content: space-between;
     align-items: center;
     gap: $space-3;
-    padding: $space-2 $space-3;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    padding: $space-2 $space-4;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border-soft);
     flex-wrap: wrap;
+    flex-shrink: 0;
 }
 
 .proc-filter-chips {
     display: flex;
-    gap: $space-2;
+    gap: 7px;
     flex-wrap: wrap;
+}
+
+// Page-owned status chips (demo cat-chip look). Terminal must not lean on
+// other pages' .filter-chip styles.
+.proc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-faint);
+    font-size: $font-size-sm + 0.5;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    @include transition(all);
+
+    &:hover:not(:disabled) {
+        color: $text-primary;
+        border-color: var(--border-strong);
+    }
+    &:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    &.active {
+        background: var(--accent-bg);
+        border-color: var(--accent-dim);
+        color: var(--accent-bright);
+    }
+}
+
+.proc-chip-count {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    opacity: 0.75;
 }
 
 .proc-toolbar-right {
@@ -700,20 +895,24 @@ $lk-default:  #71717a;
 .proc-layout {
     display: grid;
     grid-template-columns: 220px 1fr;
-    gap: $space-3;
+    gap: 0;
     flex: 1;
     min-height: 0;
 
     @media (max-width: $breakpoint-lg) {
         grid-template-columns: 1fr;
         grid-template-rows: 200px 1fr;
+
+        .proc-sidebar {
+            border-right: none;
+            border-bottom: 1px solid var(--border-soft);
+        }
     }
 }
 
 .proc-sidebar {
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: $bg-sidebar;
+    border-right: 1px solid var(--border-soft);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -721,9 +920,7 @@ $lk-default:  #71717a;
 }
 
 .proc-main {
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: var(--surface);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -736,50 +933,60 @@ $lk-default:  #71717a;
     scrollbar-width: thin;
 
     &::-webkit-scrollbar { width: 8px; height: 8px; }
-    &::-webkit-scrollbar-thumb { background: $border-default; border-radius: $radius-sm; }
+    &::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: $radius-sm; }
 }
 
+// Dense table per the .sk-dtable spec (kept page-local for the sticky
+// sortable header + inline gauges).
 .proc-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: $font-size-sm;
+    font-size: 13px;
 
     thead th {
         position: sticky;
         top: 0;
-        background: $bg-elevated;
+        background: var(--surface);
         text-align: left;
-        padding: $space-2 $space-3;
-        font-size: $font-size-xs;
+        padding: 10px $space-4;
+        font-family: var(--mono);
+        font-size: 10.5px;
         font-weight: $font-weight-semibold;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: $text-tertiary;
+        letter-spacing: 0.06em;
+        color: var(--text-faint);
         cursor: pointer;
         @include transition(color);
         z-index: 1;
-        border-bottom: 1px solid $border-default;
+        border-bottom: 1px solid var(--border);
         user-select: none;
 
-        &:hover { color: $text-secondary; }
-        &.active { color: $accent-primary; }
+        &:hover { color: var(--text-dim); }
+        &.active { color: var(--accent-bright); }
     }
 
     tbody tr {
-        border-bottom: 1px solid $border-subtle;
+        border-bottom: 1px solid var(--border-soft);
         cursor: pointer;
         @include transition(background);
 
-        &:hover { background: $bg-hover; }
-        &.selected { background: $accent-glow; }
+        &:hover { background: var(--surface-2); }
+        &.selected {
+            background: var(--accent-bg-soft);
+            &:hover { background: var(--accent-bg); }
+        }
     }
 
     td {
-        padding: $space-2 $space-3;
+        padding: 9px $space-4;
         vertical-align: middle;
     }
 
-    .mono { font-family: $font-mono; font-size: $font-size-xs; }
+    .mono {
+        font-family: var(--mono);
+        font-size: $font-size-sm;
+        color: var(--text-dim);
+    }
 }
 
 .proc-name-cell {
@@ -796,9 +1003,9 @@ $lk-default:  #71717a;
 }
 
 .proc-cmd {
-    font-family: $font-mono;
-    font-size: 10px;
-    color: $text-tertiary;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-ghost);
     @include truncate();
 }
 
@@ -806,7 +1013,8 @@ $lk-default:  #71717a;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: $text-secondary;
+    color: var(--text-dim);
+    font-size: $font-size-sm + 0.5;
 }
 
 .proc-user-dot {
@@ -823,55 +1031,26 @@ $lk-default:  #71717a;
 }
 
 .proc-bar-value {
-    font-family: $font-mono;
-    font-size: $font-size-xs;
-    color: $text-secondary;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-dim);
 }
 
 .proc-bar {
-    height: 3px;
-    background: $border-default;
-    border-radius: $radius-sm;
+    height: 4px;
+    background: var(--surface-3);
+    border-radius: 3px;
     overflow: hidden;
 }
 
 .proc-bar-fill {
     height: 100%;
+    border-radius: 3px;
     @include transition(width);
 
-    &.cpu { background: $accent-primary; }
-    &.mem { background: #a855f7; }
+    &.cpu { background: var(--accent-bright); }
+    &.mem { background: var(--cyan); }
 }
-
-.proc-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: $radius-full;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    background: $bg-tertiary;
-    color: $text-secondary;
-}
-
-.proc-status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: $text-tertiary;
-}
-
-.proc-status.status-running   { background: fade($success, 12%); color: $success;
-    .proc-status-dot { background: $success; } }
-.proc-status.status-sleeping  { background: fade($info, 10%); color: $info;
-    .proc-status-dot { background: $info; } }
-.proc-status.status-stopped   { background: fade($danger, 10%); color: $danger;
-    .proc-status-dot { background: $danger; } }
-.proc-status.status-zombie    { background: fade($warning, 12%); color: $warning;
-    .proc-status-dot { background: $warning; } }
-.proc-status.status-disk-sleep { background: fade($warning, 10%); color: $warning;
-    .proc-status-dot { background: $warning; } }
 
 .proc-actions {
     display: flex;
@@ -880,11 +1059,11 @@ $lk-default:  #71717a;
 }
 
 .proc-command {
-    font-family: $font-mono;
-    font-size: $font-size-xs;
-    color: $text-secondary;
-    background: $bg-body;
-    border: 1px solid $border-default;
+    font-family: var(--mono);
+    font-size: $font-size-sm;
+    color: var(--text-code);
+    background: var(--bg-code);
+    border: 1px solid var(--border-soft);
     padding: $space-3;
     border-radius: $radius-md;
     margin: 0;
@@ -900,6 +1079,12 @@ $lk-default:  #71717a;
     display: flex;
     flex-direction: column;
     gap: $space-3;
+
+    // Standalone header strip (not inside a console frame on this tab)
+    > .lv-header {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+    }
 }
 
 .svc-toolbar {
@@ -908,9 +1093,9 @@ $lk-default:  #71717a;
     align-items: center;
     gap: $space-3;
     padding: $space-2 $space-3;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     flex-wrap: wrap;
 }
 
@@ -922,9 +1107,9 @@ $lk-default:  #71717a;
 
 .svc-card {
     position: relative;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
     padding: $space-4;
     display: flex;
     flex-direction: column;
@@ -938,23 +1123,23 @@ $lk-default:  #71717a;
         position: absolute;
         left: 0; top: 0; bottom: 0;
         width: 3px;
-        background: $border-default;
+        background: var(--border);
         @include transition(background);
     }
 
-    &.status-running::before { background: $success; }
-    &.status-failed::before  { background: $danger; }
-    &.status-stopped::before { background: $text-tertiary; }
-    &.status-other::before   { background: $warning; }
+    &.status-running::before { background: var(--green); }
+    &.status-failed::before  { background: var(--red); }
+    &.status-stopped::before { background: var(--text-ghost); }
+    &.status-other::before   { background: var(--amber); }
 
     &:hover {
-        border-color: $border-hover;
+        border-color: var(--border-strong);
         transform: translateY(-1px);
-        box-shadow: $shadow-md;
+        box-shadow: var(--shadow-md);
     }
 
     &.status-failed {
-        background: linear-gradient(135deg, fade($danger, 4%), $bg-card 60%);
+        background: linear-gradient(135deg, fade($danger, 5%), var(--surface) 60%);
     }
 }
 
@@ -973,11 +1158,11 @@ $lk-default:  #71717a;
 
     h4 {
         margin: 0;
-        font-size: $font-size-sm;
+        font-size: 13px;
         font-weight: $font-weight-semibold;
         color: $text-primary;
         @include truncate();
-        font-family: $font-mono;
+        font-family: var(--mono);
     }
 }
 
@@ -986,37 +1171,19 @@ $lk-default:  #71717a;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: $text-tertiary;
+    background: var(--text-ghost);
     flex-shrink: 0;
 
-    &.status-running { background: $success; box-shadow: 0 0 0 3px fade($success, 18%); }
-    &.status-failed  { background: $danger;  box-shadow: 0 0 0 3px fade($danger, 18%); }
-    &.status-stopped { background: $text-tertiary; }
-    &.status-other   { background: $warning; }
-}
-
-.svc-status-pill {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 8px;
-    border-radius: $radius-full;
-    font-size: 10px;
-    font-weight: $font-weight-semibold;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    background: $bg-tertiary;
-    color: $text-tertiary;
-
-    &.status-running { background: fade($success, 14%); color: $success; }
-    &.status-failed  { background: fade($danger, 14%); color: $danger; }
-    &.status-stopped { background: $bg-tertiary; color: $text-tertiary; }
-    &.status-other   { background: fade($warning, 12%); color: $warning; }
+    &.status-running { background: var(--green); box-shadow: 0 0 0 3px fade($success, 18%); }
+    &.status-failed  { background: var(--red);   box-shadow: 0 0 0 3px fade($danger, 18%); }
+    &.status-stopped { background: var(--text-ghost); }
+    &.status-other   { background: var(--amber); }
 }
 
 .svc-card-desc {
     margin: 0;
-    font-size: $font-size-xs;
-    color: $text-secondary;
+    font-size: $font-size-sm;
+    color: var(--text-dim);
     line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -1027,18 +1194,18 @@ $lk-default:  #71717a;
 .svc-card-meta {
     display: flex;
     gap: $space-4;
-    font-size: $font-size-xs;
-    color: $text-tertiary;
-    font-family: $font-mono;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: var(--mono);
 }
 
 .svc-meta-label {
-    color: $text-tertiary;
+    color: var(--text-ghost);
     font-weight: $font-weight-semibold;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     margin-right: 2px;
-    font-size: 9px;
+    font-size: 9.5px;
 }
 
 .svc-card-actions {
@@ -1046,7 +1213,7 @@ $lk-default:  #71717a;
     gap: $space-1;
     margin-top: auto;
     padding-top: $space-3;
-    border-top: 1px solid $border-subtle;
+    border-top: 1px solid var(--border-soft);
     flex-wrap: wrap;
 }
 
@@ -1055,18 +1222,18 @@ $lk-default:  #71717a;
     align-items: center;
     gap: 4px;
     padding: 5px 10px;
-    background: $bg-elevated;
-    border: 1px solid $border-default;
-    border-radius: $radius-sm;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
     color: $text-primary;
-    font-size: $font-size-xs;
+    font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     cursor: pointer;
     @include transition(all);
 
     &:hover:not(:disabled) {
-        background: $bg-hover;
-        border-color: $border-hover;
+        background: var(--surface-3);
+        border-color: var(--border-strong);
     }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -1085,13 +1252,15 @@ $lk-default:  #71717a;
     &.ghost {
         background: transparent;
         border-color: transparent;
-        color: $text-secondary;
-        &:hover:not(:disabled) { background: $bg-hover; color: $text-primary; }
+        color: var(--text-dim);
+        &:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
     }
 }
 
 // ============================================
-// JOURNAL TAB
+// LEGACY (pre-redesign) — still consumed by components/JournalControls.jsx,
+// components/ProcessTable.jsx, components/ServiceCard.jsx and StyleGuide.jsx.
+// Not rendered by pages/Terminal.jsx anymore; keep until those move.
 // ============================================
 
 .journal-container {
@@ -1205,10 +1374,6 @@ $lk-default:  #71717a;
     }
 }
 
-// ============================================
-// PROCESSES TAB
-// ============================================
-
 .processes-container {
     display: flex;
     flex-direction: column;
@@ -1291,7 +1456,7 @@ $lk-default:  #71717a;
         }
 
         &.selected {
-            background: rgba(59, 130, 246, 0.1);
+            background: fade($info, 10%);
         }
     }
 
@@ -1433,10 +1598,6 @@ $lk-default:  #71717a;
         }
     }
 }
-
-// ============================================
-// SERVICES TAB
-// ============================================
 
 .services-container {
     display: flex;

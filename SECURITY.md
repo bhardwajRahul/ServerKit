@@ -34,9 +34,13 @@ trust boundaries:
 
 - **`agent.key` is a host-equivalent secret.** Agent API credentials are stored
   AES-256-GCM encrypted under a key derived from host-stable identifiers
-  (hostname + machine ID on Linux, hostname + computer name on Windows). Anyone
-  who can read this file on the host — or recreate the host-derived key — can
-  recover the credentials. Protect it like a root/SYSTEM secret.
+  (hostname + machine ID on Linux, hostname + computer name on Windows). Because
+  that key is derived only from values available on the host itself, the
+  encryption is at-rest tamper-resistance / off-host-exfil protection (e.g. a
+  leaked backup) — **not** confidentiality against a local root/SYSTEM user, who
+  can re-derive the key. Anyone who can read this file on the host can recover
+  the credentials. The `0600` file permissions are the real access control;
+  protect it like a root/SYSTEM secret.
 - **Remote command execution is gated.** Arbitrary command execution
   (`system:exec`) and interactive PTY sessions are controlled by the agent's
   `Features.Exec` flag, which is **off by default**. Enable it only on servers

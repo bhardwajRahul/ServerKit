@@ -43,7 +43,9 @@ import SSOCallback from './pages/SSOCallback';
 import SourceConnectionCallback from './pages/SourceConnectionCallback';
 import DatabaseMigration from './pages/DatabaseMigration';
 import ServerTemplates from './pages/ServerTemplates';
+import RemoteAccess from './pages/RemoteAccess';
 import Workspaces from './pages/Workspaces';
+import WorkspaceDetail from './pages/WorkspaceDetail';
 import DNSZones from './pages/DNSZones';
 import StatusPages from './pages/StatusPages';
 import PublicStatusPage from './pages/PublicStatusPage';
@@ -257,6 +259,7 @@ function AppRoutes() {
                 <Route path="deployments/:jobId" element={<Deployments />} />
                 <Route path="workflow" element={<WorkflowBuilder />} />
                 <Route path="domains" element={<Domains />} />
+                <Route path="remote-access" element={<RemoteAccess />} />
                 <Route path="databases" element={<Databases />} />
                 <Route path="databases/:tab" element={<Databases />} />
                 <Route path="ssl" element={<SSLCertificates />} />
@@ -270,6 +273,7 @@ function AppRoutes() {
                 <Route path="agent-plugins" element={<Navigate to="/marketplace" replace />} />
                 <Route path="server-templates" element={<ServerTemplates />} />
                 <Route path="workspaces" element={<Workspaces />} />
+                <Route path="workspaces/:id" element={<WorkspaceDetail />} />
                 <Route path="dns" element={<DNSZones />} />
                 <Route path="status-pages" element={<StatusPages />} />
                 <Route path="cloud" element={<CloudProvision />} />

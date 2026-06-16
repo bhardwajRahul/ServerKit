@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
-import { FolderUp, UserPlus, Network } from 'lucide-react';
+import {
+    FolderUp, UserPlus, Network, Activity, Server, Users as UsersIcon,
+    Cable, KeyRound, Ban, Check, Trash2, RefreshCw, X,
+} from 'lucide-react';
 import useTabParam from '../hooks/useTabParam';
 import { api } from '../services/api';
+import { PageTopbar, MetricCard, Pill } from '@/components/ds';
+import { FILE_TABS } from '../components/files/fileTabs';
 import { useToast } from '../contexts/ToastContext';
 import Spinner from '../components/Spinner';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { StatStrip, Stat } from '../components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -238,15 +242,19 @@ function FTPServer() {
     const isInstalled = status?.any_installed;
     const isRunning = status?.any_running;
     const activeServer = status?.active_server;
+    const disabledUsers = users.filter((user) => !user.is_active).length;
+    const ftpPort = config?.settings
+        ? (config.settings.listen_port || config.settings.port || 21)
+        : null;
 
     return (
         <div className="page-container ftp-server">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>FTP Server</h1>
-                    <p className="page-description">Manage FTP users and file transfer settings</p>
-                </div>
-                <div className="page-header-actions">
+            <PageTopbar
+                icon={<Network size={18} />}
+                title="FTP Server"
+                tabs={FILE_TABS}
+                actions={(
+                    <>
                     {!isInstalled ? (
                         <Button onClick={() => setShowInstallModal(true)}>
                             Install FTP Server
@@ -287,8 +295,9 @@ function FTPServer() {
                             )}
                         </>
                     )}
-                </div>
-            </div>
+                    </>
+                )}
+            />
 
             {!isInstalled ? (
                 <EmptyState
@@ -300,16 +309,40 @@ function FTPServer() {
                 />
             ) : (
                 <>
-                    <StatStrip ariaLabel="FTP server status">
-                        <Stat
-                            label="Server Status"
+                    <div className="ftp-kpis" role="group" aria-label="FTP server status">
+                        <MetricCard
+                            tone={isRunning ? 'green' : 'amber'}
+                            icon={<Activity size={16} />}
                             value={isRunning ? 'Running' : 'Stopped'}
-                            state={isRunning ? 'success' : 'warning'}
+                            label="Server status"
                         />
-                        <Stat label="Active Server" value={activeServer || 'None'} />
-                        <Stat label="FTP Users" value={users.length} />
-                        <Stat label="Active Connections" value={connections.length} />
-                    </StatStrip>
+                        <MetricCard
+                            tone="accent"
+                            icon={<Server size={16} />}
+                            value={activeServer || 'None'}
+                            label="Active server"
+                        >
+                            {ftpPort != null && (
+                                <div className="sk-kpi__sub"><span>port {ftpPort}</span></div>
+                            )}
+                        </MetricCard>
+                        <MetricCard
+                            tone="cyan"
+                            icon={<UsersIcon size={16} />}
+                            value={users.length}
+                            label="FTP users"
+                        >
+                            {disabledUsers > 0 && (
+                                <div className="sk-kpi__sub"><span>{disabledUsers} disabled</span></div>
+                            )}
+                        </MetricCard>
+                        <MetricCard
+                            tone="violet"
+                            icon={<Cable size={16} />}
+                            value={connections.length}
+                            label="Active connections"
+                        />
+                    </div>
 
                     <Tabs value={activeTab} onValueChange={(val) => {
                         setActiveTab(val);
@@ -405,7 +438,7 @@ function FTPServer() {
                                     />
                                 ) : (
                                     <div className="users-table">
-                                        <table>
+                                        <table className="sk-dtable">
                                             <thead>
                                                 <tr>
                                                     <th>Username</th>
@@ -424,17 +457,17 @@ function FTPServer() {
                                                                 <Badge variant="info">FTP</Badge>
                                                             )}
                                                         </td>
-                                                        <td>
+                                                        <td className="sk-cell-mono">
                                                             <code>{user.home}</code>
                                                             {!user.home_exists && (
                                                                 <Badge variant="warning">Missing</Badge>
                                                             )}
                                                         </td>
-                                                        <td>{user.home_size_human}</td>
+                                                        <td className="sk-cell-mono">{user.home_size_human}</td>
                                                         <td>
-                                                            <span className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}>
+                                                            <Pill kind={user.is_active ? 'green' : 'gray'}>
                                                                 {user.is_active ? 'Active' : 'Disabled'}
-                                                            </span>
+                                                            </Pill>
                                                         </td>
                                                         <td className="actions">
                                                             <Button
@@ -443,7 +476,7 @@ function FTPServer() {
                                                                 onClick={() => openPasswordModal(user.username)}
                                                                 title="Change Password"
                                                             >
-                                                                <span className="icon">key</span>
+                                                                <KeyRound size={14} />
                                                             </Button>
                                                             <Button
                                                                 variant={user.is_active ? 'secondary' : 'outline'}
@@ -451,7 +484,7 @@ function FTPServer() {
                                                                 onClick={() => handleToggleUser(user.username, user.is_active)}
                                                                 title={user.is_active ? 'Disable' : 'Enable'}
                                                             >
-                                                                <span className="icon">{user.is_active ? 'block' : 'check'}</span>
+                                                                {user.is_active ? <Ban size={14} /> : <Check size={14} />}
                                                             </Button>
                                                             <Button
                                                                 variant="destructive"
@@ -459,7 +492,7 @@ function FTPServer() {
                                                                 onClick={() => handleDeleteUser(user.username)}
                                                                 title="Delete"
                                                             >
-                                                                <span className="icon">delete</span>
+                                                                <Trash2 size={14} />
                                                             </Button>
                                                         </td>
                                                     </tr>
@@ -476,7 +509,7 @@ function FTPServer() {
                                 <div className="section-header">
                                     <h3>Active Connections</h3>
                                     <Button variant="outline" onClick={loadConnections}>
-                                        <span className="icon">refresh</span>
+                                        <RefreshCw size={14} />
                                         Refresh
                                     </Button>
                                 </div>
@@ -484,7 +517,7 @@ function FTPServer() {
                                     <EmptyState icon={Network} title="No active connections" />
                                 ) : (
                                     <div className="connections-table">
-                                        <table>
+                                        <table className="sk-dtable">
                                             <thead>
                                                 <tr>
                                                     <th>Local Address</th>
@@ -496,19 +529,19 @@ function FTPServer() {
                                             <tbody>
                                                 {connections.map((conn, index) => (
                                                     <tr key={index}>
-                                                        <td><code>{conn.local}</code></td>
-                                                        <td><code>{conn.remote}</code></td>
+                                                        <td className="sk-cell-mono"><code>{conn.local}</code></td>
+                                                        <td className="sk-cell-mono"><code>{conn.remote}</code></td>
                                                         <td>
-                                                            <span className="status-badge active">{conn.state}</span>
+                                                            <Pill kind="green">{conn.state}</Pill>
                                                         </td>
-                                                        <td>
+                                                        <td className="actions">
                                                             <Button
                                                                 variant="destructive"
                                                                 size="sm"
                                                                 onClick={() => handleDisconnect(conn.pid)}
                                                                 title="Disconnect"
                                                             >
-                                                                <span className="icon">close</span>
+                                                                <X size={14} />
                                                             </Button>
                                                         </td>
                                                     </tr>
@@ -525,7 +558,7 @@ function FTPServer() {
                                 <div className="section-header">
                                     <h3>Server Logs</h3>
                                     <Button variant="outline" onClick={loadLogs}>
-                                        <span className="icon">refresh</span>
+                                        <RefreshCw size={14} />
                                         Refresh
                                     </Button>
                                 </div>
@@ -545,7 +578,7 @@ function FTPServer() {
                         <div className="modal-header">
                             <h2>Install FTP Server</h2>
                             <button className="btn btn-icon" onClick={() => setShowInstallModal(false)}>
-                                <span className="icon">close</span>
+                                <X size={16} />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -563,7 +596,7 @@ function FTPServer() {
                                 {selectedService === 'vsftpd' ? (
                                     <p>
                                         <strong>vsftpd</strong> is a secure, fast, and stable FTP server.
-                                        It's the default choice for most Ubuntu/Debian systems.
+                                        It&apos;s the default choice for most Ubuntu/Debian systems.
                                     </p>
                                 ) : (
                                     <p>
@@ -595,7 +628,7 @@ function FTPServer() {
                         <div className="modal-header">
                             <h2>Create FTP User</h2>
                             <button className="btn btn-icon" onClick={() => setShowUserModal(false)}>
-                                <span className="icon">close</span>
+                                <X size={16} />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -649,7 +682,7 @@ function FTPServer() {
                         <div className="modal-header">
                             <h2>Change Password</h2>
                             <button className="btn btn-icon" onClick={() => setShowPasswordModal(false)}>
-                                <span className="icon">close</span>
+                                <X size={16} />
                             </button>
                         </div>
                         <div className="modal-body">

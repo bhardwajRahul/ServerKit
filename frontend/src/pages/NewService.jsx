@@ -4,12 +4,11 @@ import {
     ArrowRight,
     CheckCircle2,
     ChevronDown,
-    Github,
     GitBranch,
-    KeyRound,
     Link2,
     Lock,
     Package,
+    Plus,
     RefreshCw,
     Rocket,
     Search,
@@ -18,8 +17,11 @@ import {
     ShieldCheck,
     Zap,
 } from 'lucide-react';
+import { SiGithub } from 'react-icons/si';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import { PageTopbar } from '@/components/ds';
+import { SERVICE_TABS } from '../components/services/serviceTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -336,67 +338,53 @@ const NewService = () => {
 
     return (
         <div className="page-container new-service-page">
-            <div className="new-service-page__breadcrumb">
-                <Link to="/services">Services</Link>
-                <span>/</span>
-                <span>New</span>
-            </div>
+            <PageTopbar
+                icon={<Plus size={18} />}
+                title="New Service"
+                tabs={SERVICE_TABS}
+                actions={(
+                    <Button type="button" variant="outline" size="sm" asChild>
+                        <Link to="/settings/connections">
+                            <Link2 size={16} />
+                            Connections
+                        </Link>
+                    </Button>
+                )}
+            />
 
-            <div className="new-service-page__header">
-                <div>
-                    <h1>New Service</h1>
-                    <p>Connect GitHub, pick a repository, and let ServerKit prepare the deployable service.</p>
-                </div>
-                <Button type="button" variant="outline" asChild>
-                    <Link to="/settings/connections">
-                        <Link2 size={16} />
-                        Connections
-                    </Link>
-                </Button>
-            </div>
-
-            <div className="new-service-page__mode-strip" aria-label="Service source options">
+            <div className="new-service-page__method-grid" aria-label="Service source options">
                 <button
-                    className={`new-service-page__mode-card ${sourceMode === 'github' ? 'new-service-page__mode-card--active' : ''}`}
+                    className={`new-service-page__method-card ${sourceMode === 'github' ? 'new-service-page__method-card--on' : ''}`}
                     type="button"
                     onClick={() => handleSourceModeChange('github')}
                 >
-                    <span className="new-service-page__mode-icon">
-                        <Github size={18} />
+                    <span className="new-service-page__method-icon">
+                        <SiGithub size={21} />
                     </span>
-                    <span>
-                        <strong>GitHub</strong>
-                        <small>Connect with OAuth and choose a repository</small>
-                    </span>
-                    {sourceMode === 'github' ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
+                    <span className="new-service-page__method-title">GitHub</span>
+                    <span className="new-service-page__method-sub">Connect with OAuth and choose a repository</span>
                 </button>
                 <button
-                    className={`new-service-page__mode-card ${sourceMode === 'manual' ? 'new-service-page__mode-card--active' : ''}`}
+                    className={`new-service-page__method-card ${sourceMode === 'manual' ? 'new-service-page__method-card--on' : ''}`}
                     type="button"
                     onClick={() => handleSourceModeChange('manual')}
                 >
-                    <span className="new-service-page__mode-icon">
-                        <KeyRound size={18} />
+                    <span className="new-service-page__method-icon">
+                        <GitBranch size={21} />
                     </span>
-                    <span>
-                        <strong>Other Git Remote</strong>
-                        <small>GitLab, Bitbucket, Gitea, or SSH</small>
-                    </span>
-                    {sourceMode === 'manual' ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
+                    <span className="new-service-page__method-title">Other Git Remote</span>
+                    <span className="new-service-page__method-sub">GitLab, Bitbucket, Gitea, or SSH</span>
                 </button>
                 <button
-                    className={`new-service-page__mode-card ${sourceMode === 'template' ? 'new-service-page__mode-card--active' : ''}`}
+                    className={`new-service-page__method-card ${sourceMode === 'template' ? 'new-service-page__method-card--on' : ''}`}
                     type="button"
                     onClick={() => handleSourceModeChange('template')}
                 >
-                    <span className="new-service-page__mode-icon">
-                        <Package size={18} />
+                    <span className="new-service-page__method-icon">
+                        <Package size={21} />
                     </span>
-                    <span>
-                        <strong>Deploy Template</strong>
-                        <small>Fast import from manifest-ready repos</small>
-                    </span>
-                    {sourceMode === 'template' ? <CheckCircle2 size={18} /> : <ArrowRight size={18} />}
+                    <span className="new-service-page__method-title">Deploy Template</span>
+                    <span className="new-service-page__method-sub">Fast import from manifest-ready repos</span>
                 </button>
             </div>
 
@@ -459,7 +447,7 @@ const NewService = () => {
                             ) : (
                                 <div className="new-service-page__connect-empty">
                                     <span className="new-service-page__connect-icon">
-                                        <Github size={20} />
+                                        <SiGithub size={20} />
                                     </span>
                                     <div>
                                         <h2>{githubConfigured ? 'Connect GitHub' : 'GitHub connection is not configured'}</h2>
@@ -471,7 +459,7 @@ const NewService = () => {
                                     </div>
                                     <div className="new-service-page__connect-actions">
                                         <Button type="button" onClick={handleConnectGithub} disabled={!githubConfigured}>
-                                            <Github size={16} />
+                                            <SiGithub size={16} />
                                             Connect GitHub
                                         </Button>
                                         <Button type="button" variant="outline" asChild>
@@ -584,7 +572,7 @@ const NewService = () => {
 
                     <div className="new-service-page__flow">
                         <div>
-                            <Github size={16} />
+                            <SiGithub size={16} />
                             <span>Connect</span>
                         </div>
                         <ArrowRight size={14} />

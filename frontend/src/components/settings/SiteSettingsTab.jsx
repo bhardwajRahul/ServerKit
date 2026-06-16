@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,12 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
     const [saving, setSaving] = useState(false);
     const [savingPort, setSavingPort] = useState(false);
     const [message, setMessage] = useState(null);
+    const [https, setHttps] = useState({ base_domain: '', server_ip: '', https_enabled: false, providers: [] });
+    const [baseDomain, setBaseDomain] = useState('');
+    const [serverIp, setServerIp] = useState('');
+    const [providerId, setProviderId] = useState('');
+    const [savingDomain, setSavingDomain] = useState(false);
+    const [settingUpHttps, setSettingUpHttps] = useState(false);
 
     useEffect(() => {
         loadSettings();
@@ -28,10 +34,59 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                 dev_mode: data.dev_mode || false
             });
             setBasePort(String(data.managed_app_base_port ?? 0));
+            try {
+                const h = await api.getSitesHttpsStatus();
+                setHttps(h);
+                setBaseDomain(h.base_domain || '');
+                setServerIp(h.server_ip || '');
+                if (h.providers?.length) setProviderId(String(h.providers[0].id));
+            } catch { /* non-admin or endpoint unavailable */ }
         } catch (err) {
             console.error('Failed to load settings:', err);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleSaveDomain() {
+        setSavingDomain(true);
+        setMessage(null);
+        try {
+            await api.updateSystemSetting('sites_base_domain', baseDomain.trim());
+            await api.updateSystemSetting('server_public_ip', serverIp.trim());
+            setMessage({ type: 'success', text: 'Sites domain settings saved' });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Failed to save domain settings' });
+        } finally {
+            setSavingDomain(false);
+        }
+    }
+
+    async function handleSetupHttps() {
+        if (!providerId) {
+            setMessage({ type: 'error', text: 'Connect and select a DNS provider first' });
+            return;
+        }
+        setSettingUpHttps(true);
+        setMessage(null);
+        try {
+            // Persist the typed domain/IP first so setup reads current values.
+            await api.updateSystemSetting('sites_base_domain', baseDomain.trim());
+            await api.updateSystemSetting('server_public_ip', serverIp.trim());
+            const res = await api.setupSitesHttps(Number(providerId));
+            if (res.success) {
+                setHttps((h) => ({ ...h, https_enabled: true }));
+                setMessage({
+                    type: 'success',
+                    text: `Wildcard HTTPS set up for *.${res.base_domain}` + (res.warning ? ` — ${res.warning}` : ''),
+                });
+            } else {
+                setMessage({ type: 'error', text: res.error || 'HTTPS setup failed' });
+            }
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'HTTPS setup failed' });
+        } finally {
+            setSettingUpHttps(false);
         }
     }
 
@@ -141,6 +196,93 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                         New apps get the first free port at or above this number. Set to <strong>0</strong> to
                         use each template&apos;s own default (WordPress starts at 8300). Ports already in use are
                         always skipped, so collisions can&apos;t happen.
+                    </span>
+                </div>
+            </div>
+
+            <div className="settings-card">
+                <h3>Managed Sites Domain &amp; HTTPS</h3>
+                <p>Publish managed sites at <code>&lt;name&gt;.&lt;base-domain&gt;</code>, auto-create their DNS, and serve them over HTTPS with a wildcard certificate.</p>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label htmlFor="sites-base-domain">Base domain</Label>
+                        </div>
+                        <div className="settings-control">
+                            <Input
+                                id="sites-base-domain"
+                                type="text"
+                                placeholder="apps.example.com"
+                                value={baseDomain}
+                                onChange={(e) => setBaseDomain(e.target.value)}
+                                className="w-56"
+                            />
+                        </div>
+                    </div>
+                    <span className="form-help">
+                        Each site is published at <code>&lt;name&gt;.{baseDomain || 'base-domain'}</code>. Point a
+                        wildcard DNS record <code>*.{baseDomain || 'base-domain'}</code> at this server.
+                    </span>
+                </div>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label htmlFor="sites-server-ip">Server public IP</Label>
+                        </div>
+                        <div className="settings-control">
+                            <Input
+                                id="sites-server-ip"
+                                type="text"
+                                placeholder="203.0.113.10"
+                                value={serverIp}
+                                onChange={(e) => setServerIp(e.target.value)}
+                                className="w-56"
+                            />
+                            <Button onClick={handleSaveDomain} disabled={savingDomain}>
+                                {savingDomain ? 'Saving…' : 'Save'}
+                            </Button>
+                        </div>
+                    </div>
+                    <span className="form-help">Used to auto-create DNS A records for managed domains.</span>
+                </div>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label>Wildcard HTTPS</Label>
+                            <span className="form-help">
+                                {https.https_enabled
+                                    ? 'Enabled — managed subdomains serve HTTPS.'
+                                    : 'Not set up yet.'}
+                            </span>
+                        </div>
+                        <div className="settings-control">
+                            {https.providers?.length ? (
+                                <select
+                                    className="settings-select"
+                                    value={providerId}
+                                    onChange={(e) => setProviderId(e.target.value)}
+                                >
+                                    {https.providers.map((p) => (
+                                        <option key={p.id} value={p.id}>{p.name} ({p.provider})</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <span className="form-help">Connect a DNS provider under Email → DNS Providers first.</span>
+                            )}
+                            <Button
+                                onClick={handleSetupHttps}
+                                disabled={settingUpHttps || !https.providers?.length || !baseDomain.trim()}
+                            >
+                                {settingUpHttps ? 'Setting up…' : 'Set up wildcard HTTPS'}
+                            </Button>
+                        </div>
+                    </div>
+                    <span className="form-help">
+                        Creates <code>*.{baseDomain || 'base-domain'}</code> DNS and issues a wildcard
+                        Let&apos;s Encrypt certificate via the selected provider (DNS-01).
                     </span>
                 </div>
             </div>

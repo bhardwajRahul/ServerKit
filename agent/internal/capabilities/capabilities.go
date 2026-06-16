@@ -64,6 +64,15 @@ func Probe(ctx context.Context, log *logger.Logger, dockerAvailable bool, fileAc
 	// happens in the cloudflared:status action).
 	caps["cloudflared"] = probeCloudflared()
 
+	// WireGuard — the agent can manage a tunnel interface: kernel WG on
+	// Linux (`wg` + `ip`), userspace wireguard-go on Windows/macOS. The
+	// panel gates the Remote Access / tunnel flow on this.
+	caps["wireguard"] = probeWireguard()
+
+	// Firewall — a supported host firewall is present so the broker can
+	// open the edge's WireGuard UDP port (#10). Linux-only.
+	caps["firewall"] = probeFirewall()
+
 	// Language runtimes — best-effort version probes. A missing key
 	// means "not installed"; an empty string means "installed but
 	// `--version` parse failed" so the panel can still light up the
@@ -95,6 +104,8 @@ func Probe(ctx context.Context, log *logger.Logger, dockerAvailable bool, fileAc
 			"php_fpm", caps["php_fpm"],
 			"packages", caps["packages"],
 			"cloudflared", caps["cloudflared"],
+			"wireguard", caps["wireguard"],
+			"firewall", caps["firewall"],
 			"runtimes", runtimes,
 		)
 	}
@@ -124,6 +135,26 @@ func Probe(ctx context.Context, log *logger.Logger, dockerAvailable bool, fileAc
 // /etc/cloudflared/cert.pem locations.
 func probeCloudflared() bool {
 	return hasOnPath("cloudflared")
+}
+
+// probeWireguard — whether the agent can manage a WireGuard interface.
+// On Linux that needs the kernel tools (`wg` + `ip`); on Windows/macOS
+// the userspace wireguard-go backend (roadmap #6) is always available.
+func probeWireguard() bool {
+	if runtime.GOOS == "linux" {
+		return hasOnPath("wg") && hasOnPath("ip")
+	}
+	return true
+}
+
+// probeFirewall — true on Linux when a supported host firewall
+// (ufw / firewalld / iptables) is on PATH, so the tunnel broker can open
+// the edge's WireGuard UDP port (#10).
+func probeFirewall() bool {
+	if runtime.GOOS != "linux" {
+		return false
+	}
+	return hasOnPath("ufw") || hasOnPath("firewall-cmd") || hasOnPath("iptables")
 }
 
 // probeRuntimes detects common language runtimes by shelling out to

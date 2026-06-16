@@ -3,12 +3,18 @@ import api from '../../services/api';
 import ConfirmDialog from '../ConfirmDialog';
 import { useToast } from '../../contexts/ToastContext';
 import Modal from '../Modal';
-import { InfoList, InfoItem } from '../InfoList';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
+import { Pill, SegControl } from '@/components/ds';
+import { Shield } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+
+const RULE_TYPE_TONES = {
+    port: 'accent',
+    service: 'cyan',
+    rich: 'violet',
+};
 
 const FirewallTab = () => {
     const [status, setStatus] = useState(null);
@@ -242,11 +248,11 @@ const FirewallTab = () => {
                     <div className="firewall-header">
                         <div className="firewall-status-row">
                             <div className={`status-indicator ${isActive ? 'active' : 'inactive'}`}>
-                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2">
-                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                                </svg>
-                                <span>{isActive ? 'Firewall Active' : 'Firewall Inactive'}</span>
-                                <span className="firewall-type">({activeFirewall?.toUpperCase()})</span>
+                                <span className="sec-shield">
+                                    <Shield size={17} />
+                                </span>
+                                <span className="status-indicator__label">{isActive ? 'Firewall Active' : 'Firewall Inactive'}</span>
+                                <span className="firewall-type">{activeFirewall?.toUpperCase()}</span>
                             </div>
                             <div className="firewall-actions">
                                 <Button variant="outline" size="sm" onClick={() => setShowBlockIPModal(true)}>
@@ -283,20 +289,17 @@ const FirewallTab = () => {
                         </div>
                     </div>
 
-                    <div className="subtabs">
-                        <button className={`subtab ${activeSubTab === 'status' ? 'active' : ''}`} onClick={() => setActiveSubTab('status')}>
-                            Status
-                        </button>
-                        <button className={`subtab ${activeSubTab === 'rules' ? 'active' : ''}`} onClick={() => setActiveSubTab('rules')}>
-                            Rules
-                        </button>
-                        <button className={`subtab ${activeSubTab === 'blocked' ? 'active' : ''}`} onClick={() => setActiveSubTab('blocked')}>
-                            Blocked IPs
-                        </button>
-                        <button className={`subtab ${activeSubTab === 'quick' ? 'active' : ''}`} onClick={() => setActiveSubTab('quick')}>
-                            Quick Ports
-                        </button>
-                    </div>
+                    <SegControl
+                        className="sec-subseg"
+                        value={activeSubTab}
+                        onChange={setActiveSubTab}
+                        options={[
+                            { value: 'status', label: 'Status' },
+                            { value: 'rules', label: 'Rules', count: rules.length },
+                            { value: 'blocked', label: 'Blocked IPs', count: blockedIPs.length },
+                            { value: 'quick', label: 'Quick Ports' },
+                        ]}
+                    />
 
                     {activeSubTab === 'status' && (
                         <div className="card">
@@ -305,92 +308,103 @@ const FirewallTab = () => {
                                 <Button variant="outline" size="sm" onClick={loadData}>Refresh</Button>
                             </div>
                             <div className="card-body">
-                                <InfoList>
-                                    <InfoItem label="Type" value={activeFirewall?.toUpperCase()} />
-                                    <InfoItem label="Status">
-                                        <Badge variant={isActive ? 'success' : 'destructive'}>
+                                <div className="sec-rows">
+                                    <div className="sk-info-row">
+                                        <span className="k">Type</span>
+                                        <span className="v">{activeFirewall?.toUpperCase()}</span>
+                                    </div>
+                                    <div className="sk-info-row">
+                                        <span className="k">Status</span>
+                                        <Pill kind={isActive ? 'green' : 'red'}>
                                             {isActive ? 'Active' : 'Inactive'}
-                                        </Badge>
-                                    </InfoItem>
+                                        </Pill>
+                                    </div>
                                     {activeFirewall === 'firewalld' && status?.firewalld?.default_zone && (
-                                        <InfoItem label="Default Zone" value={status.firewalld.default_zone} />
+                                        <div className="sk-info-row">
+                                            <span className="k">Default zone</span>
+                                            <span className="v">{status.firewalld.default_zone}</span>
+                                        </div>
                                     )}
-                                </InfoList>
+                                </div>
                             </div>
                         </div>
                     )}
 
                     {activeSubTab === 'rules' && (
-                        <div className="card">
+                        <div className="card sec-flush">
                             <div className="card-header">
                                 <h3>Firewall Rules</h3>
                                 <Button variant="default" size="sm" onClick={() => setShowPortModal(true)}>Add Rule</Button>
                             </div>
-                            <div className="card-body">
-                                {rules.length === 0 ? (
+                            {rules.length === 0 ? (
+                                <div className="card-body">
                                     <p className="text-muted">No rules configured</p>
-                                ) : (
-                                    <table className="table">
-                                        <thead>
-                                            <tr>
-                                                <th>Type</th>
-                                                <th>Target</th>
-                                                <th>Protocol</th>
-                                                <th>Actions</th>
+                                </div>
+                            ) : (
+                                <table className="sk-dtable">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Target</th>
+                                            <th>Protocol</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rules.map((rule, index) => (
+                                            <tr key={index}>
+                                                <td>
+                                                    <span className={`sec-state sec-state--${RULE_TYPE_TONES[rule.type] || 'gray'}`}>
+                                                        {rule.type}
+                                                    </span>
+                                                </td>
+                                                <td className="sk-cell-mono">
+                                                    {rule.type === 'service' && rule.service}
+                                                    {rule.type === 'port' && rule.port}
+                                                    {rule.type === 'rich' && <span className="sec-rich-rule">{rule.rule}</span>}
+                                                </td>
+                                                <td className="sk-cell-mono sec-proto">{rule.protocol || '-'}</td>
+                                                <td>
+                                                    {rule.type === 'port' && (
+                                                        <Button variant="destructive" size="sm" onClick={() => handleRemovePort(rule.port, rule.protocol)}>
+                                                            Remove
+                                                        </Button>
+                                                    )}
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {rules.map((rule, index) => (
-                                                <tr key={index}>
-                                                    <td><Badge variant="info">{rule.type}</Badge></td>
-                                                    <td>
-                                                        {rule.type === 'service' && rule.service}
-                                                        {rule.type === 'port' && rule.port}
-                                                        {rule.type === 'rich' && <code>{rule.rule}</code>}
-                                                    </td>
-                                                    <td>{rule.protocol || '-'}</td>
-                                                    <td>
-                                                        {rule.type === 'port' && (
-                                                            <Button variant="destructive" size="sm" onClick={() => handleRemovePort(rule.port, rule.protocol)}>
-                                                                Remove
-                                                            </Button>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                )}
-                            </div>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
                         </div>
                     )}
 
                     {activeSubTab === 'blocked' && (
-                        <div className="card">
+                        <div className="card sec-flush">
                             <div className="card-header">
                                 <h3>Blocked IP Addresses</h3>
                                 <Button variant="default" size="sm" onClick={() => setShowBlockIPModal(true)}>Block IP</Button>
                             </div>
-                            <div className="card-body">
-                                {blockedIPs.length === 0 ? (
+                            {blockedIPs.length === 0 ? (
+                                <div className="card-body">
                                     <div className="empty-state-sm">
                                         <p>No blocked IPs</p>
                                     </div>
-                                ) : (
-                                    <div className="blocked-list">
-                                        {blockedIPs.map((item, index) => (
-                                            <div key={index} className="blocked-item">
-                                                <div className="blocked-info">
-                                                    <span className="blocked-ip">{item.ip}</span>
-                                                </div>
-                                                <Button variant="secondary" size="sm" onClick={() => handleUnblockIP(item.ip)}>
-                                                    Unblock
-                                                </Button>
+                                </div>
+                            ) : (
+                                <div className="blocked-list">
+                                    {blockedIPs.map((item, index) => (
+                                        <div key={index} className="blocked-item">
+                                            <div className="blocked-info">
+                                                <span className="blocked-ip">{item.ip}</span>
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                                            <Button variant="secondary" size="sm" onClick={() => handleUnblockIP(item.ip)}>
+                                                Unblock
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -400,14 +414,14 @@ const FirewallTab = () => {
                                 <h3>Quick Port Access</h3>
                             </div>
                             <div className="card-body">
-                                <p className="text-muted" style={{ marginBottom: '1rem' }}>One-click enable/disable common service ports</p>
+                                <p className="sec-hint sec-hint--lead">One-click enable/disable common service ports</p>
                                 <div className="quick-ports-grid">
                                     {commonPorts.map(({ port, name, protocol }) => {
                                         const isAllowed = rules.some(r =>
                                             (r.port === String(port) || r.port === port) && r.protocol === protocol
                                         );
                                         return (
-                                            <div key={port} className="quick-port-card">
+                                            <div key={port} className={`quick-port-card ${isAllowed ? 'is-allowed' : ''}`}>
                                                 <div className="port-info">
                                                     <span className="port-name">{name}</span>
                                                     <span className="port-number">{port}/{protocol}</span>

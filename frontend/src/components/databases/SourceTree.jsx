@@ -22,7 +22,12 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
     const isOpen = expanded.has(node.id);
     const isLoading = loading.has(node.id);
     const kids = childrenCache.get(node.id);
-    const hadError = kids === 'error';
+    // Error cache entries are either the legacy 'error' sentinel or
+    // `{ __error: message }` carrying a specific reason (e.g. a dead container).
+    const errorMsg = kids === 'error'
+        ? "Couldn't load. Right-click to retry."
+        : (kids && !Array.isArray(kids) && kids.__error) || null;
+    const hadError = errorMsg != null;
     const childNodes = Array.isArray(kids) ? kids : [];
     const visibleChildren = childNodes.filter((c) => c.expandable || matches(c, filter));
 
@@ -102,11 +107,13 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                     )}
                     {hadError && (
                         <li className="dbx-tree-leaf-msg is-error" style={{ paddingLeft: `${(depth + 1) * 14 + 22}px` }}>
-                            Couldn&apos;t load. Right-click to retry.
+                            {errorMsg}
                         </li>
                     )}
                     {!isLoading && !hadError && childNodes.length === 0 && (
-                        <li className="dbx-tree-leaf-msg" style={{ paddingLeft: `${(depth + 1) * 14 + 22}px` }}>Empty</li>
+                        <li className="dbx-tree-leaf-msg" style={{ paddingLeft: `${(depth + 1) * 14 + 22}px` }}>
+                            {node.kind === 'database' ? 'No tables yet' : 'Empty'}
+                        </li>
                     )}
                     {visibleChildren.map((child) => (
                         <TreeRow

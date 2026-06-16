@@ -1,32 +1,36 @@
 // ============================================
-// SERVICE DETAIL PAGE
+// SERVICE DETAIL PAGE (redesign — infra console look)
+// Header keeps the breadcrumb (detail pages don't get the group top bar);
+// tab strip uses the accent-bg active wash; tab bodies consume the shared
+// sk- primitives (Pill / MetricCard / Gauge / .sk-info-row / .sk-dtable).
 // ============================================
 
 .svc-detail {
-    // Breadcrumb
+    // Breadcrumb — mono trail
     &__breadcrumb {
         display: flex;
         align-items: center;
         gap: $space-2;
         margin-bottom: $space-5;
+        font-family: var(--mono);
         font-size: $font-size-sm;
 
         a {
-            color: $text-tertiary;
+            color: var(--text-faint);
             text-decoration: none;
 
             &:hover {
-                color: $text-primary;
+                color: var(--accent-bright);
             }
         }
     }
 
     &__breadcrumb-sep {
-        color: $text-tertiary;
+        color: var(--text-ghost);
     }
 
     &__breadcrumb-current {
-        color: $text-secondary;
+        color: var(--text-dim);
         font-weight: $font-weight-medium;
     }
 
@@ -46,14 +50,10 @@
         min-width: 0;
     }
 
-    &__icon {
-        width: 48px;
-        height: 48px;
-        border-radius: $radius-xl;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+    // Gradient initial avatar (ds ServiceTile — size via props)
+    &__tile {
+        border-radius: 13px;
+        box-shadow: var(--shadow-sm);
     }
 
     &__title-block {
@@ -67,66 +67,24 @@
         flex-wrap: wrap;
 
         h1 {
-            font-size: $font-size-2xl;
-            font-weight: $font-weight-bold;
+            font-size: 21px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.02em;
             color: $text-primary;
             margin: 0;
             white-space: nowrap;
         }
     }
 
-    &__status {
-        display: inline-flex;
-        align-items: center;
-        gap: $space-1;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
-        padding: 2px $space-3;
-        border-radius: $radius-full;
-
-        &--live {
-            color: $success;
-            background: $success-bg;
-        }
-
-        &--stopped {
-            color: $text-tertiary;
-            background: $bg-secondary;
-        }
-
-        &--deploying,
-        &--building {
-            color: $warning;
-            background: $warning-bg;
-        }
-
-        &--failed {
-            color: $danger;
-            background: $danger-bg;
-        }
-    }
-
-    &__status-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: currentColor;
-
-        .svc-detail__status--live & {
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-
-        .svc-detail__status--deploying &,
-        .svc-detail__status--building & {
-            animation: pulse-dot 1s ease-in-out infinite;
-        }
-    }
-
+    // Service-type tag (brand colors arrive via inline style props)
     &__type-badge {
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        padding: 2px $space-2;
-        border-radius: $radius-full;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 5px;
         border: 1px solid;
     }
 
@@ -134,17 +92,24 @@
         display: flex;
         align-items: center;
         gap: $space-2;
-        margin-top: $space-1;
-        font-size: $font-size-sm;
-        color: $text-tertiary;
+        flex-wrap: wrap;
+        margin-top: 6px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
 
-        .mono {
-            font-family: $font-mono;
+        a {
+            color: var(--accent-bright);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
         }
     }
 
     &__sep {
-        color: $text-tertiary;
+        color: var(--text-ghost);
     }
 
     // Header Actions
@@ -164,13 +129,13 @@
         position: absolute;
         top: calc(100% + 4px);
         left: 0;
-        background: $bg-elevated;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         padding: $space-1;
         min-width: 200px;
         z-index: $z-dropdown;
-        box-shadow: $shadow-lg;
+        box-shadow: var(--shadow-md);
 
         &--right {
             left: auto;
@@ -192,7 +157,7 @@
             text-decoration: none;
 
             &:hover {
-                background: $bg-hover;
+                background: var(--surface-hover);
                 color: $text-primary;
             }
 
@@ -205,7 +170,7 @@
 
     &__dropdown-divider {
         height: 1px;
-        background: $border-subtle;
+        background: var(--border-soft);
         margin: $space-1 0;
     }
 
@@ -227,92 +192,110 @@
         display: inline-flex;
         align-items: center;
         gap: $space-2;
-        padding: $space-2 $space-3;
-        background: $bg-card;
-        border: 1px solid $border-default;
+        padding: 6px $space-3;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: $radius-full;
+        font-family: var(--mono);
         font-size: $font-size-sm;
-        color: $text-secondary;
+        color: var(--text-dim);
         cursor: pointer;
-        transition: border-color $transition-fast;
+        transition: border-color $transition-fast, background $transition-fast;
+
+        svg { color: var(--text-faint); }
 
         &:hover {
-            border-color: $accent-primary;
+            border-color: var(--accent-dim);
+            background: var(--surface-2);
         }
     }
 
     &__repo-url {
-        font-family: $font-mono;
-        font-size: $font-size-xs;
+        font-size: $font-size-sm;
+        color: $text-primary;
     }
 
     &__repo-arrow {
-        color: $text-tertiary;
+        color: var(--text-ghost);
     }
 
     &__repo-branch {
-        font-family: $font-mono;
-        font-size: $font-size-xs;
-        color: $accent-primary;
+        font-size: $font-size-sm;
+        color: var(--accent-bright);
         font-weight: $font-weight-medium;
     }
 
     &__auto-deploy-badge {
-        font-size: $font-size-xs;
-        padding: 0 $space-1;
-        background: $success-bg;
-        color: $success;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 1px 6px;
+        background: var(--green-bg);
+        color: var(--green);
         border-radius: $radius-sm;
-        font-weight: $font-weight-medium;
     }
 
     &__connect-repo {
         display: inline-flex;
         align-items: center;
         gap: $space-2;
-        padding: $space-2 $space-3;
+        padding: 6px $space-3;
         background: none;
-        border: 1px dashed $border-default;
+        border: 1px dashed var(--border-strong);
         border-radius: $radius-full;
         font-size: $font-size-sm;
-        color: $text-tertiary;
+        color: var(--text-faint);
         cursor: pointer;
         transition: all $transition-fast;
 
         &:hover {
-            border-color: $accent-primary;
-            color: $accent-primary;
+            border-color: var(--accent-dim);
+            color: var(--accent-bright);
+            background: var(--accent-bg-soft);
         }
     }
 
-    // Tabs
+    // Tab strip — accent wash on the active chip
     &__tabs {
         display: flex;
-        gap: 0;
-        border-bottom: 1px solid $border-default;
+        align-items: center;
+        gap: 2px;
+        border-bottom: 1px solid var(--border-soft);
+        padding-bottom: $space-2;
         margin-bottom: $space-6;
         overflow-x: auto;
+
+        &::-webkit-scrollbar { height: 0; }
     }
 
     &__tab {
-        padding: $space-3 $space-4;
+        padding: 7px 12px;
         background: none;
         border: none;
-        border-bottom: 2px solid transparent;
-        color: $text-tertiary;
-        font-size: $font-size-sm;
-        font-weight: $font-weight-medium;
+        border-radius: 8px;
+        color: var(--text-dim);
+        font-size: 13px;
+        font-weight: $font-weight-normal;
         cursor: pointer;
         white-space: nowrap;
-        transition: all $transition-fast;
+        transition: background $transition-fast, color $transition-fast;
 
         &:hover {
-            color: $text-secondary;
+            background: var(--surface-hover);
+            color: $text-primary;
         }
 
         &--active {
-            color: $text-primary;
-            border-bottom-color: $accent-primary;
+            background: var(--accent-bg);
+            color: var(--accent-bright);
+            font-weight: $font-weight-medium;
+
+            &:hover {
+                background: var(--accent-bg);
+                color: var(--accent-bright);
+            }
         }
     }
 
@@ -320,51 +303,120 @@
     &__content {
         min-height: 400px;
     }
+
+    // Scoped console/editor polish for tabs that use shared classes
+    // (Gunicorn editor, Commands output) — token re-tint only.
+    .code-editor {
+        background: var(--bg-code);
+        border-color: var(--border-soft);
+        color: var(--text-code);
+        font-family: var(--mono);
+        font-size: $font-size-sm;
+    }
+
+    .command-output {
+        background: var(--bg-code);
+        border-color: var(--border-soft);
+        border-radius: var(--radius);
+
+        pre {
+            color: var(--text-code);
+            font-size: $font-size-sm;
+        }
+
+        &.error {
+            border-color: rgba(251, 111, 111, 0.4);
+        }
+
+        .stderr {
+            color: var(--red);
+        }
+    }
 }
 
 // ============================================
-// TAB COMPONENT STYLES
+// SHARED TAB CHROME
 // ============================================
 
-// Events Tab
+// Mono eyebrow section label (used by tab section headers).
+// The h3 variant out-specifies the global `.section-header h3` sizing.
+.svc-eyebrow,
+h3.svc-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+
+    &__count {
+        font-weight: $font-weight-medium;
+        color: var(--text-ghost);
+        letter-spacing: 0.02em;
+    }
+
+    // standalone eyebrow followed by a hint paragraph (Commands tab)
+    + .hint {
+        margin-top: $space-2;
+    }
+}
+
+// Plain surface card wrapper (tables, consoles)
+.svc-card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+// Accent-tinted mono cell (e.g. package names)
+.svc-pkg-name {
+    color: var(--accent-bright) !important;
+}
+
+// ============================================
+// EVENTS TAB — dense feed-style timeline
+// ============================================
 .events-tab {
     &__header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: $space-5;
-
-        h3 {
-            margin: 0;
-            color: $text-primary;
-        }
+        margin-bottom: $space-4;
     }
 
+    // The timeline is one card; events are dense rows inside it
     &__timeline {
         display: flex;
         flex-direction: column;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
     }
 
     &__event {
         display: flex;
         gap: $space-4;
-        padding: $space-4;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
-        background: $bg-card;
+        padding: $space-3 $space-4;
+        background: transparent;
         cursor: pointer;
         transition: background $transition-fast;
 
         & + & {
-            margin-top: $space-2;
+            border-top: 1px solid var(--border-soft);
         }
 
         &:hover {
-            background: $bg-hover;
+            background: var(--surface-2);
         }
 
         &--expanded {
-            background: $bg-elevated;
+            background: var(--surface-2);
         }
     }
 
@@ -374,6 +426,13 @@
         border-radius: 50%;
         margin-top: 6px;
         flex-shrink: 0;
+        background: var(--text-ghost);
+
+        &--green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        &--red   { background: var(--red); }
+        &--amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+        &--cyan  { background: var(--cyan); }
+        &--gray  { background: var(--text-faint); }
     }
 
     &__event-body {
@@ -392,19 +451,21 @@
         display: flex;
         align-items: center;
         gap: $space-2;
+        min-width: 0;
     }
 
     &__event-sha {
-        font-family: $font-mono;
-        font-size: $font-size-xs;
-        color: $accent-primary;
-        background: $accent-glow;
+        font-family: var(--mono);
+        font-size: $font-size-sm;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
         padding: 1px $space-2;
         border-radius: $radius-sm;
+        flex-shrink: 0;
     }
 
     &__event-message {
-        font-size: $font-size-sm;
+        font-size: $font-size-base - 1;
         color: $text-primary;
         font-weight: $font-weight-medium;
         white-space: nowrap;
@@ -417,30 +478,25 @@
         align-items: center;
         gap: $space-3;
         margin-top: $space-1;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-    }
-
-    &__event-badge {
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        padding: 1px $space-2;
-        border-radius: $radius-sm;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
     }
 
     &__event-logs {
         margin-top: $space-3;
         padding: $space-3;
-        background: $bg-body;
+        background: var(--bg-code);
+        border: 1px solid var(--border-soft);
         border-radius: $radius-md;
         max-height: 300px;
         overflow-y: auto;
 
         pre {
             margin: 0;
-            font-family: $font-mono;
-            font-size: $font-size-xs;
-            color: $text-secondary;
+            font-family: var(--mono);
+            font-size: $font-size-sm;
+            color: var(--text-code);
             white-space: pre-wrap;
             word-break: break-all;
         }
@@ -458,11 +514,13 @@
     }
 }
 
-// Shell Tab
+// ============================================
+// SHELL TAB — console re-tinted to tokens
+// ============================================
 .shell-tab {
     &__container {
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
         overflow: hidden;
     }
 
@@ -471,19 +529,32 @@
         justify-content: space-between;
         align-items: center;
         padding: $space-3 $space-4;
-        background: $bg-elevated;
-        border-bottom: 1px solid $border-default;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    &__title {
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
     }
 
     &__terminal {
-        background: #0d1117;
+        background: var(--bg-code);
         padding: $space-4;
         min-height: 400px;
-        font-family: $font-mono;
+        font-family: var(--mono);
         font-size: $font-size-sm;
-        color: #e6edf3;
+        color: var(--text-code);
         overflow-y: auto;
         max-height: 600px;
+    }
+
+    &__hint {
+        color: var(--text-faint);
     }
 
     &__line {
@@ -492,11 +563,11 @@
         word-break: break-all;
 
         &--input {
-            color: #58a6ff;
+            color: var(--cyan);
         }
 
         &--error {
-            color: #f85149;
+            color: var(--red);
         }
     }
 
@@ -505,13 +576,13 @@
         align-items: center;
         gap: $space-2;
         padding: $space-3 $space-4;
-        background: $bg-card;
-        border-top: 1px solid $border-default;
+        background: var(--surface);
+        border-top: 1px solid var(--border-soft);
     }
 
     &__prompt {
-        color: $accent-primary;
-        font-family: $font-mono;
+        color: var(--accent-bright);
+        font-family: var(--mono);
         font-size: $font-size-sm;
         flex-shrink: 0;
     }
@@ -521,13 +592,17 @@
         background: none;
         border: none;
         color: $text-primary;
-        font-family: $font-mono;
+        font-family: var(--mono);
         font-size: $font-size-sm;
         outline: none;
     }
 }
 
-// Metrics Tab
+// ============================================
+// METRICS TAB — point-in-time spec cards + gauges
+// (no metrics HISTORY backend yet — see docs/REDESIGN_MAP.md §5; the cards
+// bind to live point-in-time stats only, no fabricated series)
+// ============================================
 .metrics-tab {
     &__grid {
         display: grid;
@@ -536,138 +611,77 @@
     }
 
     &__card {
-        background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
-        padding: $space-5;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: $space-4 $space-5;
+        transition: border-color 0.15s;
+
+        &:hover {
+            border-color: var(--border-strong);
+        }
+
+        .sk-gauge {
+            margin-top: $space-3;
+        }
     }
 
     &__card-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: $space-3;
+        gap: $space-3;
 
         h4 {
             margin: 0;
-            color: $text-primary;
-            font-size: $font-size-base;
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
         }
 
         span {
-            font-size: $font-size-xl;
-            font-weight: $font-weight-bold;
+            font-family: var(--mono);
+            font-size: 22px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.02em;
             color: $text-primary;
         }
-    }
-
-    &__bar {
-        height: 8px;
-        background: $bg-secondary;
-        border-radius: $radius-full;
-        overflow: hidden;
-    }
-
-    &__bar-fill {
-        height: 100%;
-        border-radius: $radius-full;
-        transition: width $transition-slow;
     }
 
     &__info {
         margin-top: $space-2;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-    }
-}
-
-// GitConnectModal
-.git-connect-modal {
-    &__form {
-        display: flex;
-        flex-direction: column;
-        gap: $space-4;
-    }
-
-    &__field {
-        label {
-            display: block;
-            font-size: $font-size-sm;
-            font-weight: $font-weight-medium;
-            color: $text-secondary;
-            margin-bottom: $space-1;
-        }
-
-        input, select, textarea {
-            width: 100%;
-            padding: $space-2 $space-3;
-            background: $bg-card;
-            border: 1px solid $border-default;
-            border-radius: $radius-md;
-            color: $text-primary;
-            font-size: $font-size-sm;
-
-            &:focus {
-                outline: none;
-                border-color: $accent-primary;
-            }
-        }
-
-        textarea {
-            font-family: $font-mono;
-            font-size: $font-size-xs;
-            min-height: 80px;
-            resize: vertical;
-        }
-    }
-
-    &__toggle {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: $space-3;
-        background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-md;
-    }
-
-    &__toggle-label {
+        font-family: var(--mono);
         font-size: $font-size-sm;
-        color: $text-secondary;
-
-        span {
-            display: block;
-            font-size: $font-size-xs;
-            color: $text-tertiary;
-            margin-top: 2px;
-        }
-    }
-
-    &__actions {
-        display: flex;
-        justify-content: flex-end;
-        gap: $space-2;
-        margin-top: $space-4;
-        padding-top: $space-4;
-        border-top: 1px solid $border-subtle;
+        color: var(--text-dim);
     }
 }
 
-// Settings Tab within service detail
+// Settings tab within service detail
 .svc-settings {
+    max-width: 820px;
+
     &__section {
         margin-bottom: $space-6;
     }
 
     &__section-title {
-        font-size: $font-size-md;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 $space-3;
+        font-family: var(--mono);
+        font-size: 11px;
         font-weight: $font-weight-semibold;
-        color: $text-primary;
-        margin-bottom: $space-4;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
     }
 }
 
-// Icon-only button
+// Icon-only button (global utility consumed by several other components)
 .btn-icon {
     padding: $space-2 !important;
     min-width: auto !important;
@@ -677,72 +691,15 @@
 // OVERVIEW TAB
 // ============================================
 .overview-tab {
-    &__stats-row {
+    // KPI strip (ds MetricCard)
+    &__kpis {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: $space-4;
-        margin-bottom: $space-6;
+        margin-bottom: $space-4;
 
-        @media (max-width: $breakpoint-md) {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    &__stat-card {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-        padding: $space-4 $space-5;
-        background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
-    }
-
-    &__stat-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: $radius-lg;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-
-        &--status { background: $bg-secondary; }
-        &--deploys { background: $info-bg; color: $info; }
-        &--success { background: $success-bg; color: $success; }
-        &--failed { background: $danger-bg; color: $danger; }
-    }
-
-    &__pulse {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-
-        &--live {
-            background: $success;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-
-        &--stopped {
-            background: $text-tertiary;
-        }
-    }
-
-    &__stat-info {
-        display: flex;
-        flex-direction: column;
-    }
-
-    &__stat-value {
-        font-size: $font-size-lg;
-        font-weight: $font-weight-bold;
-        color: $text-primary;
-        line-height: 1.2;
-    }
-
-    &__stat-label {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
     }
 
     // Grid layout for info + metrics
@@ -750,7 +707,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: $space-4;
-        margin-bottom: $space-6;
+        margin-bottom: $space-4;
 
         @media (max-width: $breakpoint-md) {
             grid-template-columns: 1fr;
@@ -758,10 +715,10 @@
     }
 
     &__card {
-        background: $bg-card;
-        border: 1px solid $border-default;
-        border-radius: $radius-lg;
-        padding: $space-5;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: $space-4 $space-5;
 
         &--full {
             grid-column: 1 / -1;
@@ -769,17 +726,23 @@
     }
 
     &__card-title {
-        font-size: $font-size-base;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 $space-3;
+        font-family: var(--mono);
+        font-size: 11px;
         font-weight: $font-weight-semibold;
-        color: $text-primary;
-        margin: 0 0 $space-4;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
     }
 
     &__card-header-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: $space-4;
+        margin-bottom: $space-3;
 
         .overview-tab__card-title {
             margin: 0;
@@ -787,47 +750,20 @@
     }
 
     &__see-all {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
     }
 
-    // Service Info List
-    &__info-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    &__info-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-3 0;
-
-        & + & {
-            border-top: 1px solid $border-subtle;
-        }
-    }
-
-    &__info-label {
-        font-size: $font-size-sm;
-        color: $text-tertiary;
-    }
-
-    &__info-value {
-        font-size: $font-size-sm;
-        color: $text-primary;
-
-        &.mono {
-            font-family: $font-mono;
-            font-size: $font-size-xs;
-        }
-    }
-
+    // Info badge (brand colors via inline style props)
     &__info-badge {
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        padding: 2px $space-2;
-        border-radius: $radius-full;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 2px 7px;
+        border-radius: 5px;
         border: 1px solid;
     }
 
@@ -835,8 +771,9 @@
         display: inline-flex;
         align-items: center;
         gap: $space-1;
+        font-family: var(--mono);
         font-size: $font-size-sm;
-        color: $accent-primary;
+        color: var(--accent-bright);
         text-decoration: none;
 
         &:hover {
@@ -846,23 +783,11 @@
 
     &__branch {
         margin-left: $space-2;
-        color: $accent-primary;
+        color: var(--accent-bright);
         font-weight: $font-weight-medium;
     }
 
-    &__env-badge {
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        padding: 2px $space-2;
-        border-radius: $radius-sm;
-        text-transform: capitalize;
-
-        &--production { background: $danger-bg; color: $danger; }
-        &--staging { background: $warning-bg; color: $warning; }
-        &--development { background: $info-bg; color: $info; }
-    }
-
-    // Resource metrics
+    // Resource metrics (ds Gauge bars + mono values)
     &__metrics {
         display: flex;
         flex-direction: column;
@@ -874,31 +799,21 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: $space-2;
-        font-size: $font-size-sm;
+        font-size: $font-size-sm + 1;
         color: $text-secondary;
     }
 
     &__metric-value {
-        font-weight: $font-weight-bold;
+        font-family: var(--mono);
+        font-weight: $font-weight-semibold;
         color: $text-primary;
     }
 
-    &__metric-bar {
-        height: 6px;
-        background: $bg-secondary;
-        border-radius: $radius-full;
-        overflow: hidden;
-    }
-
-    &__metric-bar-fill {
-        height: 100%;
-        border-radius: $radius-full;
-        transition: width $transition-slow;
-    }
-
     &__metric-detail {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        display: block;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
         margin-top: $space-1;
     }
 
@@ -915,18 +830,18 @@
     }
 
     &__metric-item-label {
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-faint);
     }
 
     &__metric-item-value {
-        font-size: $font-size-sm;
+        font-family: var(--mono);
+        font-size: $font-size-base - 1;
         font-weight: $font-weight-medium;
         color: $text-primary;
-
-        &.mono {
-            font-family: $font-mono;
-        }
     }
 
     &__loading, &__no-metrics, &__no-deploys {
@@ -936,7 +851,7 @@
         font-size: $font-size-sm;
     }
 
-    // Recent Deployments list
+    // Recent Deployments list — dense rows
     &__deploy-list {
         display: flex;
         flex-direction: column;
@@ -946,10 +861,10 @@
         display: flex;
         align-items: center;
         gap: $space-3;
-        padding: $space-3 0;
+        padding: 11px 0;
 
         & + & {
-            border-top: 1px solid $border-subtle;
+            border-top: 1px solid var(--border-soft);
         }
     }
 
@@ -958,6 +873,13 @@
         height: 8px;
         border-radius: 50%;
         flex-shrink: 0;
+        background: var(--text-ghost);
+
+        &--green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        &--red   { background: var(--red); }
+        &--amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+        &--cyan  { background: var(--cyan); }
+        &--gray  { background: var(--text-faint); }
     }
 
     &__deploy-info {
@@ -966,7 +888,7 @@
     }
 
     &__deploy-message {
-        font-size: $font-size-sm;
+        font-size: $font-size-base - 1;
         color: $text-primary;
         font-weight: $font-weight-medium;
         display: block;
@@ -979,30 +901,22 @@
         display: flex;
         align-items: center;
         gap: $space-3;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
         margin-top: 2px;
     }
 
     &__deploy-sha {
-        font-family: $font-mono;
-        color: $accent-primary;
-        background: $accent-glow;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
         padding: 0 $space-1;
         border-radius: $radius-sm;
-    }
-
-    &__deploy-badge {
-        font-size: $font-size-xs;
-        font-weight: $font-weight-medium;
-        padding: 2px $space-2;
-        border-radius: $radius-sm;
-        flex-shrink: 0;
     }
 }
 
 // ============================================
-// LOGS TAB V2
+// LOGS TAB V2 — console re-tinted to tokens
 // ============================================
 .logs-tab-v2 {
     display: flex;
@@ -1016,9 +930,9 @@
     align-items: center;
     gap: $space-3;
     padding: $space-3 $space-4;
-    background: $bg-card;
-    border: 1px solid $border-default;
-    border-radius: $radius-lg $radius-lg 0 0;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius) var(--radius) 0 0;
 
     &__left {
         display: flex;
@@ -1038,19 +952,19 @@
         display: flex;
         align-items: center;
         gap: $space-2;
-        background: $bg-body;
-        border: 1px solid $border-default;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
         border-radius: $radius-md;
         padding: 0 $space-2;
         flex: 1;
         max-width: 300px;
 
         &:focus-within {
-            border-color: $accent-primary;
+            border-color: var(--accent-primary);
         }
 
         svg {
-            color: $text-tertiary;
+            color: var(--text-faint);
             flex-shrink: 0;
         }
 
@@ -1065,48 +979,49 @@
             min-width: 0;
 
             &::placeholder {
-                color: $text-tertiary;
+                color: var(--text-faint);
             }
         }
     }
 
     &__match-count {
-        font-size: $font-size-xs;
-        color: $accent-primary;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent-bright);
         white-space: nowrap;
     }
 
     &__select {
-        background: $bg-body;
-        border: 1px solid $border-default;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
         border-radius: $radius-md;
         padding: $space-1 $space-2;
         color: $text-secondary;
-        font-size: $font-size-xs;
+        font-size: $font-size-sm;
         outline: none;
         cursor: pointer;
 
-        &:focus { border-color: $accent-primary; }
+        &:focus { border-color: var(--accent-primary); }
     }
 
     &__toggle {
         display: flex;
         align-items: center;
         gap: $space-1;
-        font-size: $font-size-xs;
+        font-size: $font-size-sm;
         color: $text-tertiary;
         cursor: pointer;
         white-space: nowrap;
 
         input {
-            accent-color: var(--accent-primary, #6366f1);
+            accent-color: var(--accent-primary);
         }
     }
 
     &__divider {
         width: 1px;
         height: 16px;
-        background: $border-default;
+        background: var(--border);
     }
 }
 
@@ -1115,40 +1030,42 @@
     align-items: center;
     gap: $space-2;
     padding: $space-1 $space-4;
-    background: $bg-elevated;
-    border-left: 1px solid $border-default;
-    border-right: 1px solid $border-default;
-    font-size: $font-size-xs;
-    color: $text-tertiary;
+    background: var(--surface-2);
+    border-left: 1px solid var(--border-soft);
+    border-right: 1px solid var(--border-soft);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
 
     &__live {
         font-size: 9px;
         font-weight: $font-weight-bold;
+        letter-spacing: 0.08em;
         padding: 1px $space-1;
-        background: $danger;
-        color: white;
+        background: var(--red-bg);
+        color: var(--red);
         border-radius: $radius-sm;
         animation: pulse-dot 1.5s ease-in-out infinite;
     }
 }
 
 .logs-viewer {
-    background: #0d1117;
-    border: 1px solid $border-default;
+    background: var(--bg-code);
+    border: 1px solid var(--border-soft);
     border-top: none;
-    border-radius: 0 0 $radius-lg $radius-lg;
+    border-radius: 0 0 var(--radius) var(--radius);
     min-height: 400px;
     max-height: 600px;
     overflow-y: auto;
-    font-family: $font-mono;
-    font-size: $font-size-xs;
+    font-family: var(--mono);
+    font-size: $font-size-sm;
     line-height: 1.7;
     scroll-behavior: smooth;
 
     &__loading, &__empty {
         padding: $space-8;
         text-align: center;
-        color: #8b949e;
+        color: var(--text-faint);
     }
 
     &__line {
@@ -1157,28 +1074,28 @@
         transition: background 0.1s;
 
         &:hover {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--surface-hover);
         }
 
         &--error {
-            background: rgba(248, 81, 73, 0.06);
-            .logs-viewer__line-text { color: #f85149; }
+            background: rgba(251, 111, 111, 0.06);
+            .logs-viewer__line-text { color: var(--red); }
         }
 
         &--warn {
-            background: rgba(210, 153, 34, 0.06);
-            .logs-viewer__line-text { color: #d29922; }
+            background: rgba(245, 185, 69, 0.06);
+            .logs-viewer__line-text { color: var(--amber); }
         }
 
         &--debug {
-            .logs-viewer__line-text { color: #8b949e; }
+            .logs-viewer__line-text { color: var(--text-faint); }
         }
     }
 
     &__line-num {
         width: 48px;
         padding-right: $space-3;
-        color: #484f58;
+        color: var(--text-ghost);
         text-align: right;
         flex-shrink: 0;
         user-select: none;
@@ -1186,14 +1103,14 @@
 
     &__line-text {
         flex: 1;
-        color: #e6edf3;
+        color: var(--text-code);
         white-space: pre-wrap;
         word-break: break-all;
     }
 
     &__highlight {
-        background: rgba(210, 153, 34, 0.3);
-        color: #e6edf3;
+        background: rgba(245, 185, 69, 0.35);
+        color: var(--text);
         border-radius: 2px;
         padding: 0 1px;
     }

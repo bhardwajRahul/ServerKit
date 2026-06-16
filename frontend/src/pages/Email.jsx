@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Globe, AtSign, Forward, Server, Inbox } from 'lucide-react';
+import { Globe, AtSign, Forward, Server, Inbox, Mail, Send, KeyRound, ShieldAlert, ShieldCheck, AppWindow } from 'lucide-react';
 import useTabParam from '../hooks/useTabParam';
 import { api } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -8,10 +8,37 @@ import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Pill, MetricCard, PageTopbar } from '@/components/ds';
 
 const VALID_TABS = ['status', 'domains', 'accounts', 'aliases', 'forwarding', 'dns-providers', 'spam', 'webmail', 'queue'];
+
+const TAB_LABELS = {
+    'dns-providers': 'DNS Providers',
+    queue: 'Queue & Logs',
+};
+
+const SERVICE_ICONS = {
+    postfix: Send,
+    dovecot: Inbox,
+    opendkim: KeyRound,
+    spamassassin: ShieldAlert,
+    roundcube: AppWindow,
+};
+
+// running → green / stopped → red / not installed → gray
+function statusPill(data) {
+    if (data?.running) return <Pill kind="green">running</Pill>;
+    if (data?.installed) return <Pill kind="red">stopped</Pill>;
+    return <Pill kind="gray">not installed</Pill>;
+}
+
+// DKIM/SPF/DMARC presence (record configured vs missing)
+function dnsPill(value) {
+    return value
+        ? <Pill kind="green">set</Pill>
+        : <Pill kind="amber">missing</Pill>;
+}
 
 function Email() {
     const [activeTab, setActiveTab] = useTabParam('/email', VALID_TABS);
@@ -459,44 +486,48 @@ function Email() {
 
     const isInstalled = status?.installed;
 
-    const ServiceCard = ({ name, data, component }) => (
-        <div className="email-service-card">
-            <div className="email-service-header">
-                <div>
-                    <h3>{name}</h3>
-                    {data?.version && <span className="version">v{data.version}</span>}
+    // Real counts from the loaded domains payload (KPI strip, Domains tab)
+    const totalMailboxes = domains.reduce((n, d) => n + (d.accounts_count || 0), 0);
+    const totalAliases = domains.reduce((n, d) => n + (d.aliases_count || 0), 0);
+    const dnsReadyCount = domains.filter(d => d.dkim_public_key && d.spf_record && d.dmarc_record).length;
+
+    const ServiceCard = ({ name, data, component }) => {
+        const Icon = SERVICE_ICONS[component] || Server;
+        return (
+            <div className="email-service-card">
+                <div className="email-service-header">
+                    <span className="email-service-ico"><Icon size={15} /></span>
+                    <div className="email-service-id">
+                        <h3>{name}</h3>
+                        {data?.version && <span className="version">v{data.version}</span>}
+                    </div>
+                    {statusPill(data)}
                 </div>
-                <Badge variant={data?.running ? 'success' : 'secondary'}>
-                    {data?.running ? 'Running' : data?.installed ? 'Stopped' : 'Not Installed'}
-                </Badge>
+                {data?.installed && (
+                    <div className="email-service-actions">
+                        <Button size="sm" variant="outline" onClick={() => handleServiceControl(component, 'restart')} disabled={actionLoading}>Restart</Button>
+                        {data?.running
+                            ? <Button size="sm" variant="outline" onClick={() => handleServiceControl(component, 'stop')} disabled={actionLoading}>Stop</Button>
+                            : <Button size="sm" onClick={() => handleServiceControl(component, 'start')} disabled={actionLoading}>Start</Button>
+                        }
+                    </div>
+                )}
             </div>
-            {data?.installed && (
-                <div className="email-service-actions">
-                    <Button size="sm" variant="outline" onClick={() => handleServiceControl(component, 'restart')} disabled={actionLoading}>Restart</Button>
-                    {data?.running
-                        ? <Button size="sm" variant="outline" onClick={() => handleServiceControl(component, 'stop')} disabled={actionLoading}>Stop</Button>
-                        : <Button size="sm" onClick={() => handleServiceControl(component, 'start')} disabled={actionLoading}>Start</Button>
-                    }
-                </div>
-            )}
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="page-container email-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Email Server</h1>
-                    <p className="page-description">Manage Postfix, Dovecot, DKIM, SpamAssassin, and Roundcube</p>
-                </div>
-                <div className="page-header-actions">
-                    <Button size="sm" variant="outline" onClick={loadStatus}>Refresh</Button>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Mail size={18} />}
+                title="Email Server"
+                meta={<>Postfix · Dovecot · DKIM · SpamAssassin · Roundcube</>}
+                actions={<Button size="sm" variant="outline" onClick={loadStatus}>Refresh</Button>}
+            />
 
             {!isInstalled ? (
                 <div className="not-installed">
-                    <div className="icon">&#9993;</div>
+                    <div className="not-installed__icon"><Mail size={22} /></div>
                     <h2>Email Server Not Installed</h2>
                     <p>Install Postfix, Dovecot, OpenDKIM, and SpamAssassin to enable email hosting.</p>
                     <div className="install-form">
@@ -515,7 +546,7 @@ function Email() {
                         <TabsList>
                             {VALID_TABS.map(tab => (
                                 <TabsTrigger key={tab} value={tab}>
-                                    {tab === 'dns-providers' ? 'DNS Providers' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                    {TAB_LABELS[tab] || tab.charAt(0).toUpperCase() + tab.slice(1)}
                                 </TabsTrigger>
                             ))}
                         </TabsList>
@@ -536,6 +567,14 @@ function Email() {
                         {/* Domains Tab */}
                         <TabsContent value="domains">
                             <div className="email-domains">
+                                {domains.length > 0 && (
+                                    <div className="email-kpis">
+                                        <MetricCard icon={<Globe size={17} />} tone="accent" value={domains.length} label="Mail domains" />
+                                        <MetricCard icon={<AtSign size={17} />} tone="cyan" value={totalMailboxes} label="Mailboxes" />
+                                        <MetricCard icon={<Forward size={17} />} tone="violet" value={totalAliases} label="Aliases" />
+                                        <MetricCard icon={<ShieldCheck size={17} />} tone="green" value={dnsReadyCount} unit={`/ ${domains.length}`} label="DNS configured" />
+                                    </div>
+                                )}
                                 <div className="section-header">
                                     <h2>Email Domains</h2>
                                     <Button size="sm" variant={showDomainForm ? 'outline' : 'default'} onClick={() => setShowDomainForm(!showDomainForm)}>
@@ -555,34 +594,51 @@ function Email() {
                                         </div>
                                     </form>
                                 )}
-                                <div className="domain-list">
-                                    {domains.length === 0 ? (
-                                        <EmptyState icon={Globe} title="No domains configured" />
-                                    ) : domains.map(d => (
-                                        <div key={d.id} className="domain-card">
-                                            <div className="domain-header">
-                                                <h3>{d.name}</h3>
-                                                <Badge variant={d.is_active ? 'success' : 'secondary'}>
-                                                    {d.is_active ? 'Active' : 'Inactive'}
-                                                </Badge>
-                                            </div>
-                                            <div className="domain-stats">
-                                                <span>{d.accounts_count} accounts</span>
-                                                <span>{d.aliases_count} aliases</span>
-                                            </div>
-                                            <div className="domain-dns">
-                                                <span className={`dns-badge ${d.dkim_public_key ? 'verified' : 'missing'}`}>DKIM</span>
-                                                <span className={`dns-badge ${d.spf_record ? 'verified' : 'missing'}`}>SPF</span>
-                                                <span className={`dns-badge ${d.dmarc_record ? 'verified' : 'missing'}`}>DMARC</span>
-                                            </div>
-                                            <div className="domain-actions">
-                                                <Button size="sm" variant="outline" onClick={() => handleVerifyDNS(d.id)} disabled={actionLoading}>Verify DNS</Button>
-                                                {d.dns_provider_id && <Button size="sm" onClick={() => handleDeployDNS(d.id)} disabled={actionLoading}>Deploy DNS</Button>}
-                                                <Button size="sm" variant="destructive" onClick={() => handleDeleteDomain(d.id, d.name)}>Delete</Button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                {domains.length === 0 ? (
+                                    <EmptyState icon={Globe} title="No domains configured" />
+                                ) : (
+                                    <div className="email-table-card">
+                                        <table className="sk-dtable">
+                                            <thead>
+                                                <tr>
+                                                    <th>Domain</th>
+                                                    <th>Mailboxes</th>
+                                                    <th>Aliases</th>
+                                                    <th>DKIM</th>
+                                                    <th>SPF</th>
+                                                    <th>DMARC</th>
+                                                    <th>Status</th>
+                                                    <th />
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {domains.map(d => (
+                                                    <tr key={d.id}>
+                                                        <td>
+                                                            <div className="sk-cell-name">
+                                                                <span className="email-fav"><Globe size={15} /></span>
+                                                                {d.name}
+                                                            </div>
+                                                        </td>
+                                                        <td className="sk-cell-mono">{d.accounts_count}</td>
+                                                        <td className="sk-cell-mono">{d.aliases_count}</td>
+                                                        <td>{dnsPill(d.dkim_public_key)}</td>
+                                                        <td>{dnsPill(d.spf_record)}</td>
+                                                        <td>{dnsPill(d.dmarc_record)}</td>
+                                                        <td><Pill kind={d.is_active ? 'green' : 'gray'}>{d.is_active ? 'active' : 'inactive'}</Pill></td>
+                                                        <td>
+                                                            <div className="email-row-actions">
+                                                                <Button size="sm" variant="outline" onClick={() => handleVerifyDNS(d.id)} disabled={actionLoading}>Verify DNS</Button>
+                                                                {d.dns_provider_id && <Button size="sm" onClick={() => handleDeployDNS(d.id)} disabled={actionLoading}>Deploy DNS</Button>}
+                                                                <Button size="sm" variant="destructive" onClick={() => handleDeleteDomain(d.id, d.name)}>Delete</Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </TabsContent>
 
@@ -627,27 +683,42 @@ function Email() {
                                                 </div>
                                             </form>
                                         )}
-                                        <div className="accounts-list">
-                                            {accounts.length === 0 ? (
-                                                <EmptyState icon={AtSign} title="No accounts for this domain" />
-                                            ) : accounts.map(a => (
-                                                <div key={a.id} className="account-card">
-                                                    <div className="account-info">
-                                                        <div className="account-email">{a.email}</div>
-                                                        <div className="account-meta">
-                                                            <span>Quota: {a.quota_mb}MB</span>
-                                                            <Badge variant={a.is_active ? 'success' : 'secondary'}>
-                                                                {a.is_active ? 'Active' : 'Disabled'}
-                                                            </Badge>
-                                                        </div>
-                                                    </div>
-                                                    <div className="account-actions">
-                                                        <Button size="sm" variant="outline" onClick={() => { setShowPasswordModal(a.id); setNewPassword(''); }}>Password</Button>
-                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteAccount(a.id, a.email)}>Delete</Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {accounts.length === 0 ? (
+                                            <EmptyState icon={AtSign} title="No accounts for this domain" />
+                                        ) : (
+                                            <div className="email-table-card">
+                                                <table className="sk-dtable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Address</th>
+                                                            <th>Quota</th>
+                                                            <th>Status</th>
+                                                            <th />
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {accounts.map(a => (
+                                                            <tr key={a.id}>
+                                                                <td>
+                                                                    <div className="sk-cell-name">
+                                                                        <span className="email-fav email-fav--cyan"><AtSign size={14} /></span>
+                                                                        <span className="email-addr">{a.email}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="sk-cell-mono">{a.quota_mb} MB</td>
+                                                                <td><Pill kind={a.is_active ? 'green' : 'gray'}>{a.is_active ? 'active' : 'disabled'}</Pill></td>
+                                                                <td>
+                                                                    <div className="email-row-actions">
+                                                                        <Button size="sm" variant="outline" onClick={() => { setShowPasswordModal(a.id); setNewPassword(''); }}>Password</Button>
+                                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteAccount(a.id, a.email)}>Delete</Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                                 {showPasswordModal && (
@@ -705,20 +776,36 @@ function Email() {
                                                 </div>
                                             </form>
                                         )}
-                                        <div className="items-list">
-                                            {aliases.length === 0 ? (
-                                                <EmptyState icon={Forward} title="No aliases for this domain" />
-                                            ) : aliases.map(a => (
-                                                <div key={a.id} className="alias-card">
-                                                    <div className="item-info">
-                                                        <div className="item-mapping">{a.source} <span className="arrow">&rarr;</span> {a.destination}</div>
-                                                    </div>
-                                                    <div className="item-actions">
-                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteAlias(a.id)}>Delete</Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {aliases.length === 0 ? (
+                                            <EmptyState icon={Forward} title="No aliases for this domain" />
+                                        ) : (
+                                            <div className="email-table-card">
+                                                <table className="sk-dtable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Source</th>
+                                                            <th style={{ width: 30 }} />
+                                                            <th>Destination</th>
+                                                            <th />
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {aliases.map(a => (
+                                                            <tr key={a.id}>
+                                                                <td className="sk-cell-mono">{a.source}</td>
+                                                                <td className="email-arrow">&rarr;</td>
+                                                                <td className="sk-cell-mono">{a.destination}</td>
+                                                                <td>
+                                                                    <div className="email-row-actions">
+                                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteAlias(a.id)}>Delete</Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -752,7 +839,7 @@ function Email() {
                                                         <Input type="email" value={newForward.destination} onChange={e => setNewForward({ ...newForward, destination: e.target.value })} required />
                                                     </div>
                                                     <div className="form-group">
-                                                        <label>
+                                                        <label className="email-check">
                                                             <input type="checkbox" checked={newForward.keep_copy} onChange={e => setNewForward({ ...newForward, keep_copy: e.target.checked })} />
                                                             {' '}Keep a copy in mailbox
                                                         </label>
@@ -763,21 +850,40 @@ function Email() {
                                                 </div>
                                             </form>
                                         )}
-                                        <div className="items-list">
-                                            {forwardingRules.length === 0 ? (
-                                                <EmptyState icon={Forward} title="No forwarding rules" />
-                                            ) : forwardingRules.map(r => (
-                                                <div key={r.id} className="forwarding-card">
-                                                    <div className="item-info">
-                                                        <div className="item-mapping">{r.account_email} <span className="arrow">&rarr;</span> {r.destination}</div>
-                                                        <div className="item-meta">{r.keep_copy ? 'Keeps copy' : 'No copy'} &middot; {r.is_active ? 'Active' : 'Inactive'}</div>
-                                                    </div>
-                                                    <div className="item-actions">
-                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteForwarding(r.id)}>Delete</Button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
+                                        {forwardingRules.length === 0 ? (
+                                            <EmptyState icon={Forward} title="No forwarding rules" />
+                                        ) : (
+                                            <div className="email-table-card">
+                                                <table className="sk-dtable">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Mailbox</th>
+                                                            <th style={{ width: 30 }} />
+                                                            <th>Forward To</th>
+                                                            <th>Copy</th>
+                                                            <th>Status</th>
+                                                            <th />
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {forwardingRules.map(r => (
+                                                            <tr key={r.id}>
+                                                                <td className="sk-cell-mono">{r.account_email}</td>
+                                                                <td className="email-arrow">&rarr;</td>
+                                                                <td className="sk-cell-mono">{r.destination}</td>
+                                                                <td><Pill kind={r.keep_copy ? 'cyan' : 'gray'} dot={false}>{r.keep_copy ? 'keeps copy' : 'no copy'}</Pill></td>
+                                                                <td><Pill kind={r.is_active ? 'green' : 'gray'}>{r.is_active ? 'active' : 'inactive'}</Pill></td>
+                                                                <td>
+                                                                    <div className="email-row-actions">
+                                                                        <Button size="sm" variant="destructive" onClick={() => handleDeleteForwarding(r.id)}>Delete</Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </div>
@@ -816,11 +922,13 @@ function Email() {
                                     ) : providers.map(p => (
                                         <div key={p.id} className="provider-card">
                                             <div className="provider-header">
+                                                <span className="email-fav email-fav--violet"><Server size={15} /></span>
                                                 <h3>{p.name}</h3>
                                                 <span className="provider-type">{p.provider}</span>
+                                                {p.is_default && <Pill kind="cyan" dot={false}>default</Pill>}
                                             </div>
                                             <div className="provider-meta">
-                                                <div className="meta-row"><span>API Key: {p.api_key}</span>{p.is_default && <span><strong>Default</strong></span>}</div>
+                                                <div className="meta-row"><span className="k">API key</span><span className="v">{p.api_key}</span></div>
                                             </div>
                                             <div className="provider-actions">
                                                 <Button size="sm" variant="outline" onClick={() => handleTestProvider(p.id)} disabled={actionLoading}>Test</Button>
@@ -881,10 +989,8 @@ function Email() {
                                 <div className="section-header"><h2>Roundcube Webmail</h2></div>
                                 <div className="webmail-card">
                                     <div className="webmail-status-row">
-                                        <Badge variant={webmailStatus?.running ? 'success' : 'secondary'}>
-                                            {webmailStatus?.running ? 'Running' : webmailStatus?.installed ? 'Stopped' : 'Not Installed'}
-                                        </Badge>
-                                        {webmailStatus?.port && <span>Port: {webmailStatus.port}</span>}
+                                        {statusPill(webmailStatus)}
+                                        {webmailStatus?.port && <span className="webmail-port">Port: {webmailStatus.port}</span>}
                                     </div>
                                     <div className="webmail-actions">
                                         {!webmailStatus?.installed ? (
@@ -920,26 +1026,45 @@ function Email() {
                                         <h2>Mail Queue ({queue.length})</h2>
                                         <Button size="sm" variant="outline" onClick={handleFlushQueue} disabled={actionLoading}>Flush Queue</Button>
                                     </div>
-                                    <div className="queue-list">
-                                        {queue.length === 0 ? (
-                                            <EmptyState icon={Inbox} title="Queue is empty" />
-                                        ) : queue.map(item => (
-                                            <div key={item.queue_id} className="queue-item">
-                                                <div className="queue-info">
-                                                    <div className="queue-id">{item.queue_id}</div>
-                                                    <div className="queue-meta">
-                                                        <span>From: {item.sender}</span>
-                                                        <span>Size: {item.size}B</span>
-                                                        <span>{item.arrival_time}</span>
-                                                    </div>
-                                                    {item.error && <div className="queue-error">{item.error}</div>}
-                                                </div>
-                                                <Button size="sm" variant="destructive" onClick={() => handleDeleteQueueItem(item.queue_id)}>Delete</Button>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    {queue.length === 0 ? (
+                                        <EmptyState icon={Inbox} title="Queue is empty" />
+                                    ) : (
+                                        <div className="email-table-card">
+                                            <table className="sk-dtable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Queue ID</th>
+                                                        <th>From</th>
+                                                        <th>Recipients</th>
+                                                        <th>Size</th>
+                                                        <th>Arrived</th>
+                                                        <th />
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {queue.map(item => (
+                                                        <tr key={item.queue_id}>
+                                                            <td className="sk-cell-mono email-qid">{item.queue_id}</td>
+                                                            <td className="sk-cell-mono">{item.sender}</td>
+                                                            <td>
+                                                                <span className="sk-cell-mono">{(item.recipients || []).join(', ') || '—'}</span>
+                                                                {item.error && <div className="email-qerr">{item.error}</div>}
+                                                            </td>
+                                                            <td className="sk-cell-mono">{item.size}B</td>
+                                                            <td className="sk-cell-mono">{item.arrival_time}</td>
+                                                            <td>
+                                                                <div className="email-row-actions">
+                                                                    <Button size="sm" variant="destructive" onClick={() => handleDeleteQueueItem(item.queue_id)}>Delete</Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="email-logs mt-8">
+                                <div className="email-logs">
                                     <div className="section-header">
                                         <h2>Mail Logs</h2>
                                         <div className="log-controls">

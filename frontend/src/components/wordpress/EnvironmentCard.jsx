@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ExternalLink, RefreshCw, Trash2, GitBranch, Clock, AlertTriangle, Calendar, FileText } from 'lucide-react';
 import { ConfirmDialog } from '../ConfirmDialog';
+import { Pill, EnvTag } from '../ds';
 
 const EnvironmentCard = ({ environment, productionUrl, onSync, onDelete, onViewLogs, isProduction = false }) => {
     const [syncing, setSyncing] = useState(false);
@@ -9,7 +10,7 @@ const EnvironmentCard = ({ environment, productionUrl, onSync, onDelete, onViewL
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
     const isRunning = environment.status === 'running';
-    const envType = environment.type || (isProduction ? 'production' : 'development');
+    const envType = environment.type || environment.environment_type || (isProduction ? 'production' : 'development');
 
     // Helper functions
     function formatDate(dateString) {
@@ -78,21 +79,16 @@ const EnvironmentCard = ({ environment, productionUrl, onSync, onDelete, onViewL
         }
     }
 
-    function getEnvBadgeClass() {
-        switch (envType) {
-            case 'production': return 'env-production';
-            case 'staging': return 'env-staging';
-            default: return 'env-development';
-        }
-    }
+    const envTagLabel = envType === 'production' ? 'PROD'
+        : envType === 'staging' ? 'STAGING'
+        : envType === 'multidev' ? 'MULTIDEV'
+        : 'DEV';
 
     return (
         <div className={`wp-env-card ${isProduction ? 'production' : ''} ${stale ? 'stale' : ''}`}>
             <div className="wp-env-header">
                 <div className="wp-env-info">
-                    <span className={`wp-env-badge ${getEnvBadgeClass()}`}>
-                        {envType.toUpperCase()}
-                    </span>
+                    <EnvTag env={envTagLabel} />
                     <h4 className="wp-env-name">{environment.name}</h4>
                 </div>
                 <div className="wp-env-status-group">
@@ -102,10 +98,7 @@ const EnvironmentCard = ({ environment, productionUrl, onSync, onDelete, onViewL
                             Stale
                         </span>
                     )}
-                    <span className={`wp-env-status ${isRunning ? 'running' : 'stopped'}`}>
-                        <span className="status-dot" />
-                        {isRunning ? 'Running' : 'Stopped'}
-                    </span>
+                    <Pill kind={isRunning ? 'green' : 'gray'}>{isRunning ? 'Running' : 'Stopped'}</Pill>
                 </div>
             </div>
 

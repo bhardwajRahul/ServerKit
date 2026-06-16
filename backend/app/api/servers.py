@@ -324,6 +324,11 @@ def create_server():
     user = User.query.get(user_id)
     ws_id = WorkspaceService.resolve_workspace_id(
         user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    # Role reconciliation (#33): a workspace 'viewer' member has read-only access to
+    # the active workspace and may not create resources in it (checked only when a
+    # workspace context is explicitly active, so no-context behavior is unchanged).
+    if ws_id is not None and not WorkspaceService.can_write_in_workspace(user, ws_id):
+        return jsonify({'error': 'You have read-only access to this workspace'}), 403
     if ws_id is None:
         ws_id = WorkspaceService.ensure_default_workspace().id
 
@@ -392,6 +397,9 @@ def set_server_workspace(server_id):
             return jsonify({'error': 'Workspace not found'}), 404
         if not user.is_admin and WorkspaceService.get_user_role(ws.id, user.id) is None:
             return jsonify({'error': 'Not a member of the target workspace'}), 403
+        # Role reconciliation (#33): a 'viewer' member can't move resources into it.
+        if not WorkspaceService.can_write_in_workspace(user, ws.id):
+            return jsonify({'error': 'You have read-only access to the target workspace'}), 403
         ws_id = ws.id
 
     server.workspace_id = ws_id
@@ -2115,11 +2123,16 @@ def get_agent_checksums():
 
 @servers_bp.route('/<server_id>/agent/update', methods=['POST'])
 @jwt_required()
+@developer_required
 def trigger_agent_update(server_id):
     """
     Trigger an agent update on a specific server.
 
     Sends a command to the agent to check for and install updates.
+
+    Developer role required — this replaces the agent binary and restarts the
+    service across the fleet, so it must not be reachable by read-only viewers
+    (every other state-changing server route is already @developer_required).
     """
     server = Server.query.get(server_id)
     if not server:

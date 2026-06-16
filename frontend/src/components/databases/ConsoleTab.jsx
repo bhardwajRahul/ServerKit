@@ -3,6 +3,7 @@ import { Play, History, Download, Eraser, Lock, Unlock, Clock } from 'lucide-rea
 import { useToast } from '../../contexts/ToastContext';
 import { runQuery, connKey } from './dbAdapter';
 import ResultsGrid from './ResultsGrid';
+import SqlEditor from './SqlEditor';
 
 const HISTORY_KEY = 'serverkit_query_history';
 const MAX_HISTORY = 50;
@@ -162,15 +163,13 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
 
             <div className="dbx-console-split">
                 <div className="dbx-editor-wrap">
-                    <textarea
+                    <SqlEditor
                         ref={editorRef}
-                        className="dbx-editor"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder={`SELECT * FROM …  —  querying ${conn.name || conn.path || conn.container}`}
-                        spellCheck={false}
-                        aria-label="SQL editor"
+                        ariaLabel="SQL editor"
                     />
                     {readonly && (
                         <span className="dbx-editor-badge">
@@ -212,7 +211,7 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                         {results && !error && (
                             <div className="dbx-results-head">
                                 <span className="dbx-results-count">
-                                    {results.row_count} row{results.row_count === 1 ? '' : 's'}
+                                    <strong>{results.row_count}</strong> row{results.row_count === 1 ? '' : 's'}
                                     {results.truncated && ` · truncated from ${results.total_rows}`}
                                 </span>
                                 <span className="dbx-results-time">{results.execution_time}s</span>

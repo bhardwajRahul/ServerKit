@@ -78,18 +78,31 @@ Requires=docker.service
 
 [Service]
 Type=simple
-User=root
+User=serverkit-agent
+Group=serverkit-agent
 ExecStart=/usr/local/bin/serverkit-agent start
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
+SyslogIdentifier=serverkit-agent
 
-# Security hardening
-NoNewPrivileges=false
+# Security hardening — run as a dedicated unprivileged account, matching the
+# script installer (agent/scripts/install.sh). In this mode the agent cannot
+# overwrite its own root-owned binary, so self-update is disabled and updates
+# flow through the OS package manager (apt) instead — the signature-checked
+# path. systemd/package-management handlers need root; if you require them,
+# deliberately run as root or configure passwordless sudo for this account.
+NoNewPrivileges=yes
 ProtectSystem=strict
-ProtectHome=read-only
-ReadWritePaths=/etc/serverkit-agent /var/log/serverkit-agent
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/etc/serverkit-agent /var/log/serverkit-agent /var/lib/serverkit /var/serverkit
+# `register` is usually run via sudo (as root), so the credential files it
+# writes can end up root-owned and unreadable by this service account. Fix
+# ownership at start regardless of how the operator registered. The leading
+# '+' runs this step as root even though the service drops to User= above.
+ExecStartPre=+/usr/bin/chown -R serverkit-agent:serverkit-agent /etc/serverkit-agent
 
 [Install]
 WantedBy=multi-user.target
@@ -142,6 +155,24 @@ set -e
 
 case "$1" in
     configure)
+        # Create the dedicated, unprivileged service account (idempotent).
+        if ! getent passwd serverkit-agent >/dev/null; then
+            useradd --system --no-create-home --shell /usr/sbin/nologin serverkit-agent
+        fi
+
+        # Let the agent reach the Docker socket without root.
+        if getent group docker >/dev/null; then
+            usermod -aG docker serverkit-agent || true
+        fi
+
+        # State/data directories the agent writes to, owned by the service
+        # account. Also re-chown the config dir so an existing root-owned
+        # agent.key (e.g. from a previous root install, or `sudo register`)
+        # becomes readable by the unprivileged service after upgrade.
+        mkdir -p /var/lib/serverkit/apps /var/serverkit/apps /var/log/serverkit-agent
+        chown -R serverkit-agent:serverkit-agent \
+            /var/lib/serverkit /var/serverkit /var/log/serverkit-agent /etc/serverkit-agent 2>/dev/null || true
+
         # Reload systemd
         systemctl daemon-reload
 
@@ -152,8 +183,8 @@ case "$1" in
         echo "ServerKit Agent installed successfully!"
         echo ""
         echo "To complete setup:"
-        echo "  1. Register the agent:"
-        echo "     sudo serverkit-agent register --token YOUR_TOKEN --server https://your-serverkit.com"
+        echo "  1. Register the agent (runs as the service account):"
+        echo "     sudo -u serverkit-agent serverkit-agent register --token YOUR_TOKEN --server https://your-serverkit.com"
         echo ""
         echo "  2. Start the service:"
         echo "     sudo systemctl start serverkit-agent"

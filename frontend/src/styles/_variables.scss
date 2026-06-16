@@ -5,20 +5,22 @@
 // Raw values (*-raw) are kept for SCSS compile-time functions like fade().
 // ============================================
 
-$white: #f4f4f5;
-$black: #09090b;
+$white: #e9ebf0;
+$black: #0a0b0e;
 
 // --------------------------------------------
 // COLORS - Background (theme-sensitive)
 // --------------------------------------------
-// Raw values for SCSS functions (dark theme defaults)
-$bg-body-raw: #09090b;
-$bg-sidebar-raw: #0f0f11;
-$bg-card-raw: #18181b;
-$bg-hover-raw: #27272a;
-$bg-elevated-raw: #1f1f23;
-$bg-secondary-raw: #27272a;
-$bg-tertiary-raw: #3f3f46;
+// Raw values for SCSS functions (dark theme defaults).
+// Remapped to the redesign "infra console" surface ramp — see
+// docs/REDESIGN_MAP.md §1.1. var()-backed tokens below carry the runtime value.
+$bg-body-raw: #0a0b0e;
+$bg-sidebar-raw: #0d0f15;
+$bg-card-raw: #101218;
+$bg-hover-raw: #1a1e27;
+$bg-elevated-raw: #161922;
+$bg-secondary-raw: #161922;
+$bg-tertiary-raw: #1c2029;
 
 // Themed values using CSS custom properties
 $bg-body: var(--bg-body);
@@ -33,10 +35,10 @@ $bg-tertiary: var(--bg-tertiary);
 // COLORS - Borders (theme-sensitive)
 // --------------------------------------------
 // Raw values for SCSS functions
-$border-default-raw: #27272a;
-$border-subtle-raw: #27272a;
-$border-active-raw: #3f3f46;
-$border-hover-raw: #3f3f46;
+$border-default-raw: #23272f;
+$border-subtle-raw: #191c23;
+$border-active-raw: #2c313b;
+$border-hover-raw: #2c313b;
 
 // Themed values using CSS custom properties
 $border-default: var(--border-default);
@@ -54,9 +56,9 @@ $border-hover: var(--border-hover);
 // legibility (see _theme-variables.scss). Rendered text color always comes
 // from the var()-backed $text-* tokens below; only low-opacity fills read
 // from these raws, where the exact base tone is visually negligible.
-$text-primary-raw: #f4f4f5;
-$text-secondary-raw: #a1a1aa;
-$text-tertiary-raw: #71717a;
+$text-primary-raw: #e9ebf0;
+$text-secondary-raw: #9aa1af;
+$text-tertiary-raw: #646b7a;
 
 // Themed values using CSS custom properties
 $text-primary: var(--text-primary);
@@ -67,10 +69,10 @@ $text-tertiary: var(--text-tertiary);
 // COLORS - Accent
 // --------------------------------------------
 // Raw values for SCSS compile-time functions (fade, darken, etc.)
-$accent-primary-raw: #6366f1;
-$accent-hover-raw: #4f46e5;
-$accent-glow-raw: rgba(99, 102, 241, 0.15);
-$accent-shadow-raw: rgba(99, 102, 241, 0.3);
+$accent-primary-raw: #6d7cff;
+$accent-hover-raw: #5a67e8;
+$accent-glow-raw: rgba(109, 124, 255, 0.35);
+$accent-shadow-raw: rgba(109, 124, 255, 0.3);
 
 // Themed values using CSS custom properties (runtime-switchable)
 $accent-primary: var(--accent-primary);
@@ -78,25 +80,40 @@ $accent-hover: var(--accent-hover);
 $accent-glow: var(--accent-glow);
 $accent-shadow: var(--accent-shadow);
 
+// Brighter/dimmer accent stops (redesign) — var()-backed so they track the
+// user's/workspace's runtime accent (set by ThemeContext).
+$accent-bright: var(--accent-bright);
+$accent-dim: var(--accent-dim);
+$accent-bg: var(--accent-bg);
+$accent-bg-soft: var(--accent-bg-soft);
+
 // --------------------------------------------
 // COLORS - Semantic
 // --------------------------------------------
-$success: #10b981;
-$success-bg: rgba(16, 185, 129, 0.1);
-$success-border: rgba(16, 185, 129, 0.2);
+// Redesign "infra console" semantic palette (raw hex so SCSS fade()/darken()
+// keep working). The matching --green/--amber/--red/--cyan/--violet CSS vars
+// live in _theme-variables.scss for design-system primitives.
+$success: #3ddc97;
+$success-bg: rgba(61, 220, 151, 0.12);
+$success-border: rgba(61, 220, 151, 0.22);
 
-$warning: #f59e0b;
-$warning-bg: rgba(245, 158, 11, 0.1);
-$warning-border: rgba(245, 158, 11, 0.2);
+$warning: #f5b945;
+$warning-bg: rgba(245, 185, 69, 0.12);
+$warning-border: rgba(245, 185, 69, 0.22);
 
-$danger: #ef4444;
-$danger-hover: #dc2626;
-$danger-bg: rgba(239, 68, 68, 0.1);
-$danger-border: rgba(239, 68, 68, 0.2);
+$danger: #fb6f6f;
+$danger-hover: #e95f5f;
+$danger-bg: rgba(251, 111, 111, 0.12);
+$danger-border: rgba(251, 111, 111, 0.22);
 
-$info: #3b82f6;
-$info-bg: rgba(59, 130, 246, 0.1);
-$info-border: rgba(59, 130, 246, 0.2);
+$info: #49c7f0;
+$info-bg: rgba(73, 199, 240, 0.12);
+$info-border: rgba(73, 199, 240, 0.22);
+
+$cyan: #49c7f0;
+$cyan-bg: rgba(73, 199, 240, 0.12);
+$violet: #b07bf5;
+$violet-bg: rgba(176, 123, 245, 0.12);
 
 // --------------------------------------------
 // COLORS - Brand (Database/Docker icons)
@@ -123,8 +140,8 @@ $color-star: #f59e0b;
 // --------------------------------------------
 // TYPOGRAPHY
 // --------------------------------------------
-$font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-$font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
+$font-main: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+$font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
 
 $font-size-xs: 10px;
 $font-size-sm: 12px;
@@ -198,7 +215,7 @@ $ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 // --------------------------------------------
 // LAYOUT
 // --------------------------------------------
-$sidebar-width: 280px;
+$sidebar-width: 250px;
 $header-height: 64px;
 $mobile-header-height: 56px;
 $sidebar-header-height: 70px;

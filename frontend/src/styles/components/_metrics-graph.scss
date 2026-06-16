@@ -123,12 +123,12 @@
 
 // Tooltip
 .metrics-tooltip {
-    background: rgba(24, 24, 27, 0.95);
+    background: var(--surface-2);
     backdrop-filter: blur(8px);
-    border: 1px solid $border-subtle;
+    border: 1px solid var(--border-strong);
     border-radius: $radius-lg;
     padding: $space-3 $space-4;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-lg);
     min-width: 140px;
 
     .tooltip-time {
@@ -199,25 +199,25 @@
         opacity: 1;
     }
 
-    // CPU - Purple/Indigo
+    // CPU - periwinkle accent
     &.cpu.active {
-        background: rgba(99, 102, 241, 0.1);
-        color: #6366f1;
-        border-color: rgba(99, 102, 241, 0.3);
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+        border-color: var(--accent-dim);
     }
 
-    // Memory - Green
+    // Memory - green
     &.memory.active {
-        background: rgba(16, 185, 129, 0.1);
-        color: #10b981;
-        border-color: rgba(16, 185, 129, 0.3);
+        background: var(--green-bg);
+        color: var(--green);
+        border-color: rgba(61, 220, 151, 0.3);
     }
 
-    // Disk - Orange
+    // Disk - amber
     &.disk.active {
-        background: rgba(245, 158, 11, 0.1);
-        color: $warning;
-        border-color: rgba(245, 158, 11, 0.3);
+        background: var(--amber-bg);
+        color: var(--amber);
+        border-color: rgba(245, 185, 69, 0.3);
     }
 }
 
@@ -267,18 +267,18 @@
     }
 
     &.cpu {
-        background: #6366f1;
-        box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        background: var(--accent-bright);
+        box-shadow: 0 0 8px var(--accent-glow);
     }
 
     &.memory {
-        background: #10b981;
-        box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+        background: var(--green);
+        box-shadow: 0 0 8px rgba(61, 220, 151, 0.5);
     }
 
     &.disk {
-        background: $warning;
-        box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+        background: var(--amber);
+        box-shadow: 0 0 8px rgba(245, 185, 69, 0.5);
     }
 }
 

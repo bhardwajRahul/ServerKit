@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 const ThemeContext = createContext(null);
 
-const DEFAULT_ACCENT = '#6366f1';
+const DEFAULT_ACCENT = '#6d7cff';
 
 const DEFAULT_WHITE_LABEL = {
     enabled: false,
@@ -22,7 +22,7 @@ function getResolvedTheme(theme) {
 // Convert hex to { r, g, b }
 function hexToRgb(hex) {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) return { r: 99, g: 102, b: 241 };
+    if (!result) return { r: 109, g: 124, b: 255 };
     return {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
@@ -30,27 +30,42 @@ function hexToRgb(hex) {
     };
 }
 
-// Derive accent color variants from a hex color
+const toHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+const rgbToHex = (r, g, b) => `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+
+// Derive the full accent ramp from a single hex. The redesign needs brighter
+// (toward white) and dimmer (toward black) stops plus translucent washes so
+// the new design-system primitives track a custom/workspace accent.
 function deriveAccentVariants(hex) {
     const { r, g, b } = hexToRgb(hex);
-    // Darken by ~12% for hover
-    const darken = (v) => Math.max(0, Math.round(v * 0.88));
+    const darken = (v) => v * 0.88;        // hover
+    const dim = (v) => v * 0.70;           // --accent-dim
+    const bright = (v) => v + (255 - v) * 0.30; // --accent-bright, toward white
     return {
         primary: hex,
-        hover: `#${darken(r).toString(16).padStart(2, '0')}${darken(g).toString(16).padStart(2, '0')}${darken(b).toString(16).padStart(2, '0')}`,
-        glow: `rgba(${r}, ${g}, ${b}, 0.15)`,
+        hover: rgbToHex(darken(r), darken(g), darken(b)),
+        bright: rgbToHex(bright(r), bright(g), bright(b)),
+        dim: rgbToHex(dim(r), dim(g), dim(b)),
+        bg: `rgba(${r}, ${g}, ${b}, 0.13)`,
+        bgSoft: `rgba(${r}, ${g}, ${b}, 0.07)`,
+        glow: `rgba(${r}, ${g}, ${b}, 0.35)`,
         shadow: `rgba(${r}, ${g}, ${b}, 0.3)`,
     };
 }
 
 // Apply accent CSS custom properties to the document
 function applyAccentToDOM(hex) {
-    const variants = deriveAccentVariants(hex);
+    const v = deriveAccentVariants(hex);
     const style = document.documentElement.style;
-    style.setProperty('--accent-primary', variants.primary);
-    style.setProperty('--accent-hover', variants.hover);
-    style.setProperty('--accent-glow', variants.glow);
-    style.setProperty('--accent-shadow', variants.shadow);
+    style.setProperty('--accent-primary', v.primary);
+    style.setProperty('--accent', v.primary);
+    style.setProperty('--accent-hover', v.hover);
+    style.setProperty('--accent-bright', v.bright);
+    style.setProperty('--accent-dim', v.dim);
+    style.setProperty('--accent-bg', v.bg);
+    style.setProperty('--accent-bg-soft', v.bgSoft);
+    style.setProperty('--accent-glow', v.glow);
+    style.setProperty('--accent-shadow', v.shadow);
 }
 
 export function ThemeProvider({ children }) {

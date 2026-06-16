@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
+import { Gauge } from '@/components/ds';
 
 const MetricsTab = ({ app }) => {
     const [stats, setStats] = useState(null);
@@ -39,12 +40,6 @@ const MetricsTab = ({ app }) => {
         }
     }
 
-    function getBarColor(percent) {
-        if (percent > 80) return 'var(--danger, #ef4444)';
-        if (percent > 60) return 'var(--warning, #f59e0b)';
-        return 'var(--success, #10b981)';
-    }
-
     if (loading) {
         return <div className="loading">Loading metrics...</div>;
     }
@@ -65,15 +60,7 @@ const MetricsTab = ({ app }) => {
                             <h4>CPU Usage</h4>
                             <span>{cpuPercent.toFixed(1)}%</span>
                         </div>
-                        <div className="metrics-tab__bar">
-                            <div
-                                className="metrics-tab__bar-fill"
-                                style={{
-                                    width: `${Math.min(cpuPercent, 100)}%`,
-                                    backgroundColor: getBarColor(cpuPercent),
-                                }}
-                            />
-                        </div>
+                        <Gauge value={cpuPercent} />
                     </div>
 
                     <div className="metrics-tab__card">
@@ -81,15 +68,7 @@ const MetricsTab = ({ app }) => {
                             <h4>Memory Usage</h4>
                             <span>{memPercent.toFixed(1)}%</span>
                         </div>
-                        <div className="metrics-tab__bar">
-                            <div
-                                className="metrics-tab__bar-fill"
-                                style={{
-                                    width: `${Math.min(memPercent, 100)}%`,
-                                    backgroundColor: getBarColor(memPercent),
-                                }}
-                            />
-                        </div>
+                        <Gauge value={memPercent} />
                         <div className="metrics-tab__info">{memUsage}</div>
                     </div>
 

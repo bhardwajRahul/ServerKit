@@ -3,25 +3,6 @@
 // ============================================
 
 .downloads-page {
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: $space-6;
-
-        .page-header-content {
-            h1 {
-                margin-bottom: $space-2;
-            }
-
-            .page-subtitle {
-                color: $text-secondary;
-                font-size: $font-size-base;
-                max-width: 600px;
-            }
-        }
-    }
-
     .loading-container {
         display: flex;
         flex-direction: column;

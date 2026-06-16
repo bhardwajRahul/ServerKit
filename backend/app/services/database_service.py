@@ -1249,7 +1249,13 @@ class DatabaseService:
 
     @staticmethod
     def docker_mysql_get_tables(container_name, database, user='root', password=None):
-        """Get tables in a Docker MySQL database."""
+        """List tables in a Docker MySQL database.
+
+        Returns ``{'connected': bool, 'tables': [...], 'error': str|None}`` so
+        callers can tell a genuinely empty database apart from a container/auth
+        failure. Both used to collapse to ``[]`` and the explorer rendered
+        "Empty" either way, silently hiding a broken connection.
+        """
         result = DatabaseService.docker_mysql_execute(
             container_name,
             "SHOW TABLES;",
@@ -1258,7 +1264,11 @@ class DatabaseService:
             password=password
         )
         if not result['success']:
-            return []
+            return {
+                'connected': False,
+                'tables': [],
+                'error': result.get('error') or 'Could not connect to the database container',
+            }
 
         tables = []
         for line in result['output'].strip().split('\n')[1:]:
@@ -1283,7 +1293,7 @@ class DatabaseService:
                     'name': table_name,
                     'rows': rows
                 })
-        return tables
+        return {'connected': True, 'tables': tables, 'error': None}
 
     @staticmethod
     def docker_mysql_execute_query(container_name, database, query, user='root', password=None,

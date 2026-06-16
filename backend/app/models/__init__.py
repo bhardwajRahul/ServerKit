@@ -16,9 +16,10 @@ from app.models.wordpress_site import WordPressSite, DatabaseSnapshot, SyncJob, 
 from app.models.environment_activity import EnvironmentActivity
 from app.models.promotion_job import PromotionJob
 from app.models.sanitization_profile import SanitizationProfile
-from app.models.email import EmailDomain, EmailAccount, EmailAlias, EmailForwardingRule, DNSProviderConfig
+from app.models.email import EmailDomain, EmailAccount, EmailAlias, EmailForwardingRule, DNSProviderConfig, EmailRelayConfig
 from app.models.oauth_identity import OAuthIdentity
 from app.models.source_connection import SourceConnection
+from app.models.registrar_connection import RegistrarConnection
 from app.models.api_key import ApiKey
 from app.models.api_usage import ApiUsageLog, ApiUsageSummary
 from app.models.event_subscription import EventSubscription, EventDelivery
@@ -28,6 +29,8 @@ from app.models.agent_plugin import AgentPlugin, AgentPluginInstall
 from app.models.server_template import ServerTemplate, ServerTemplateAssignment
 from app.models.workspace import Workspace, WorkspaceMember, WorkspaceApiKey, ResourceGrant
 from app.models.dns_zone import DNSZone, DNSRecord
+from app.models.tunnel import Tunnel
+from app.models.exposed_service import ExposedService
 from app.models.status_page import StatusPage, StatusComponent, HealthCheck, StatusIncident, StatusIncidentUpdate
 from app.models.cloud_server import CloudProvider, CloudServer, CloudSnapshot
 from app.models.marketplace import Extension, ExtensionInstall
@@ -42,14 +45,15 @@ __all__ = [
     'Server', 'ServerGroup', 'ServerMetrics', 'ServerCommand', 'AgentSession', 'AgentVersion', 'AgentRollout', 'SecurityAlert',
     'WordPressSite', 'DatabaseSnapshot', 'SyncJob', 'WordPressVulnerability',
     'EnvironmentActivity', 'PromotionJob', 'SanitizationProfile',
-    'EmailDomain', 'EmailAccount', 'EmailAlias', 'EmailForwardingRule', 'DNSProviderConfig',
-    'OAuthIdentity', 'SourceConnection', 'ApiKey', 'ApiUsageLog', 'ApiUsageSummary',
+    'EmailDomain', 'EmailAccount', 'EmailAlias', 'EmailForwardingRule', 'DNSProviderConfig', 'EmailRelayConfig',
+    'OAuthIdentity', 'SourceConnection', 'RegistrarConnection', 'ApiKey', 'ApiUsageLog', 'ApiUsageSummary',
     'EventSubscription', 'EventDelivery', 'Invitation',
     'ServerAlertThreshold', 'MetricAlert',
     'AgentPlugin', 'AgentPluginInstall',
     'ServerTemplate', 'ServerTemplateAssignment',
     'Workspace', 'WorkspaceMember', 'WorkspaceApiKey', 'ResourceGrant',
     'DNSZone', 'DNSRecord',
+    'Tunnel', 'ExposedService',
     'StatusPage', 'StatusComponent', 'HealthCheck', 'StatusIncident', 'StatusIncidentUpdate',
     'CloudProvider', 'CloudServer', 'CloudSnapshot',
     'Extension', 'ExtensionInstall',

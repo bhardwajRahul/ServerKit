@@ -130,6 +130,60 @@ export async function uploadFile(destination, file, onProgress = null) {
     });
 }
 
+// S3 / object-storage browser (reuses the configured backup storage creds).
+// Paths are slash-rooted (e.g. "/photos/cat.jpg"); the backend maps them to keys.
+export async function browseS3(path = '/') {
+    return this.request(`/files/s3/browse?path=${encodeURIComponent(path)}`);
+}
+
+export async function readS3(path) {
+    return this.request(`/files/s3/read?path=${encodeURIComponent(path)}`);
+}
+
+export async function writeS3(path, content) {
+    return this.request('/files/s3/write', { method: 'POST', body: { path, content } });
+}
+
+export async function deleteS3(path) {
+    return this.request(`/files/s3/delete?path=${encodeURIComponent(path)}`, { method: 'DELETE' });
+}
+
+export async function getS3DownloadUrl(path) {
+    return this.request(`/files/s3/download-url?path=${encodeURIComponent(path)}`);
+}
+
+export async function downloadS3File(path) {
+    const res = await this.getS3DownloadUrl(path);
+    if (res && res.url) window.open(res.url, '_blank');
+    return res;
+}
+
+export async function uploadS3(destination, file, onProgress = null) {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('destination', destination);
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${this.baseUrl}/files/s3/upload`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+        if (onProgress) {
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) onProgress((e.loaded / e.total) * 100);
+            };
+        }
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+            else reject(new Error(JSON.parse(xhr.responseText).error || 'Upload failed'));
+        };
+        xhr.onerror = () => reject(new Error('Upload failed'));
+        xhr.send(formData);
+    });
+}
+
 // FTP Server endpoints
 export async function getFTPStatus() {
     return this.request('/ftp/status');

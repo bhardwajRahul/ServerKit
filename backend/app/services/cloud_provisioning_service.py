@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from app import db
 from app.models.cloud_server import CloudProvider, CloudServer, CloudSnapshot
+from app.utils.crypto import encrypt_secret, decrypt_secret_safe, is_encrypted
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class CloudProvisioningService:
         provider = CloudProvider(
             name=data.get('name', CloudProvisioningService.SUPPORTED_PROVIDERS[ptype]['name']),
             provider_type=ptype,
-            api_key_encrypted=data.get('api_key', ''),
+            api_key_encrypted=encrypt_secret(data['api_key']) if data.get('api_key') else '',
             created_by=user_id,
         )
         db.session.add(provider)
@@ -74,6 +75,19 @@ class CloudProvisioningService:
     @staticmethod
     def get_provider_options(provider_type):
         return CloudProvisioningService.SUPPORTED_PROVIDERS.get(provider_type, {})
+
+    @staticmethod
+    def encrypt_legacy_secrets():
+        """One-time, idempotent: encrypt any cloud-provider API tokens still stored
+        in plaintext (the column predates encryption-at-rest)."""
+        changed = 0
+        for provider in CloudProvider.query.all():
+            if provider.api_key_encrypted and not is_encrypted(provider.api_key_encrypted):
+                provider.api_key_encrypted = encrypt_secret(provider.api_key_encrypted)
+                changed += 1
+        if changed:
+            db.session.commit()
+        return changed
 
     # --- Servers ---
 
@@ -239,7 +253,7 @@ class CloudProvisioningService:
     @staticmethod
     def _auth_headers(provider):
         return {
-            'Authorization': f'Bearer {provider.api_key_encrypted}',
+            'Authorization': f'Bearer {decrypt_secret_safe(provider.api_key_encrypted)}',
             'Content-Type': 'application/json',
         }
 

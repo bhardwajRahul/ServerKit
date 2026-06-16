@@ -620,12 +620,22 @@ def list_all_docker_databases():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
 
+    # Workspace-aware scoping (#33). Docker databases are app-children — scope the
+    # enumeration to the apps the caller can see (own + granted, workspace-narrowed)
+    # via the same helper apps/domains use. With no workspace context this is the
+    # prior behavior. NOTE: the host-level MySQL/PostgreSQL/SQLite endpoints above
+    # are server-global system resources with no app/workspace linkage, so they are
+    # intentionally NOT workspace-scoped (their mutations are already admin-gated).
+    from app.services.workspace_service import WorkspaceService
+    ws_id = WorkspaceService.resolve_workspace_id(
+        user, request.headers.get('X-Workspace-Id') or request.args.get('workspace_id'))
+    app_q = WorkspaceService.scope_query(
+        Application.query.filter_by(app_type='docker'), Application, user,
+        workspace_id=ws_id, owner_attr='user_id', grant_resource_type='application')
+
     out = []
-    apps = Application.query.filter_by(app_type='docker').all()
-    for app in apps:
+    for app in app_q.all():
         if not app.root_path:
-            continue
-        if not ResourceGrantService.can_access_app(user, app):
             continue
         info = DatabaseService.get_app_database_info(app.name, app.root_path)
         if not info:
@@ -686,8 +696,12 @@ def get_docker_database_tables(container, database):
     user = request.args.get('user', 'root')
     password = request.headers.get('X-DB-Password')
 
-    tables = DatabaseService.docker_mysql_get_tables(container, database, user, password)
-    return jsonify({'tables': tables}), 200
+    result = DatabaseService.docker_mysql_get_tables(container, database, user, password)
+    return jsonify({
+        'tables': result['tables'],
+        'connected': result['connected'],
+        'error': result['error'],
+    }), 200
 
 
 @databases_bp.route('/docker/<container>/<database>/query', methods=['POST'])

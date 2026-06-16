@@ -15,12 +15,14 @@ import {
 import api from '../services/api';
 import { StatStrip, Stat } from '../components/StatCard';
 import { Button } from '@/components/ui/button';
+import { PageTopbar } from '@/components/ds';
+import { SERVICE_TABS } from '../components/services/serviceTabs';
 
 const STATUS_COLORS = {
-    pending: { bg: 'rgba(148,163,184,0.15)', fg: '#94a3b8', icon: Clock },
-    running: { bg: 'rgba(99,102,241,0.15)', fg: '#6366f1', icon: Loader2 },
-    succeeded: { bg: 'rgba(34,197,94,0.15)', fg: '#22c55e', icon: CheckCircle2 },
-    failed: { bg: 'rgba(239,68,68,0.15)', fg: '#ef4444', icon: XCircle },
+    pending: { bg: 'var(--surface-3)', fg: 'var(--text-faint)', icon: Clock },
+    running: { bg: 'var(--accent-bg)', fg: 'var(--accent-bright)', icon: Loader2 },
+    succeeded: { bg: 'var(--green-bg)', fg: 'var(--green)', icon: CheckCircle2 },
+    failed: { bg: 'var(--red-bg)', fg: 'var(--red)', icon: XCircle },
 };
 
 const formatDuration = (seconds) => {
@@ -136,36 +138,33 @@ const Deployments = () => {
 
     return (
         <div className="page-container deployments-page">
-            <div className="page-header deployments-page__header">
-                <div className="deployments-page__heading">
-                    <h1 className="page-title">
-                        <Activity size={22} />
-                        Deployment Activity
-                    </h1>
-                    <p className="deployments-page__description">
-                        Track install and deploy jobs across services and servers with status, progress, and logs.
-                    </p>
-                </div>
-                <div className="deployments-page__actions">
-                    <Button variant="outline" asChild>
-                        <Link to="/services/new">
-                            <GitBranch size={16} />
-                            New Service
-                        </Link>
-                    </Button>
-                    <Button
-                        variant={autoRefresh ? 'default' : 'outline'}
-                        onClick={() => setAutoRefresh((v) => !v)}
-                        title="Auto-refresh every 3s"
-                    >
-                        <RefreshCw size={16} className={autoRefresh ? 'spin' : ''} />
-                        {autoRefresh ? 'Live' : 'Paused'}
-                    </Button>
-                    <Button variant="outline" onClick={loadJobs}>
-                        <RefreshCw size={16} /> Refresh
-                    </Button>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Activity size={18} />}
+                title="Deployment Activity"
+                tabs={SERVICE_TABS}
+                actions={(
+                    <>
+                        <Button variant="outline" size="sm" asChild>
+                            <Link to="/services/new">
+                                <GitBranch size={16} />
+                                New Service
+                            </Link>
+                        </Button>
+                        <Button
+                            variant={autoRefresh ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setAutoRefresh((v) => !v)}
+                            title="Auto-refresh every 3s"
+                        >
+                            <RefreshCw size={16} className={autoRefresh ? 'spin' : ''} />
+                            {autoRefresh ? 'Live' : 'Paused'}
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={loadJobs}>
+                            <RefreshCw size={16} /> Refresh
+                        </Button>
+                    </>
+                )}
+            />
 
             <StatStrip ariaLabel="Deployment summary">
                 <Stat label="Running" value={summary.running} state={summary.running > 0 ? 'info' : undefined} />
@@ -250,7 +249,7 @@ const Deployments = () => {
                                                     style={{
                                                         width: `${job.progress_percent || 0}%`,
                                                         background:
-                                                            job.status === 'failed' ? '#ef4444' : 'var(--accent-primary)',
+                                                            job.status === 'failed' ? 'var(--red)' : 'var(--accent-primary)',
                                                     }}
                                                 />
                                             </div>
@@ -338,10 +337,10 @@ const Deployments = () => {
                                         const stepPrefix = log.step_index ? `[${log.step_index}] ` : '';
                                         const color =
                                             log.level === 'error'
-                                                ? '#fca5a5'
+                                                ? 'var(--red)'
                                                 : log.level === 'debug'
-                                                ? '#94a3b8'
-                                                : '#cbd5e1';
+                                                ? 'var(--text-faint)'
+                                                : 'var(--text-dim)';
                                         return (
                                             <div key={log.id} style={{ color }}>
                                                 <span className="deployments-page__log-time">{ts}</span>{' '}

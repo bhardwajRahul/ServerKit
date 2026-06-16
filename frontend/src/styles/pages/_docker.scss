@@ -233,7 +233,7 @@
     }
 
     tr:hover {
-        background: fade($white, 2%);
+        background: $bg-hover;
     }
 
     tr:last-child td {
@@ -445,15 +445,15 @@
     color: $color-docker;
 
     &.image-icon {
-        color: #a78bfa; // Purple for images
+        color: $violet; // Purple for images
     }
 
     &.network-icon {
-        color: #34d399; // Green for networks
+        color: $success; // Green for networks
     }
 
     &.volume-icon {
-        color: #fbbf24; // Yellow for volumes
+        color: $warning; // Yellow for volumes
     }
 }
 
@@ -776,10 +776,10 @@
         box-shadow: $shadow-md;
     }
 
-    &[data-kind='containers'] .dx-stat-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
-    &[data-kind='images']     .dx-stat-icon { color: #8b5cf6; background: rgba(139, 92, 246, 0.12); }
-    &[data-kind='volumes']    .dx-stat-icon { color: #10b981; background: rgba(16, 185, 129, 0.12); }
-    &[data-kind='networks']   .dx-stat-icon { color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+    &[data-kind='containers'] .dx-stat-icon { color: $info; background: fade($info, 12%); }
+    &[data-kind='images']     .dx-stat-icon { color: $violet; background: fade($violet, 12%); }
+    &[data-kind='volumes']    .dx-stat-icon { color: $success; background: fade($success, 12%); }
+    &[data-kind='networks']   .dx-stat-icon { color: $warning; background: fade($warning, 12%); }
 }
 
 .dx-stat-icon {
@@ -1004,7 +1004,7 @@
     font-size: $font-size-xs;
 
     span { @include truncate(); }
-    svg { color: #8b5cf6; flex-shrink: 0; }
+    svg { color: $violet; flex-shrink: 0; }
 }
 
 .dx-card-detail {
@@ -1079,7 +1079,7 @@
     @include transition(width);
 
     &.cpu { background: $accent-primary; }
-    &.mem { background: #10b981; }
+    &.mem { background: $success; }
 }
 
 .dx-res-value {
@@ -1140,31 +1140,38 @@
     flex-direction: column;
 }
 
+// Status filter rendered as a segmented control (redesign seg look).
 .dx-filter-chips {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: $space-2;
+    gap: 2px;
     flex-wrap: wrap;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 3px;
 
     .filter-chip {
         display: inline-flex;
         align-items: center;
         gap: $space-2;
-        min-height: 30px;
+        min-height: 28px;
         padding: 0 $space-3;
-        border: 1px solid $border-default;
-        border-radius: $radius-full;
+        border: 1px solid transparent;
+        border-radius: 6px;
         background: transparent;
-        color: $text-secondary;
+        color: $text-tertiary;
         font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
         cursor: pointer;
         @include transition(all);
 
-        &:hover:not(:disabled),
+        &:hover:not(:disabled) { color: $text-primary; }
+
         &.active {
-            border-color: $accent-primary;
-            background: $accent-glow;
-            color: $accent-primary;
+            background: var(--surface-3);
+            color: $text-primary;
+            box-shadow: var(--shadow-sm);
         }
 
         &:disabled {
@@ -1175,9 +1182,21 @@
 
     .filter-chip-count {
         font-family: $font-mono;
+        font-size: 10.5px;
         color: inherit;
-        opacity: 0.8;
+        opacity: 0.7;
     }
+}
+
+// KPI tile strip atop the Docker content area (uses the shared .sk-kpi cards).
+.dx-kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $space-4;
+    margin-bottom: $space-4;
+
+    @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
 }
 
 .dx-search-field {
@@ -1517,8 +1536,8 @@
     width: 38px;
     height: 38px;
     border-radius: $radius-md;
-    background: rgba(59, 130, 246, 0.12);
-    color: #3b82f6;
+    background: fade($info, 12%);
+    color: $info;
     display: flex;
     align-items: center;
     justify-content: center;

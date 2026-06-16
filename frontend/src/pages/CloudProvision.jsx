@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Cloud, Server } from 'lucide-react';
+import { PageTopbar } from '@/components/ds';
+import { SERVER_TABS } from '../components/servers/serverTabs';
 
 const CloudProvision = () => {
     const toast = useToast();
@@ -89,27 +91,25 @@ const CloudProvision = () => {
         return 'warning';
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     return (
         <div className="page-container cloud-provision-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Cloud Provisioning</h1>
-                    <p className="page-description">
-                        {servers.length} server{servers.length !== 1 ? 's' : ''}
-                        {costs && ` • $${costs.total_monthly}/mo`}
-                    </p>
-                </div>
-                <div className="page-header-actions">
-                    {user?.is_admin && (
-                        <>
-                            <Button variant="outline" onClick={() => setShowCreateProvider(true)}>Add Provider</Button>
-                            <Button onClick={() => setShowCreateServer(true)}>New Server</Button>
-                        </>
-                    )}
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Cloud size={18} />}
+                title="Cloud Provisioning"
+                tabs={SERVER_TABS}
+                actions={(
+                    <>
+                        {user?.is_admin && (
+                            <>
+                                <Button size="sm" variant="outline" onClick={() => setShowCreateProvider(true)}>Add Provider</Button>
+                                <Button size="sm" onClick={() => setShowCreateServer(true)}>New Server</Button>
+                            </>
+                        )}
+                    </>
+                )}
+            />
 
             <Tabs defaultValue="servers">
                 <TabsList>

@@ -32,29 +32,31 @@ import (
 	"github.com/serverkit/agent/internal/transport"
 	"github.com/serverkit/agent/internal/transport/poll"
 	"github.com/serverkit/agent/internal/updater"
+	"github.com/serverkit/agent/internal/wireguard"
 	"github.com/serverkit/agent/internal/ws"
 	"github.com/serverkit/agent/pkg/protocol"
 )
 
 // Agent is the main agent that coordinates all components
 type Agent struct {
-	cfg      *config.Config
-	log      *logger.Logger
-	auth     *auth.Authenticator
+	cfg  *config.Config
+	log  *logger.Logger
+	auth *auth.Authenticator
 	// ws is the active transport — either the WS client directly or the
 	// fallback Manager that wraps WS+poll. Named "ws" for compatibility
 	// with the dozens of existing call sites in this file.
-	ws       transport.Transport
+	ws          transport.Transport
 	docker      *docker.Client
 	metrics     *metrics.Collector
 	terminal    *terminal.Manager
 	cron        cron.Manager
 	cloudflared cloudflared.Manager
+	wireguard   wireguard.Manager
 	ipc         *ipc.Server
-	sampler  *metricSampler
-	events   *events.Store
-	gui      *gui.SDK
-	jobs     *jobs.Registry
+	sampler     *metricSampler
+	events      *events.Store
+	gui         *gui.SDK
+	jobs        *jobs.Registry
 
 	// pkgLock serializes package-manager mutations (install / remove /
 	// upgrade / update_cache) inside a single agent so two concurrent
@@ -144,6 +146,14 @@ func New(cfg *config.Config, log *logger.Logger) (*Agent, error) {
 	}
 	eventStore := events.NewStore(200, events.DefaultPath(dataDir))
 
+	// WireGuard private keys live in a root-only subdir of the agent's
+	// data dir; empty dataDir falls back to a system default inside the
+	// wireguard package.
+	wgKeyDir := ""
+	if dataDir != "" {
+		wgKeyDir = filepath.Join(dataDir, "wireguard")
+	}
+
 	agent := &Agent{
 		cfg:           cfg,
 		log:           log,
@@ -154,6 +164,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Agent, error) {
 		terminal:      termManager,
 		cron:          cron.New(),
 		cloudflared:   cloudflared.New(),
+		wireguard:     wireguard.New(wgKeyDir),
 		sampler:       newMetricSampler(300), // 5 min @ 1 Hz
 		events:        eventStore,
 		gui:           gui.New(log),
@@ -166,7 +177,7 @@ func New(cfg *config.Config, log *logger.Logger) (*Agent, error) {
 		// At most one restart can be in-flight at a time anyway —
 		// Restart() uses a non-blocking send and returns "already in
 		// progress" if the slot is full.
-		restartCh:     make(chan struct{}, 1),
+		restartCh: make(chan struct{}, 1),
 	}
 
 	// Probe capabilities up-front so connectionWatcher can ship them on
@@ -288,6 +299,24 @@ func (a *Agent) registerHandlers() {
 	a.handlers[protocol.ActionCloudflaredTunnelCreate] = a.handleCloudflaredTunnelCreate
 	a.handlers[protocol.ActionCloudflaredTunnelRoute] = a.handleCloudflaredTunnelRoute
 	a.handlers[protocol.ActionCloudflaredTunnelDelete] = a.handleCloudflaredTunnelDelete
+
+	// WireGuard tunnel primitives. Registered unconditionally so
+	// non-Linux agents return a clear "unsupported" error rather than
+	// "unknown action"; the `wireguard` capability gates the panel's
+	// Remote Access flow. See docs/REMOTE_ACCESS_ROADMAP.md.
+	a.handlers[protocol.ActionWireguardKeygen] = a.handleWireguardKeygen
+	a.handlers[protocol.ActionWireguardInterfaceUp] = a.handleWireguardInterfaceUp
+	a.handlers[protocol.ActionWireguardInterfaceDown] = a.handleWireguardInterfaceDown
+	a.handlers[protocol.ActionWireguardPeerSet] = a.handleWireguardPeerSet
+	a.handlers[protocol.ActionWireguardPeerRemove] = a.handleWireguardPeerRemove
+	a.handlers[protocol.ActionWireguardStatus] = a.handleWireguardStatus
+	a.handlers[protocol.ActionWireguardForward] = a.handleWireguardForward
+	a.handlers[protocol.ActionWireguardUnforward] = a.handleWireguardUnforward
+
+	// Firewall — used by the tunnel broker to open the edge's WireGuard
+	// UDP port (#10). Linux-only; returns a clear error elsewhere.
+	a.handlers[protocol.ActionFirewallAllowPort] = a.handleFirewallAllowPort
+	a.handlers[protocol.ActionFirewallDenyPort] = a.handleFirewallDenyPort
 
 	// Phase 4 primitives — packages, systemd, exec. Registered
 	// unconditionally so non-Linux agents return a clear error rather
@@ -999,8 +1028,9 @@ func (a *Agent) handleCredentialUpdate(data []byte) {
 // only when the signature is present, well-formed, and matches.
 //
 // The panel must compute hex(HMAC-SHA256(
-//     "rotation_id:agent_id:new_api_key:new_api_secret",
-//     current_api_secret)).
+//
+//	"rotation_id:agent_id:new_api_key:new_api_secret",
+//	current_api_secret)).
 func (a *Agent) verifyCredentialRotation(msg protocol.CredentialUpdateMessage) error {
 	if msg.RotationID == "" || msg.APIKey == "" || msg.APISecret == "" {
 		return fmt.Errorf("rotation message missing required fields")
@@ -1781,7 +1811,7 @@ func (a *Agent) handleAgentUpdate(ctx context.Context, params json.RawMessage) (
 		// In a real implementation, we would use the provided URLs
 		// For now, we'll let the updater handle it using its default logic
 		// or extend it to use the provided URLs.
-		
+
 		err := u.UpdateTo(context.Background(), p.Version, p.DownloadURL, p.ChecksumsURL)
 		if err != nil {
 			a.log.Error("Update failed", "error", err)

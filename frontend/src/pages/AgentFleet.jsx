@@ -14,8 +14,6 @@ import {
     Server,
     Layers,
     Package,
-    Plus,
-    Trash2,
     Play,
     Pause,
     XCircle,
@@ -27,11 +25,12 @@ import {
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import { StatCard, StatsGrid } from '../components/StatCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageTopbar, MetricCard, Pill, Gauge } from '@/components/ds';
+import { SERVER_TABS } from '../components/servers/serverTabs';
 
 const AgentFleet = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -184,31 +183,32 @@ const AgentFleet = () => {
         }
     };
 
-    const rolloutStatusVariant = (status) => {
+    const rolloutPillKind = (status) => {
         const map = {
-            running: 'info',
-            completed: 'success',
-            failed: 'destructive',
-            cancelled: 'warning',
-            pending: 'secondary'
+            running: 'cyan',
+            completed: 'green',
+            failed: 'red',
+            cancelled: 'amber',
+            pending: 'gray'
         };
-        return map[status] || 'secondary';
+        return map[status] || 'gray';
     };
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <div className="header-info">
-                    <h1>Agent Fleet Management</h1>
-                    <p>Monitor health, manage versions, and control updates across your infrastructure.</p>
-                </div>
-                <div className="header-actions">
-                    <Button onClick={fetchData} disabled={loading}>
-                        <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-                        Refresh
-                    </Button>
-                </div>
-            </div>
+            <PageTopbar
+                icon={<Users size={18} />}
+                title="Agent Fleet"
+                tabs={SERVER_TABS}
+                actions={(
+                    <>
+                        <Button size="sm" onClick={fetchData} disabled={loading}>
+                            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+                            Refresh
+                        </Button>
+                    </>
+                )}
+            />
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
@@ -238,12 +238,12 @@ const AgentFleet = () => {
                 {/* ==================== Dashboard ==================== */}
                 {activeTab === 'dashboard' && health && (
                     <div className="space-y-6">
-                        <StatsGrid>
-                            <StatCard icon={Server} iconVariant="backups" label="Total Agents" value={health.total_servers} />
-                            <StatCard icon={CheckCircle} iconVariant="apps" label="Online" value={health.online_servers} />
-                            <StatCard icon={AlertCircle} iconVariant="alerts" label="Offline" value={health.offline_servers} />
-                            <StatCard icon={Zap} iconVariant="schedules" label="Success Rate" value={`${health.command_success_rate}%`} />
-                        </StatsGrid>
+                        <div className="fleet-kpis">
+                            <MetricCard icon={<Server size={16} />} tone="accent" label="Total Agents" value={health.total_servers} />
+                            <MetricCard icon={<CheckCircle size={16} />} tone="green" label="Online" value={health.online_servers} />
+                            <MetricCard icon={<AlertCircle size={16} />} tone="red" label="Offline" value={health.offline_servers} />
+                            <MetricCard icon={<Zap size={16} />} tone="cyan" label="Success Rate" value={`${health.command_success_rate}%`} />
+                        </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div className="card">
@@ -256,30 +256,20 @@ const AgentFleet = () => {
                                             <span className="text-gray-600">Overall Uptime</span>
                                             <span className="font-semibold text-green-600">{health.uptime_percentage?.toFixed(2)}%</span>
                                         </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div
-                                                className="bg-green-600 h-2 rounded-full"
-                                                style={{ width: `${health.uptime_percentage}%` }}
-                                            ></div>
-                                        </div>
+                                        <Gauge value={health.uptime_percentage} color="var(--green)" />
 
                                         <div className="flex justify-between items-center mt-6">
                                             <span className="text-gray-600">Avg Heartbeat Latency</span>
                                             <span className="font-semibold">{health.avg_heartbeat_latency} ms</span>
                                         </div>
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
-                                            <div
-                                                className="bg-blue-600 h-2 rounded-full"
-                                                style={{ width: `${Math.min(100, health.avg_heartbeat_latency / 2)}%` }}
-                                            ></div>
-                                        </div>
+                                        <Gauge value={Math.min(100, health.avg_heartbeat_latency / 2)} color="var(--cyan)" />
 
                                         {health.queued_commands > 0 && (
-                                            <div className="flex justify-between items-center mt-4 p-3 bg-yellow-50 rounded-lg">
-                                                <span className="text-yellow-700 flex items-center gap-2">
+                                            <div className="fleet-warnrow mt-4">
+                                                <span className="flex items-center gap-2">
                                                     <Clock size={16} /> Queued Commands
                                                 </span>
-                                                <span className="font-semibold text-yellow-700">{health.queued_commands}</span>
+                                                <span className="font-semibold">{health.queued_commands}</span>
                                             </div>
                                         )}
                                     </div>
@@ -298,12 +288,7 @@ const AgentFleet = () => {
                                                     <span>v{version}</span>
                                                     <span className="text-gray-500">{count} agents ({(count / health.total_servers * 100).toFixed(0)}%)</span>
                                                 </div>
-                                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                                    <div
-                                                        className="bg-indigo-600 h-2 rounded-full"
-                                                        style={{ width: `${count / health.total_servers * 100}%` }}
-                                                    ></div>
-                                                </div>
+                                                <Gauge value={count / health.total_servers * 100} color="var(--accent-bright)" />
                                             </div>
                                         ))}
                                         {Object.keys(health.version_distribution || {}).length === 0 && (
@@ -319,14 +304,11 @@ const AgentFleet = () => {
                 {/* ==================== Versions ==================== */}
                 {activeTab === 'versions' && (
                     <div className="card">
-                        <div className="card-header flex justify-between items-center">
+                        <div className="card-header">
                             <h2>Agent Versions</h2>
-                            <Button size="sm">
-                                <Plus size={16} /> Add Version
-                            </Button>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="table">
+                            <table className="sk-dtable">
                                 <thead>
                                     <tr>
                                         <th>Version</th>
@@ -334,7 +316,6 @@ const AgentFleet = () => {
                                         <th>Published</th>
                                         <th>Panel Compatibility</th>
                                         <th>Status</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -342,27 +323,20 @@ const AgentFleet = () => {
                                         <tr key={v.id}>
                                             <td className="font-semibold">v{v.version}</td>
                                             <td>
-                                                <Badge variant={v.channel === 'stable' ? 'success' : 'warning'}>
-                                                    {v.channel}
-                                                </Badge>
+                                                <Pill kind={v.channel === 'stable' ? 'green' : 'amber'}>{v.channel}</Pill>
                                             </td>
                                             <td>{new Date(v.published_at).toLocaleDateString()}</td>
                                             <td>{v.min_panel_version || 'Any'} - {v.max_panel_version || 'Latest'}</td>
                                             <td>
-                                                <span className={`flex items-center gap-1 ${v.is_active ? 'text-green-600' : 'text-gray-400'}`}>
-                                                    {v.is_active ? <CheckCircle size={14} /> : <Clock size={14} />}
+                                                <Pill kind={v.is_active ? 'green' : 'gray'}>
                                                     {v.is_active ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td className="actions">
-                                                <Button variant="ghost" size="sm" title="Edit"><RefreshCw size={14} /></Button>
-                                                <Button variant="ghost" size="sm" className="text-red-600" title="Delete"><Trash2 size={14} /></Button>
+                                                </Pill>
                                             </td>
                                         </tr>
                                     ))}
                                     {versions.length === 0 && (
                                         <tr>
-                                            <td colSpan="6" className="text-center py-8 text-gray-500">
+                                            <td colSpan="5" className="text-center py-8 text-gray-500">
                                                 No agent versions registered in database.
                                             </td>
                                         </tr>
@@ -453,7 +427,7 @@ const AgentFleet = () => {
                             </div>
                             {rollouts.length > 0 ? (
                                 <div className="overflow-x-auto">
-                                    <table className="table">
+                                    <table className="sk-dtable">
                                         <thead>
                                             <tr>
                                                 <th>Version</th>
@@ -471,12 +445,11 @@ const AgentFleet = () => {
                                                     <td>{r.strategy}</td>
                                                     <td>
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                                                                <div
-                                                                    className={`h-2 rounded-full ${r.status === 'failed' ? 'bg-red-500' : r.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}`}
-                                                                    style={{ width: `${r.total_servers > 0 ? (r.processed_servers / r.total_servers * 100) : 0}%` }}
-                                                                ></div>
-                                                            </div>
+                                                            <Gauge
+                                                                className="w-24"
+                                                                value={r.total_servers > 0 ? (r.processed_servers / r.total_servers * 100) : 0}
+                                                                color={r.status === 'failed' ? 'var(--red)' : r.status === 'completed' ? 'var(--green)' : 'var(--accent-bright)'}
+                                                            />
                                                             <span className="text-sm text-gray-500">
                                                                 {r.processed_servers}/{r.total_servers}
                                                                 {r.failed_servers > 0 && (
@@ -486,9 +459,7 @@ const AgentFleet = () => {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <Badge variant={rolloutStatusVariant(r.status)}>
-                                                            {r.status}
-                                                        </Badge>
+                                                        <Pill kind={rolloutPillKind(r.status)}>{r.status}</Pill>
                                                     </td>
                                                     <td className="text-sm">{r.started_at ? new Date(r.started_at).toLocaleString() : '-'}</td>
                                                     <td className="actions">
@@ -533,7 +504,7 @@ const AgentFleet = () => {
                         </div>
                         {queuedCommands.length > 0 ? (
                             <div className="overflow-x-auto">
-                                <table className="table">
+                                <table className="sk-dtable">
                                     <thead>
                                         <tr>
                                             <th>Server</th>
@@ -594,13 +565,13 @@ const AgentFleet = () => {
                                 <div key={agent.agent_id} className="card p-4 flex flex-col justify-between">
                                     <div>
                                         <div className="flex justify-between items-start mb-2">
-                                            <div className="bg-blue-100 p-2 rounded text-blue-600">
+                                            <div className="fleet-ico">
                                                 <Server size={20} />
                                             </div>
                                             {agent.is_registered ? (
-                                                <Badge variant="success">Registered</Badge>
+                                                <Pill kind="green">Registered</Pill>
                                             ) : (
-                                                <Badge variant="warning">New</Badge>
+                                                <Pill kind="amber">New</Pill>
                                             )}
                                         </div>
                                         <h3 className="font-bold">{agent.hostname}</h3>
@@ -636,7 +607,7 @@ const AgentFleet = () => {
                                 </div>
                             ))}
                             {discoveredAgents.length === 0 && !isScanning && (
-                                <div className="col-span-full py-12 text-center card bg-gray-50">
+                                <div className="col-span-full py-12 text-center card">
                                     <Search size={48} className="mx-auto text-gray-300 mb-4" />
                                     <p className="text-gray-500">No agents discovered yet. Start a scan to find agents on your local network.</p>
                                 </div>
@@ -652,7 +623,7 @@ const AgentFleet = () => {
                             <h2>Pending Registrations</h2>
                         </div>
                         <div className="overflow-x-auto">
-                            <table className="table">
+                            <table className="sk-dtable">
                                 <thead>
                                     <tr>
                                         <th>Server Name</th>
@@ -703,8 +674,8 @@ const AgentFleet = () => {
 
                 {/* ==================== Diagnostics Modal ==================== */}
                 {diagnostics && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setDiagnostics(null)}>
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto m-4" onClick={e => e.stopPropagation()}>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setDiagnostics(null)}>
+                        <div className="fleet-modal w-full max-w-2xl max-h-[80vh] overflow-y-auto m-4" onClick={e => e.stopPropagation()}>
                             <div className="p-6 border-b flex justify-between items-center">
                                 <h2 className="text-lg font-semibold">
                                     Agent Diagnostics - {diagnostics.server_name}
@@ -762,19 +733,19 @@ const AgentFleet = () => {
                                 <div>
                                     <h3 className="font-semibold mb-3">Command Stats (24h)</h3>
                                     <div className="grid grid-cols-4 gap-3">
-                                        <div className="text-center p-3 bg-gray-50 rounded">
+                                        <div className="fleet-statbox">
                                             <div className="text-lg font-bold">{diagnostics.commands_24h.total}</div>
                                             <div className="text-xs text-gray-500">Total</div>
                                         </div>
-                                        <div className="text-center p-3 bg-green-50 rounded">
+                                        <div className="fleet-statbox is-green">
                                             <div className="text-lg font-bold text-green-600">{diagnostics.commands_24h.success}</div>
                                             <div className="text-xs text-gray-500">Success</div>
                                         </div>
-                                        <div className="text-center p-3 bg-red-50 rounded">
+                                        <div className="fleet-statbox is-red">
                                             <div className="text-lg font-bold text-red-600">{diagnostics.commands_24h.failed}</div>
                                             <div className="text-xs text-gray-500">Failed</div>
                                         </div>
-                                        <div className="text-center p-3 bg-yellow-50 rounded">
+                                        <div className="fleet-statbox is-amber">
                                             <div className="text-lg font-bold text-yellow-600">{diagnostics.commands_24h.timeout}</div>
                                             <div className="text-xs text-gray-500">Timeout</div>
                                         </div>
@@ -782,10 +753,10 @@ const AgentFleet = () => {
                                 </div>
 
                                 {diagnostics.queued_commands > 0 && (
-                                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-2">
-                                        <Clock size={16} className="text-yellow-600" />
-                                        <span className="text-sm text-yellow-700">
-                                            {diagnostics.queued_commands} commands queued for delivery
+                                    <div className="fleet-warnrow">
+                                        <span className="flex items-center gap-2">
+                                            <Clock size={16} />
+                                            <span className="text-sm">{diagnostics.queued_commands} commands queued for delivery</span>
                                         </span>
                                     </div>
                                 )}
@@ -794,7 +765,7 @@ const AgentFleet = () => {
                                     <h3 className="font-semibold mb-3">Recent Sessions</h3>
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
                                         {diagnostics.recent_sessions.map(session => (
-                                            <div key={session.id} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                                            <div key={session.id} className="fleet-statrow flex justify-between items-center text-sm p-2 rounded">
                                                 <div className="flex items-center gap-2">
                                                     {session.is_active ? (
                                                         <Wifi size={14} className="text-green-500" />

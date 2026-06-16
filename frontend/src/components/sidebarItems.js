@@ -22,50 +22,55 @@ export const SIDEBAR_ITEMS = [
         icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>'
     },
     {
+        // Redesign: Servers uses the top-bar layout (REDESIGN_MAP §6 decision 3).
+        // Its Agent Fleet / Fleet Monitor / Cloud Servers / Config Templates
+        // sub-nav now lives in the page's top bar (PageTopbar SERVER_TABS), not
+        // as sidebar sub-items. Routes /fleet, /fleet-monitor, /cloud,
+        // /server-templates are unchanged and reachable from those tabs.
         id: 'servers',
         label: 'Servers',
         route: '/servers',
         category: 'infrastructure',
-        icon: '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>',
-        subItems: [
-            { id: 'fleet', label: 'Agent Fleet', route: '/fleet', icon: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>' },
-            { id: 'fleet-monitor', label: 'Fleet Monitor', route: '/fleet-monitor', icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>' },
-            { id: 'cloud', label: 'Cloud Servers', route: '/cloud', icon: '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>' },
-            { id: 'server-templates', label: 'Config Templates', route: '/server-templates', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>' }
-        ]
+        icon: '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>'
     },
     {
+        // Redesign: Domains is migrated to the top-bar layout (REDESIGN_MAP §6
+        // decision 3). Its DNS Zones + SSL sub-nav now lives in the page's top
+        // bar (PageTopbar tabs), not as sidebar sub-items. Routes /dns and /ssl
+        // are unchanged and still reachable from those tabs.
         id: 'domains',
         label: 'Domains',
         route: '/domains',
         category: 'infrastructure',
-        icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
-        subItems: [
-            { id: 'dns', label: 'DNS Zones', route: '/dns', icon: '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>' },
-            { id: 'ssl', label: 'SSL Certificates', route: '/ssl', icon: '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' }
-        ]
+        icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
     },
     {
+        id: 'remote-access',
+        label: 'Remote Access',
+        route: '/remote-access',
+        category: 'infrastructure',
+        icon: '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'
+    },
+    {
+        // Redesign: Services uses the top-bar layout (REDESIGN_MAP §6 decision 3).
+        // New Service / Templates / Deploy Activity now live in the page's top
+        // bar (PageTopbar SERVICE_TABS), not as sidebar sub-items. Routes
+        // /services/new, /templates, /deployments are unchanged.
         id: 'services',
         label: 'Services',
         route: '/services',
         category: 'infrastructure',
-        icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
-        subItems: [
-            { id: 'new-service', label: 'New Service', route: '/services/new', icon: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>' },
-            { id: 'templates', label: 'Templates', route: '/templates', icon: '<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>' },
-            { id: 'deployments', label: 'Deploy Activity', route: '/deployments', icon: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>' }
-        ]
+        icon: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'
     },
     {
+        // Redesign: WordPress uses the top-bar layout (REDESIGN_MAP §6 dec. 3).
+        // Pipeline now lives in the page's top bar (PageTopbar WORDPRESS_TABS),
+        // not as a sidebar sub-item. Route /wordpress/projects is unchanged.
         id: 'wordpress',
         label: 'WordPress',
         route: '/wordpress',
         category: 'infrastructure',
-        icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M3.5 9h17M3.5 15h17"/>',
-        subItems: [
-            { id: 'wp-pipeline', label: 'Pipeline', route: '/wordpress/projects', requiresCondition: 'wpInstalled', icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>' }
-        ]
+        icon: '<circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M3.5 9h17M3.5 15h17"/>'
     },
     {
         id: 'workflow',
@@ -88,25 +93,31 @@ export const SIDEBAR_ITEMS = [
         category: 'infrastructure',
         icon: '<rect x="2" y="7" width="6" height="6" rx="1"/><rect x="9" y="7" width="6" height="6" rx="1"/><rect x="16" y="7" width="6" height="6" rx="1"/><rect x="2" y="14" width="6" height="6" rx="1"/><rect x="9" y="14" width="6" height="6" rx="1"/>'
     },
+    // NOTE: "Git" appears under Infrastructure too, but it is contributed by the
+    // built-in serverkit-git PLUGIN (see plugins/contributions.js), which also
+    // registers the /git route. Keeping it plugin-owned means it correctly
+    // disappears (no dead link) when the plugin is disabled — so do NOT add a
+    // core 'git' item here. Sidebar presets that list 'git' still hide the
+    // plugin's nav item via getHiddenItemIds().
     {
+        // Redesign: Files uses the top-bar layout (REDESIGN_MAP §6 decision 3).
+        // FTP Server now lives in the page's top bar (PageTopbar FILE_TABS), not
+        // as a sidebar sub-item. Route /ftp is unchanged, reachable from the tab.
         id: 'files',
         label: 'Files',
         route: '/files',
         category: 'operations',
-        icon: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
-        subItems: [
-            { id: 'ftp', label: 'FTP Server', route: '/ftp', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>' }
-        ]
+        icon: '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>'
     },
     {
+        // Redesign: Monitoring uses the top-bar layout (REDESIGN_MAP §6 dec. 3).
+        // Status Pages now lives in the page's top bar (PageTopbar MONITOR_TABS),
+        // not as a sidebar sub-item. Route /status-pages is unchanged.
         id: 'monitoring',
         label: 'Monitoring',
         route: '/monitoring',
         category: 'operations',
-        icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
-        subItems: [
-            { id: 'status-pages', label: 'Status Pages', route: '/status-pages', icon: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' }
-        ]
+        icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'
     },
     {
         id: 'backups',
@@ -151,14 +162,14 @@ export const SIDEBAR_ITEMS = [
         icon: '<path d="M4 17l6-6-6-6M12 19h8"/>'
     },
     {
+        // Redesign: Marketplace uses the top-bar layout (REDESIGN_MAP §6 dec. 3).
+        // Downloads now lives in the page's top bar (PageTopbar MARKET_TABS), not
+        // as a sidebar sub-item. Route /downloads is unchanged.
         id: 'marketplace',
         label: 'Marketplace',
         route: '/marketplace',
         category: 'system',
-        icon: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
-        subItems: [
-            { id: 'downloads', label: 'Downloads', route: '/downloads', icon: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>' }
-        ]
+        icon: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>'
     }
 ];
 

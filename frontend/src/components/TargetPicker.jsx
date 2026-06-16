@@ -11,8 +11,10 @@ import { api } from '../services/api';
 // reported capabilities yet (older builds) are filtered out — same
 // pattern as the cron picker.
 //
-// onChange receives `{ kind: 'local' } | { kind: 'agent', server_id, name, allowedPaths }`.
-export default function TargetPicker({ feature, value, onChange, includeLocal = true }) {
+// onChange receives `{ kind: 'local' } | { kind: 'agent', server_id, name, allowedPaths }`,
+// or `{ kind: <extra.value> }` for any caller-supplied `extraOptions` (e.g. an
+// "S3 bucket" target in the File Manager).
+export default function TargetPicker({ feature, value, onChange, includeLocal = true, extraOptions = [] }) {
     const [servers, setServers] = useState([]);
 
     useEffect(() => {
@@ -38,6 +40,10 @@ export default function TargetPicker({ feature, value, onChange, includeLocal = 
             onChange({ kind: 'local' });
             return;
         }
+        if (extraOptions.some(o => o.value === id)) {
+            onChange({ kind: id });
+            return;
+        }
         const s = eligible.find(x => x.id === id);
         if (!s) return;
         onChange({
@@ -48,7 +54,9 @@ export default function TargetPicker({ feature, value, onChange, includeLocal = 
         });
     }
 
-    const selectValue = value?.kind === 'agent' ? value.server_id : 'local';
+    const selectValue = value?.kind === 'agent'
+        ? value.server_id
+        : (value?.kind && value.kind !== 'local' ? value.kind : 'local');
 
     return (
         <div className="target-picker">
@@ -59,6 +67,9 @@ export default function TargetPicker({ feature, value, onChange, includeLocal = 
                     <option key={s.id} value={s.id}>
                         {s.name || s.hostname || s.id}
                     </option>
+                ))}
+                {extraOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
             </select>
         </div>

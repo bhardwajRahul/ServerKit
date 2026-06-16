@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ds';
 import { useDeployments } from '../../hooks/useDeployments';
 import { getDeployStatus, formatRelativeTime, formatDuration } from '../../utils/serviceTypes';
+
+// Deployment status → semantic tone (ds Pill kind / dot modifier)
+const DEPLOY_TONE = {
+    success: 'green',
+    failed: 'red',
+    in_progress: 'amber',
+    rolled_back: 'gray',
+    pending: 'cyan',
+};
 
 const EventsTab = ({ appId }) => {
     const { deployments, loading, error, reload } = useDeployments(appId);
@@ -38,13 +47,16 @@ const EventsTab = ({ appId }) => {
     return (
         <div className="events-tab">
             <div className="events-tab__header">
-                <h3>Deployment Events</h3>
+                <h3 className="svc-eyebrow">
+                    Deployment Events <span className="svc-eyebrow__count">&middot; {deployments.length}</span>
+                </h3>
                 <Button variant="outline" size="sm" onClick={reload}>Refresh</Button>
             </div>
 
             <div className="events-tab__timeline">
                 {deployments.map((deploy, idx) => {
                     const statusInfo = getDeployStatus(deploy.status);
+                    const tone = DEPLOY_TONE[deploy.status] || 'cyan';
                     const isExpanded = expandedId === deploy.id;
                     const isLatest = idx === 0 && deploy.status === 'success';
 
@@ -54,10 +66,7 @@ const EventsTab = ({ appId }) => {
                             className={`events-tab__event ${isExpanded ? 'events-tab__event--expanded' : ''}`}
                             onClick={() => setExpandedId(isExpanded ? null : deploy.id)}
                         >
-                            <div
-                                className="events-tab__event-status"
-                                style={{ backgroundColor: statusInfo.color }}
-                            />
+                            <div className={`events-tab__event-status events-tab__event-status--${tone}`} />
                             <div className="events-tab__event-body">
                                 <div className="events-tab__event-header">
                                     <div className="events-tab__event-commit">
@@ -70,15 +79,9 @@ const EventsTab = ({ appId }) => {
                                             {deploy.commitMessage || deploy.version || `Deployment #${deployments.length - idx}`}
                                         </span>
                                     </div>
-                                    <span
-                                        className="events-tab__event-badge"
-                                        style={{
-                                            backgroundColor: statusInfo.color + '1a',
-                                            color: statusInfo.color,
-                                        }}
-                                    >
+                                    <Pill kind={isLatest ? 'green' : tone}>
                                         {isLatest ? 'Live' : statusInfo.label}
-                                    </span>
+                                    </Pill>
                                 </div>
                                 <div className="events-tab__event-meta">
                                     {deploy.duration && <span>{formatDuration(deploy.duration)}</span>}

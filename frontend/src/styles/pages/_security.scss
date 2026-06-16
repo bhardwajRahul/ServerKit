@@ -1,55 +1,347 @@
 // ============================================
-// SECURITY PAGE STYLES
+// SECURITY PAGE (redesign — infra console look)
 // ============================================
+// Page shell + all 13 tabs. Consumes the sk- design-system primitives
+// (Pill, MetricCard, SegControl, ScoreGauge, Feed, .sk-dtable, .sk-info-row);
+// page-specific atoms are prefixed `sec-`. Per-tab blocks stay scoped under
+// their tab-root class so nothing leaks to other pages.
 
 .security-page {
-    .tabs-nav {
+
+    // ── KPI strip (page shell) ──────────────────────────────
+    .sec-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: $space-4;
+        margin-bottom: $space-5;
+
+        @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+    }
+
+    // Text-valued KPIs ("Active" / "Not installed") read smaller than numerals
+    .sec-kpi-text .sk-kpi__val {
         display: flex;
-        gap: $space-2;
-        margin-bottom: $space-6;
-        border-bottom: 1px solid $border-subtle;
-        padding-bottom: $space-2;
-        overflow-x: auto;
+        align-items: center;
+        min-height: 27px;
+        font-size: 18px;
+        line-height: 1.25;
+    }
 
-        .tab-btn {
-            padding: $space-2 $space-4;
-            border: none;
-            background: none;
-            color: $text-secondary;
-            cursor: pointer;
-            border-radius: $radius-md;
-            white-space: nowrap;
-            transition: all 0.2s;
+    // ── tab strip — accent wash + underline on active ───────
+    .tabs {
+        gap: 2px;
+        border-bottom: 1px solid var(--border-soft);
+    }
 
-            &:hover {
-                background: $bg-hover;
-                color: $text-primary;
-            }
+    .tab {
+        padding: 8px 13px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        font-size: 13px;
+        color: var(--text-dim);
 
-            &.active {
-                background: $accent-primary;
-                color: white;
+        &:hover {
+            color: var(--text);
+            background: var(--surface-hover);
+        }
+
+        &.active,
+        &[data-state="active"] {
+            color: var(--accent-bright);
+            background: var(--accent-bg);
+            border-bottom-color: var(--accent-bright);
+        }
+    }
+
+    // ── card chrome (all tabs) ──────────────────────────────
+    .tab-content {
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            padding: $space-5;
+            box-shadow: none;
+        }
+
+        .card-header {
+            margin-bottom: $space-4;
+
+            // Mono-uppercase eyebrow section headers
+            h3 {
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-family: var(--mono);
+                font-size: 10.5px;
+                font-weight: $font-weight-semibold;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--text-faint);
+
+                &.sec-listtitle--green { color: var(--green); }
+                &.sec-listtitle--red { color: var(--red); }
             }
         }
+
+        // Flush variant: header padded, table bleeds to the card edges
+        // (16px horizontal padding aligns with .sk-dtable cell padding)
+        .card.sec-flush {
+            padding: 0;
+
+            .card-header { padding: $space-5 $space-4 0; }
+            > .card-body { padding: 0 $space-4 $space-5; }
+        }
+
+        // Stateful card borders
+        .card.scan-progress { border-color: var(--accent-dim); }
+        .card.card-warning { border-color: rgba(245, 185, 69, 0.35); }
+    }
+
+    .card-actions {
+        display: flex;
+        gap: $space-2;
+    }
+
+    // ── shared page atoms ───────────────────────────────────
+    // Count suffix inside an eyebrow heading ("Banned IPs · 4")
+    .sec-count {
+        font-weight: $font-weight-medium;
+        color: var(--text-faint);
+        letter-spacing: 0;
+    }
+
+    // Severity / state chip (mono uppercase on a semantic wash) —
+    // shape from the shared %sk-state primitive (_design-system.scss)
+    .sec-state {
+        @extend %sk-state;
+
+        &--red    { color: var(--red);    background: var(--red-bg); }
+        &--amber  { color: var(--amber);  background: var(--amber-bg); }
+        &--cyan   { color: var(--cyan);   background: var(--cyan-bg); }
+        &--green  { color: var(--green);  background: var(--green-bg); }
+        &--violet { color: var(--violet); background: var(--violet-bg); }
+        &--accent { color: var(--accent-bright); background: var(--accent-bg); }
+        &--gray   { color: var(--text-faint); background: var(--surface-3); }
+    }
+
+    // Severity dot (square, prototype .sev)
+    .sec-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        margin-top: 5px;
+        background: var(--text-ghost);
+
+        &--red   { background: var(--red); }
+        &--amber { background: var(--amber); }
+        &--cyan  { background: var(--cyan); }
+        &--green { background: var(--green); }
+    }
+
+    // Key/value rows (consumes .sk-info-row)
+    .sec-rows {
+        .sk-info-row .v.sec-v-amber { color: var(--amber); }
+    }
+
+    // Right-aligned chip cluster inside an info row (jail tags…)
+    .sec-chiprow {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
+    // Findings / log rows (audit findings, lynis warnings + suggestions)
+    .sec-finding-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sec-finding {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 9px 0;
+        border-top: 1px solid var(--border-soft);
+        font-size: 13px;
+        line-height: 1.45;
+
+        &:first-child { border-top: none; }
+
+        .sec-state { margin-top: 1px; }
+
+        &__msg {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        &--more {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
+        }
+    }
+
+    // Inline helpers
+    .sec-mono {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-dim);
+    }
+
+    .sec-faint { color: var(--text-faint); }
+    .sk-dtable .sec-faint { color: var(--text-faint); }
+
+    .sec-dash {
+        font-family: var(--mono);
+        color: var(--text-ghost);
+    }
+
+    .sk-dtable {
+        .sec-ip--green { color: var(--green); }
+        .sec-ip--red { color: var(--red); }
+
+        .sec-path {
+            max-width: 360px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11.5px;
+
+            &--red { color: var(--red); }
+        }
+
+        .sec-proto {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .sec-rich-rule {
+            font-size: 11px;
+            word-break: break-all;
+        }
+
+        .sec-fp {
+            font-size: 11px;
+            word-break: break-all;
+        }
+
+        .sec-rowend { text-align: right; }
+    }
+
+    // Hint / note copy
+    .sec-hint {
+        margin: $space-4 0 0;
+        font-size: 12px;
+        line-height: 1.55;
+        color: var(--text-faint);
+
+        &--lead { margin: 0 0 $space-4; }
+    }
+
+    .sec-note {
+        margin-top: $space-5;
+        padding: $space-4;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
+        font-size: $font-size-sm;
+        color: var(--text-dim);
+
+        p { margin: 0; line-height: 1.55; }
+        strong { color: var(--text); }
+    }
+
+    // ── tab-root stacks (replaces ad-hoc margins) ───────────
+    .scanner-tab,
+    .quarantine-tab,
+    .integrity-tab,
+    .events-tab,
+    .fail2ban-tab,
+    .ssh-keys-tab,
+    .ip-lists-tab,
+    .audit-tab,
+    .vulnerability-tab,
+    .auto-updates-tab,
+    .firewall-tab,
+    .settings-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: $space-4;
+
+        > .alert { margin: 0; }
     }
 }
 
-// Overview Tab
+// ── Overview tab ─────────────────────────────────────────────
 .security-overview {
+    display: flex;
+    flex-direction: column;
+    gap: $space-4;
+
     .security-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: $space-4;
     }
+
+    // Posture ring + hardening checklist (ScoreGauge beside check rows)
+    .sec-posture {
+        display: flex;
+        align-items: center;
+        gap: $space-6;
+
+        &__checks {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &__check {
+            display: flex;
+            align-items: center;
+            gap: $space-3;
+            padding: 10px 0;
+            border-top: 1px solid var(--border-soft);
+            font-size: 13px;
+
+            &:first-child { border-top: none; }
+        }
+
+        &__label {
+            flex: 1;
+            min-width: 0;
+            color: var(--text);
+        }
+
+        &__detail {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
+            white-space: nowrap;
+        }
+
+        @media (max-width: $breakpoint-md) {
+            flex-direction: column;
+            align-items: flex-start;
+
+            &__checks { width: 100%; }
+        }
+    }
 }
 
-// Scanner Tab
+// ── Scanner tab ──────────────────────────────────────────────
 .scanner-tab {
     .scan-options {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: $space-4;
-        margin-bottom: $space-4;
 
         @media (max-width: $breakpoint-md) {
             grid-template-columns: 1fr;
@@ -62,52 +354,54 @@
         align-items: center;
         text-align: center;
         padding: $space-6 $space-4;
-        background: $bg-card;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-lg;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
         cursor: pointer;
-        @include transition(all);
+        transition: border-color 0.15s, transform 0.15s;
 
         &:hover {
-            border-color: $accent-primary;
-            background: $bg-elevated;
+            border-color: var(--border-strong);
+            transform: translateY(-2px);
         }
 
         h4 {
             margin: 0 0 $space-1;
-            font-size: $font-size-md;
+            font-size: 14px;
             font-weight: $font-weight-semibold;
+            color: var(--text);
         }
 
         .scan-desc {
-            color: $text-secondary;
-            font-size: $font-size-sm;
             margin-bottom: $space-4;
+            font-size: 12px;
+            color: var(--text-faint);
         }
 
-        .btn {
-            margin-top: auto;
-        }
+        > button { margin-top: auto; }
     }
 
     .scan-card-icon {
-        width: 48px;
-        height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: $radius-md;
-        background: fade($accent-primary-raw, 10%);
-        color: $accent-primary;
+        display: grid;
+        place-items: center;
+        width: 38px;
+        height: 38px;
         margin-bottom: $space-3;
+        border-radius: 10px;
+        background: var(--surface-2);
+        color: var(--text-dim);
     }
+
+    .scan-card--quick .scan-card-icon { background: var(--accent-bg); color: var(--accent-bright); }
+    .scan-card--full .scan-card-icon { background: var(--violet-bg); color: var(--violet); }
+    .scan-card--custom .scan-card-icon { background: var(--cyan-bg); color: var(--cyan); }
 
     .scan-card--custom {
         cursor: default;
 
         &:hover {
-            border-color: $border-subtle;
-            background: $bg-card;
+            border-color: var(--border-soft);
+            transform: none;
         }
     }
 
@@ -126,135 +420,77 @@
     .scan-toolbar {
         display: flex;
         justify-content: flex-end;
-        margin-bottom: $space-4;
-
-        .btn {
-            display: flex;
-            align-items: center;
-            gap: $space-2;
-        }
-    }
-
-    .scan-progress {
-        margin-bottom: $space-4;
-        border-color: $accent-primary;
-
-        .progress-info {
-            display: flex;
-            align-items: center;
-            gap: $space-4;
-
-            .spinner {
-                width: 32px;
-                height: 32px;
-            }
-
-            p {
-                margin: 0;
-
-                &:not(:last-child) {
-                    margin-bottom: $space-1;
-                }
-            }
-        }
-    }
-
-    .path-cell {
-        max-width: 300px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-family: $font-mono;
-        font-size: $font-size-sm;
     }
 }
 
-// Quarantine Tab
-.quarantine-tab {
-    .empty-state {
+// Active-scan card (scanner + vulnerability tabs)
+.scan-progress {
+    .progress-info {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        padding: $space-8;
-        text-align: center;
+        gap: $space-4;
 
-        svg {
-            color: $success;
-            margin-bottom: $space-4;
+        .spinner {
+            width: 32px;
+            height: 32px;
         }
 
         p {
-            font-size: $font-size-lg;
-            margin-bottom: $space-1;
+            margin: 0;
+            font-size: 13px;
+
+            &:not(:last-child) {
+                margin-bottom: $space-1;
+            }
         }
     }
 }
 
-// Integrity Tab
+// ── Quarantine tab ───────────────────────────────────────────
+.quarantine-tab {
+    .empty-state svg { color: var(--green); }
+}
+
+// ── Integrity tab ────────────────────────────────────────────
 .integrity-tab {
     .description {
-        color: $text-secondary;
-        margin-bottom: $space-6;
+        margin-bottom: $space-5;
+        font-size: 13px;
+        line-height: 1.55;
+        color: var(--text-dim);
     }
 
     .integrity-actions {
         display: flex;
-        gap: $space-4;
+        gap: $space-3;
     }
 
-    .change-section {
-        margin-bottom: $space-6;
-
-        h4 {
-            margin-bottom: $space-2;
-            color: $warning;
-        }
-    }
-
-    .file-list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        background: $bg-hover;
-        border-radius: $radius-md;
-        max-height: 300px;
-        overflow-y: auto;
-
-        li {
-            padding: $space-2 $space-4;
-            font-family: $font-mono;
-            font-size: $font-size-sm;
-            border-bottom: 1px solid $border-subtle;
-
-            &:last-child {
-                border-bottom: none;
-            }
-        }
-    }
+    // Change-kind chip column reads as a tag, not a full state wash
+    .sk-dtable .sec-state { text-transform: lowercase; }
 }
 
-// Events Tab
+// ── Events tab ───────────────────────────────────────────────
 .events-tab {
-    .card-warning {
-        border-color: $warning;
-    }
-
     .failed-login-summary {
         display: flex;
         align-items: baseline;
-        gap: $space-2;
+        gap: $space-3;
 
         .count {
-            font-size: $font-size-2xl;
-            font-weight: 700;
+            font-family: var(--mono);
+            font-size: 26px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.02em;
 
             &.danger {
-                color: $danger;
+                color: var(--red);
             }
         }
 
         .label {
-            color: $text-secondary;
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
         }
     }
 
@@ -263,7 +499,8 @@
 
         summary {
             cursor: pointer;
-            color: $accent-primary;
+            font-size: 12.5px;
+            color: var(--accent-bright);
 
             &:hover {
                 text-decoration: underline;
@@ -273,73 +510,379 @@
         pre {
             margin-top: $space-2;
             padding: $space-4;
-            background: $bg-hover;
-            border-radius: $radius-md;
-            font-size: $font-size-xs;
             max-height: 200px;
             overflow: auto;
-        }
-    }
-
-    .events-list {
-        display: flex;
-        flex-direction: column;
-        gap: $space-2;
-    }
-
-    .event-item {
-        display: flex;
-        align-items: flex-start;
-        gap: $space-4;
-        padding: $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-        border: 1px solid $border-subtle;
-
-        &.malware {
-            border-color: fade($danger, 45%);
-            .event-icon { color: $danger; }
-        }
-
-        &.integrity {
-            border-color: fade($warning, 45%);
-            .event-icon { color: $warning; }
-        }
-    }
-
-    .event-icon {
-        flex-shrink: 0;
-        color: $text-secondary;
-    }
-
-    .event-content {
-        flex: 1;
-        min-width: 0;
-
-        .event-message {
-            display: block;
-            margin-bottom: $space-1;
-        }
-
-        .event-time {
-            font-size: $font-size-sm;
-            color: $text-tertiary;
+            background: var(--bg-code);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-sm);
+            font-family: var(--mono);
+            font-size: 11px;
+            line-height: 1.6;
+            color: var(--text-code);
         }
     }
 }
 
-// Settings Tab
+// ── Settings tab ─────────────────────────────────────────────
 .settings-tab {
-    .card {
-        margin-bottom: $space-6;
+    .card { max-width: 860px; }
+
+    .form-group {
+        margin: 0;
+        padding: 2px 0;
+
+        & + .form-group {
+            border-top: 1px solid var(--border-soft);
+        }
+
+        // Eyebrow-style field labels (text inputs)
+        > label {
+            display: block;
+            margin: 10px 0 6px;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+
+    .toggle-switch-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-4;
+        padding: 9px 0;
+
+        label {
+            margin: 0;
+            font-size: 13.5px;
+            font-weight: $font-weight-medium;
+            color: var(--text);
+            cursor: pointer;
+        }
     }
 
     .form-actions {
-        margin-top: $space-6;
+        display: flex;
+        justify-content: flex-start;
     }
 }
 
-// Shared Components
+// ── Firewall tab ─────────────────────────────────────────────
+.firewall-tab {
+    .firewall-status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: $space-3;
+        padding: $space-4 $space-5;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+
+        .sec-shield {
+            display: grid;
+            place-items: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            flex-shrink: 0;
+        }
+
+        &.active .sec-shield {
+            background: var(--green-bg);
+            color: var(--green);
+        }
+
+        &.inactive .sec-shield {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+
+        &__label {
+            font-size: 13.5px;
+            font-weight: $font-weight-semibold;
+            color: var(--text);
+        }
+
+        .firewall-type {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            color: var(--text-faint);
+        }
+    }
+
+    .firewall-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-2;
+    }
+
+    .firewall-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-3;
+    }
+
+    .stat-mini {
+        display: flex;
+        flex-direction: column;
+        min-width: 120px;
+        padding: 12px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+
+        .stat-value {
+            font-family: var(--mono);
+            font-size: 22px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .stat-label {
+            margin-top: 5px;
+            font-family: var(--mono);
+            font-size: 10px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+
+    .sec-subseg { align-self: flex-start; }
+
+    .quick-ports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: $space-3;
+    }
+
+    .quick-port-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-2;
+        padding: $space-3 $space-4;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
+
+        &.is-allowed {
+            border-color: rgba(61, 220, 151, 0.3);
+        }
+
+        .port-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+
+            .port-name {
+                font-size: 13px;
+                font-weight: $font-weight-medium;
+            }
+
+            .port-number {
+                margin-top: 2px;
+                font-family: var(--mono);
+                font-size: 11px;
+                color: var(--text-faint);
+            }
+        }
+    }
+
+    .blocked-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .blocked-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-3;
+        padding: 11px $space-4;
+        border-top: 1px solid var(--border-soft);
+
+        .blocked-ip {
+            font-family: var(--mono);
+            font-size: 12.5px;
+            font-weight: $font-weight-medium;
+            color: var(--red);
+        }
+    }
+
+    // (modal content portals to <body>; kept for parity with legacy markup)
+    .install-info {
+        margin-top: $space-4;
+        padding: $space-4;
+        background: var(--surface-2);
+        border-radius: var(--radius-sm);
+
+        p {
+            margin: 0;
+            font-size: $font-size-sm;
+        }
+    }
+}
+
+// ── IP Lists tab ─────────────────────────────────────────────
+.ip-lists-tab {
+    .ip-lists-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: $space-4;
+        align-items: start;
+
+        @media (max-width: $breakpoint-sm) {
+            grid-template-columns: 1fr;
+        }
+    }
+}
+
+// ── Audit tab ────────────────────────────────────────────────
+.audit-tab {
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: $space-8;
+        gap: $space-4;
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+        }
+    }
+
+    .audit-results {
+        display: flex;
+        flex-direction: column;
+        gap: $space-5;
+    }
+
+    .sec-audit-score {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $space-3;
+        padding-top: $space-2;
+    }
+
+    .sec-audit-meta {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    .audit-section {
+        h4 {
+            margin: 0 0 $space-2;
+            padding-bottom: $space-2;
+            border-bottom: 1px solid var(--border-soft);
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        &.recommendations {
+            padding: $space-4;
+            background: var(--accent-bg-soft);
+            border: 1px solid var(--accent-bg);
+            border-radius: var(--radius-sm);
+
+            h4 {
+                border-bottom: none;
+                padding-bottom: 0;
+                color: var(--accent-bright);
+            }
+
+            ul {
+                margin: 0;
+                padding-left: $space-5;
+
+                li {
+                    margin-bottom: $space-2;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    color: var(--text-dim);
+
+                    &:last-child {
+                        margin-bottom: 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Vulnerability tab ────────────────────────────────────────
+.vulnerability-tab {
+    .sec-hardening {
+        display: flex;
+        align-items: center;
+        gap: $space-6;
+        padding-bottom: $space-5;
+        margin-bottom: $space-5;
+        border-bottom: 1px solid var(--border-soft);
+
+        &__title {
+            font-size: 14px;
+            font-weight: $font-weight-semibold;
+        }
+
+        &__sub {
+            margin-top: 5px;
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
+        }
+    }
+
+    .scan-section {
+        margin-bottom: $space-5;
+
+        &:last-child { margin-bottom: 0; }
+
+        h4 {
+            margin: 0 0 $space-2;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+}
+
+// ── Auto Updates tab ─────────────────────────────────────────
+.auto-updates-tab {
+    .auto-updates-actions {
+        display: flex;
+        gap: $space-3;
+        margin-top: $space-5;
+    }
+}
+
+// ============================================
+// Shared (global) helpers — consumed by other pages too. Keep stable.
+// ============================================
 .not-installed {
     text-align: center;
     padding: $space-6;
@@ -387,166 +930,6 @@
     padding: $space-4;
 }
 
-// Firewall Tab
-.firewall-tab {
-    .firewall-header {
-        margin-bottom: $space-6;
-    }
-
-    .firewall-status-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-4;
-        background: $bg-card;
-        border-radius: $radius-lg;
-        border: 1px solid $border-subtle;
-    }
-
-    .status-indicator {
-        display: flex;
-        align-items: center;
-        gap: $space-2;
-        font-weight: 600;
-
-        &.active {
-            color: $success;
-        }
-
-        &.inactive {
-            color: $danger;
-        }
-
-        .firewall-type {
-            color: $text-tertiary;
-            font-weight: 400;
-        }
-    }
-
-    .firewall-actions {
-        display: flex;
-        gap: $space-2;
-    }
-
-    .firewall-stats {
-        display: flex;
-        gap: $space-4;
-        margin-bottom: $space-6;
-    }
-
-    .stat-mini {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: $space-4 $space-6;
-        background: $bg-card;
-        border-radius: $radius-md;
-        border: 1px solid $border-subtle;
-        min-width: 100px;
-
-        .stat-value {
-            font-size: $font-size-xl;
-            font-weight: 700;
-        }
-
-        .stat-label {
-            color: $text-tertiary;
-            font-size: $font-size-sm;
-        }
-    }
-
-    .subtabs {
-        display: flex;
-        gap: $space-1;
-        margin-bottom: $space-4;
-        border-bottom: 1px solid $border-subtle;
-        padding-bottom: $space-2;
-
-        .subtab {
-            padding: $space-2 $space-3;
-            border: none;
-            background: none;
-            color: $text-secondary;
-            cursor: pointer;
-            border-radius: $radius-sm;
-            font-size: $font-size-sm;
-            transition: all 0.2s;
-
-            &:hover {
-                background: $bg-hover;
-                color: $text-primary;
-            }
-
-            &.active {
-                background: $bg-hover;
-                color: $accent-primary;
-            }
-        }
-    }
-
-    .quick-ports-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: $space-3;
-    }
-
-    .quick-port-card {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-3 $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-
-        .port-info {
-            display: flex;
-            flex-direction: column;
-
-            .port-name {
-                font-weight: 500;
-            }
-
-            .port-number {
-                color: $text-tertiary;
-                font-size: $font-size-sm;
-                font-family: $font-mono;
-            }
-        }
-    }
-
-    .blocked-list {
-        display: flex;
-        flex-direction: column;
-        gap: $space-2;
-    }
-
-    .blocked-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-3 $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-
-        .blocked-ip {
-            font-family: $font-mono;
-            font-weight: 500;
-        }
-    }
-
-    .install-info {
-        margin-top: $space-4;
-        padding: $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-
-        p {
-            margin: 0;
-            font-size: $font-size-sm;
-        }
-    }
-}
-
 // Scrollable tabs for many tabs
 .tabs-nav-scrollable {
     flex-wrap: nowrap;
@@ -564,255 +947,6 @@
     &::-webkit-scrollbar-thumb {
         background: $border-subtle;
         border-radius: $radius-sm;
-    }
-}
-
-// Fail2ban Tab
-.fail2ban-tab {
-    .card-actions {
-        display: flex;
-        gap: $space-2;
-    }
-}
-
-// SSH Keys Tab
-.ssh-keys-tab {
-    .fingerprint {
-        font-size: $font-size-xs;
-        word-break: break-all;
-    }
-
-    .modal-lg {
-        max-width: 600px;
-    }
-
-    textarea {
-        font-family: $font-mono;
-        font-size: $font-size-sm;
-    }
-}
-
-// IP Lists Tab
-.ip-lists-tab {
-    .ip-lists-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: $space-6;
-    }
-
-    .ip-list {
-        display: flex;
-        flex-direction: column;
-        gap: $space-2;
-    }
-
-    .ip-list-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-3 $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-    }
-
-    .ip-info {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-
-        code {
-            font-weight: 500;
-        }
-
-        .ip-allowed {
-            color: $success;
-        }
-
-        .ip-blocked {
-            color: $danger;
-        }
-
-        .ip-comment {
-            color: $text-secondary;
-            font-size: $font-size-sm;
-        }
-
-        .ip-date {
-            color: $text-tertiary;
-            font-size: $font-size-xs;
-        }
-    }
-}
-
-// Audit Tab
-.audit-tab {
-    .loading-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: $space-8;
-        gap: $space-4;
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-        }
-    }
-
-    .audit-results {
-        display: flex;
-        flex-direction: column;
-        gap: $space-6;
-    }
-
-    .audit-score {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: $space-6;
-        background: $bg-hover;
-        border-radius: $radius-lg;
-        text-align: center;
-
-        .score-value {
-            font-size: 3rem;
-            font-weight: 700;
-        }
-
-        .score-label {
-            color: $text-secondary;
-        }
-
-        &.score-excellent {
-            border: 2px solid $success;
-            .score-value { color: $success; }
-        }
-
-        &.score-good {
-            border: 2px solid $accent-primary;
-            .score-value { color: $accent-primary; }
-        }
-
-        &.score-fair {
-            border: 2px solid $warning;
-            .score-value { color: $warning; }
-        }
-
-        &.score-poor {
-            border: 2px solid $danger;
-            .score-value { color: $danger; }
-        }
-    }
-
-    .audit-timestamp {
-        text-align: center;
-        color: $text-tertiary;
-        font-size: $font-size-sm;
-    }
-
-    .audit-section {
-        h4 {
-            margin-bottom: $space-3;
-            padding-bottom: $space-2;
-            border-bottom: 1px solid $border-subtle;
-        }
-
-        &.recommendations {
-            background: fade($accent-primary-raw, 10%);
-            padding: $space-4;
-            border-radius: $radius-md;
-
-            ul {
-                margin: 0;
-                padding-left: $space-6;
-
-                li {
-                    margin-bottom: $space-2;
-
-                    &:last-child {
-                        margin-bottom: 0;
-                    }
-                }
-            }
-        }
-    }
-
-    .findings-list {
-        display: flex;
-        flex-direction: column;
-        gap: $space-2;
-    }
-
-    .finding-item {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-        padding: $space-2 $space-3;
-        background: $bg-hover;
-        border-radius: $radius-sm;
-
-        .finding-message {
-            flex: 1;
-            font-size: $font-size-sm;
-        }
-    }
-}
-
-// Vulnerability Tab
-.vulnerability-tab {
-    .scan-section {
-        margin-bottom: $space-6;
-
-        h4 {
-            margin-bottom: $space-3;
-            color: $text-secondary;
-        }
-    }
-
-    .findings-list.compact {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        background: $bg-hover;
-        border-radius: $radius-md;
-        max-height: 300px;
-        overflow-y: auto;
-
-        li {
-            padding: $space-2 $space-4;
-            font-size: $font-size-sm;
-            border-bottom: 1px solid $border-subtle;
-
-            &:last-child {
-                border-bottom: none;
-            }
-
-            &.warning {
-                border: 1px solid fade($warning, 45%);
-            }
-
-            &.suggestion {
-                border: 1px solid fade($accent-primary-raw, 45%);
-            }
-        }
-    }
-}
-
-// Auto Updates Tab
-.auto-updates-tab {
-    .auto-updates-actions {
-        display: flex;
-        gap: $space-4;
-    }
-
-    .help-text {
-        background: $bg-hover;
-        padding: $space-4;
-        border-radius: $radius-md;
-
-        p {
-            margin: 0;
-        }
     }
 }
 
@@ -858,5 +992,54 @@
 
     p {
         margin: 0;
+    }
+}
+
+// Fail2ban per-jail KPI cards
+.fail2ban-tab {
+    .f2b-jails {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .f2b-jail {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+
+        &__name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: 13.5px;
+            margin-bottom: 12px;
+
+            svg { color: var(--accent-bright); }
+        }
+
+        &__stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        &__v {
+            font-family: var(--mono);
+            font-size: 18px;
+            font-weight: 600;
+
+            &--amber { color: var(--amber); }
+        }
+
+        &__l {
+            font-size: 10px;
+            color: var(--text-faint);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 2px;
+        }
     }
 }

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { BookOpen, Search, ExternalLink, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { PageTopbar } from '@/components/ds';
 
 const REPO_DOCS_URL = 'https://github.com/jhd3197/ServerKit/blob/main/docs';
 
@@ -81,26 +82,22 @@ export default function Documentation() {
     const empty = !groups.length && !rootDocs.length;
 
     return (
-        <div className="documentation">
-            <div className="page-header">
-                <div>
-                    <h1>
-                        <BookOpen size={22} style={{ verticalAlign: '-4px', marginRight: 8 }} />
-                        Documentation
-                    </h1>
-                    <p className="subtitle">
-                        Quick links to project docs, guides, and references &mdash; dev only
-                    </p>
-                </div>
-                <div className="documentation__search">
-                    <Search size={14} />
-                    <Input
-                        placeholder="Filter docs…"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                </div>
-            </div>
+        <div className="page-container documentation">
+            <PageTopbar
+                icon={<BookOpen size={18} />}
+                title="Documentation"
+                meta={<>dev only</>}
+                actions={(
+                    <div className="documentation__search">
+                        <Search size={14} />
+                        <Input
+                            placeholder="Filter docs…"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+                    </div>
+                )}
+            />
 
             {empty && (
                 <div className="documentation__empty">No docs match “{query}”.</div>

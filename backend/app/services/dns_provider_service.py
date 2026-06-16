@@ -1,4 +1,4 @@
-"""DNS Provider service for managing DKIM/SPF/DMARC records via Cloudflare and Route53."""
+"""DNS Provider service for managing DKIM/SPF/DMARC records via Cloudflare, Route53, DigitalOcean and GoDaddy."""
 import logging
 from typing import Dict, List, Optional
 
@@ -6,6 +6,7 @@ import requests
 
 from app import db
 from app.models.email import DNSProviderConfig
+from app.utils.crypto import encrypt_secret, decrypt_secret_safe, is_encrypted
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +30,8 @@ class DNSProviderService:
                      api_secret: str = None, api_email: str = None,
                      is_default: bool = False) -> Dict:
         """Add a new DNS provider configuration."""
-        if provider not in ('cloudflare', 'route53'):
-            return {'success': False, 'error': 'Provider must be cloudflare or route53'}
+        if provider not in ('cloudflare', 'route53', 'digitalocean', 'godaddy'):
+            return {'success': False, 'error': 'Provider must be cloudflare, route53, digitalocean or godaddy'}
         try:
             if is_default:
                 # Unset other defaults
@@ -39,8 +40,8 @@ class DNSProviderService:
             config = DNSProviderConfig(
                 name=name,
                 provider=provider,
-                api_key=api_key,
-                api_secret=api_secret,
+                api_key=encrypt_secret(api_key) if api_key else api_key,
+                api_secret=encrypt_secret(api_secret) if api_secret else api_secret,
                 api_email=api_email,
                 is_default=is_default,
             )
@@ -65,6 +66,46 @@ class DNSProviderService:
             db.session.rollback()
             return {'success': False, 'error': str(e)}
 
+    # ── Secret access (decrypt with plaintext fallback for legacy rows) ──
+
+    @staticmethod
+    def _api_key(config: DNSProviderConfig) -> str:
+        return decrypt_secret_safe(config.api_key)
+
+    @staticmethod
+    def _api_secret(config: DNSProviderConfig) -> str:
+        return decrypt_secret_safe(config.api_secret)
+
+    @classmethod
+    def decrypted_credentials(cls, config: DNSProviderConfig) -> Dict:
+        """Decrypted credentials for a DNS provider — the safe way for any caller
+        OUTSIDE this service to get usable creds. Never read ``config.api_key``
+        directly; it's encrypted at rest."""
+        return {
+            'api_key': cls._api_key(config),
+            'api_secret': cls._api_secret(config),
+            'api_email': config.api_email,
+        }
+
+    @classmethod
+    def encrypt_legacy_secrets(cls) -> int:
+        """One-time, idempotent: encrypt any DNS-provider secrets still stored in
+        plaintext (rows created before encryption-at-rest landed)."""
+        changed = 0
+        for config in DNSProviderConfig.query.all():
+            dirty = False
+            if config.api_key and not is_encrypted(config.api_key):
+                config.api_key = encrypt_secret(config.api_key)
+                dirty = True
+            if config.api_secret and not is_encrypted(config.api_secret):
+                config.api_secret = encrypt_secret(config.api_secret)
+                dirty = True
+            if dirty:
+                changed += 1
+        if changed:
+            db.session.commit()
+        return changed
+
     @classmethod
     def test_connection(cls, provider_id: int) -> Dict:
         """Test DNS provider API connection."""
@@ -76,6 +117,10 @@ class DNSProviderService:
             return cls._test_cloudflare(config)
         elif config.provider == 'route53':
             return cls._test_route53(config)
+        elif config.provider == 'digitalocean':
+            return cls._test_digitalocean(config)
+        elif config.provider == 'godaddy':
+            return cls._test_godaddy(config)
         return {'success': False, 'error': 'Unknown provider'}
 
     @classmethod
@@ -89,6 +134,10 @@ class DNSProviderService:
             return cls._cloudflare_list_zones(config)
         elif config.provider == 'route53':
             return cls._route53_list_zones(config)
+        elif config.provider == 'digitalocean':
+            return cls._digitalocean_list_zones(config)
+        elif config.provider == 'godaddy':
+            return cls._godaddy_list_zones(config)
         return {'success': False, 'error': 'Unknown provider'}
 
     @classmethod
@@ -103,6 +152,10 @@ class DNSProviderService:
             return cls._cloudflare_set_record(config, zone_id, record_type, name, value, ttl)
         elif config.provider == 'route53':
             return cls._route53_set_record(config, zone_id, record_type, name, value, ttl)
+        elif config.provider == 'digitalocean':
+            return cls._digitalocean_set_record(config, zone_id, record_type, name, value, ttl)
+        elif config.provider == 'godaddy':
+            return cls._godaddy_set_record(config, zone_id, record_type, name, value, ttl)
         return {'success': False, 'error': 'Unknown provider'}
 
     @classmethod
@@ -116,6 +169,10 @@ class DNSProviderService:
             return cls._cloudflare_delete_record(config, zone_id, record_type, name)
         elif config.provider == 'route53':
             return cls._route53_delete_record(config, zone_id, record_type, name)
+        elif config.provider == 'digitalocean':
+            return cls._digitalocean_delete_record(config, zone_id, record_type, name)
+        elif config.provider == 'godaddy':
+            return cls._godaddy_delete_record(config, zone_id, record_type, name)
         return {'success': False, 'error': 'Unknown provider'}
 
     @classmethod
@@ -151,6 +208,51 @@ class DNSProviderService:
             'message': 'All DNS records deployed' if all_ok else 'Some records failed',
         }
 
+    @classmethod
+    def find_zone_for_domain(cls, domain: str):
+        """Find a connected provider + zone that authoritatively covers ``domain``.
+
+        Picks the longest matching zone suffix across every configured provider
+        (so ``blog.example.com`` matches a zone ``example.com``). Returns
+        ``(config, zone_dict)`` or ``(None, None)`` when nothing manages it.
+        """
+        domain = (domain or '').strip().lower().rstrip('.')
+        best = None  # (config, zone, zone_name_length)
+        for config in DNSProviderConfig.query.all():
+            zres = cls.list_zones(config.id)
+            if not zres.get('success'):
+                continue
+            for zone in zres.get('zones', []):
+                zname = (zone.get('name') or '').strip().lower().rstrip('.')
+                if zname and (domain == zname or domain.endswith('.' + zname)):
+                    if best is None or len(zname) > best[2]:
+                        best = (config, zone, len(zname))
+        return (best[0], best[1]) if best else (None, None)
+
+    @classmethod
+    def ensure_a_record(cls, domain: str, ip: str) -> Dict:
+        """Upsert an ``A`` record ``domain -> ip`` via whichever connected provider
+        manages the zone. Degrades to manual instructions (``created: False`` with
+        the record to add) when there's no server IP, no provider, or an API error
+        — so the caller can always show the user what to do.
+        """
+        domain = (domain or '').strip().lower().rstrip('.')
+        record = {'type': 'A', 'name': domain, 'value': ip}
+        if not domain:
+            return {'created': False, 'reason': 'no_domain', 'record': record}
+        if not ip:
+            return {'created': False, 'reason': 'no_server_ip', 'record': record,
+                    'message': 'Set the server public IP in Settings to auto-create DNS records.'}
+        config, zone = cls.find_zone_for_domain(domain)
+        if not config:
+            return {'created': False, 'reason': 'no_provider', 'record': record,
+                    'message': f'No connected DNS provider manages {domain} — add this record manually.'}
+        res = cls.set_record(config.id, zone['id'], 'A', domain, ip)
+        if res.get('success'):
+            return {'created': True, 'provider': config.name, 'zone': zone.get('name'), 'record': record}
+        return {'created': False, 'reason': 'api_error', 'error': res.get('error'),
+                'provider': config.name, 'record': record}
+
     # ── Cloudflare Implementation ──
 
     @classmethod
@@ -159,11 +261,11 @@ class DNSProviderService:
         if config.api_email:
             return {
                 'X-Auth-Email': config.api_email,
-                'X-Auth-Key': config.api_key,
+                'X-Auth-Key': cls._api_key(config),
                 'Content-Type': 'application/json',
             }
         return {
-            'Authorization': f'Bearer {config.api_key}',
+            'Authorization': f'Bearer {cls._api_key(config)}',
             'Content-Type': 'application/json',
         }
 
@@ -262,6 +364,23 @@ class DNSProviderService:
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    @staticmethod
+    def _host_relative_to_zone(name: str, zone: str) -> str:
+        """Compute a record host relative to its zone (``@`` for the apex).
+
+        ``name`` is a FQDN (e.g. ``mail.example.com``), ``zone`` the managing
+        zone (e.g. ``example.com``); returns ``mail`` here, or ``@`` when the
+        name *is* the apex. Used by DigitalOcean/GoDaddy which address records
+        by zone + host rather than by FQDN.
+        """
+        name = (name or '').strip().lower().rstrip('.')
+        zone = (zone or '').strip().lower().rstrip('.')
+        if not zone or name == zone:
+            return '@'
+        if name.endswith('.' + zone):
+            return name[: -len(zone) - 1]
+        return name or '@'
+
     # ── Route53 Implementation ──
 
     @classmethod
@@ -274,8 +393,8 @@ class DNSProviderService:
 
         return boto3.client(
             'route53',
-            aws_access_key_id=config.api_key,
-            aws_secret_access_key=config.api_secret,
+            aws_access_key_id=cls._api_key(config),
+            aws_secret_access_key=cls._api_secret(config),
         )
 
     @classmethod
@@ -372,5 +491,205 @@ class DNSProviderService:
                 }
             )
             return {'success': True, 'message': f'{record_type} record deleted for {name}'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    # ── DigitalOcean Implementation ──
+
+    @classmethod
+    def _digitalocean_headers(cls, config: DNSProviderConfig) -> Dict:
+        """Build DigitalOcean API headers (single-token auth)."""
+        return {
+            'Authorization': f'Bearer {cls._api_key(config)}',
+            'Content-Type': 'application/json',
+        }
+
+    @classmethod
+    def _test_digitalocean(cls, config: DNSProviderConfig) -> Dict:
+        """Test DigitalOcean API connection."""
+        try:
+            resp = requests.get(
+                'https://api.digitalocean.com/v2/domains?per_page=1',
+                headers=cls._digitalocean_headers(config),
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                return {'success': True, 'message': 'DigitalOcean connection successful'}
+            data = resp.json()
+            return {'success': False, 'error': data.get('message', f'HTTP {resp.status_code}')}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _digitalocean_list_zones(cls, config: DNSProviderConfig) -> Dict:
+        """List DigitalOcean domains as zones (zone id == domain name)."""
+        try:
+            resp = requests.get(
+                'https://api.digitalocean.com/v2/domains?per_page=200',
+                headers=cls._digitalocean_headers(config),
+                timeout=15,
+            )
+            data = resp.json()
+            if resp.status_code != 200:
+                return {'success': False, 'error': data.get('message', 'Failed to list zones')}
+            zones = [{'id': d['name'], 'name': d['name'], 'status': 'active'}
+                     for d in data.get('domains', [])]
+            return {'success': True, 'zones': zones}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _digitalocean_set_record(cls, config: DNSProviderConfig, zone_id: str,
+                                  record_type: str, name: str, value: str, ttl: int) -> Dict:
+        """Create or update a DigitalOcean DNS record (zone_id is the domain)."""
+        try:
+            headers = cls._digitalocean_headers(config)
+            base = f'https://api.digitalocean.com/v2/domains/{zone_id}/records'
+            host = cls._host_relative_to_zone(name, zone_id)
+
+            payload = {'type': record_type, 'name': host, 'data': value, 'ttl': ttl}
+            if record_type == 'MX':
+                # Input is "<priority> <target>"; split into priority + data.
+                parts = value.split(None, 1)
+                if len(parts) == 2 and parts[0].isdigit():
+                    payload['priority'] = int(parts[0])
+                    payload['data'] = parts[1]
+
+            # Find an existing record of the same type/host to update.
+            resp = requests.get(
+                f'{base}?type={record_type}&per_page=200',
+                headers=headers, timeout=15,
+            )
+            data = resp.json()
+            existing = [r for r in data.get('domain_records', []) if r.get('name') == host]
+
+            if existing:
+                record_id = existing[0]['id']
+                resp = requests.put(
+                    f'{base}/{record_id}',
+                    headers=headers, json=payload, timeout=15,
+                )
+            else:
+                resp = requests.post(base, headers=headers, json=payload, timeout=15)
+
+            if resp.status_code in (200, 201):
+                return {'success': True, 'message': f'{record_type} record set for {name}'}
+            data = resp.json()
+            return {'success': False, 'error': data.get('message', f'HTTP {resp.status_code}')}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _digitalocean_delete_record(cls, config: DNSProviderConfig, zone_id: str,
+                                     record_type: str, name: str) -> Dict:
+        """Delete a DigitalOcean DNS record (zone_id is the domain)."""
+        try:
+            headers = cls._digitalocean_headers(config)
+            base = f'https://api.digitalocean.com/v2/domains/{zone_id}/records'
+            host = cls._host_relative_to_zone(name, zone_id)
+
+            resp = requests.get(
+                f'{base}?type={record_type}&per_page=200',
+                headers=headers, timeout=15,
+            )
+            data = resp.json()
+            existing = [r for r in data.get('domain_records', []) if r.get('name') == host]
+
+            if not existing:
+                return {'success': True, 'message': 'Record not found (already deleted)'}
+
+            for record in existing:
+                requests.delete(f'{base}/{record["id"]}', headers=headers, timeout=15)
+
+            return {'success': True, 'message': f'{record_type} record deleted for {name}'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    # ── GoDaddy Implementation ──
+
+    @classmethod
+    def _godaddy_headers(cls, config: DNSProviderConfig) -> Dict:
+        """Build GoDaddy API headers (key+secret auth)."""
+        return {
+            'Authorization': f'sso-key {cls._api_key(config)}:{cls._api_secret(config)}',
+            'Content-Type': 'application/json',
+        }
+
+    @classmethod
+    def _test_godaddy(cls, config: DNSProviderConfig) -> Dict:
+        """Test GoDaddy API connection."""
+        try:
+            resp = requests.get(
+                'https://api.godaddy.com/v1/domains?limit=1',
+                headers=cls._godaddy_headers(config),
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                return {'success': True, 'message': 'GoDaddy connection successful'}
+            data = resp.json()
+            return {'success': False, 'error': data.get('message', f'HTTP {resp.status_code}')}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _godaddy_list_zones(cls, config: DNSProviderConfig) -> Dict:
+        """List GoDaddy domains as zones (zone id == domain name)."""
+        try:
+            resp = requests.get(
+                'https://api.godaddy.com/v1/domains',
+                headers=cls._godaddy_headers(config),
+                timeout=15,
+            )
+            if resp.status_code != 200:
+                data = resp.json()
+                return {'success': False, 'error': data.get('message', 'Failed to list zones')}
+            zones = [{'id': d['domain'], 'name': d['domain'],
+                      'status': d.get('status', 'active')}
+                     for d in resp.json()]
+            return {'success': True, 'zones': zones}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _godaddy_set_record(cls, config: DNSProviderConfig, zone_id: str,
+                             record_type: str, name: str, value: str, ttl: int) -> Dict:
+        """Create or update a GoDaddy DNS record (record-typed PUT, zone_id is the domain)."""
+        try:
+            headers = cls._godaddy_headers(config)
+            host = cls._host_relative_to_zone(name, zone_id)
+            url = f'https://api.godaddy.com/v1/domains/{zone_id}/records/{record_type}/{host}'
+
+            record = {'data': value, 'ttl': ttl}
+            if record_type == 'MX':
+                # Input is "<priority> <target>"; GoDaddy wants priority + data.
+                parts = value.split(None, 1)
+                if len(parts) == 2 and parts[0].isdigit():
+                    record['priority'] = int(parts[0])
+                    record['data'] = parts[1]
+
+            resp = requests.put(url, headers=headers, json=[record], timeout=15)
+            if resp.status_code in (200, 201):
+                return {'success': True, 'message': f'{record_type} record set for {name}'}
+            data = resp.json()
+            return {'success': False, 'error': data.get('message', f'HTTP {resp.status_code}')}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    @classmethod
+    def _godaddy_delete_record(cls, config: DNSProviderConfig, zone_id: str,
+                                record_type: str, name: str) -> Dict:
+        """Delete a GoDaddy DNS record (record-typed DELETE, zone_id is the domain)."""
+        try:
+            headers = cls._godaddy_headers(config)
+            host = cls._host_relative_to_zone(name, zone_id)
+            url = f'https://api.godaddy.com/v1/domains/{zone_id}/records/{record_type}/{host}'
+
+            resp = requests.delete(url, headers=headers, timeout=15)
+            if resp.status_code in (200, 204):
+                return {'success': True, 'message': f'{record_type} record deleted for {name}'}
+            if resp.status_code == 404:
+                return {'success': True, 'message': 'Record not found (already deleted)'}
+            data = resp.json()
+            return {'success': False, 'error': data.get('message', f'HTTP {resp.status_code}')}
         except Exception as e:
             return {'success': False, 'error': str(e)}

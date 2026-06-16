@@ -61,3 +61,21 @@
         margin-bottom: $spacing-md;
     }
 }
+
+// Effective global overrides (moved verbatim from pages/_email.scss, where a
+// legacy unscoped `.empty-state` block used to win the cascade app-wide).
+// Top-level `.empty-state` copies still exist in pages/_security.scss and
+// pages/_servers.scss, which import AFTER this partial — at equal specificity
+// they would re-widen the padding and restore `<p>` bottom margins. The `html`
+// prefix (0,1,1) outranks those (0,1,0)/(0,1,1) blocks, while still losing to
+// the intentional higher-specificity rules (`.card .empty-state` padding from
+// _cards.scss, `--lg` child overrides, page-scoped copies). Fold this into the
+// base block above once the page-partial copies are consolidated here.
+html .empty-state {
+    padding: $space-8;
+    color: $text-secondary;
+
+    p {
+        margin: 0;
+    }
+}

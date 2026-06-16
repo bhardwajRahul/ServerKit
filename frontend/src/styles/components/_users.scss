@@ -307,13 +307,14 @@
 // Settings Nav Divider
 // --------------------------------------------
 .settings-nav-divider {
-    padding: $space-2 $space-4;
-    margin-top: $space-4;
-    font-size: $font-size-xs;
-    font-weight: 600;
-    color: $text-tertiary;
+    padding: $space-3 $space-3 $space-1;
+    margin-top: $space-3;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: $font-weight-medium;
+    color: var(--text-ghost);
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
 
     &:first-child {
         margin-top: 0;

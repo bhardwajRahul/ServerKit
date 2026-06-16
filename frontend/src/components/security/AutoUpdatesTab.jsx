@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
-import { InfoList, InfoItem } from '../InfoList';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Pill } from '@/components/ds';
 
 const AutoUpdatesTab = () => {
     const [status, setStatus] = useState(null);
@@ -92,21 +91,26 @@ const AutoUpdatesTab = () => {
                     <Button variant="outline" size="sm" onClick={loadStatus}>Refresh</Button>
                 </div>
                 <div className="card-body">
-                    <InfoList>
-                        <InfoItem label="Package" value={status.package} />
-                        <InfoItem label="Installed">
-                            <Badge variant={status.installed ? 'success' : 'warning'}>
+                    <div className="sec-rows">
+                        <div className="sk-info-row">
+                            <span className="k">Package</span>
+                            <span className="v">{status.package}</span>
+                        </div>
+                        <div className="sk-info-row">
+                            <span className="k">Installed</span>
+                            <Pill kind={status.installed ? 'green' : 'amber'}>
                                 {status.installed ? 'Yes' : 'No'}
-                            </Badge>
-                        </InfoItem>
-                        <InfoItem label="Status">
-                            <Badge variant={status.enabled ? 'success' : 'secondary'}>
+                            </Pill>
+                        </div>
+                        <div className="sk-info-row">
+                            <span className="k">Status</span>
+                            <Pill kind={status.enabled ? 'green' : 'gray'}>
                                 {status.enabled ? 'Enabled' : 'Disabled'}
-                            </Badge>
-                        </InfoItem>
-                    </InfoList>
+                            </Pill>
+                        </div>
+                    </div>
 
-                    <div className="auto-updates-actions" style={{ marginTop: '1.5rem' }}>
+                    <div className="auto-updates-actions">
                         {!status.installed ? (
                             <Button variant="default" onClick={handleInstall} disabled={actionLoading}>
                                 {actionLoading ? 'Installing...' : 'Install Auto-Updates'}
@@ -122,7 +126,7 @@ const AutoUpdatesTab = () => {
                         )}
                     </div>
 
-                    <div className="help-text" style={{ marginTop: '1.5rem' }}>
+                    <div className="sec-note">
                         <p>
                             <strong>What are automatic security updates?</strong><br/>
                             When enabled, your server will automatically download and install security updates,

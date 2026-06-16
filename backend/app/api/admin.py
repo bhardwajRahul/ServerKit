@@ -360,6 +360,28 @@ def update_setting(key):
 
 
 # ============================================
+# Managed-sites domain & HTTPS (Phase 5)
+# ============================================
+
+@admin_bp.route('/sites-https/status', methods=['GET'])
+@admin_required
+def sites_https_status():
+    """Report managed-sites base domain, server IP, providers, and HTTPS state."""
+    from app.services.sites_https_service import SitesHttpsService
+    return jsonify(SitesHttpsService.status()), 200
+
+
+@admin_bp.route('/sites-https/setup', methods=['POST'])
+@admin_required
+def sites_https_setup():
+    """Create the wildcard DNS record + issue the wildcard cert for the base domain."""
+    from app.services.sites_https_service import SitesHttpsService
+    data = request.get_json() or {}
+    result = SitesHttpsService.setup(data.get('provider_id'), email=data.get('email'))
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+# ============================================
 # Admin Statistics Endpoints
 # ============================================
 

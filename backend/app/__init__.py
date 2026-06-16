@@ -94,6 +94,7 @@ def create_app(config_name=None):
     # Register blueprints - Core
     from app.api.apps import apps_bp
     from app.api.domains import domains_bp
+    from app.api.tunnels import tunnels_bp
     from app.api.private_urls import private_urls_bp
     app.register_blueprint(apps_bp, url_prefix='/api/v1/apps')
     app.register_blueprint(domains_bp, url_prefix='/api/v1/domains')
@@ -209,6 +210,14 @@ def create_app(config_name=None):
     from app.api.source_connections import source_connections_bp
     app.register_blueprint(source_connections_bp, url_prefix='/api/v1/source-connections')
 
+    # Register blueprints - Domain registrar connections (portfolio + expiry)
+    from app.api.registrars import registrars_bp
+    app.register_blueprint(registrars_bp, url_prefix='/api/v1/registrars')
+
+    # Register blueprints - Unified connection registry (read-only "all connections")
+    from app.api.connections import connections_bp
+    app.register_blueprint(connections_bp, url_prefix='/api/v1/connections')
+
     # Register blueprints - Database Migrations
     from app.api.migrations import migrations_bp
     app.register_blueprint(migrations_bp, url_prefix='/api/v1/migrations')
@@ -283,6 +292,9 @@ def create_app(config_name=None):
     from app.api.cloud_provisioning import cloud_provisioning_bp
     app.register_blueprint(cloud_provisioning_bp, url_prefix='/api/v1/cloud')
 
+    # Register blueprints - Remote Access (WireGuard tunnels; imported above)
+    app.register_blueprint(tunnels_bp, url_prefix='/api/v1/tunnels')
+
     # Register blueprints - Performance
     from app.api.performance import performance_bp
     app.register_blueprint(performance_bp, url_prefix='/api/v1/performance')
@@ -317,6 +329,24 @@ def create_app(config_name=None):
         from app.services.settings_service import SettingsService
         SettingsService.initialize_defaults()
         SettingsService.migrate_legacy_roles()
+
+        # Encrypt any legacy plaintext provider secrets at rest (idempotent —
+        # DNS-provider api keys and storage credentials predate encryption).
+        try:
+            from app.services.dns_provider_service import DNSProviderService
+            from app.services.storage_provider_service import StorageProviderService
+            from app.services.cloud_provisioning_service import CloudProvisioningService
+            n_dns = DNSProviderService.encrypt_legacy_secrets()
+            n_store = StorageProviderService.encrypt_legacy_secrets()
+            n_cloud = CloudProvisioningService.encrypt_legacy_secrets()
+            if n_dns or n_store or n_cloud:
+                import logging as _logging
+                _logging.getLogger(__name__).info(
+                    f'Encrypted legacy secrets at rest: {n_dns} DNS provider(s), '
+                    f'{n_store} storage field(s), {n_cloud} cloud provider(s)')
+        except Exception as e:
+            import logging as _logging
+            _logging.getLogger(__name__).warning(f'Legacy secret encryption skipped: {e}')
 
         # Load installed plugins (dynamic blueprints) AFTER migrations,
         # so the installed_plugins table exists.
@@ -356,6 +386,9 @@ def create_app(config_name=None):
 
         # Start hourly pruner for expired pending agent pairings
         _start_pairing_pruner(app)
+
+        # Start daily registrar domain-expiry notifier
+        _start_registrar_expiry_scheduler(app)
 
     # Request body size limit
     app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB limit
@@ -518,6 +551,41 @@ def _start_pairing_pruner(app):
 
 
 _pairing_prune_thread = None
+
+
+_registrar_expiry_thread = None
+
+
+def _start_registrar_expiry_scheduler(app):
+    """Daily check that notifies when a registrar domain crosses an expiry
+    threshold (30/14/7/1 days, or expired). Single-worker only (module-global
+    guard), like the other in-process schedulers."""
+    global _registrar_expiry_thread
+    if _registrar_expiry_thread is not None:
+        return
+
+    import threading
+    import time
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    def loop():
+        time.sleep(300)  # let startup settle
+        while True:
+            try:
+                with app.app_context():
+                    from app.services.registrar_service import RegistrarService
+                    n = RegistrarService.notify_expiring()
+                    if n:
+                        logger.info(f'Registrar expiry: sent {n} notification(s)')
+            except Exception as e:
+                logger.error(f'Registrar expiry scheduler error: {e}')
+            time.sleep(86400)  # daily
+
+    _registrar_expiry_thread = threading.Thread(
+        target=loop, daemon=True, name='registrar-expiry')
+    _registrar_expiry_thread.start()
 
 
 _snapshot_retention_thread = None

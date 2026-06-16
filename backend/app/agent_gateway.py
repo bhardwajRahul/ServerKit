@@ -296,6 +296,18 @@ class AgentNamespace(Namespace):
 
         agent_registry.update_capabilities(agent.server_id, data or {})
 
+        # Panel-authoritative tunnel reconcile (#19): if this agent can
+        # drive WireGuard, re-apply (in the background) any tunnel config
+        # it participates in, so tunnels self-heal after an agent or panel
+        # restart. See docs/REMOTE_ACCESS_ROADMAP.md.
+        try:
+            caps = (data or {}).get('capabilities') or {}
+            if caps.get('wireguard'):
+                from app.services.tunnel_broker_service import TunnelBrokerService
+                TunnelBrokerService.schedule_reconcile(agent.server_id)
+        except Exception:
+            logger.debug("tunnel reconcile scheduling skipped", exc_info=True)
+
     def on_stream(self, data):
         """
         Handle streaming data from agent (logs, metrics).

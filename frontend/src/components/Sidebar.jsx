@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { Star, Settings, LogOut, Sun, Moon, Monitor, ChevronRight, ChevronDown, ChevronUp, Layers, Palette, PanelLeft, Check, X } from 'lucide-react';
+import { Star, Settings, LogOut, Sun, Moon, Monitor, ChevronRight, ChevronDown, ChevronUp, Layers, Palette, PanelLeft, Check, X, Server } from 'lucide-react';
 import { api } from '../services/api';
-import ServerKitLogo from './ServerKitLogo';
 import WorkspaceSwitcher from './WorkspaceSwitcher';
 import { SIDEBAR_CATEGORIES, CATEGORY_LABELS, SIDEBAR_PRESETS, getHiddenItemIds, getVisibleItems } from './sidebarItems';
 import { useContributions } from '../plugins/contributions';
@@ -270,7 +269,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
             ) : (
                 <div className="brand-section">
                     <div className="brand-logo">
-                        <ServerKitLogo width={42} height={42} />
+                        <Server size={19} strokeWidth={2} aria-hidden="true" />
                     </div>
                     <span className="brand-text">ServerKit</span>
                     <a

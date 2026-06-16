@@ -5,7 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
-import { LayoutTemplate } from 'lucide-react';
+import { LayoutTemplate, FileCog } from 'lucide-react';
+import { PageTopbar } from '@/components/ds';
+import { SERVER_TABS } from '../components/servers/serverTabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -125,26 +127,24 @@ const ServerTemplates = () => {
         general: 'General', web: 'Web Server', database: 'Database', mail: 'Mail Server', custom: 'Custom'
     };
 
-    if (loading) return <Spinner />;
+    if (loading) return <div className="page-container"><Spinner /></div>;
 
     return (
         <div className="page-container server-templates-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Server Templates</h1>
-                    <p className="page-description">
-                        {templates.length} template{templates.length !== 1 ? 's' : ''}
-                        {compliance && ` • ${compliance.compliance_pct}% fleet compliance`}
-                    </p>
-                </div>
-                <div className="page-header-actions">
-                    {user?.is_admin && (
-                        <Button onClick={() => setShowCreateModal(true)}>
-                            Create Template
-                        </Button>
-                    )}
-                </div>
-            </div>
+            <PageTopbar
+                icon={<FileCog size={18} />}
+                title="Server Templates"
+                tabs={SERVER_TABS}
+                actions={(
+                    <>
+                        {user?.is_admin && (
+                            <Button size="sm" onClick={() => setShowCreateModal(true)}>
+                                Create Template
+                            </Button>
+                        )}
+                    </>
+                )}
+            />
 
             {compliance && (
                 <div className="compliance-bar">

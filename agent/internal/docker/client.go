@@ -872,7 +872,15 @@ func (c *Client) ComposePull(ctx context.Context, projectPath, service string) (
 	return string(output), nil
 }
 
-// validateProjectPath validates the project path to prevent path traversal attacks
+// validateProjectPath is a syntactic sanity check on a compose project path
+// (non-empty, absolute, no `..` traversal). It is NOT the authorization
+// boundary: the real restriction to the operator-configured roots is the
+// symlink-resolved allowlist in the agent layer
+// (agent.validateFileAccess → resolveSymlinkPath/pathWithinAllowedRoot),
+// which every compose handler in internal/agent/agent.go runs on the
+// project_path BEFORE calling these Compose* methods. Any NEW caller of the
+// Compose* API must perform that AllowedPaths check first — this function
+// alone does not confine paths to AllowedPaths.
 func validateProjectPath(projectPath string) error {
 	if projectPath == "" {
 		return fmt.Errorf("project path is required")

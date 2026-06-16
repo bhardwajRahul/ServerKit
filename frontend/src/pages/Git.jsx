@@ -6,14 +6,17 @@ import Spinner from '../components/Spinner';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { DangerZone } from '../components/DangerZone';
 import EmptyState from '../components/EmptyState';
-import { StatStrip, Stat } from '../components/StatCard';
-import { AlertCircle, FolderGit2, Webhook, Rocket } from 'lucide-react';
+import { Pill, MetricCard, PageTopbar } from '../components/ds';
+import { AlertCircle, FolderGit2, Webhook, Rocket, Server, Globe, Terminal, Tag, X, GitBranch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const VALID_TABS = ['overview', 'repositories', 'access', 'webhooks', 'deployments', 'settings'];
+
+// Brand initials for the webhook source tiles (brand colors live in _git.scss)
+const SOURCE_INITIALS = { github: 'GH', gitlab: 'GL', bitbucket: 'BB' };
 
 function Git({ basePath = '/git' }) {
     const [status, setStatus] = useState(null);
@@ -428,12 +431,13 @@ function Git({ basePath = '/git' }) {
         }
     };
 
+    // Maps a deployment status to a Pill / dot tone.
     const getStatusColor = (status) => {
         switch (status) {
-            case 'success': return 'success';
-            case 'failed': return 'danger';
-            case 'running': return 'warning';
-            default: return '';
+            case 'success': return 'green';
+            case 'failed': return 'red';
+            case 'running': return 'amber';
+            default: return 'gray';
         }
     };
 
@@ -562,20 +566,20 @@ function Git({ basePath = '/git' }) {
 
     if (loading) {
         return (
-            <div className="page-loading">
-                <Spinner size="lg" />
+            <div className="page-container git-page">
+                <div className="page-loading">
+                    <Spinner size="lg" />
+                </div>
             </div>
         );
     }
 
     return (
         <div className="page-container git-page">
-            <div className="page-header">
-                <div className="page-header-content">
-                    <h1>Git Server</h1>
-                    <p className="page-description">Self-hosted Git repository management with Gitea</p>
-                </div>
-                <div className="page-header-actions">
+            <PageTopbar
+                icon={<GitBranch size={18} />}
+                title="Git Server"
+                actions={<>
                     {!status?.installed ? (
                         <Button onClick={() => setShowInstallModal(true)}>
                             Install Git Server
@@ -607,8 +611,8 @@ function Git({ basePath = '/git' }) {
                             )}
                         </>
                     )}
-                </div>
-            </div>
+                </>}
+            />
 
             {!status?.installed ? (
                 <div className="empty-state-large">
@@ -644,16 +648,46 @@ function Git({ basePath = '/git' }) {
                 </div>
             ) : (
                 <>
-                    <StatStrip ariaLabel="Git server status">
-                        <Stat
-                            label="Server Status"
+                    <div className="git-hint">
+                        <div className="git-hint__icon"><GitBranch size={20} /></div>
+                        <div className="git-hint__body">
+                            <div className="git-hint__title">Connect any site or service to a repository</div>
+                            <div className="git-hint__sub">
+                                Host it on your built-in Gitea — private, self-hosted inside ServerKit —
+                                or link an external provider. Push to deploy, automatically.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="git-kpis" aria-label="Git server status">
+                        <MetricCard
+                            className="git-kpi-text"
+                            icon={<Server size={17} />}
+                            tone={status?.running ? 'green' : 'red'}
                             value={status?.running ? 'Running' : 'Stopped'}
-                            state={status?.running ? 'success' : 'danger'}
+                            label="Server status"
                         />
-                        <Stat label="URL Path" value={status?.url_path || '/gitea'} />
-                        <Stat label="SSH Port" value={status?.ssh_port || 'N/A'} />
-                        <Stat label="Version" value={status?.version || 'Unknown'} />
-                    </StatStrip>
+                        <MetricCard
+                            className="git-kpi-text"
+                            icon={<Globe size={17} />}
+                            tone="accent"
+                            value={status?.url_path || '/gitea'}
+                            label="URL path"
+                        />
+                        <MetricCard
+                            icon={<Terminal size={17} />}
+                            tone="cyan"
+                            value={status?.ssh_port || 'N/A'}
+                            label="SSH port"
+                        />
+                        <MetricCard
+                            className="git-kpi-text"
+                            icon={<Tag size={17} />}
+                            tone="violet"
+                            value={status?.version || 'Unknown'}
+                            label="Gitea version"
+                        />
+                    </div>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList>
@@ -731,7 +765,12 @@ function Git({ basePath = '/git' }) {
                                     ) : repoView === 'list' ? (
                                         <>
                                             <div className="repos-header">
-                                                <h3>Repositories</h3>
+                                                <h3>
+                                                    Repositories
+                                                    {repositories.length > 0 && (
+                                                        <span className="git-count"> · {repositories.length}</span>
+                                                    )}
+                                                </h3>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -754,60 +793,76 @@ function Git({ basePath = '/git' }) {
                                                     action={<Button onClick={openGitea}>Open Gitea</Button>}
                                                 />
                                             ) : (
-                                                <div className="repos-list">
-                                                    {repositories.map((repo) => (
-                                                        <div
-                                                            key={repo.id}
-                                                            className="repo-card"
-                                                            onClick={() => selectRepository(repo)}
-                                                        >
-                                                            <div className="repo-info">
-                                                                <div className="repo-name">
-                                                                    <span className="owner">{repo.owner.login}/</span>
-                                                                    <span className="name">{repo.name}</span>
-                                                                    {repo.private && <span className="badge private">Private</span>}
-                                                                    {repo.fork && <span className="badge fork">Fork</span>}
-                                                                </div>
-                                                                {repo.description && (
-                                                                    <p className="repo-description">{repo.description}</p>
-                                                                )}
-                                                                <div className="repo-meta">
-                                                                    <span className="meta-item">
-                                                                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
-                                                                            <circle cx="18" cy="18" r="3"/>
-                                                                            <circle cx="6" cy="6" r="3"/>
-                                                                            <path d="M6 21V9a9 9 0 0 0 9 9"/>
+                                                <div className="git-table-card">
+                                                    <table className="sk-dtable git-repos-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Repository</th>
+                                                                <th>Branch</th>
+                                                                <th>Stars</th>
+                                                                <th>Forks</th>
+                                                                <th>Updated</th>
+                                                                <th aria-label="Open"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {repositories.map((repo) => (
+                                                                <tr
+                                                                    key={repo.id}
+                                                                    className="is-clickable"
+                                                                    onClick={() => selectRepository(repo)}
+                                                                >
+                                                                    <td>
+                                                                        <div className="sk-cell-name">
+                                                                            <span className="git-repo-ico">
+                                                                                {repo.private ? (
+                                                                                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
+                                                                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                                                                    </svg>
+                                                                                ) : (
+                                                                                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
+                                                                                        <circle cx="18" cy="18" r="3"/>
+                                                                                        <circle cx="6" cy="6" r="3"/>
+                                                                                        <path d="M6 21V9a9 9 0 0 0 9 9"/>
+                                                                                    </svg>
+                                                                                )}
+                                                                            </span>
+                                                                            <div className="git-repocell">
+                                                                                <div className="git-reponame">
+                                                                                    <span className="own">{repo.owner.login}/</span>{repo.name}
+                                                                                    {repo.private && <span className="git-chip git-chip--amber">private</span>}
+                                                                                    {repo.fork && <span className="git-chip git-chip--cyan">fork</span>}
+                                                                                </div>
+                                                                                {repo.description && (
+                                                                                    <div className="sk-cell-sub git-repo-desc">{repo.description}</div>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span className="git-branch-chip">
+                                                                            <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" strokeWidth="2">
+                                                                                <line x1="6" y1="3" x2="6" y2="15"/>
+                                                                                <circle cx="18" cy="6" r="3"/>
+                                                                                <circle cx="6" cy="18" r="3"/>
+                                                                                <path d="M18 9a9 9 0 0 1-9 9"/>
+                                                                            </svg>
+                                                                            {repo.default_branch}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="sk-cell-mono">{repo.stars}</td>
+                                                                    <td className="sk-cell-mono">{repo.forks}</td>
+                                                                    <td className="sk-cell-mono">{formatDate(repo.updated_at)}</td>
+                                                                    <td>
+                                                                        <svg className="git-chev" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" strokeWidth="2">
+                                                                            <polyline points="9 18 15 12 9 6"/>
                                                                         </svg>
-                                                                        {repo.default_branch}
-                                                                    </span>
-                                                                    <span className="meta-item">
-                                                                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
-                                                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                                                                        </svg>
-                                                                        {repo.stars}
-                                                                    </span>
-                                                                    <span className="meta-item">
-                                                                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
-                                                                            <circle cx="12" cy="18" r="3"/>
-                                                                            <circle cx="6" cy="6" r="3"/>
-                                                                            <circle cx="18" cy="6" r="3"/>
-                                                                            <path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/>
-                                                                            <path d="M12 12v3"/>
-                                                                        </svg>
-                                                                        {repo.forks}
-                                                                    </span>
-                                                                    <span className="meta-item updated">
-                                                                        Updated {formatDate(repo.updated_at)}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div className="repo-arrow">
-                                                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="2">
-                                                                    <polyline points="9 18 15 12 9 6"/>
-                                                                </svg>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             )}
                                         </>
@@ -821,7 +876,7 @@ function Git({ basePath = '/git' }) {
                                                     Back
                                                 </Button>
                                                 <div className="repo-title">
-                                                    <h3>{selectedRepo?.owner.login}/{selectedRepo?.name}</h3>
+                                                    <h3><span className="own">{selectedRepo?.owner.login}/</span>{selectedRepo?.name}</h3>
                                                     {selectedRepo?.description && (
                                                         <p>{selectedRepo.description}</p>
                                                     )}
@@ -944,7 +999,7 @@ function Git({ basePath = '/git' }) {
                                                                     </div>
                                                                 </div>
                                                                 <div className="commit-sha">
-                                                                    <code>{commit.short_sha}</code>
+                                                                    <code className="git-hash">{commit.short_sha}</code>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -977,10 +1032,10 @@ function Git({ basePath = '/git' }) {
                                                                         </svg>
                                                                         {branch.name}
                                                                         {branch.name === selectedRepo?.default_branch && (
-                                                                            <span className="badge default">default</span>
+                                                                            <span className="git-chip git-chip--green">default</span>
                                                                         )}
                                                                         {branch.protected && (
-                                                                            <span className="badge protected">protected</span>
+                                                                            <span className="git-chip git-chip--amber">protected</span>
                                                                         )}
                                                                     </div>
                                                                     {branch.commit && (
@@ -1076,79 +1131,101 @@ function Git({ basePath = '/git' }) {
                                             action={<Button onClick={() => setShowWebhookModal(true)}>Add Webhook</Button>}
                                         />
                                     ) : (
-                                        <div className="webhooks-list">
-                                            {webhooks.map((webhook) => (
-                                                <div key={webhook.id} className={`webhook-card ${!webhook.is_active ? 'inactive' : ''}`}>
-                                                    <div className="webhook-header">
-                                                        <div className="webhook-info">
-                                                            <span className={`source-badge ${webhook.source}`}>
-                                                                {webhook.source}
-                                                            </span>
-                                                            <h4>{webhook.name}</h4>
-                                                        </div>
-                                                        <div className="webhook-status">
-                                                            <span className={`status-dot ${webhook.is_active ? 'active' : 'inactive'}`}></span>
-                                                            {webhook.is_active ? 'Active' : 'Inactive'}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="webhook-details">
-                                                        <div className="detail-item">
-                                                            <span className="label">Repository:</span>
-                                                            <span className="value">{webhook.source_repo_url}</span>
-                                                        </div>
-                                                        <div className="detail-item">
-                                                            <span className="label">Branch:</span>
-                                                            <span className="value">{webhook.source_branch}</span>
-                                                        </div>
-                                                        <div className="detail-item">
-                                                            <span className="label">Last Sync:</span>
-                                                            <span className="value">
-                                                                {webhook.last_sync_at
-                                                                    ? new Date(webhook.last_sync_at).toLocaleString()
-                                                                    : 'Never'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="detail-item">
-                                                            <span className="label">Sync Count:</span>
-                                                            <span className="value">{webhook.sync_count}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="webhook-actions">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => copyWebhookUrl(webhook)}
-                                                            title="Copy webhook URL"
-                                                        >
-                                                            Copy URL
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => handleTestWebhook(webhook.id)}
-                                                            title="Test webhook"
-                                                        >
-                                                            Test
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant={webhook.is_active ? 'secondary' : 'default'}
-                                                            onClick={() => handleToggleWebhook(webhook.id)}
-                                                        >
-                                                            {webhook.is_active ? 'Disable' : 'Enable'}
-                                                        </Button>
-                                                        <Button
-                                                            size="sm"
-                                                            variant="destructive"
-                                                            onClick={() => handleDeleteWebhook(webhook.id)}
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        <div className="git-table-card">
+                                            <table className="sk-dtable git-webhooks-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Webhook</th>
+                                                        <th>Repository</th>
+                                                        <th>Branch</th>
+                                                        <th>Last sync</th>
+                                                        <th>Syncs</th>
+                                                        <th>Status</th>
+                                                        <th aria-label="Actions"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {webhooks.map((webhook) => (
+                                                        <tr key={webhook.id} className={!webhook.is_active ? 'is-disabled' : ''}>
+                                                            <td>
+                                                                <div className="sk-cell-name">
+                                                                    <span className={`git-src-tile git-src-tile--${webhook.source}`}>
+                                                                        {SOURCE_INITIALS[webhook.source] || webhook.source?.slice(0, 2).toUpperCase()}
+                                                                    </span>
+                                                                    <div className="git-repocell">
+                                                                        <div className="git-reponame">{webhook.name}</div>
+                                                                        <div className="sk-cell-sub">
+                                                                            {webhook.source}
+                                                                            {webhook.deploy_on_push ? ' · deploy on push' : ''}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="sk-cell-mono git-url" title={webhook.source_repo_url}>
+                                                                {webhook.source_repo_url}
+                                                            </td>
+                                                            <td>
+                                                                <span className="git-branch-chip">
+                                                                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" fill="none" strokeWidth="2">
+                                                                        <line x1="6" y1="3" x2="6" y2="15"/>
+                                                                        <circle cx="18" cy="6" r="3"/>
+                                                                        <circle cx="6" cy="18" r="3"/>
+                                                                        <path d="M18 9a9 9 0 0 1-9 9"/>
+                                                                    </svg>
+                                                                    {webhook.source_branch}
+                                                                </span>
+                                                            </td>
+                                                            <td
+                                                                className="sk-cell-mono"
+                                                                title={webhook.last_sync_at ? new Date(webhook.last_sync_at).toLocaleString() : undefined}
+                                                            >
+                                                                {webhook.last_sync_at ? formatDate(webhook.last_sync_at) : 'never'}
+                                                            </td>
+                                                            <td className="sk-cell-mono">{webhook.sync_count}</td>
+                                                            <td>
+                                                                <Pill kind={webhook.is_active ? 'green' : 'gray'}>
+                                                                    {webhook.is_active ? 'Active' : 'Inactive'}
+                                                                </Pill>
+                                                            </td>
+                                                            <td>
+                                                                <div className="git-row-actions">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => copyWebhookUrl(webhook)}
+                                                                        title="Copy webhook URL"
+                                                                    >
+                                                                        Copy URL
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => handleTestWebhook(webhook.id)}
+                                                                        title="Test webhook"
+                                                                    >
+                                                                        Test
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        onClick={() => handleToggleWebhook(webhook.id)}
+                                                                    >
+                                                                        {webhook.is_active ? 'Disable' : 'Enable'}
+                                                                    </Button>
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="ghost"
+                                                                        className="git-danger-btn"
+                                                                        onClick={() => handleDeleteWebhook(webhook.id)}
+                                                                    >
+                                                                        Delete
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     )}
                                 </div>
@@ -1182,90 +1259,63 @@ function Git({ basePath = '/git' }) {
                                             action={<Button onClick={() => setActiveTab('webhooks')}>Configure Webhooks</Button>}
                                         />
                                     ) : (
-                                        <div className="deployments-list">
+                                        <div className="git-deploys-card">
                                             {deployments.map((deployment) => (
-                                                <div key={deployment.id} className={`deployment-card ${deployment.status}`}>
-                                                    <div className="deployment-header">
-                                                        <div className="deployment-version">
-                                                            <span className="version">v{deployment.version}</span>
+                                                <div key={deployment.id} className="git-deploy-row">
+                                                    <span className={`git-deploy-dot git-deploy-dot--${getStatusColor(deployment.status)}`} />
+                                                    <div className="git-deploy-body">
+                                                        <div className="git-deploy-top">
+                                                            <span className="git-deploy-version">v{deployment.version}</span>
+                                                            <Pill kind={getStatusColor(deployment.status)}>{deployment.status}</Pill>
                                                             {deployment.is_rollback && (
-                                                                <span className="badge rollback">Rollback</span>
+                                                                <span className="git-chip git-chip--cyan">rollback</span>
                                                             )}
-                                                            <span className={`status-badge ${deployment.status}`}>
-                                                                {deployment.status}
-                                                            </span>
+                                                            {deployment.commit_sha && (
+                                                                <code className="git-hash">{deployment.commit_sha.slice(0, 7)}</code>
+                                                            )}
                                                         </div>
-                                                        <div className="deployment-time">
-                                                            {formatDate(deployment.created_at)}
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="deployment-details">
-                                                        {deployment.commit_sha && (
-                                                            <div className="detail-item">
-                                                                <span className="label">Commit:</span>
-                                                                <code>{deployment.commit_sha.slice(0, 7)}</code>
-                                                            </div>
-                                                        )}
                                                         {deployment.commit_message && (
-                                                            <div className="detail-item commit-message">
-                                                                <span className="message">{deployment.commit_message.split('\n')[0]}</span>
-                                                            </div>
+                                                            <div className="git-deploy-msg">{deployment.commit_message.split('\n')[0]}</div>
                                                         )}
-                                                        <div className="detail-item">
-                                                            <span className="label">Branch:</span>
-                                                            <span className="value">{deployment.branch}</span>
+                                                        <div className="git-deploy-meta">
+                                                            <span>{deployment.branch}</span>
+                                                            <span>{deployment.triggered_by}</span>
+                                                            {deployment.webhook_name && <span>{deployment.webhook_name}</span>}
+                                                            {deployment.duration_seconds != null && <span>{deployment.duration_seconds}s</span>}
                                                         </div>
-                                                        <div className="detail-item">
-                                                            <span className="label">Triggered by:</span>
-                                                            <span className="value">{deployment.triggered_by}</span>
-                                                        </div>
-                                                        {deployment.webhook_name && (
-                                                            <div className="detail-item">
-                                                                <span className="label">Webhook:</span>
-                                                                <span className="value">{deployment.webhook_name}</span>
-                                                            </div>
-                                                        )}
-                                                        {deployment.duration_seconds != null && (
-                                                            <div className="detail-item">
-                                                                <span className="label">Duration:</span>
-                                                                <span className="value">{deployment.duration_seconds}s</span>
-                                                            </div>
-                                                        )}
                                                         {deployment.error_message && (
-                                                            <div className="detail-item error">
-                                                                <span className="label">Error:</span>
-                                                                <span className="value">{deployment.error_message}</span>
-                                                            </div>
+                                                            <div className="git-deploy-error">{deployment.error_message}</div>
                                                         )}
                                                     </div>
-
-                                                    <div className="deployment-actions">
-                                                        <Button
-                                                            size="sm"
-                                                            variant="outline"
-                                                            onClick={() => viewDeploymentLogs(deployment.id)}
-                                                        >
-                                                            View Logs
-                                                        </Button>
-                                                        {deployment.status === 'success' && !deployment.is_rollback && (
+                                                    <div className="git-deploy-side">
+                                                        <span className="git-deploy-time">{formatDate(deployment.created_at)}</span>
+                                                        <div className="git-deploy-actions">
                                                             <Button
                                                                 size="sm"
-                                                                variant="secondary"
-                                                                onClick={() => handleRollback(deployment.app_id, deployment.version)}
+                                                                variant="outline"
+                                                                onClick={() => viewDeploymentLogs(deployment.id)}
                                                             >
-                                                                Rollback to This
+                                                                View Logs
                                                             </Button>
-                                                        )}
-                                                        {deployment.status === 'success' && (
-                                                            <Button
-                                                                size="sm"
-                                                                onClick={() => handleTriggerDeploy(deployment.app_id)}
-                                                                disabled={deployingAppId === deployment.app_id}
-                                                            >
-                                                                {deployingAppId === deployment.app_id ? 'Deploying...' : 'Redeploy'}
-                                                            </Button>
-                                                        )}
+                                                            {deployment.status === 'success' && !deployment.is_rollback && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="secondary"
+                                                                    onClick={() => handleRollback(deployment.app_id, deployment.version)}
+                                                                >
+                                                                    Rollback to This
+                                                                </Button>
+                                                            )}
+                                                            {deployment.status === 'success' && (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => handleTriggerDeploy(deployment.app_id)}
+                                                                    disabled={deployingAppId === deployment.app_id}
+                                                                >
+                                                                    {deployingAppId === deployment.app_id ? 'Deploying...' : 'Redeploy'}
+                                                                </Button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1322,7 +1372,7 @@ function Git({ basePath = '/git' }) {
                         <div className="modal-header">
                             <h2>Install Git Server</h2>
                             <button className="btn btn-icon" onClick={() => setShowInstallModal(false)}>
-                                <span className="icon">close</span>
+                                <X size={18} />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -1391,7 +1441,7 @@ function Git({ basePath = '/git' }) {
                         <div className="modal-header">
                             <h2>Add Webhook</h2>
                             <button className="btn btn-icon" onClick={() => setShowWebhookModal(false)}>
-                                <span className="icon">close</span>
+                                <X size={18} />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -1568,7 +1618,7 @@ function Git({ basePath = '/git' }) {
                         <div className="modal-header">
                             <h2>Webhook Secret</h2>
                             <button className="btn btn-icon" onClick={() => setWebhookSecret(null)}>
-                                <span className="icon">close</span>
+                                <X size={18} />
                             </button>
                         </div>
                         <div className="modal-body">
@@ -1613,21 +1663,21 @@ function Git({ basePath = '/git' }) {
                         <div className="modal-header">
                             <h2>Deployment v{selectedDeployment.version} Logs</h2>
                             <button className="btn btn-icon" onClick={() => setShowDeploymentLogs(false)}>
-                                <span className="icon">close</span>
+                                <X size={18} />
                             </button>
                         </div>
                         <div className="modal-body">
                             <div className="deployment-summary">
                                 <div className="summary-item">
                                     <span className="label">Status:</span>
-                                    <span className={`status-badge ${selectedDeployment.status}`}>
+                                    <Pill kind={getStatusColor(selectedDeployment.status)}>
                                         {selectedDeployment.status}
-                                    </span>
+                                    </Pill>
                                 </div>
                                 {selectedDeployment.commit_sha && (
                                     <div className="summary-item">
                                         <span className="label">Commit:</span>
-                                        <code>{selectedDeployment.commit_sha.slice(0, 7)}</code>
+                                        <code className="git-hash">{selectedDeployment.commit_sha.slice(0, 7)}</code>
                                     </div>
                                 )}
                                 <div className="summary-item">

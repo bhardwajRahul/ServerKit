@@ -92,3 +92,30 @@ def is_encryption_configured() -> bool:
         bool: True if SERVERKIT_ENCRYPTION_KEY is set
     """
     return os.environ.get('SERVERKIT_ENCRYPTION_KEY') is not None
+
+
+def decrypt_secret_safe(value: str) -> str:
+    """Decrypt a value encrypted with ``encrypt_secret``; if it isn't valid
+    ciphertext (e.g. a legacy plaintext secret not yet migrated), return it
+    unchanged. Lets encrypted and not-yet-migrated values coexist during the
+    transition to encryption-at-rest.
+    """
+    if not value:
+        return value
+    try:
+        return decrypt_secret(value)
+    except Exception:
+        return value
+
+
+def is_encrypted(value: str) -> bool:
+    """Best-effort check that ``value`` is our Fernet ciphertext (so migrations
+    can skip already-encrypted values). A real plaintext secret will not decrypt,
+    so this is safe in practice."""
+    if not value:
+        return False
+    try:
+        decrypt_secret(value)
+        return True
+    except Exception:
+        return False

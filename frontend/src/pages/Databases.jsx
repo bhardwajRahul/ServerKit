@@ -164,6 +164,16 @@ export default function Databases() {
         }
         if (node.kind === 'database') {
             const d = await listTables(node.conn);
+            // A docker database reports `connected: false` when the container
+            // exec/auth fails — surface that as an error row instead of letting
+            // it masquerade as an empty database.
+            if (d && d.connected === false) {
+                const e = new Error(d.error || 'connection failed');
+                e.userMessage = d.error
+                    ? `Couldn't connect: ${d.error}`
+                    : `Couldn't connect to ${connLabel(node.conn)}. Is the container running?`;
+                throw e;
+            }
             return (d.tables || []).map((t) => ({
                 id: `${node.id}:t:${t.name}`, kind: 'table', engine: node.engine, label: t.name,
                 expandable: false, conn: node.conn, table: t.name,
@@ -180,7 +190,7 @@ export default function Databases() {
             setChildrenCache((c) => new Map(c).set(node.id, kids));
         } catch (err) {
             console.error('Failed to load tree node:', err);
-            setChildrenCache((c) => new Map(c).set(node.id, 'error'));
+            setChildrenCache((c) => new Map(c).set(node.id, { __error: err.userMessage || "Couldn't load. Right-click to retry." }));
         } finally {
             setLoadingNodes((s) => { const n = new Set(s); n.delete(node.id); return n; });
         }
@@ -250,7 +260,13 @@ export default function Databases() {
     function activate(node) {
         setSelectedNode(node);
         if (node.kind === 'table') openTableTab(node);
-        else if (node.expandable) toggle(node);
+        else if (node.kind === 'database') {
+            // single click opens the database's SQL console (it used to be
+            // reachable only via the context menu) and expands its tables;
+            // collapsing stays on the chevron so re-clicks don't fold the tree
+            openConsole(node.conn, node.engine);
+            if (node.expandable && !expanded.has(node.id)) toggle(node);
+        } else if (node.expandable) toggle(node);
     }
 
     // ─── tree context menu ────────────────────────────────────
@@ -502,6 +518,16 @@ export default function Databases() {
                                     </button>
                                 </div>
                             ))}
+                            <button
+                                type="button"
+                                className="dbx-tab dbx-tab-new"
+                                disabled={!newConsoleConn}
+                                onClick={() => { if (newConsoleConn) openConsole(newConsoleConn, selectedNode.engine); }}
+                                title={newConsoleConn ? 'New SQL console' : 'Select a database to open a console'}
+                                aria-label="New SQL console"
+                            >
+                                <Plus size={14} aria-hidden="true" />
+                            </button>
                         </div>
                     )}
 
@@ -559,6 +585,7 @@ export default function Databases() {
                                     {activeStatus.readonly ? <><Lock size={11} aria-hidden="true" /> Read-only</> : 'Writes enabled'}
                                 </span>
                             )}
+                            <span className="dbx-status-item dbx-status-muted">UTF-8</span>
                         </>
                     ) : (
                         <span className="dbx-status-item dbx-status-muted">No tab open</span>
@@ -570,6 +597,7 @@ export default function Databases() {
                         <span className="dbx-status-item">{activeStatus.rowCount} row{activeStatus.rowCount === 1 ? '' : 's'}{activeStatus.truncated ? ` of ${activeStatus.totalRows}` : ''}</span>
                     )}
                     {activeStatus?.execTime != null && <span className="dbx-status-item dbx-mono">{activeStatus.execTime}s</span>}
+                    {activeStatus && <span className="dbx-status-item is-connected">Connected</span>}
                 </div>
             </footer>
 

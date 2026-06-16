@@ -416,7 +416,7 @@ const WordPressProject = () => {
     const projectDomain = production.application?.domains?.[0] || production.url || '';
 
     return (
-        <div className="app-detail-page wp-project-page">
+        <div className="app-detail-page app-detail-page--wide wp-project-page">
             {/* Top Bar */}
             <div className="app-detail-topbar">
                 <div className="app-detail-breadcrumbs">

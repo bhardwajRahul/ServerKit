@@ -36,23 +36,50 @@ class AdvancedSSLService:
         return AdvancedSSLService.SSL_PROFILES
 
     @staticmethod
-    def issue_wildcard_cert(domain, dns_provider, credentials):
-        """Issue wildcard SSL via DNS-01 challenge."""
+    def issue_wildcard_cert(domain, dns_provider, credentials, email=None):
+        """Issue a wildcard cert (domain + *.domain) via Let's Encrypt DNS-01.
+
+        Supports cloudflare (API token) and route53 (AWS key/secret). The certbot
+        DNS plugin matching the system certbot is installed best-effort first.
+        Returns the on-disk cert/key paths on success.
+        """
+        import os
+        from app.utils.system import PackageManager
+
         wildcard = f'*.{domain}'
         cmd = ['certbot', 'certonly', '--non-interactive', '--agree-tos',
                '--dns-' + dns_provider, '-d', domain, '-d', wildcard]
+        cmd.extend(['--email', email] if email else ['--register-unsafely-without-email'])
 
+        # Best-effort: ensure the DNS plugin matching the system certbot exists.
+        if PackageManager.is_available():
+            try:
+                PackageManager.install([f'python3-certbot-dns-{dns_provider}'], timeout=300)
+            except Exception:
+                pass  # certbot reports a clear error below if the plugin is truly missing
+
+        run_kwargs = {}
         if dns_provider == 'cloudflare':
             cred_file = f'/tmp/certbot-{dns_provider}.ini'
             with open(cred_file, 'w') as f:
                 f.write(f"dns_cloudflare_api_token = {credentials.get('api_token', '')}\n")
-            import os
             os.chmod(cred_file, 0o600)
             cmd.extend(['--dns-cloudflare-credentials', cred_file])
+        elif dns_provider == 'route53':
+            run_kwargs['env'] = {
+                **os.environ,
+                'AWS_ACCESS_KEY_ID': credentials.get('api_key', ''),
+                'AWS_SECRET_ACCESS_KEY': credentials.get('api_secret', ''),
+            }
 
         try:
-            result = run_command(cmd)
-            return {'success': True, 'domain': domain, 'type': 'wildcard', 'output': result.get('stdout', '')}
+            result = run_command(cmd, **run_kwargs)
+            return {
+                'success': True, 'domain': domain, 'type': 'wildcard',
+                'certificate_path': f'/etc/letsencrypt/live/{domain}/fullchain.pem',
+                'private_key_path': f'/etc/letsencrypt/live/{domain}/privkey.pem',
+                'output': result.get('stdout', ''),
+            }
         except Exception as e:
             return {'success': False, 'error': str(e)}
 

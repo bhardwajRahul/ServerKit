@@ -1,0 +1,39 @@
+name: Backend CI
+
+# Runs the full backend pytest suite on every change to backend/. This is the
+# net that catches regressions in the panel — including the agent gateway,
+# registry, pairing, and the panel<->agent command loop exercised end-to-end
+# by tests/test_agent_poll_e2e.py — instead of finding out at install time.
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Run tests
+        working-directory: backend
+        run: python -m pytest -v

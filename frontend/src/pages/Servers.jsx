@@ -12,6 +12,8 @@ import {
     XCircle,
 } from 'lucide-react';
 import api from '../services/api';
+import { PageTopbar } from '@/components/ds';
+import { SERVER_TABS } from '../components/servers/serverTabs';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -234,6 +236,11 @@ const Servers = () => {
 
     return (
         <div className="page-container page-container--full-bleed servers-page servers-page--ops">
+            <PageTopbar
+                icon={<ServerLucideIcon size={18} />}
+                title="Servers"
+                tabs={SERVER_TABS}
+            />
             <div className="servers-ops-workspace">
                 <aside className="servers-fleet-rail">
                     <section className="servers-rail-section servers-rail-section--health">

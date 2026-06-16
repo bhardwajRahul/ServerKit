@@ -1,35 +1,12 @@
 // ============================================
-// GIT PAGE
+// GIT PAGE (redesign — infra console look)
 // ============================================
+// Consumes the sk- design-system primitives (MetricCard, Pill, .sk-dtable,
+// .sk-cell-*); page-specific atoms are prefixed `git-`. Everything stays
+// scoped under .git-page. Provider-OAuth / Gitea-metrics prototype regions
+// are intentionally absent (no backend — see docs/REDESIGN_MAP.md §5).
 
 .git-page {
-    .page-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: $space-6;
-        flex-wrap: wrap;
-        gap: $space-4;
-
-        .page-header-content {
-            h1 {
-                font-size: $font-size-2xl;
-                font-weight: $font-weight-semibold;
-                margin: 0 0 $space-1 0;
-            }
-
-            .page-description {
-                color: $text-secondary;
-                margin: 0;
-            }
-        }
-
-        .page-header-actions {
-            display: flex;
-            gap: $space-2;
-        }
-    }
-
     .page-loading {
         display: flex;
         justify-content: center;
@@ -37,38 +14,58 @@
         min-height: 400px;
     }
 
+    .loading-state {
+        display: flex;
+        justify-content: center;
+        padding: $space-10;
+    }
+
+    // ── not-installed empty state ───────────────────────────
     .empty-state-large {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 60px $space-6;
-        background: $bg-card;
-        border-radius: $radius-xl;
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-lg);
         text-align: center;
 
         .empty-icon {
-            color: $text-tertiary;
+            width: 84px;
+            height: 84px;
+            border-radius: 20px;
+            display: grid;
+            place-items: center;
+            background: var(--accent-bg);
+            color: var(--accent-bright);
             margin-bottom: $space-6;
+
+            svg {
+                width: 40px;
+                height: 40px;
+            }
         }
 
         h2 {
             margin: 0 0 $space-3 0;
             font-size: $font-size-2xl;
             font-weight: $font-weight-semibold;
+            letter-spacing: -0.01em;
         }
 
         p {
             margin: 0 0 $space-6 0;
-            color: $text-secondary;
+            color: var(--text-dim);
             max-width: 400px;
         }
     }
 
     .resource-warning {
-        background: fade($warning, 10%);
-        border: 1px solid fade($warning, 30%);
-        border-radius: $radius-lg;
+        background: var(--amber-bg);
+        border: 1px solid rgba(245, 185, 69, 0.3);
+        border-radius: var(--radius);
         padding: $space-5;
         margin-bottom: $space-6;
         text-align: left;
@@ -79,17 +76,22 @@
             align-items: center;
             gap: $space-2;
             margin-bottom: $space-3;
-            color: $warning;
+            color: var(--amber);
 
             strong {
-                color: $text-primary;
+                font-family: var(--mono);
+                font-size: 11px;
+                font-weight: $font-weight-semibold;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--amber);
             }
         }
 
         ul {
             margin: 0;
             padding-left: $space-5;
-            color: $text-secondary;
+            color: var(--text-dim);
             font-size: $font-size-sm;
 
             li {
@@ -100,129 +102,324 @@
                 }
 
                 strong {
-                    color: $text-primary;
+                    color: var(--text);
                 }
             }
         }
     }
 
-    .tabs {
+    // ── intro banner (accent-gradient explainer above the KPIs) ──
+    .git-hint {
         display: flex;
-        gap: $space-1;
-        margin-bottom: $space-6;
-        border-bottom: 1px solid $border-subtle;
+        align-items: center;
+        gap: 13px;
+        padding: 15px 18px;
+        margin-bottom: $space-5;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: linear-gradient(100deg, var(--accent-bg), transparent 80%);
 
-        .tab {
-            padding: $space-3 $space-5;
-            background: none;
-            border: none;
-            font-size: $font-size-base;
-            font-weight: $font-weight-medium;
-            color: $text-secondary;
-            cursor: pointer;
-            position: relative;
-            transition: color $transition-fast;
+        &__icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            background: var(--surface-2);
+            color: var(--accent-bright);
+        }
 
-            &:hover {
-                color: $text-primary;
-            }
+        &__body {
+            flex: 1;
+            min-width: 0;
+        }
 
-            &.active {
-                color: $accent-primary;
+        &__title {
+            font-weight: 550;
+            font-size: 13.5px;
+            color: var(--text);
+        }
 
-                &::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -1px;
-                    left: 0;
-                    right: 0;
-                    height: 2px;
-                    background: $accent-primary;
-                }
-            }
+        &__sub {
+            margin-top: 2px;
+            font-size: 12.5px;
+            color: var(--text-faint);
         }
     }
 
-    .tab-content {
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: $space-4;
+    // ── KPI strip (real `status` payload only) ──────────────
+    .git-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: $space-4;
+        margin-bottom: $space-5;
 
-            h3 {
-                margin: 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
+        @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+    }
+
+    // Text-valued KPIs ("Running", "/gitea", "1.21.x") read smaller than numerals
+    .git-kpi-text .sk-kpi__val {
+        display: flex;
+        align-items: center;
+        min-height: 27px;
+        font-size: 18px;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+    }
+
+    // ── tab strip — accent wash on active (ids untouched) ───
+    .tabs {
+        gap: 2px;
+        margin-bottom: $space-5;
+        border-bottom: 1px solid var(--border-soft);
+    }
+
+    .tab {
+        padding: 8px 13px;
+        border-radius: 8px 8px 0 0;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        font-size: 13px;
+        color: var(--text-dim);
+
+        &:hover {
+            color: var(--text);
+            background: var(--surface-hover);
+        }
+
+        &.active,
+        &[data-state="active"] {
+            color: var(--accent-bright);
+            background: var(--accent-bg);
+            border-bottom-color: var(--accent-bright);
         }
     }
 
-    // Overview Tab
+    // ── shared page atoms ───────────────────────────────────
+    // Count suffix inside an eyebrow heading ("Repositories · 4")
+    .git-count {
+        font-weight: $font-weight-medium;
+        color: var(--text-faint);
+        letter-spacing: 0;
+    }
+
+    // Mono category chip (private / fork / default / protected / rollback) —
+    // %sk-state shape (_design-system.scss) with smaller local sizing kept
+    .git-chip {
+        @extend %sk-state;
+        vertical-align: middle;
+        margin-left: 7px;
+        padding: 1px 6px;
+        border-radius: 5px;
+        color: var(--text-faint);
+        background: var(--surface-3);
+
+        &--amber { color: var(--amber); background: var(--amber-bg); }
+        &--cyan  { color: var(--cyan);  background: var(--cyan-bg); }
+        &--green { color: var(--green); background: var(--green-bg); }
+    }
+
+    // Branch chip (mono, bordered — prototype .branch-chip)
+    .git-branch-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface-2);
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-dim);
+        white-space: nowrap;
+
+        svg {
+            color: var(--text-faint);
+            flex-shrink: 0;
+        }
+    }
+
+    // Commit hash chip (prototype .commit .hash)
+    .git-hash {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
+        padding: 2px 7px;
+        border-radius: 5px;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    // Card wrapping a .sk-dtable
+    .git-table-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    // Repo / webhook icon tiles
+    .git-repo-ico {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+    }
+
+    // Brand tiles are intentional categorical colors (solid, theme-stable)
+    .git-src-tile {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: 700;
+        background: var(--surface-3);
+        color: var(--text-dim);
+
+        &--github    { background: #24292f; color: #fff; }
+        &--gitlab    { background: #fc6d26; color: #fff; }
+        &--bitbucket { background: #0052cc; color: #fff; }
+    }
+
+    .git-repocell {
+        min-width: 0;
+    }
+
+    .git-reponame {
+        font-weight: 550;
+        color: var(--text);
+
+        .own {
+            color: var(--text-faint);
+            font-weight: $font-weight-normal;
+        }
+    }
+
+    // Repo description sub-line stays prose, not mono
+    .git-repo-desc {
+        font-family: $font-main;
+        max-width: 420px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .git-chev {
+        display: block;
+        color: var(--text-ghost);
+    }
+
+    .git-row-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 2px;
+    }
+
+    .git-danger-btn {
+        color: var(--red);
+
+        &:hover {
+            background: var(--red-bg);
+            color: var(--red);
+        }
+    }
+
+    // ── info cards (overview / access / settings) ───────────
+    .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: $space-5;
+
+        h3 {
+            margin: 0 0 $space-4 0;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+
+        .text-muted {
+            color: var(--text-dim);
+            font-size: $font-size-sm;
+            margin: 0 0 $space-4 0;
+        }
+    }
+
+    // ── Overview tab ─────────────────────────────────────────
     .overview-tab {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: $space-6;
+        gap: $space-4;
 
         @media (max-width: $breakpoint-md) {
             grid-template-columns: 1fr;
         }
 
-        .info-card {
-            background: $bg-card;
-            border-radius: $radius-lg;
-            padding: $space-5;
-
-            h3 {
-                margin: 0 0 $space-4 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-        }
-
         .info-grid {
             display: grid;
-            gap: $space-3;
         }
 
         .info-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: $space-2 0;
-            border-bottom: 1px solid $border-subtle;
+            gap: $space-4;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--border-soft);
+            font-size: 13px;
 
             &:last-child {
                 border-bottom: none;
             }
 
             .info-label {
-                font-size: $font-size-sm;
-                color: $text-secondary;
+                font-family: var(--mono);
+                font-size: 12px;
+                color: var(--text-faint);
+                flex-shrink: 0;
             }
 
             .info-value {
-                font-size: $font-size-sm;
-                font-weight: $font-weight-medium;
+                font-family: var(--mono);
+                font-size: 12.5px;
+                color: var(--text);
+                text-align: right;
+                min-width: 0;
+                overflow-wrap: anywhere;
 
                 &.text-success {
-                    color: $success;
+                    color: var(--green);
                 }
 
                 &.text-danger {
-                    color: $danger;
+                    color: var(--red);
                 }
 
                 &.code {
-                    font-family: $font-mono;
-                    font-size: $font-size-xs;
-                    background: $bg-hover;
-                    padding: $space-1 $space-2;
+                    background: var(--bg-code);
+                    color: var(--text-code);
+                    border: 1px solid var(--border-soft);
+                    padding: 3px 8px;
                     border-radius: $radius-sm;
+                    font-size: 11.5px;
                 }
 
                 a {
-                    color: $accent-primary;
+                    color: var(--accent-bright);
                     text-decoration: none;
 
                     &:hover {
@@ -239,130 +436,599 @@
         }
     }
 
-    // Access Tab
+    // ── Access tab ───────────────────────────────────────────
     .access-tab {
         display: flex;
         flex-direction: column;
         gap: $space-4;
 
-        .info-card {
-            background: $bg-card;
-            border-radius: $radius-lg;
-            padding: $space-5;
-
-            h3 {
-                margin: 0 0 $space-2 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-
-            .text-muted {
-                color: $text-secondary;
-                font-size: $font-size-sm;
-                margin: 0 0 $space-4 0;
-            }
-        }
-
         .access-url {
             display: flex;
             align-items: center;
             gap: $space-3;
-            background: $bg-hover;
+            background: var(--bg-code);
+            border: 1px solid var(--border-soft);
             padding: $space-3 $space-4;
-            border-radius: $radius-md;
+            border-radius: var(--radius-sm);
             margin-bottom: $space-3;
 
             code {
                 flex: 1;
-                font-family: $font-mono;
-                font-size: $font-size-sm;
-                color: $accent-primary;
+                font-family: var(--mono);
+                font-size: 12.5px;
+                color: var(--accent-bright);
                 word-break: break-all;
             }
         }
 
         .ssh-note {
             font-size: $font-size-sm;
-            color: $text-secondary;
-            padding: $space-3;
-            background: fade($info, 10%);
-            border-radius: $radius-md;
-            border: 1px solid fade($info, 35%);
+            color: var(--text-dim);
+            padding: $space-3 $space-4;
+            background: var(--cyan-bg);
+            border: 1px solid rgba(73, 199, 240, 0.25);
+            border-radius: var(--radius-sm);
 
             strong {
-                color: $text-primary;
+                color: var(--cyan);
             }
         }
     }
 
-    // Settings Tab
+    // ── Settings tab ─────────────────────────────────────────
     .settings-tab {
         display: flex;
         flex-direction: column;
         gap: $space-4;
 
-        .info-card {
-            background: $bg-card;
-            border-radius: $radius-lg;
-            padding: $space-5;
-
-            h3 {
-                margin: 0 0 $space-4 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-
-            &.danger-zone {
-                border: 1px solid fade($danger, 30%);
-                background: fade($danger, 5%);
-
-                h3 {
-                    color: $danger;
-                }
-
-                .text-muted {
-                    color: $text-secondary;
-                    font-size: $font-size-sm;
-                    margin: 0;
-                }
-            }
-        }
-
         .settings-actions {
             display: flex;
             gap: $space-3;
+            flex-wrap: wrap;
         }
     }
 
-    // Install Modal
+    // ── Repositories tab ─────────────────────────────────────
+    .repositories-tab {
+        .repos-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: $space-3;
+            margin-bottom: $space-3;
+
+            h3 {
+                margin: 0;
+                font-family: var(--mono);
+                font-size: 10.5px;
+                font-weight: $font-weight-semibold;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--text-faint);
+            }
+        }
+
+        .git-repos-table {
+            th:nth-child(2) { width: 170px; }
+            th:nth-child(3),
+            th:nth-child(4) { width: 70px; }
+            th:nth-child(5) { width: 120px; }
+            th:last-child { width: 1%; }
+        }
+
+        // ── repository detail view ──
+        .repo-detail-header {
+            display: flex;
+            align-items: center;
+            gap: $space-3;
+            margin-bottom: $space-4;
+            padding-bottom: $space-4;
+            border-bottom: 1px solid var(--border-soft);
+
+            .repo-title {
+                flex: 1;
+                min-width: 0;
+
+                h3 {
+                    margin: 0;
+                    font-size: 15px;
+                    font-weight: $font-weight-semibold;
+                    overflow-wrap: anywhere;
+
+                    .own {
+                        color: var(--text-faint);
+                        font-weight: $font-weight-normal;
+                    }
+                }
+
+                p {
+                    margin: 2px 0 0;
+                    font-size: 12.5px;
+                    color: var(--text-faint);
+                }
+            }
+
+            .branch-selector select {
+                padding: 6px 10px;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: $radius-md;
+                font-family: var(--mono);
+                font-size: 12px;
+                color: var(--text);
+                cursor: pointer;
+
+                &:focus {
+                    outline: none;
+                    border-color: var(--accent);
+                }
+            }
+        }
+
+        .repo-detail-content {
+            background: var(--surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        // ── files browser (mono tree, re-tinted only) ──
+        .files-browser {
+            .breadcrumb {
+                display: flex;
+                align-items: center;
+                flex-wrap: wrap;
+                padding: 9px $space-4;
+                background: var(--surface-2);
+                border-bottom: 1px solid var(--border-soft);
+                font-family: var(--mono);
+                font-size: 12px;
+
+                button {
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    font: inherit;
+                    color: var(--accent-bright);
+                    cursor: pointer;
+
+                    &:hover {
+                        text-decoration: underline;
+                    }
+                }
+
+                .separator {
+                    margin: 0 6px;
+                    color: var(--text-ghost);
+                }
+            }
+
+            .files-list {
+                .file-item {
+                    display: flex;
+                    align-items: center;
+                    gap: $space-3;
+                    padding: 9px $space-4;
+                    border-bottom: 1px solid var(--border-soft);
+                    transition: background 0.12s;
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+
+                    &.dir {
+                        cursor: pointer;
+
+                        &:hover {
+                            background: var(--surface-2);
+                        }
+                    }
+
+                    .file-icon {
+                        display: inline-flex;
+                        color: var(--text-faint);
+                    }
+
+                    &.dir .file-icon {
+                        color: var(--accent-bright);
+                    }
+
+                    .file-name {
+                        flex: 1;
+                        min-width: 0;
+                        font-family: var(--mono);
+                        font-size: 12.5px;
+                        overflow-wrap: anywhere;
+                    }
+
+                    .file-size {
+                        font-family: var(--mono);
+                        font-size: 11px;
+                        color: var(--text-faint);
+                    }
+                }
+            }
+        }
+
+        // ── commits (feed-style rows + hash chips) ──
+        .commits-list {
+            .commit-item {
+                display: flex;
+                align-items: flex-start;
+                gap: $space-3;
+                padding: 12px $space-4;
+                border-bottom: 1px solid var(--border-soft);
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                .commit-info {
+                    flex: 1;
+                    min-width: 0;
+
+                    .commit-message {
+                        font-size: 13px;
+                        font-weight: $font-weight-medium;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+
+                    .commit-meta {
+                        margin-top: 3px;
+                        font-family: var(--mono);
+                        font-size: 11px;
+                        color: var(--text-faint);
+
+                        .author {
+                            color: var(--text-dim);
+                            margin-right: $space-2;
+                        }
+                    }
+                }
+
+                .commit-sha {
+                    flex-shrink: 0;
+                    margin-top: 1px;
+                }
+            }
+
+            .btn-block {
+                width: calc(100% - #{$space-8});
+                margin: $space-4;
+            }
+        }
+
+        // ── branches ──
+        .branches-list {
+            .branch-item {
+                display: flex;
+                align-items: center;
+                gap: $space-4;
+                padding: 11px $space-4;
+                border-bottom: 1px solid var(--border-soft);
+
+                &:last-child {
+                    border-bottom: none;
+                }
+
+                &.active {
+                    background: var(--accent-bg-soft);
+                }
+
+                .branch-info {
+                    flex: 1;
+                    min-width: 0;
+
+                    .branch-name {
+                        display: flex;
+                        align-items: center;
+                        gap: $space-2;
+                        font-family: var(--mono);
+                        font-size: 12.5px;
+                        font-weight: $font-weight-medium;
+
+                        svg {
+                            color: var(--text-faint);
+                            flex-shrink: 0;
+                        }
+
+                        .git-chip {
+                            margin-left: 0;
+                        }
+                    }
+
+                    .branch-commit {
+                        margin-top: 3px;
+                        font-family: var(--mono);
+                        font-size: 11px;
+                        color: var(--text-faint);
+
+                        code {
+                            color: var(--accent-bright);
+                            margin-right: $space-2;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // ── Webhooks tab ─────────────────────────────────────────
+    .webhooks-tab {
+        .webhooks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: $space-4;
+            margin-bottom: $space-4;
+
+            h3 {
+                margin: 0;
+                font-family: var(--mono);
+                font-size: 10.5px;
+                font-weight: $font-weight-semibold;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--text-faint);
+            }
+
+            .text-muted {
+                color: var(--text-dim);
+                font-size: 12.5px;
+                margin: $space-2 0 0;
+            }
+        }
+
+        .git-webhooks-table {
+            th:last-child { width: 1%; }
+            td:last-child { white-space: nowrap; }
+
+            .git-url {
+                max-width: 280px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            // disabled hooks dim, but their action buttons stay legible
+            tbody tr.is-disabled td:not(:last-child) {
+                opacity: 0.55;
+            }
+        }
+    }
+
+    // ── Deployments tab (feed-style history rows) ────────────
+    .deployments-tab {
+        .deployments-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: $space-4;
+            margin-bottom: $space-4;
+
+            h3 {
+                margin: 0;
+                font-family: var(--mono);
+                font-size: 10.5px;
+                font-weight: $font-weight-semibold;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--text-faint);
+            }
+
+            .text-muted {
+                color: var(--text-dim);
+                font-size: 12.5px;
+                margin: $space-2 0 0;
+            }
+        }
+    }
+
+    .git-deploys-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        padding: 2px $space-5;
+    }
+
+    .git-deploy-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+        padding: 13px 0;
+        border-top: 1px solid var(--border-soft);
+
+        &:first-child {
+            border-top: none;
+        }
+
+        @media (max-width: $breakpoint-sm) {
+            flex-wrap: wrap;
+        }
+    }
+
+    .git-deploy-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 3px;
+        margin-top: 6px;
+        flex-shrink: 0;
+        background: var(--text-ghost);
+
+        &--green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        &--red   { background: var(--red); }
+        &--amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    }
+
+    .git-deploy-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .git-deploy-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .git-deploy-version {
+        font-family: var(--mono);
+        font-size: 13px;
+        font-weight: $font-weight-semibold;
+        color: var(--text);
+    }
+
+    .git-deploy-msg {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--text-dim);
+        overflow-wrap: anywhere;
+    }
+
+    .git-deploy-meta {
+        margin-top: 4px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+
+        span + span::before {
+            content: '·';
+            margin-right: 4px;
+            color: var(--text-ghost);
+        }
+    }
+
+    .git-deploy-error {
+        margin-top: 6px;
+        padding: 6px 10px;
+        border-radius: $radius-sm;
+        background: var(--red-bg);
+        color: var(--red);
+        font-size: 12px;
+        overflow-wrap: anywhere;
+    }
+
+    .git-deploy-side {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: $space-2;
+        flex-shrink: 0;
+
+        @media (max-width: $breakpoint-sm) {
+            width: 100%;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding-left: 21px;
+        }
+    }
+
+    .git-deploy-time {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+    }
+
+    .git-deploy-actions {
+        display: flex;
+        gap: $space-1;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
+    // tables scroll instead of crushing on small screens
+    @media (max-width: $breakpoint-md) {
+        .git-table-card {
+            overflow-x: auto;
+        }
+
+        .git-repos-table {
+            min-width: 720px;
+        }
+
+        .git-webhooks-table {
+            min-width: 960px;
+        }
+    }
+
+    // ── Modals ───────────────────────────────────────────────
     .modal-lg {
         max-width: 500px;
+    }
+
+    .modal-xl {
+        max-width: 800px;
+    }
+
+    .modal-header .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        border: none;
+        background: none;
+        border-radius: $radius-md;
+        color: var(--text-faint);
+        cursor: pointer;
+        transition: background $transition-fast, color $transition-fast;
+
+        &:hover {
+            background: var(--surface-hover);
+            color: var(--text);
+        }
+    }
+
+    // field labels → mono eyebrows (checkbox rows stay sentence-case)
+    .modal {
+        .form-group:not(.checkbox) > label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
+        }
+    }
+
+    .required {
+        color: var(--red);
     }
 
     .install-warning {
         display: flex;
         gap: $space-3;
-        background: fade($info, 10%);
-        border: 1px solid fade($info, 30%);
-        border-radius: $radius-lg;
+        background: var(--accent-bg-soft);
+        border: 1px solid var(--accent-dim);
+        border-radius: var(--radius);
         padding: $space-4;
         margin-bottom: $space-5;
+        font-size: $font-size-sm;
 
         svg {
             flex-shrink: 0;
-            color: $info;
+            color: var(--accent-bright);
         }
 
         strong {
             display: block;
             margin-bottom: $space-2;
+            color: var(--text);
         }
 
         ul {
             margin: 0;
             padding-left: $space-4;
             font-size: $font-size-sm;
-            color: $text-secondary;
+            color: var(--text-dim);
 
             li {
                 margin-bottom: $space-1;
@@ -370,196 +1036,6 @@
         }
     }
 
-    .required {
-        color: $danger;
-    }
-
-    // Webhooks Tab
-    .webhooks-tab {
-        .webhooks-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: $space-5;
-
-            h3 {
-                margin: 0 0 $space-1 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-
-            .text-muted {
-                color: $text-secondary;
-                font-size: $font-size-sm;
-                margin: 0;
-            }
-        }
-
-        .loading-state {
-            display: flex;
-            justify-content: center;
-            padding: $space-10;
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: $space-10;
-            background: $bg-card;
-            border-radius: $radius-xl;
-            text-align: center;
-
-            svg {
-                color: $text-tertiary;
-                margin-bottom: $space-4;
-            }
-
-            h4 {
-                margin: 0 0 $space-2 0;
-                font-size: $font-size-lg;
-                font-weight: $font-weight-semibold;
-            }
-
-            p {
-                margin: 0 0 $space-5 0;
-                color: $text-secondary;
-            }
-        }
-
-        .webhooks-list {
-            display: flex;
-            flex-direction: column;
-            gap: $space-4;
-        }
-
-        .webhook-card {
-            background: $bg-card;
-            border-radius: $radius-lg;
-            padding: $space-5;
-            border: 1px solid $border-subtle;
-            transition: border-color $transition-fast;
-
-            &:hover {
-                border-color: $border-default;
-            }
-
-            &.inactive {
-                opacity: 0.7;
-                background: $bg-hover;
-            }
-
-            .webhook-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: $space-4;
-
-                .webhook-info {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-3;
-
-                    h4 {
-                        margin: 0;
-                        font-size: $font-size-md;
-                        font-weight: $font-weight-semibold;
-                    }
-                }
-
-                .webhook-status {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-2;
-                    font-size: $font-size-sm;
-                    color: $text-secondary;
-
-                    .status-dot {
-                        width: 8px;
-                        height: 8px;
-                        border-radius: 50%;
-                        background: $text-tertiary;
-
-                        &.active {
-                            background: $success;
-                        }
-
-                        &.inactive {
-                            background: $text-tertiary;
-                        }
-                    }
-                }
-            }
-
-            .webhook-details {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: $space-3;
-                margin-bottom: $space-4;
-                padding: $space-4;
-                background: $bg-hover;
-                border-radius: $radius-md;
-
-                .detail-item {
-                    display: flex;
-                    flex-direction: column;
-                    gap: $space-1;
-
-                    .label {
-                        font-size: $font-size-xs;
-                        color: $text-tertiary;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }
-
-                    .value {
-                        font-size: $font-size-sm;
-                        color: $text-primary;
-                        word-break: break-all;
-                    }
-                }
-            }
-
-            .webhook-actions {
-                display: flex;
-                gap: $space-2;
-                flex-wrap: wrap;
-            }
-        }
-
-        .source-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: $space-1 $space-2;
-            border-radius: $radius-md;
-            font-size: $font-size-xs;
-            font-weight: $font-weight-medium;
-            text-transform: uppercase;
-
-            &.github {
-                background: fade(#333, 15%);
-                color: #333;
-
-                @media (prefers-color-scheme: dark) {
-                    background: fade(#f0f0f0, 15%);
-                    color: #f0f0f0;
-                }
-            }
-
-            &.gitlab {
-                background: fade(#fc6d26, 15%);
-                color: #fc6d26;
-            }
-
-            &.bitbucket {
-                background: fade(#0052cc, 15%);
-                color: #0052cc;
-            }
-        }
-    }
-
-    // Webhook Modal
     .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -576,697 +1052,36 @@
             align-items: center;
             gap: $space-2;
             cursor: pointer;
+            font-size: 13px;
             font-weight: $font-weight-normal;
+            color: var(--text);
 
             input[type="checkbox"] {
-                width: 18px;
-                height: 18px;
+                width: 16px;
+                height: 16px;
                 cursor: pointer;
+                accent-color: var(--accent);
             }
         }
     }
 
-    // Secret Display
-    .secret-warning {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-        padding: $space-4;
-        background: fade($warning, 15%);
-        border: 1px solid fade($warning, 30%);
-        border-radius: $radius-md;
-        margin-bottom: $space-4;
-
-        svg {
-            color: $warning;
-            flex-shrink: 0;
-        }
-
-        span {
-            font-weight: $font-weight-medium;
-        }
-    }
-
-    .secret-display {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-        padding: $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
-        margin-bottom: $space-4;
-
-        code {
-            flex: 1;
-            font-family: $font-mono;
-            font-size: $font-size-sm;
-            word-break: break-all;
-        }
-    }
-
-    // Repositories Tab
-    .repositories-tab {
-        .repos-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: $space-5;
-
-            h3 {
-                margin: 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-        }
-
-        .loading-state {
-            display: flex;
-            justify-content: center;
-            padding: $space-10;
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: $space-10;
-            background: $bg-card;
-            border-radius: $radius-xl;
-            text-align: center;
-
-            svg {
-                color: $text-tertiary;
-                margin-bottom: $space-4;
-            }
-
-            h4 {
-                margin: 0 0 $space-2 0;
-                font-size: $font-size-lg;
-                font-weight: $font-weight-semibold;
-            }
-
-            p {
-                margin: 0 0 $space-5 0;
-                color: $text-secondary;
-            }
-        }
-
-        .repos-list {
-            display: flex;
-            flex-direction: column;
-            gap: $space-3;
-        }
-
-        .repo-card {
-            display: flex;
-            align-items: center;
-            padding: $space-4;
-            background: $bg-card;
-            border-radius: $radius-lg;
-            border: 1px solid $border-subtle;
-            cursor: pointer;
-            transition: all $transition-fast;
-
-            &:hover {
-                border-color: $accent-primary;
-                background: $bg-hover;
-
-                .repo-arrow {
-                    color: $accent-primary;
-                }
-            }
-
-            .repo-info {
-                flex: 1;
-                min-width: 0;
-
-                .repo-name {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-2;
-                    margin-bottom: $space-2;
-
-                    .owner {
-                        color: $text-secondary;
-                    }
-
-                    .name {
-                        font-weight: $font-weight-semibold;
-                    }
-
-                    .badge {
-                        padding: 2px $space-2;
-                        border-radius: $radius-sm;
-                        font-size: $font-size-xs;
-                        font-weight: $font-weight-medium;
-
-                        &.private {
-                            background: fade($warning, 20%);
-                            color: $warning;
-                        }
-
-                        &.fork {
-                            background: fade($info, 20%);
-                            color: $info;
-                        }
-                    }
-                }
-
-                .repo-description {
-                    margin: 0 0 $space-2 0;
-                    font-size: $font-size-sm;
-                    color: $text-secondary;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                }
-
-                .repo-meta {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-4;
-                    font-size: $font-size-xs;
-                    color: $text-tertiary;
-
-                    .meta-item {
-                        display: flex;
-                        align-items: center;
-                        gap: $space-1;
-
-                        svg {
-                            opacity: 0.6;
-                        }
-
-                        &.updated {
-                            margin-left: auto;
-                        }
-                    }
-                }
-            }
-
-            .repo-arrow {
-                color: $text-tertiary;
-                transition: color $transition-fast;
-            }
-        }
-
-        // Repository Detail View
-        .repo-detail {
-            .repo-detail-header {
-                display: flex;
-                align-items: flex-start;
-                gap: $space-4;
-                margin-bottom: $space-5;
-                padding-bottom: $space-4;
-                border-bottom: 1px solid $border-subtle;
-
-                .btn-ghost {
-                    padding: $space-2;
-                }
-
-                .repo-title {
-                    flex: 1;
-
-                    h3 {
-                        margin: 0 0 $space-1 0;
-                        font-size: $font-size-lg;
-                        font-weight: $font-weight-semibold;
-                    }
-
-                    p {
-                        margin: 0;
-                        font-size: $font-size-sm;
-                        color: $text-secondary;
-                    }
-                }
-
-                .branch-selector {
-                    select {
-                        padding: $space-2 $space-4;
-                        background: $bg-card;
-                        border: 1px solid $border-default;
-                        border-radius: $radius-md;
-                        font-size: $font-size-sm;
-                        color: $text-primary;
-                        cursor: pointer;
-
-                        &:focus {
-                            outline: none;
-                            border-color: $accent-primary;
-                        }
-                    }
-                }
-            }
-
-            .repo-detail-tabs {
-                display: flex;
-                gap: $space-1;
-                margin-bottom: $space-4;
-                border-bottom: 1px solid $border-subtle;
-
-                .tab {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-2;
-                    padding: $space-3 $space-4;
-                    background: none;
-                    border: none;
-                    font-size: $font-size-sm;
-                    font-weight: $font-weight-medium;
-                    color: $text-secondary;
-                    cursor: pointer;
-                    position: relative;
-                    transition: color $transition-fast;
-
-                    &:hover {
-                        color: $text-primary;
-                    }
-
-                    &.active {
-                        color: $accent-primary;
-
-                        &::after {
-                            content: '';
-                            position: absolute;
-                            bottom: -1px;
-                            left: 0;
-                            right: 0;
-                            height: 2px;
-                            background: $accent-primary;
-                        }
-                    }
-                }
-            }
-
-            .repo-detail-content {
-                background: $bg-card;
-                border-radius: $radius-lg;
-                border: 1px solid $border-subtle;
-            }
-        }
-
-        // Files Browser
-        .files-browser {
-            .breadcrumb {
-                display: flex;
-                align-items: center;
-                padding: $space-3 $space-4;
-                background: $bg-hover;
-                border-bottom: 1px solid $border-subtle;
-                font-size: $font-size-sm;
-
-                button {
-                    background: none;
-                    border: none;
-                    color: $accent-primary;
-                    cursor: pointer;
-                    padding: 0;
-
-                    &:hover {
-                        text-decoration: underline;
-                    }
-                }
-
-                .separator {
-                    margin: 0 $space-2;
-                    color: $text-tertiary;
-                }
-            }
-
-            .files-list {
-                .file-item {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-3;
-                    padding: $space-3 $space-4;
-                    border-bottom: 1px solid $border-subtle;
-                    transition: background $transition-fast;
-
-                    &:last-child {
-                        border-bottom: none;
-                    }
-
-                    &.dir {
-                        cursor: pointer;
-
-                        &:hover {
-                            background: $bg-hover;
-                        }
-                    }
-
-                    .file-icon {
-                        color: $text-tertiary;
-                    }
-
-                    &.dir .file-icon svg {
-                        color: $info;
-                    }
-
-                    .file-name {
-                        flex: 1;
-                        font-size: $font-size-sm;
-                    }
-
-                    .file-size {
-                        font-size: $font-size-xs;
-                        color: $text-tertiary;
-                        font-family: $font-mono;
-                    }
-                }
-            }
-        }
-
-        // Commits List
-        .commits-list {
-            .commit-item {
-                display: flex;
-                align-items: flex-start;
-                gap: $space-4;
-                padding: $space-4;
-                border-bottom: 1px solid $border-subtle;
-
-                &:last-child {
-                    border-bottom: none;
-                }
-
-                .commit-info {
-                    flex: 1;
-                    min-width: 0;
-
-                    .commit-message {
-                        font-size: $font-size-sm;
-                        font-weight: $font-weight-medium;
-                        margin-bottom: $space-1;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-
-                    .commit-meta {
-                        font-size: $font-size-xs;
-                        color: $text-tertiary;
-
-                        .author {
-                            color: $text-secondary;
-                            margin-right: $space-2;
-                        }
-                    }
-                }
-
-                .commit-sha {
-                    code {
-                        padding: $space-1 $space-2;
-                        background: $bg-hover;
-                        border-radius: $radius-sm;
-                        font-size: $font-size-xs;
-                        font-family: $font-mono;
-                        color: $accent-primary;
-                    }
-                }
-            }
-
-            .btn-block {
-                width: 100%;
-                margin: $space-4;
-                width: calc(100% - $space-8);
-            }
-        }
-
-        // Branches List
-        .branches-list {
-            .branch-item {
-                display: flex;
-                align-items: center;
-                gap: $space-4;
-                padding: $space-4;
-                border-bottom: 1px solid $border-subtle;
-
-                &:last-child {
-                    border-bottom: none;
-                }
-
-                &.active {
-                    background: fade($accent-primary-raw, 5%);
-                }
-
-                .branch-info {
-                    flex: 1;
-
-                    .branch-name {
-                        display: flex;
-                        align-items: center;
-                        gap: $space-2;
-                        font-size: $font-size-sm;
-                        font-weight: $font-weight-medium;
-                        margin-bottom: $space-1;
-
-                        svg {
-                            color: $text-tertiary;
-                        }
-
-                        .badge {
-                            padding: 2px $space-2;
-                            border-radius: $radius-sm;
-                            font-size: $font-size-xs;
-                            font-weight: $font-weight-medium;
-
-                            &.default {
-                                background: fade($success, 20%);
-                                color: $success;
-                            }
-
-                            &.protected {
-                                background: fade($warning, 20%);
-                                color: $warning;
-                            }
-                        }
-                    }
-
-                    .branch-commit {
-                        font-size: $font-size-xs;
-                        color: $text-tertiary;
-
-                        code {
-                            color: $accent-primary;
-                            margin-right: $space-2;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Deployments Tab
-    .deployments-tab {
-        .deployments-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: $space-5;
-
-            h3 {
-                margin: 0 0 $space-1 0;
-                font-size: $font-size-md;
-                font-weight: $font-weight-semibold;
-            }
-
-            .text-muted {
-                color: $text-secondary;
-                font-size: $font-size-sm;
-                margin: 0;
-            }
-        }
-
-        .loading-state {
-            display: flex;
-            justify-content: center;
-            padding: $space-10;
-        }
-
-        .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: $space-10;
-            background: $bg-card;
-            border-radius: $radius-xl;
-            text-align: center;
-
-            svg {
-                color: $text-tertiary;
-                margin-bottom: $space-4;
-            }
-
-            h4 {
-                margin: 0 0 $space-2 0;
-                font-size: $font-size-lg;
-                font-weight: $font-weight-semibold;
-            }
-
-            p {
-                margin: 0 0 $space-5 0;
-                color: $text-secondary;
-            }
-        }
-
-        .deployments-list {
-            display: flex;
-            flex-direction: column;
-            gap: $space-4;
-        }
-
-        .deployment-card {
-            background: $bg-card;
-            border-radius: $radius-lg;
-            padding: $space-5;
-            border: 1px solid $border-subtle;
-
-            &.success {
-                border-color: fade($success, 45%);
-            }
-
-            &.failed {
-                border-color: fade($danger, 45%);
-            }
-
-            &.running {
-                border-color: fade($warning, 45%);
-            }
-
-            .deployment-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: $space-4;
-
-                .deployment-version {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-3;
-
-                    .version {
-                        font-size: $font-size-lg;
-                        font-weight: $font-weight-semibold;
-                    }
-
-                    .badge {
-                        padding: 2px $space-2;
-                        border-radius: $radius-sm;
-                        font-size: $font-size-xs;
-                        font-weight: $font-weight-medium;
-
-                        &.rollback {
-                            background: fade($info, 20%);
-                            color: $info;
-                        }
-                    }
-
-                    .status-badge {
-                        padding: $space-1 $space-2;
-                        border-radius: $radius-md;
-                        font-size: $font-size-xs;
-                        font-weight: $font-weight-medium;
-                        text-transform: uppercase;
-
-                        &.success {
-                            background: fade($success, 15%);
-                            color: $success;
-                        }
-
-                        &.failed {
-                            background: fade($danger, 15%);
-                            color: $danger;
-                        }
-
-                        &.running {
-                            background: fade($warning, 15%);
-                            color: $warning;
-                        }
-                    }
-                }
-
-                .deployment-time {
-                    font-size: $font-size-sm;
-                    color: $text-tertiary;
-                }
-            }
-
-            .deployment-details {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: $space-3;
-                margin-bottom: $space-4;
-                padding: $space-4;
-                background: $bg-hover;
-                border-radius: $radius-md;
-
-                .detail-item {
-                    display: flex;
-                    align-items: center;
-                    gap: $space-2;
-                    font-size: $font-size-sm;
-
-                    .label {
-                        color: $text-tertiary;
-                    }
-
-                    .value {
-                        color: $text-primary;
-                    }
-
-                    code {
-                        padding: 2px $space-2;
-                        background: $bg-card;
-                        border-radius: $radius-sm;
-                        font-size: $font-size-xs;
-                        font-family: $font-mono;
-                        color: $accent-primary;
-                    }
-
-                    &.commit-message {
-                        grid-column: 1 / -1;
-
-                        .message {
-                            color: $text-secondary;
-                            font-style: italic;
-                        }
-                    }
-
-                    &.error {
-                        grid-column: 1 / -1;
-                        color: $danger;
-
-                        .value {
-                            color: $danger;
-                        }
-                    }
-                }
-            }
-
-            .deployment-actions {
-                display: flex;
-                gap: $space-2;
-                flex-wrap: wrap;
-            }
-        }
-    }
-
-    // Form section for webhook modal
     .form-section {
         margin-top: $space-5;
         padding-top: $space-5;
-        border-top: 1px solid $border-subtle;
+        border-top: 1px solid var(--border-soft);
 
         h4 {
             margin: 0 0 $space-1 0;
-            font-size: $font-size-base;
+            font-family: var(--mono);
+            font-size: 10.5px;
             font-weight: $font-weight-semibold;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
         }
 
         .text-muted {
-            color: $text-secondary;
+            color: var(--text-dim);
             font-size: $font-size-sm;
             margin: 0 0 $space-4 0;
         }
@@ -1274,100 +1089,115 @@
 
     .form-hint {
         display: block;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
         margin-top: $space-1;
     }
 
+    // deploy-script editors sit on the code surface
     .form-group textarea {
         width: 100%;
         min-height: 80px;
         padding: $space-3;
-        font-family: $font-mono;
-        font-size: $font-size-sm;
-        background: $bg-elevated;
-        border: 1px solid $border-default;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.6;
+        background: var(--bg-code);
+        color: var(--text-code);
+        border: 1px solid var(--border);
         border-radius: $radius-md;
-        color: $text-primary;
         resize: vertical;
 
         &:focus {
             outline: none;
-            border-color: $accent-primary;
+            border-color: var(--accent);
         }
 
         &::placeholder {
-            color: $text-tertiary;
+            color: var(--text-ghost);
         }
     }
 
-    // Modal XL size
-    .modal-xl {
-        max-width: 800px;
+    // ── webhook secret modal ──
+    .secret-warning {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        padding: $space-3 $space-4;
+        background: var(--amber-bg);
+        border: 1px solid rgba(245, 185, 69, 0.3);
+        border-radius: var(--radius-sm);
+        margin-bottom: $space-4;
+
+        svg {
+            color: var(--amber);
+            flex-shrink: 0;
+        }
+
+        span {
+            font-size: 13px;
+            font-weight: $font-weight-medium;
+            color: var(--text);
+        }
     }
 
-    // Deployment Logs Modal
+    .secret-display {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        padding: $space-3 $space-4;
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: $space-4;
+
+        code {
+            flex: 1;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            color: var(--accent-bright);
+            word-break: break-all;
+        }
+    }
+
+    // ── deployment logs modal ──
     .deployment-summary {
         display: flex;
         flex-wrap: wrap;
-        gap: $space-4;
-        padding: $space-4;
-        background: $bg-hover;
-        border-radius: $radius-md;
+        gap: $space-3 $space-5;
+        padding: $space-3 $space-4;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-sm);
         margin-bottom: $space-4;
 
         .summary-item {
             display: flex;
             align-items: center;
             gap: $space-2;
-            font-size: $font-size-sm;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--text);
 
             .label {
-                color: $text-tertiary;
-            }
-
-            .status-badge {
-                padding: $space-1 $space-2;
-                border-radius: $radius-md;
-                font-size: $font-size-xs;
-                font-weight: $font-weight-medium;
+                font-size: 10.5px;
+                letter-spacing: 0.05em;
                 text-transform: uppercase;
-
-                &.success {
-                    background: fade($success, 15%);
-                    color: $success;
-                }
-
-                &.failed {
-                    background: fade($danger, 15%);
-                    color: $danger;
-                }
-
-                &.running {
-                    background: fade($warning, 15%);
-                    color: $warning;
-                }
-            }
-
-            code {
-                padding: 2px $space-2;
-                background: $bg-card;
-                border-radius: $radius-sm;
-                font-size: $font-size-xs;
-                font-family: $font-mono;
-                color: $accent-primary;
+                color: var(--text-faint);
             }
         }
     }
 
     .deployment-error {
-        padding: $space-4;
-        background: fade($danger, 10%);
-        border: 1px solid fade($danger, 30%);
-        border-radius: $radius-md;
+        padding: $space-3 $space-4;
+        background: var(--red-bg);
+        border: 1px solid rgba(251, 111, 111, 0.3);
+        border-radius: var(--radius-sm);
         margin-bottom: $space-4;
-        color: $danger;
-        font-size: $font-size-sm;
+        color: var(--red);
+        font-size: 13px;
+        overflow-wrap: anywhere;
 
         strong {
             margin-right: $space-2;
@@ -1379,29 +1209,37 @@
 
         h4 {
             margin: 0 0 $space-2 0;
-            font-size: $font-size-sm;
+            font-family: var(--mono);
+            font-size: 10.5px;
             font-weight: $font-weight-semibold;
-            color: $text-secondary;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-faint);
         }
 
+        // Git-owned console well (independent of any other page's partial)
         .log-output {
-            padding: $space-4;
-            background: $bg-hover;
-            border-radius: $radius-md;
-            font-family: $font-mono;
-            font-size: $font-size-xs;
-            color: $text-primary;
+            margin: 0;
+            padding: $space-3 $space-4;
+            background: var(--bg-code);
+            color: var(--text-code);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: var(--mono);
+            font-size: 12px;
+            line-height: 1.62;
             white-space: pre-wrap;
             word-break: break-all;
             max-height: 300px;
             overflow-y: auto;
-            margin: 0;
+            @include custom-scrollbar();
         }
     }
 
     .no-logs {
         padding: $space-6;
         text-align: center;
-        color: $text-tertiary;
+        color: var(--text-faint);
+        font-size: 13px;
     }
 }

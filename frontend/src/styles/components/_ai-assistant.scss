@@ -6,20 +6,20 @@
 $sk-ai-z: 1100;
 
 %sk-ai-tokens {
-    --sk-ai-bg: var(--bg-card, #18181b);
-    --sk-ai-bg-body: var(--bg-body, #09090b);
-    --sk-ai-hover: var(--bg-hover, #27272a);
-    --sk-ai-elevated: var(--bg-elevated, #1f1f23);
-    --sk-ai-border: var(--border-subtle, #27272a);
-    --sk-ai-fg: var(--text-primary, #f4f4f5);
-    --sk-ai-fg-2: var(--text-secondary, #a1a1aa);
-    --sk-ai-fg-3: var(--text-tertiary, #71717a);
-    --sk-ai-accent: var(--accent-primary, #6366f1);
-    --sk-ai-accent-hover: var(--accent-hover, #4f46e5);
-    --sk-ai-glow: var(--accent-glow, rgba(99, 102, 241, 0.15));
+    --sk-ai-bg: var(--bg-card, #{$bg-card-raw});
+    --sk-ai-bg-body: var(--bg-body, #{$bg-body-raw});
+    --sk-ai-hover: var(--bg-hover, #{$bg-hover-raw});
+    --sk-ai-elevated: var(--bg-elevated, #{$bg-elevated-raw});
+    --sk-ai-border: var(--border-subtle, #{$border-subtle-raw});
+    --sk-ai-fg: var(--text-primary, #{$text-primary-raw});
+    --sk-ai-fg-2: var(--text-secondary, #{$text-secondary-raw});
+    --sk-ai-fg-3: var(--text-tertiary, #{$text-tertiary-raw});
+    --sk-ai-accent: var(--accent-primary, #{$accent-primary-raw});
+    --sk-ai-accent-hover: var(--accent-hover, #{$accent-hover-raw});
+    --sk-ai-glow: var(--accent-glow, #{fade($accent-primary-raw, 15%)});
     --sk-ai-shadow: var(--shadow-lg, 0 20px 60px rgba(0, 0, 0, 0.5));
     --sk-ai-code-bg: var(--bg-code, var(--bg-body, #0c0c0f));
-    --sk-ai-code-fg: var(--text-code, var(--text-primary, #f4f4f5));
+    --sk-ai-code-fg: var(--text-code, var(--text-primary, #{$text-primary-raw}));
     --sk-ai-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
     --sk-ai-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --sk-ai-radius: 14px;
@@ -66,7 +66,7 @@ $sk-ai-z: 1100;
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #ef4444;
+    background: $danger;
     border: 2px solid var(--sk-ai-accent);
 }
 
@@ -216,7 +216,7 @@ $sk-ai-z: 1100;
 .sk-ai-message__error {
     color: #fca5a5;
     font-size: 13px;
-    border: 1px solid rgba(239, 68, 68, 0.4);
+    border: 1px solid fade($danger, 40%);
     border-radius: 8px;
     padding: 8px 10px;
 }
@@ -266,7 +266,7 @@ $sk-ai-z: 1100;
     border-radius: 10px;
     background: var(--sk-ai-bg-body);
     overflow: hidden;
-    &--error { border-color: rgba(239, 68, 68, 0.5); }
+    &--error { border-color: fade($danger, 50%); }
 }
 .sk-ai-tool-card__head {
     width: 100%;

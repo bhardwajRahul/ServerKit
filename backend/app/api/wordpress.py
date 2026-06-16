@@ -16,6 +16,18 @@ def _resolve_app(site_or_app_id):
     return Application.query.get(site_or_app_id)
 
 
+def _is_wp_app(app):
+    """True if `app` is a WordPress-managed site. Containerized WP sites are
+    stored with app_type 'docker' (see WordPressService), so app_type alone is
+    not a reliable signal — a linked WordPressSite record is the source of truth.
+    """
+    if not app:
+        return False
+    if app.app_type == 'wordpress':
+        return True
+    return WordPressSite.query.filter_by(application_id=app.id).first() is not None
+
+
 # ==================== WORDPRESS SITES HUB ENDPOINTS ====================
 
 @wordpress_bp.route('/sites', methods=['GET'])
@@ -66,7 +78,8 @@ def create_site():
 @wordpress_bp.route('/sites/import', methods=['POST'])
 @jwt_required()
 def import_site():
-    """Import an existing WordPress site from an uploaded SQL dump (multipart)."""
+    """Import an existing WordPress site from an uploaded SQL dump plus an optional
+    wp-content/full-site .zip (multipart)."""
     import os
     import tempfile
     name = request.form.get('name')
@@ -85,11 +98,21 @@ def import_site():
     if not (fname.endswith('.sql') or fname.endswith('.sql.gz') or fname.endswith('.gz')):
         return jsonify({'error': 'Dump must be a .sql or .sql.gz file'}), 400
 
+    # Optional wp-content / full-site zip (plugins/themes/uploads).
+    zip_file = request.files.get('wp_content')
+    if zip_file and zip_file.filename and not zip_file.filename.lower().endswith('.zip'):
+        return jsonify({'error': 'wp-content archive must be a .zip file'}), 400
+
     suffix = '.sql.gz' if fname.endswith('.gz') else '.sql'
     fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix='wp_import_')
     os.close(fd)
+    zip_tmp = None
     try:
         sql_file.save(tmp_path)
+        if zip_file and zip_file.filename:
+            zfd, zip_tmp = tempfile.mkstemp(suffix='.zip', prefix='wp_import_content_')
+            os.close(zfd)
+            zip_file.save(zip_tmp)
         current_user_id = get_jwt_identity()
         result = WordPressService.import_site(
             name=name,
@@ -97,12 +120,15 @@ def import_site():
             user_id=current_user_id,
             sql_path=tmp_path,
             old_url=old_url,
+            wp_content_zip_path=zip_tmp,
         )
     finally:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
+        for p in (tmp_path, zip_tmp):
+            if p:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
     return (jsonify(result), 201) if result.get('success') else (jsonify(result), 400)
 
 
@@ -377,6 +403,8 @@ def get_php(app_id):
         return jsonify({'error': 'Access denied'}), 403
     info = WordPressService.get_php_info(app.root_path)
     info['available_versions'] = WordPressService.get_available_php_versions()
+    # The directives the limits panel may edit (#24 write side).
+    info['editable_limits'] = list(WordPressService.get_php_limit_spec().keys())
     return jsonify({'php': info}), 200
 
 
@@ -395,6 +423,25 @@ def set_php(app_id):
     if not version:
         return jsonify({'error': 'version is required'}), 400
     result = WordPressService.set_php_version(app.root_path, version)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@wordpress_bp.route('/sites/<int:app_id>/php/limits', methods=['POST'])
+@jwt_required()
+@admin_required
+def set_php_limits(app_id):
+    """Durably set per-site PHP ini limits (#24): writes a conf.d drop-in,
+    bind-mounts it, and reloads the container. Body: {limits: {key: value, ...}}."""
+    app = _resolve_app(app_id)
+    data = request.get_json() or {}
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if app.app_type not in ('wordpress', 'docker'):
+        return jsonify({'error': 'Application is not a WordPress site'}), 400
+    limits = data.get('limits')
+    if not isinstance(limits, dict) or not limits:
+        return jsonify({'error': 'limits object is required'}), 400
+    result = WordPressService.set_php_limits(app.root_path, limits)
     return jsonify(result), 200 if result.get('success') else 400
 
 
@@ -519,6 +566,8 @@ def get_site_analytics(app_id):
     if user.role != 'admin' and app.user_id != current_user_id:
         return jsonify({'error': 'Access denied'}), 403
     result = WpAnalyticsService.get_traffic(app.name, request.args.get('hours', 24))
+    # PHP fatals/warnings from the WP_DEBUG log (#25 fatals; populated by #30's toggle).
+    result['php_errors'] = WpAnalyticsService.get_php_errors(app.name)
     return jsonify(result), 200
 
 
@@ -786,7 +835,7 @@ def get_wordpress_info(app_id):
     if user.role != 'admin' and app.user_id != current_user_id:
         return jsonify({'error': 'Access denied'}), 403
 
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     info = WordPressService.get_wordpress_info(app.root_path)
@@ -806,7 +855,7 @@ def update_wordpress(app_id):
     if not app:
         return jsonify({'error': 'Application not found'}), 404
 
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     result = WordPressService.update_wordpress(app.root_path)
@@ -1087,6 +1136,62 @@ def search_replace(app_id):
     return jsonify(result), 200 if result['success'] else 400
 
 
+@wordpress_bp.route('/sites/<int:app_id>/url/preview', methods=['POST'])
+@jwt_required()
+@admin_required
+def preview_site_url(app_id):
+    """Dry-run a site URL change: per-pair replacement counts, no mutation."""
+    app = _resolve_app(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    data = request.get_json() or {}
+    new_url = data.get('new_url')
+    if not new_url:
+        return jsonify({'error': 'new_url is required'}), 400
+    result = WordPressService.preview_url_change(app, new_url)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@wordpress_bp.route('/sites/<int:app_id>/url', methods=['POST'])
+@jwt_required()
+@admin_required
+def change_site_url(app_id):
+    """Change a site's URL end to end: backup, serialization-safe DB rewrite,
+    home/siteurl + cache flush, then re-point the Domain row + nginx vhost."""
+    app = _resolve_app(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    data = request.get_json() or {}
+    new_url = data.get('new_url')
+    if not new_url:
+        return jsonify({'error': 'new_url is required'}), 400
+    keep_old = data.get('keep_old_redirect', True)
+    result = WordPressService.change_site_url(app, new_url, keep_old_redirect=keep_old)
+    return jsonify(result), 200 if result.get('success') else 400
+
+
+@wordpress_bp.route('/sites/<int:app_id>/domain', methods=['POST'])
+@jwt_required()
+@admin_required
+def attach_custom_domain(app_id):
+    """Attach a user-owned custom domain: auto-create the DNS A record (or return
+    it to add manually), optional Let's Encrypt cert, then migrate the site URL."""
+    app = _resolve_app(app_id)
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    data = request.get_json() or {}
+    domain = data.get('domain')
+    if not domain:
+        return jsonify({'error': 'domain is required'}), 400
+    result = WordPressService.attach_custom_domain(
+        app, domain,
+        migrate=data.get('migrate', True),
+        issue_ssl=data.get('issue_ssl', False),
+        email=data.get('email'),
+    )
+    return jsonify(result), 200 if result.get('success') else 400
+
+
 @wordpress_bp.route('/sites/<int:app_id>/optimize', methods=['POST'])
 @jwt_required()
 @admin_required
@@ -1237,7 +1342,7 @@ def wp_auto_login(site_id):
     app = wp_site.application if wp_site else _resolve_app(site_id)
     if not app or not app.root_path:
         return jsonify({'error': 'Application not found'}), 404
-    if app.app_type != 'wordpress':
+    if not _is_wp_app(app):
         return jsonify({'error': 'Application is not a WordPress site'}), 400
 
     # Resolve a managed admin tied to the operator's panel email. Prefer the
