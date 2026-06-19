@@ -339,11 +339,13 @@ def create_app(config_name=None):
             n_dns = DNSProviderService.encrypt_legacy_secrets()
             n_store = StorageProviderService.encrypt_legacy_secrets()
             n_cloud = CloudProvisioningService.encrypt_legacy_secrets()
-            if n_dns or n_store or n_cloud:
+            n_settings = SettingsService.migrate_legacy_secrets()
+            if n_dns or n_store or n_cloud or n_settings:
                 import logging as _logging
                 _logging.getLogger(__name__).info(
                     f'Encrypted legacy secrets at rest: {n_dns} DNS provider(s), '
-                    f'{n_store} storage field(s), {n_cloud} cloud provider(s)')
+                    f'{n_store} storage field(s), {n_cloud} cloud provider(s), '
+                    f'{n_settings} system setting(s)')
         except Exception as e:
             import logging as _logging
             _logging.getLogger(__name__).warning(f'Legacy secret encryption skipped: {e}')
