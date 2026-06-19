@@ -154,6 +154,7 @@ cmd_help() {
     echo "  logs [service]    View logs (backend, frontend, or all)"
     echo "  update [options]  Update ServerKit"
     echo "                      --branch <name>  Switch to specific branch (e.g., dev)"
+    echo "                      --release [vX.Y.Z]  Update from release tarball"
     echo "                      --force          Skip version check"
     echo "  branch            Show current branch"
     echo "  uninstall         Uninstall ServerKit"
@@ -357,6 +358,8 @@ cmd_branch() {
 cmd_update() {
     local force_update=false
     local target_branch=""
+    local use_release=false
+    local release_version=""
 
     # Parse arguments
     while [[ $# -gt 0 ]]; do
@@ -369,6 +372,15 @@ cmd_update() {
                 target_branch="$2"
                 shift 2
                 ;;
+            --release|-r)
+                use_release=true
+                if [[ -n "${2:-}" ]] && [[ ! "$2" =~ ^- ]]; then
+                    release_version="$2"
+                    shift 2
+                else
+                    shift
+                fi
+                ;;
             *)
                 shift
                 ;;
@@ -379,6 +391,41 @@ cmd_update() {
     check_installed
     print_header
     echo ""
+
+    # Dev mode: branch-based source update
+    if [ -n "$target_branch" ]; then
+        if [ ! -d "$INSTALL_DIR/.git" ]; then
+            print_error "Cannot switch branches: $INSTALL_DIR is not a git repository (release install)."
+            print_info "Use 'serverkit update --release' to update from a release tarball."
+            exit 1
+        fi
+        _update_source "$target_branch" "$force_update"
+        return
+    fi
+
+    # Release mode: download pre-built tarball
+    if [ "$use_release" = true ]; then
+        if [ -n "$release_version" ]; then
+            SERVERKIT_VERSION="$release_version" bash "$INSTALL_DIR/scripts/update.sh"
+        else
+            INSTALL_FROM_RELEASE=1 bash "$INSTALL_DIR/scripts/update.sh"
+        fi
+        return
+    fi
+
+    # Default mode: prefer robust update.sh if available
+    if [ -x "$INSTALL_DIR/scripts/update.sh" ]; then
+        bash "$INSTALL_DIR/scripts/update.sh"
+        return
+    fi
+
+    # Fallback to legacy inline source update
+    _update_source "main" "$force_update"
+}
+
+_update_source() {
+    local target_branch="$1"
+    local force_update="$2"
 
     cd "$INSTALL_DIR"
 
