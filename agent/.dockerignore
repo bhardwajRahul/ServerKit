@@ -2,6 +2,9 @@
 *.exe
 serverkit-agent
 agent
+dist/
+ui/dist/
+ui/node_modules/
 
 # Git
 .git

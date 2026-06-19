@@ -2,7 +2,23 @@
 # Multi-stage build for minimal image size
 
 # ============================================
-# Stage 1: Build
+# Stage 1: Build agent desktop UI (embedded by //go:embed)
+# ============================================
+FROM node:20-alpine AS ui-builder
+
+WORKDIR /build
+
+# Install UI dependencies first for better layer caching
+COPY ui/package.json ui/package-lock.json ./ui/
+RUN cd ui && npm ci
+
+# Copy UI source and build it. Vite outputs to ../internal/agentui/dist,
+# which is the exact path the Go embed directive expects.
+COPY ui/ ./ui/
+RUN cd ui && npm run build
+
+# ============================================
+# Stage 2: Build Go binary
 # ============================================
 FROM golang:1.23-alpine AS builder
 
@@ -18,13 +34,22 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Copy the built UI bundle into the Go package that embeds it.
+# This must happen before `go build` because //go:embed is validated
+# at compile time.
+COPY --from=ui-builder /build/internal/agentui/dist ./internal/agentui/dist
+
 # Build arguments for version info
 ARG VERSION=dev
 ARG BUILD_TIME=unknown
 ARG GIT_COMMIT=unknown
 
+# Target architecture for multi-platform builds (buildx sets these).
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+
 # Build the agent binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-w -s \
         -X main.Version=${VERSION} \
         -X main.BuildTime=${BUILD_TIME} \
@@ -33,7 +58,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     ./cmd/agent
 
 # ============================================
-# Stage 2: Runtime
+# Stage 3: Runtime
 # ============================================
 FROM alpine:3.19
 
