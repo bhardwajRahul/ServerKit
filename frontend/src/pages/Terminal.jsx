@@ -27,7 +27,7 @@ const Terminal = () => {
     const [activeTab, setActiveTab] = useTabParam('/terminal', VALID_TABS);
 
     return (
-        <div className="page-container terminal-page">
+        <div className="page-container page-container--full-bleed terminal-page">
             <PageTopbar
                 icon={<TerminalIcon size={18} />}
                 title="Terminal / Logs"
@@ -452,6 +452,8 @@ const LogFilesTab = () => {
 
                     <LogContent
                         ref={contentRef}
+                        live={autoRefresh}
+                        scrollKey={selectedLog}
                         content={selectedLog ? logContent : ''}
                         loading={loadingContent}
                         emptyMessage={
@@ -803,6 +805,8 @@ const JournalTab = () => {
 
                     <LogContent
                         ref={contentRef}
+                        live={autoRefresh}
+                        scrollKey={unit || source}
                         content={logContent}
                         loading={loading}
                         emptyMessage={
@@ -1655,6 +1659,8 @@ const ServicesTab = () => {
                         <div className="preview-drawer-body">
                             <LogContent
                                 ref={logContentRef}
+                                live={logAutoRefresh}
+                                scrollKey={selectedService?.name}
                                 content={serviceLogs}
                                 loading={logsLoading}
                                 emptyMessage="No log output."
