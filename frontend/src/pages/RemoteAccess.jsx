@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Network, Plus, Trash2, Globe, Lock, ShieldCheck, ExternalLink } from 'lucide-react';
+import {
+    Network, Plus, Trash2, Globe, Lock, ShieldCheck, ExternalLink,
+    ArrowRight, HardDrive, Cloud, AlertTriangle,
+} from 'lucide-react';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
+import EmptyState from '../components/EmptyState';
 import Spinner from '../components/Spinner';
 import Modal from '../components/Modal';
+import { Pill } from '@/components/ds';
+import { useTopbarActions } from '@/hooks/useTopbarActions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import {
     Select,
     SelectTrigger,
@@ -18,23 +22,16 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 
-const STATUS_STYLES = {
-    up: 'text-green-600 border-green-500/40',
-    pending: 'text-yellow-600 border-yellow-500/40',
-    degraded: 'text-yellow-600 border-yellow-500/40',
-    published: 'text-green-600 border-green-500/40',
-    down: 'text-red-600 border-red-500/40',
-    error: 'text-red-600 border-red-500/40',
+// Tunnel / service status → status-pill tone.
+const PILL_KIND = {
+    up: 'green',
+    published: 'green',
+    pending: 'amber',
+    degraded: 'amber',
+    down: 'red',
+    error: 'red',
 };
-
-function StatusBadge({ status }) {
-    const cls = STATUS_STYLES[status] || 'text-muted-foreground border-border';
-    return (
-        <Badge variant="outline" className={cls}>
-            {status || 'unknown'}
-        </Badge>
-    );
-}
+const pillKind = (status) => PILL_KIND[status] || 'gray';
 
 const EMPTY_FORM = {
     privateServerId: '',
@@ -176,71 +173,76 @@ const RemoteAccess = () => {
         }
     };
 
+    // Header action lives in the shared Servers top bar (this page is a tab in
+    // the Servers group), so the page renders no header of its own.
+    useTopbarActions(
+        () => (
+            <Button size="sm" onClick={() => openWizard(null)} disabled={loading}>
+                <Plus size={15} /> Expose a Local Service
+            </Button>
+        ),
+        [loading]
+    );
+
     return (
-        <div className="p-6 max-w-6xl mx-auto">
-            <div className="flex items-start justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold flex items-center gap-2">
-                        <Network className="w-6 h-6 text-primary" />
-                        Remote Access
-                    </h1>
-                    <p className="text-muted-foreground mt-1 max-w-2xl">
-                        Expose a service running on a private machine (behind NAT, no port-forwarding) to a public
-                        hostname over a WireGuard tunnel between two of your agents.
-                    </p>
-                </div>
-                <Button onClick={() => openWizard(null)} disabled={loading}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Expose a Local Service
-                </Button>
-            </div>
+        <div className="sk-tabgroup__inner ra-page">
+            <p className="ra-intro">
+                Expose a service running on a private machine (behind NAT, no port-forwarding) to a
+                public hostname over a WireGuard tunnel between two of your agents.
+            </p>
 
             {loading ? (
-                <div className="flex justify-center py-16">
+                <div className="ra-loading">
                     <Spinner />
                 </div>
             ) : tunnels.length === 0 ? (
-                <Card>
-                    <CardContent className="py-16 flex flex-col items-center text-center gap-3">
-                        <Network className="w-10 h-10 text-muted-foreground" />
-                        <h2 className="text-lg font-medium">No tunnels yet</h2>
-                        <p className="text-muted-foreground max-w-md">
-                            Pick a public-IP edge server and a private host, and ServerKit will pair them over
-                            WireGuard and publish your service — no router changes needed.
-                        </p>
-                        <Button onClick={() => openWizard(null)} className="mt-2">
-                            <Plus className="w-4 h-4 mr-1" />
-                            Expose a Local Service
+                <EmptyState
+                    icon={Network}
+                    title="No tunnels yet"
+                    description="Pick a public-IP edge server and a private host, and ServerKit will pair them over WireGuard and publish your service — no router changes needed."
+                    action={
+                        <Button onClick={() => openWizard(null)}>
+                            <Plus size={16} /> Expose a Local Service
                         </Button>
-                    </CardContent>
-                </Card>
+                    }
+                />
             ) : (
-                <div className="space-y-4">
-                    {tunnels.map((t) => (
-                        <Card key={t.id}>
-                            <CardContent className="p-5">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="font-medium">{t.private_server_name || t.private_server_id}</span>
-                                            <span className="text-muted-foreground">→</span>
-                                            <span className="font-medium">{t.edge_server_name || t.edge_server_id}</span>
-                                            <StatusBadge status={t.status} />
+                <div className="ra-list">
+                    {tunnels.map((t) => {
+                        const svcs = services[t.id] || [];
+                        return (
+                            <section key={t.id} className="ra-tunnel">
+                                <div className="ra-tunnel__head">
+                                    <div className="ra-tunnel__info">
+                                        <div className="ra-tunnel__route">
+                                            <span className="ra-node">
+                                                <span className="ra-node__ico"><HardDrive size={14} /></span>
+                                                {t.private_server_name || t.private_server_id}
+                                            </span>
+                                            <ArrowRight className="ra-arrow" size={16} />
+                                            <span className="ra-node">
+                                                <span className="ra-node__ico"><Cloud size={14} /></span>
+                                                {t.edge_server_name || t.edge_server_id}
+                                            </span>
+                                            <Pill kind={pillKind(t.status)}>{t.status || 'unknown'}</Pill>
                                         </div>
-                                        <div className="text-sm text-muted-foreground mt-1">
-                                            {t.subnet} · {t.interface_name} · UDP {t.listen_port}
-                                            {t.last_handshake_at ? ` · handshake ${new Date(t.last_handshake_at).toLocaleString()}` : ' · no handshake yet'}
+                                        <div className="ra-tunnel__meta">
+                                            <span>{t.subnet}</span>
+                                            <span className="ra-dot">·</span>
+                                            <span>{t.interface_name}</span>
+                                            <span className="ra-dot">·</span>
+                                            <span>UDP {t.listen_port}</span>
+                                            <span className="ra-dot">·</span>
+                                            <span>
+                                                {t.last_handshake_at
+                                                    ? `handshake ${new Date(t.last_handshake_at).toLocaleString()}`
+                                                    : 'no handshake yet'}
+                                            </span>
                                         </div>
-                                        {!t.last_handshake_at && t.status !== 'up' && (
-                                            <p className="text-xs text-yellow-600 mt-1">
-                                                No handshake yet — if this persists, the private host&apos;s outbound UDP to the edge may be blocked (a relay is needed).
-                                            </p>
-                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className="ra-tunnel__actions">
                                         <Button variant="outline" size="sm" onClick={() => openWizard(t)}>
-                                            <Plus className="w-4 h-4 mr-1" />
-                                            Expose service
+                                            <Plus size={15} /> Expose service
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -249,54 +251,76 @@ const RemoteAccess = () => {
                                             onClick={() => setTeardown(t)}
                                             title="Tear down tunnel"
                                         >
-                                            <Trash2 className="w-4 h-4" />
+                                            <Trash2 size={15} />
                                         </Button>
                                     </div>
                                 </div>
 
-                                <div className="mt-4 border-t border-border pt-3">
-                                    {(services[t.id] || []).length === 0 ? (
-                                        <p className="text-sm text-muted-foreground">No services exposed on this tunnel.</p>
+                                {!t.last_handshake_at && t.status !== 'up' && (
+                                    <div className="ra-tunnel__warn">
+                                        <AlertTriangle size={14} />
+                                        <span>
+                                            No handshake yet — if this persists, the private host&apos;s outbound UDP
+                                            to the edge may be blocked (a relay is needed).
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="ra-svcs">
+                                    {svcs.length === 0 ? (
+                                        <p className="ra-svcs__empty">No services exposed on this tunnel yet.</p>
                                     ) : (
-                                        <ul className="space-y-2">
-                                            {(services[t.id] || []).map((svc) => (
-                                                <li key={svc.id} className="flex items-center justify-between gap-3">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-                                                        {svc.url ? (
-                                                            <a
-                                                                href={svc.url}
-                                                                target="_blank"
-                                                                rel="noreferrer"
-                                                                className="text-primary hover:underline truncate inline-flex items-center gap-1"
-                                                            >
-                                                                {svc.hostname}
-                                                                <ExternalLink className="w-3 h-3" />
-                                                            </a>
-                                                        ) : (
-                                                            <span className="truncate">{svc.hostname}</span>
+                                        svcs.map((svc) => (
+                                            <div key={svc.id} className="ra-svc">
+                                                <div className="ra-svc__main">
+                                                    <Globe className="ra-svc__ico" size={15} />
+                                                    {svc.url ? (
+                                                        <a
+                                                            className="ra-svc__host"
+                                                            href={svc.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                        >
+                                                            {svc.hostname}
+                                                            <ExternalLink size={12} />
+                                                        </a>
+                                                    ) : (
+                                                        <span className="ra-svc__host">{svc.hostname}</span>
+                                                    )}
+                                                    <span className="ra-svc__port">→ :{svc.port}</span>
+                                                    <span className="ra-svc__flags">
+                                                        {svc.require_auth && (
+                                                            <Lock size={13} aria-label="Basic auth" />
                                                         )}
-                                                        <span className="text-muted-foreground text-sm">→ :{svc.port}</span>
-                                                        {svc.require_auth && <Lock className="w-3 h-3 text-muted-foreground" title="Basic auth" />}
-                                                        {svc.ssl_enabled && <ShieldCheck className="w-3 h-3 text-green-600" title="HTTPS" />}
-                                                        <StatusBadge status={svc.status} />
-                                                    </div>
+                                                        {svc.ssl_enabled && (
+                                                            <ShieldCheck
+                                                                size={13}
+                                                                className="ra-flag--ssl"
+                                                                aria-label="HTTPS"
+                                                            />
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                <div className="ra-svc__right">
+                                                    <Pill kind={pillKind(svc.status)}>
+                                                        {svc.status || 'unknown'}
+                                                    </Pill>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-red-600 shrink-0"
+                                                        className="text-red-600"
                                                         onClick={() => unpublish(t.id, svc)}
                                                     >
                                                         Remove
                                                     </Button>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                                </div>
+                                            </div>
+                                        ))
                                     )}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                            </section>
+                        );
+                    })}
                 </div>
             )}
 

@@ -60,13 +60,6 @@ export const SIDEBAR_ITEMS = [
         icon: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'
     },
     {
-        id: 'remote-access',
-        label: 'Remote Access',
-        route: '/remote-access',
-        category: 'infrastructure',
-        icon: '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'
-    },
-    {
         // Redesign: Services uses the top-bar layout (REDESIGN_MAP §6 decision 3).
         // New Service / Templates / Deploy Activity now live in the page's top
         // bar (PageTopbar SERVICE_TABS), not as sidebar sub-items. Routes

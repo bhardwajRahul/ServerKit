@@ -289,7 +289,6 @@ function AppRoutes() {
                     <Route path="ssl" element={<SSLCertificates />} />
                     <Route path="dynamic-dns" element={<DynamicDns />} />
                 </Route>
-                <Route path="remote-access" element={<RemoteAccess />} />
                 <Route path="databases" element={<Databases />} />
                 <Route path="databases/:tab" element={<Databases />} />
                 <Route path="docker" element={<Docker />} />
@@ -299,6 +298,7 @@ function AppRoutes() {
                     <Route path="fleet" element={<AgentFleet />} />
                     <Route path="fleet-monitor" element={<FleetMonitor />} />
                     <Route path="cloud" element={<CloudProvision />} />
+                    <Route path="remote-access" element={<RemoteAccess />} />
                     <Route path="server-templates" element={<ServerTemplates />} />
                 </Route>
                 <Route path="servers/:id" element={<ServerDetail />} />
