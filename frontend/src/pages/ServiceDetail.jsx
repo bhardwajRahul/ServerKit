@@ -20,7 +20,7 @@ import OverviewTab from '../components/service-detail/OverviewTab';
 import EmptyState from '../components/EmptyState';
 import { Layers, FileArchive, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Pill, ServiceTile } from '@/components/ds';
+import { Pill, ServiceTile, PageTopbar } from '@/components/ds';
 
 // statusInfo.dotClass → ds Pill kind
 const STATUS_PILL = {
@@ -215,52 +215,23 @@ const ServiceDetail = () => {
     const isManual = service.source === 'manual';
 
     return (
-        <div className="page-container svc-detail">
-            {/* Breadcrumb */}
-            <div className="svc-detail__breadcrumb">
-                <Link to="/services">Services</Link>
-                <span className="svc-detail__breadcrumb-sep">/</span>
-                <span className="svc-detail__breadcrumb-current">{service.name}</span>
-            </div>
-
-            {/* Header */}
-            <div className="svc-detail__header">
-                <div className="svc-detail__header-left">
-                    <ServiceTile name={service.name} size={52} className="svc-detail__tile" />
-                    <div className="svc-detail__title-block">
-                        <div className="svc-detail__title-row">
-                            <h1>{service.name}</h1>
-                            <Pill kind={STATUS_PILL[service.statusInfo.dotClass] || 'gray'}>
-                                {service.statusInfo.label}
-                            </Pill>
-                            <span
-                                className="svc-detail__type-badge"
-                                style={{ backgroundColor: service.typeInfo.bgColor, color: service.typeInfo.color, borderColor: service.typeInfo.borderColor }}
-                            >
-                                {service.typeInfo.label}
-                            </span>
-                        </div>
-                        <div className="svc-detail__subtitle">
-                            {service.port && <span>Port {service.port}</span>}
-                            {service.port && <span className="svc-detail__sep">&middot;</span>}
-                            <span>Created {new Date(service.created_at).toLocaleDateString()}</span>
-                            {service.domain && (
-                                <>
-                                    <span className="svc-detail__sep">&middot;</span>
-                                    <a
-                                        href={`https://${service.domain}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        {service.domain}
-                                    </a>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="svc-detail__header-actions">
+        <div className="app-detail-page app-detail-page--wide svc-detail">
+            {/* Full-bleed top bar — the canonical PageTopbar (.sk-topbar): the SAME
+                chrome as the Services LIST page and the WordPress detail page, so the
+                top menu stays consistent. Breadcrumb in the title slot, all service
+                actions on the right. */}
+            <PageTopbar
+                className="svc-detail-topbar"
+                icon={<Layers size={18} />}
+                title={(
+                    <span className="svc-crumbs">
+                        <Link to="/services">Services</Link>
+                        <span className="svc-crumbs__sep">/</span>
+                        <span className="svc-crumbs__cur">{service.name}</span>
+                    </span>
+                )}
+                actions={(
+                    <>
                     {/* Deploy dropdown */}
                     <div className="svc-detail__dropdown" ref={deployMenuRef}>
                         <Button onClick={() => setShowDeployMenu(!showDeployMenu)}>
@@ -367,6 +338,46 @@ const ServiceDetail = () => {
                             </div>
                         )}
                     </div>
+                    </>
+                )}
+            />
+
+            {/* Everything below the full-bleed top bar lives in a centered, padded
+                column (.app-detail-body), matching the WordPress detail page. */}
+            <div className="app-detail-body">
+            {/* Identity — tile + name + status + type (no actions). */}
+            <div className="app-detail-header">
+                <ServiceTile name={service.name} size={52} className="svc-detail__tile" />
+                <div className="app-detail-title-block">
+                    <h1>
+                        {service.name}
+                        <Pill kind={STATUS_PILL[service.statusInfo.dotClass] || 'gray'}>
+                            {service.statusInfo.label}
+                        </Pill>
+                        <span
+                            className="svc-detail__type-badge"
+                            style={{ backgroundColor: service.typeInfo.bgColor, color: service.typeInfo.color, borderColor: service.typeInfo.borderColor }}
+                        >
+                            {service.typeInfo.label}
+                        </span>
+                    </h1>
+                    <div className="app-detail-subtitle">
+                        {service.port && <span>Port {service.port}</span>}
+                        {service.port && <span className="separator">&middot;</span>}
+                        <span>Created {new Date(service.created_at).toLocaleDateString()}</span>
+                        {service.domain && (
+                            <>
+                                <span className="separator">&middot;</span>
+                                <a
+                                    href={`https://${service.domain}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    {service.domain}
+                                </a>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -466,12 +477,12 @@ const ServiceDetail = () => {
                 </div>
             )}
 
-            {/* Tab Bar */}
-            <div className="svc-detail__tabs">
+            {/* Tab Bar — shared underline-style strip (app-detail-tabs). */}
+            <div className="app-detail-tabs">
                 {availableTabs.map(tab => (
                     <button
                         key={tab}
-                        className={`svc-detail__tab ${activeTab === tab ? 'svc-detail__tab--active' : ''}`}
+                        className={`app-detail-tab ${activeTab === tab ? 'active' : ''}`}
                         onClick={() => setActiveTab(tab)}
                     >
                         {TAB_LABELS[tab] || tab}
@@ -480,7 +491,7 @@ const ServiceDetail = () => {
             </div>
 
             {/* Tab Content */}
-            <div className="svc-detail__content">
+            <div className="app-detail-content">
                 {activeTab === 'overview' && <OverviewTab app={service} deployConfig={deployConfig} />}
                 {activeTab === 'events' && <EventsTab appId={service.id} />}
                 {activeTab === 'logs' && <LogsTab app={service} />}
@@ -498,6 +509,7 @@ const ServiceDetail = () => {
                         onOpenGitModal={() => setShowGitModal(true)}
                     />
                 )}
+            </div>
             </div>
 
             {/* Git Connect Modal */}

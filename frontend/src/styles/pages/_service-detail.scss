@@ -1,79 +1,98 @@
 // ============================================
 // SERVICE DETAIL PAGE (redesign — infra console look)
-// Header keeps the breadcrumb (detail pages don't get the group top bar);
-// tab strip uses the accent-bg active wash; tab bodies consume the shared
-// sk- primitives (Pill / MetricCard / Gauge / .sk-info-row / .sk-dtable).
+// Shares the WordPress detail page's layout: a full-bleed PageTopbar
+// (.sk-topbar) above a centered .app-detail-body, reusing the shared
+// app-detail-* base chrome (_applications.scss). Tab bodies consume the
+// shared sk- primitives (Pill / MetricCard / Gauge / .sk-info-row / .sk-dtable).
 // ============================================
 
+// Run the detail page FULL-BLEED like the list pages: drop the .main-content
+// frame so the .sk-topbar spans edge-to-edge; .app-detail-body re-pads a
+// centered column below. (Mirrors .main-content:has(.wp-detail-page).)
+.main-content:has(.svc-detail) {
+    padding: 0;
+
+    // padding:0 also drops the base rule's mobile top-clearance, so restore it
+    // (the fixed mobile header would otherwise overlap the top bar).
+    @media (max-width: $breakpoint-md) {
+        margin-top: calc(#{$mobile-header-height} + env(safe-area-inset-top));
+    }
+}
+
 .svc-detail {
-    // Breadcrumb — mono trail
-    &__breadcrumb {
+    // ── Full-bleed shell ────────────────────────────────────────────────
+    // Mirrors .wp-detail-page: the page reuses the shared app-detail-* base
+    // chrome (from _applications.scss) and runs full-bleed, so the .sk-topbar
+    // spans edge-to-edge above a centered, padded body. The .main-content
+    // frame is dropped by the `:has()` rule at the bottom of this file.
+    gap: 0;
+
+    // Centered max-width column below the full-bleed top bar.
+    .app-detail-body {
         display: flex;
+        flex-direction: column;
+        gap: $space-5;
+        width: 100%;
+        max-width: 1200px;
+        margin-inline: auto;
+        padding: $space-6 $space-6 $space-10;
+    }
+
+    // Identity row — flat (no card): just the tile + name on the page.
+    .app-detail-header {
+        padding: 4px 0 0;
+        background: none;
+        border: none;
+        border-radius: 0;
+
+        &::before { content: none; }
+    }
+
+    // Breadcrumb rendered in the top bar's title slot.
+    .svc-crumbs {
+        display: inline-flex;
         align-items: center;
-        gap: $space-2;
-        margin-bottom: $space-5;
-        font-family: var(--mono);
-        font-size: $font-size-sm;
+        gap: 8px;
+        white-space: nowrap;
 
         a {
-            color: var(--text-faint);
+            color: var(--text-dim);
             text-decoration: none;
+            &:hover { color: var(--accent-bright); }
+        }
+        &__sep { color: var(--text-ghost); }
+        &__cur { color: var(--text); }
+    }
 
-            &:hover {
-                color: var(--accent-bright);
+    // The detail page carries several actions, so let the whole bar wrap
+    // instead of squeezing the breadcrumb (matches .wp-detail-topbar).
+    .svc-detail-topbar {
+        padding: 10px $space-4;
+        flex-wrap: wrap;
+        row-gap: 8px;
+
+        .sk-topbar__spacer { display: none; }
+        .sk-topbar__titles { flex-shrink: 0; }
+
+        .sk-topbar__actions {
+            margin-left: auto;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            row-gap: 6px;
+
+            .ui-button {
+                height: 32px;
+                padding: 0 10px;
+                font-size: 12.5px;
+                gap: 6px;
             }
         }
-    }
-
-    &__breadcrumb-sep {
-        color: var(--text-ghost);
-    }
-
-    &__breadcrumb-current {
-        color: var(--text-dim);
-        font-weight: $font-weight-medium;
-    }
-
-    // Header
-    &__header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: $space-4;
-        margin-bottom: $space-4;
-    }
-
-    &__header-left {
-        display: flex;
-        align-items: flex-start;
-        gap: $space-4;
-        min-width: 0;
     }
 
     // Gradient initial avatar (ds ServiceTile — size via props)
     &__tile {
         border-radius: 13px;
         box-shadow: var(--shadow-sm);
-    }
-
-    &__title-block {
-        min-width: 0;
-    }
-
-    &__title-row {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
-        flex-wrap: wrap;
-
-        h1 {
-            font-size: 21px;
-            font-weight: $font-weight-semibold;
-            letter-spacing: -0.02em;
-            color: $text-primary;
-            margin: 0;
-            white-space: nowrap;
-        }
     }
 
     // Service-type tag (brand colors arrive via inline style props)
@@ -86,38 +105,6 @@
         padding: 2px 7px;
         border-radius: 5px;
         border: 1px solid;
-    }
-
-    &__subtitle {
-        display: flex;
-        align-items: center;
-        gap: $space-2;
-        flex-wrap: wrap;
-        margin-top: 6px;
-        font-family: var(--mono);
-        font-size: 12px;
-        color: var(--text-dim);
-
-        a {
-            color: var(--accent-bright);
-            text-decoration: none;
-
-            &:hover {
-                text-decoration: underline;
-            }
-        }
-    }
-
-    &__sep {
-        color: var(--text-ghost);
-    }
-
-    // Header Actions
-    &__header-actions {
-        display: flex;
-        align-items: center;
-        gap: $space-2;
-        flex-shrink: 0;
     }
 
     // Dropdown
@@ -183,9 +170,9 @@
         }
     }
 
-    // Repo Bar
+    // Repo Bar (spacing handled by the .app-detail-body flex gap)
     &__repo-bar {
-        margin-bottom: $space-5;
+        display: flex;
     }
 
     &__repo-pill {
@@ -267,7 +254,6 @@
     }
 
     &__versions {
-        margin-bottom: $space-5;
         padding: $space-4;
         background: var(--surface);
         border: 1px solid var(--border);
@@ -359,52 +345,9 @@
         font-weight: $font-weight-medium;
     }
 
-    // Tab strip — accent wash on the active chip
-    &__tabs {
-        display: flex;
-        align-items: center;
-        gap: 2px;
-        border-bottom: 1px solid var(--border-soft);
-        padding-bottom: $space-2;
-        margin-bottom: $space-6;
-        overflow-x: auto;
-
-        &::-webkit-scrollbar { height: 0; }
-    }
-
-    &__tab {
-        padding: 7px 12px;
-        background: none;
-        border: none;
-        border-radius: 8px;
-        color: var(--text-dim);
-        font-size: 13px;
-        font-weight: $font-weight-normal;
-        cursor: pointer;
-        white-space: nowrap;
-        transition: background $transition-fast, color $transition-fast;
-
-        &:hover {
-            background: var(--surface-hover);
-            color: $text-primary;
-        }
-
-        &--active {
-            background: var(--accent-bg);
-            color: var(--accent-bright);
-            font-weight: $font-weight-medium;
-
-            &:hover {
-                background: var(--accent-bg);
-                color: var(--accent-bright);
-            }
-        }
-    }
-
-    // Content area
-    &__content {
-        min-height: 400px;
-    }
+    // Tab strip + content now reuse the shared app-detail-tabs / app-detail-tab
+    // / app-detail-content chrome (defined in _applications.scss), matching the
+    // WordPress detail page — no bespoke tab styles here anymore.
 
     // Scoped console/editor polish for tabs that use shared classes
     // (Gunicorn editor, Commands output) — token re-tint only.
