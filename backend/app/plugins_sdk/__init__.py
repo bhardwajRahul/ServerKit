@@ -89,8 +89,10 @@ def audit(action, target_type, target_id=None, details=None, user_id=None):
 # lazily-safe: ai.py only depends on the AI tool registry, not on a running app.
 from app.plugins_sdk import ai
 from app.queue_bus.sdk import QueueBusSdk
+from app.notifications.sdk import NotifySdk
 
 queue = QueueBusSdk()
+notify = NotifySdk()
 
 __all__ = [
     'db',
@@ -103,4 +105,5 @@ __all__ = [
     'audit',
     'ai',
     'queue',
+    'notify',
 ]

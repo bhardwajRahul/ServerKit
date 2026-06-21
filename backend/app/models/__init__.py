@@ -43,6 +43,8 @@ from app.models.secret_vault import SecretVault, Secret
 from app.models.webhook_gateway import WebhookEndpoint, WebhookDelivery
 from app.models.waf_policy import WafPolicy
 from app.queue_bus.models import QueueGroup, Queue, QueueMessage
+from app.notifications.models import Notification, NotificationDelivery
+from app.models.email_provider import EmailProviderConnection
 
 __all__ = [
     'User', 'Application', 'Domain', 'EnvironmentVariable', 'EnvironmentVariableHistory',
@@ -72,4 +74,6 @@ __all__ = [
     'WebhookEndpoint', 'WebhookDelivery',
     'WafPolicy',
     'QueueGroup', 'Queue', 'QueueMessage',
+    'Notification', 'NotificationDelivery',
+    'EmailProviderConnection',
 ]

@@ -411,6 +411,10 @@ def create_app(config_name=None):
         from app.queue_bus.consumers import start_webhook_consumer
         start_webhook_consumer(app)
 
+        # Start queue-bus notification consumer (delivers in-app/email/chat)
+        from app.notifications.consumer import start_notification_consumer
+        start_notification_consumer(app)
+
         # Start auto-sync scheduler for WordPress environments
         _start_auto_sync_scheduler(app)
 
