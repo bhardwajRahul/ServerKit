@@ -273,24 +273,27 @@ const QueueOperations = () => {
                             action={<Button onClick={() => setShowGroupModal(true)}><Plus size={14} className="mr-2" /> Create Group</Button>}
                         />
                     ) : (
-                        <div className="queue-group-tree">
+                        <div className="queue-group-grid">
                             {groups.map(group => (
-                                <div key={group.id} className="queue-group-card">
-                                    <div className="queue-group-header">
+                                <div
+                                    key={group.id}
+                                    className="queue-group-card queue-group-card--clickable"
+                                    onClick={() => {
+                                        setSelectedGroup(group.slug);
+                                        setActiveTab('messages');
+                                        loadQueues(group.slug);
+                                    }}
+                                >
+                                    <div className="queue-group-card-main">
                                         <span className="queue-group-name">{group.name}</span>
                                         <span className="queue-group-slug">/{group.slug}</span>
-                                        <span className="queue-group-meta">{group.stats?.queues || 0} queues</span>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => {
-                                                setSelectedGroup(group.slug);
-                                                setActiveTab('messages');
-                                                loadQueues(group.slug);
-                                            }}
-                                        >
-                                            View Queues
-                                        </Button>
+                                        {group.owner_type === 'system' && (
+                                            <span className="queue-group-badge">system</span>
+                                        )}
+                                    </div>
+                                    <div className="queue-group-card-stats">
+                                        <span>{group.stats?.queues || 0} queues</span>
+                                        <span>→</span>
                                     </div>
                                 </div>
                             ))}
@@ -323,7 +326,12 @@ const QueueOperations = () => {
                             <tbody>
                                 {groups.map(group => (
                                     <tr key={group.id}>
-                                        <td>{group.name}</td>
+                                        <td>
+                                            {group.name}
+                                            {group.owner_type === 'system' && (
+                                                <span className="queue-group-badge queue-group-badge--inline">system</span>
+                                            )}
+                                        </td>
                                         <td><code>{group.slug}</code></td>
                                         <td>{group.stats?.queues || 0}</td>
                                         <td>{group.owner_type}{group.owner_id ? `:${group.owner_id}` : ''}</td>
@@ -333,11 +341,22 @@ const QueueOperations = () => {
                                                 size="sm"
                                                 onClick={() => {
                                                     setSelectedGroup(group.slug);
+                                                    setSelectedQueue('');
                                                     setActiveTab('messages');
                                                     loadQueues(group.slug);
                                                 }}
                                             >
-                                                View
+                                                View Queues
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => {
+                                                    setSelectedGroup(group.slug);
+                                                    setShowQueueModal(true);
+                                                }}
+                                            >
+                                                <Plus size={14} className="mr-1" /> Queue
                                             </Button>
                                             <Button
                                                 variant="ghost"
@@ -406,22 +425,13 @@ const QueueOperations = () => {
                                 </Button>
                             )}
                         </div>
-                        <div className="queue-messages-actions">
-                            <Button
-                                size="sm"
-                                disabled={!selectedGroup}
-                                onClick={() => setShowQueueModal(true)}
-                            >
-                                <Plus size={14} className="mr-2" /> Create Queue
-                            </Button>
-                            <Button
-                                size="sm"
-                                disabled={!selectedGroup || !selectedQueue}
-                                onClick={() => setActiveTab('send')}
-                            >
-                                <Send size={14} className="mr-2" /> Send Message
-                            </Button>
-                        </div>
+                        <Button
+                            size="sm"
+                            disabled={!selectedGroup || !selectedQueue}
+                            onClick={() => setActiveTab('send')}
+                        >
+                            <Send size={14} className="mr-2" /> Send Message
+                        </Button>
                     </div>
 
                     {!selectedGroup || !selectedQueue ? (
@@ -577,6 +587,19 @@ const QueueOperations = () => {
                         </div>
                         <form onSubmit={handleCreateQueue}>
                             <div className="modal-body">
+                                <div className="form-group">
+                                    <Label htmlFor="queue-group">Group</Label>
+                                    <select
+                                        id="queue-group"
+                                        className="queue-select queue-select--full"
+                                        value={selectedGroup}
+                                        onChange={(e) => setSelectedGroup(e.target.value)}
+                                        required
+                                    >
+                                        <option value="">Select group</option>
+                                        {groups.map(g => <option key={g.id} value={g.slug}>{g.name}</option>)}
+                                    </select>
+                                </div>
                                 <div className="form-group">
                                     <Label htmlFor="queue-slug">Slug</Label>
                                     <Input id="queue-slug" value={queueForm.slug} onChange={(e) => setQueueForm({ ...queueForm, slug: e.target.value })} required />

@@ -45,75 +45,70 @@
         }
     }
 
-    .queue-group-tree {
-        display: flex;
-        flex-direction: column;
-        gap: $space-3;
+    .queue-group-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: $space-4;
     }
 
     .queue-group-card {
         background: var(--surface);
         border: 1px solid var(--border-soft);
         border-radius: var(--radius);
-        overflow: hidden;
-    }
-
-    .queue-group-header {
-        display: flex;
-        align-items: center;
-        gap: $space-3;
         padding: $space-4;
-        cursor: pointer;
-        transition: background 0.15s ease;
 
-        &:hover {
-            background: var(--bg-hover);
+        &--clickable {
+            cursor: pointer;
+            transition: border-color 0.15s ease, background 0.15s ease;
+
+            &:hover {
+                border-color: var(--accent-primary);
+                background: var(--bg-hover);
+            }
         }
 
-        .queue-group-name {
-            font-weight: $font-weight-semibold;
-            color: var(--text-primary);
+        &-main {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            flex-wrap: wrap;
+            margin-bottom: $space-3;
         }
 
-        .queue-group-slug {
-            color: var(--text-tertiary);
-            font-size: $font-size-sm;
-            font-family: var(--mono);
-        }
-
-        .queue-group-meta {
-            margin-left: auto;
+        &-stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             font-size: $font-size-sm;
             color: var(--text-secondary);
         }
     }
 
-    .queue-group-queues {
-        border-top: 1px solid var(--border-soft);
+    .queue-group-name {
+        font-weight: $font-weight-semibold;
+        color: var(--text-primary);
     }
 
-    .queue-group-queue {
-        display: flex;
+    .queue-group-slug {
+        color: var(--text-tertiary);
+        font-size: $font-size-sm;
+        font-family: var(--mono);
+    }
+
+    .queue-group-badge {
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
-        padding: $space-3 $space-4 $space-3 $space-8;
-        cursor: pointer;
-        transition: background 0.15s ease;
+        padding: 2px $space-2;
+        border-radius: var(--radius-full);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-soft);
+        font-size: $font-size-xs;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
 
-        &:hover {
-            background: var(--bg-hover);
-        }
-
-        &-stats {
-            font-size: $font-size-sm;
-            color: var(--text-tertiary);
-            font-family: var(--mono);
-        }
-
-        &-empty {
-            padding: $space-4 $space-4 $space-4 $space-8;
-            color: var(--text-tertiary);
-            font-size: $font-size-sm;
+        &--inline {
+            margin-left: $space-2;
         }
     }
 
@@ -151,6 +146,10 @@
         &:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        &--full {
+            width: 100%;
         }
     }
 
