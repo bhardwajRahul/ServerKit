@@ -17,6 +17,7 @@ export default function RemoteTerminal({ serverId, onClose }) {
     const terminalRef = useRef(null);
     const terminalInstance = useRef(null);
     const fitAddon = useRef(null);
+    const attemptedForServer = useRef(null);
     const [sessionId, setSessionId] = useState(null);
     const [connected, setConnected] = useState(false);
     const [error, setError] = useState(null);
@@ -93,6 +94,8 @@ export default function RemoteTerminal({ serverId, onClose }) {
     // Create terminal session
     useEffect(() => {
         if (!terminalInstance.current || !serverId) return;
+        if (attemptedForServer.current === serverId) return;
+        attemptedForServer.current = serverId;
 
         const createSession = async () => {
             try {
@@ -116,9 +119,6 @@ export default function RemoteTerminal({ serverId, onClose }) {
             } catch (err) {
                 console.error('Failed to create terminal session:', err);
                 setError(err.message);
-                if (terminalInstance.current) {
-                    terminalInstance.current.writeln(`\x1b[1;31mError: ${err.message}\x1b[0m`);
-                }
             }
         };
 

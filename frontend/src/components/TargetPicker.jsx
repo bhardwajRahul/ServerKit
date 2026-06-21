@@ -58,20 +58,35 @@ export default function TargetPicker({ feature, value, onChange, includeLocal = 
         ? value.server_id
         : (value?.kind && value.kind !== 'local' ? value.kind : 'local');
 
+    const optionCount = (includeLocal ? 1 : 0) + eligible.length + extraOptions.length;
+    const singleLabel = useMemo(() => {
+        if (selectValue !== 'local') {
+            const agent = eligible.find(s => s.id === selectValue);
+            if (agent) return agent.name || agent.hostname || agent.id;
+            const extra = extraOptions.find(o => o.value === selectValue);
+            if (extra) return extra.label;
+        }
+        return 'Local (this server)';
+    }, [selectValue, eligible, extraOptions]);
+
     return (
         <div className="target-picker">
             <Server size={14} className="target-picker__icon" />
-            <select value={selectValue} onChange={handleChange} className="target-picker__select">
-                {includeLocal && <option value="local">Local (this server)</option>}
-                {eligible.map(s => (
-                    <option key={s.id} value={s.id}>
-                        {s.name || s.hostname || s.id}
-                    </option>
-                ))}
-                {extraOptions.map(o => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-            </select>
+            {optionCount <= 1 ? (
+                <span className="target-picker__single">{singleLabel}</span>
+            ) : (
+                <select value={selectValue} onChange={handleChange} className="target-picker__select">
+                    {includeLocal && <option value="local">Local (this server)</option>}
+                    {eligible.map(s => (
+                        <option key={s.id} value={s.id}>
+                            {s.name || s.hostname || s.id}
+                        </option>
+                    ))}
+                    {extraOptions.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                </select>
+            )}
         </div>
     );
 }

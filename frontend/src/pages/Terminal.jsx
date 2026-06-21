@@ -20,12 +20,12 @@ import {
 
 // 'logs' stays first so the default landing keeps working on installs with no
 // paired agents (the interactive shell needs a connected agent).
-const VALID_TABS = ['logs', 'journal', 'processes', 'services', 'terminal'];
+const VALID_TABS = ['logs', 'journal', 'processes', 'services', 'shell'];
 
 // Section tabs rendered inline in the PageTopbar (Servers-style), routed via
 // /terminal/<tab>. Logs is the default landing (/terminal).
 const TERMINAL_TABS = [
-    { to: '/terminal/terminal', label: 'Terminal', icon: <TerminalIcon size={15} /> },
+    { to: '/terminal/shell', label: 'Terminal', icon: <TerminalIcon size={15} /> },
     { to: '/terminal', label: 'Log Files', end: true, icon: <FileText size={15} /> },
     { to: '/terminal/journal', label: 'System Journal', icon: <ScrollText size={15} /> },
     { to: '/terminal/processes', label: 'Processes', icon: <Cpu size={15} /> },
@@ -44,7 +44,7 @@ const Terminal = () => {
             />
 
             <div className="tab-content">
-                {activeTab === 'terminal' && <TerminalShellTab />}
+                {activeTab === 'shell' && <TerminalShellTab />}
                 {activeTab === 'logs' && <LogFilesTab />}
                 {activeTab === 'journal' && <JournalTab />}
                 {activeTab === 'processes' && <ProcessesTab />}
@@ -65,10 +65,12 @@ const TerminalShellTab = () => {
     useEffect(() => {
         (async () => {
             try {
-                const data = await api.getServers();
-                const list = Array.isArray(data) ? data : (data.servers || []);
-                setServers(list);
-                const firstOnline = list.find(s => s.status === 'online');
+                const list = await api.getAvailableServers();
+                const eligible = Array.isArray(list)
+                    ? list.filter(s => s.capabilities && s.capabilities.terminal)
+                    : [];
+                setServers(eligible);
+                const firstOnline = eligible.find(s => s.status === 'online');
                 if (firstOnline) setSelectedId(firstOnline.id);
             } catch (err) {
                 console.error('Failed to load servers:', err);
@@ -87,7 +89,7 @@ const TerminalShellTab = () => {
                 <div className="term-shell__grp">Agent servers</div>
                 {loading && <div className="term-shell__hint">Loading servers…</div>}
                 {!loading && servers.length === 0 && (
-                    <div className="term-shell__hint">No servers paired yet.</div>
+                    <div className="term-shell__hint">No agent servers with shell access are paired yet.</div>
                 )}
                 {servers.map(s => {
                     const online = s.status === 'online';
@@ -117,7 +119,7 @@ const TerminalShellTab = () => {
                         <p>
                             {anyOnline
                                 ? 'Pick a server on the left to open a shell.'
-                                : 'Interactive shells run over the ServerKit agent. Pair a server (Servers → Add Server) and it will show up here.'}
+                                : 'Interactive shells run over the ServerKit agent. Pair a server (Servers → Add Server) with shell access and it will show up here.'}
                         </p>
                     </div>
                 )}

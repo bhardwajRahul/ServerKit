@@ -352,6 +352,7 @@ function AppRoutes() {
                 <Route path="email" element={<Email />} />
                 <Route path="email/:tab" element={<Email />} />
                 <Route path="terminal" element={<Terminal />} />
+                <Route path="terminal/terminal" element={<Navigate to="/terminal/shell" replace />} />
                 <Route path="terminal/:tab" element={<Terminal />} />
                 <Route path="secrets" element={<SecretsWebhooks />} />
                 <Route path="secrets/:tab" element={<SecretsWebhooks />} />

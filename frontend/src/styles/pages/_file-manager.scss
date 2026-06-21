@@ -1777,13 +1777,18 @@ $drawer-width: 520px;
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: 8px;
-    .target-picker__select {
+    .target-picker__select,
+    .target-picker__single {
         background: transparent;
         border: none;
         color: var(--text-primary);
         font-size: $font-size-sm;
         outline: none;
-        cursor: pointer;
+    }
+    .target-picker__select { cursor: pointer; }
+    .target-picker__single {
+        padding-right: $space-1;
+        white-space: nowrap;
     }
     .target-picker__icon { color: var(--text-secondary); }
 }
