@@ -67,7 +67,8 @@ mkdir -p "$BUILD_DIR"
 step "Copying the source tree..."
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 rsync -a --exclude=.git --exclude=node_modules --exclude=venv --exclude=__pycache__ \
-    --exclude=.pytest_cache --exclude=instance --exclude=dist --exclude=backups \
+    --exclude=.pytest_cache --exclude=instance --exclude=dist \
+    --exclude=/backups --exclude=/backend/instance/backups --exclude=/backend/dev-data/backups \
     "$REPO_ROOT/" "$BUILD_DIR/"
 
 # ---------------------------------------------------------------------------

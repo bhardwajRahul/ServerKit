@@ -1,0 +1,47 @@
+name: Release Build Smoke Test
+
+# Validates that the release tarball can be built successfully. This catches
+# release-script-specific issues (e.g. overly broad rsync excludes that omit
+# frontend source files) before they reach main, instead of failing late in the
+# release workflow.
+
+on:
+  push:
+    branches: [dev, main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'scripts/build-release.sh'
+      - '.github/workflows/release-smoke.yml'
+      - '.github/workflows/release.yml'
+      - 'VERSION'
+  pull_request:
+    branches: [dev, main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - 'scripts/build-release.sh'
+      - '.github/workflows/release-smoke.yml'
+      - '.github/workflows/release.yml'
+      - 'VERSION'
+
+jobs:
+  build-release-smoke:
+    name: Build release tarball
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-venv python3-pip rsync
+
+      - name: Run release build script
+        run: bash scripts/build-release.sh
