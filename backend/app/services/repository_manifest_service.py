@@ -2,11 +2,15 @@
 
 import json
 import re
-import tomllib
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+
+try:
+    import tomllib  # Python 3.11+
+except ModuleNotFoundError:  # pragma: no cover
+    import tomli as tomllib
 
 
 class RepositoryManifestService:

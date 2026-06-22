@@ -30,8 +30,9 @@ gevent-websocket==0.10.1
 # Environment variables
 python-dotenv==1.2.2
 
-# YAML parsing (for Docker Compose)
+# YAML / TOML parsing (for Docker Compose and repository manifests)
 PyYAML==6.0.1
+tomli>=2.0.0; python_version < '3.11'
 
 # Rate limiting
 Flask-Limiter==3.5.0
