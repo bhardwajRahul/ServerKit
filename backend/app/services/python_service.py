@@ -315,10 +315,25 @@ SECRET_KEY={secrets.token_hex(32)}
             if result.returncode != 0:
                 return {'success': False, 'error': result.stderr}
 
+            # Build ALLOWED_HOSTS: local addresses plus the panel domain and its
+            # subdomains so Django accepts requests behind nginx on a real domain.
+            from app.services.site_domain_service import SiteDomainService
+            allowed_hosts = ['localhost', '127.0.0.1']
+            panel_origin = SiteDomainService.panel_origin()
+            if panel_origin:
+                from urllib.parse import urlparse
+                panel_host = urlparse(panel_origin).hostname
+                if panel_host:
+                    allowed_hosts.append(panel_host)
+                    # Permit subdomains of the panel domain (e.g. app.serverkit.example.com)
+                    if '.' in panel_host:
+                        allowed_hosts.append('.' + panel_host)
+            allowed_hosts_str = ','.join(allowed_hosts)
+
             # Create .env file
             env_content = f'''DEBUG=False
 SECRET_KEY={secrets.token_hex(32)}
-ALLOWED_HOSTS=localhost,127.0.0.1
+ALLOWED_HOSTS={allowed_hosts_str}
 '''
             with open(os.path.join(app_path, '.env'), 'w') as f:
                 f.write(env_content)

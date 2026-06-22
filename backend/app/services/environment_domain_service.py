@@ -76,7 +76,16 @@ class EnvironmentDomainService:
             return production_domain
 
         if not production_domain:
-            # Fallback for sites without a domain
+            # Fallback for sites without a domain: use the managed-sites base domain
+            # or the panel domain instead of a useless .localhost address.
+            from app.services.site_domain_service import SiteDomainService
+            base = SiteDomainService.base_domain() or SiteDomainService.panel_origin()
+            if base:
+                from urllib.parse import urlparse
+                base_host = urlparse(base).hostname or base
+                slug = cls.slugify(branch_name) if branch_name else env_type
+                return f'{env_type}-{slug}.{base_host}'
+            # Last resort only when absolutely no domain is configured
             slug = cls.slugify(branch_name) if branch_name else env_type
             return f'{env_type}-{slug}.localhost'
 

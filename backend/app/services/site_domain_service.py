@@ -40,6 +40,30 @@ class SiteDomainService:
         return SystemSettings.get('server_public_ip') or current_app.config.get('SERVER_PUBLIC_IP') or None
 
     @classmethod
+    def panel_origin(cls):
+        """Canonical public origin of the ServerKit panel, or None when no
+        canonical domain is configured.
+
+        Uses the persisted canonical_domain / canonical_https_enabled settings.
+        Falls back to PUBLIC_URL / SERVERKIT_PUBLIC_URL env vars, then to the
+        sites base domain. Returns None if nothing usable is configured.
+        """
+        domain = SystemSettings.get('canonical_domain')
+        if domain:
+            https = bool(SystemSettings.get('canonical_https_enabled', False))
+            return f'https://{domain}' if https else f'http://{domain}'
+
+        url = current_app.config.get('PUBLIC_URL') or current_app.config.get('SERVERKIT_PUBLIC_URL')
+        if url:
+            return url.rstrip('/')
+
+        base = cls.base_domain()
+        if base:
+            return f'https://{base}' if cls.https_enabled() else f'http://{base}'
+
+        return None
+
+    @classmethod
     def https_enabled(cls):
         """True once the wildcard certificate for the base domain is set up, so
         managed subdomains should be served over HTTPS (Phase 5)."""

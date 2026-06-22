@@ -56,6 +56,7 @@ def create_site():
     php_version = data.get('phpVersion') or None
     enable_page_cache = bool(data.get('enablePageCache'))
     enable_object_cache = bool(data.get('enableObjectCache'))
+    domain = (data.get('domain') or '').strip()
 
     if not name:
         return jsonify({'error': 'Site name is required'}), 400
@@ -69,6 +70,7 @@ def create_site():
         php_version=php_version,
         enable_page_cache=enable_page_cache,
         enable_object_cache=enable_object_cache,
+        domain=domain or None,
     )
 
     if result.get('success'):

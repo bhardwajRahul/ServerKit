@@ -39,7 +39,8 @@ class RoundcubeService:
 
     @classmethod
     def install(cls, imap_host: str = 'host.docker.internal',
-                smtp_host: str = 'host.docker.internal') -> Dict:
+                smtp_host: str = 'host.docker.internal',
+                domain: str = None) -> Dict:
         """Install Roundcube via Docker container."""
         if not is_command_available('docker'):
             return {'success': False, 'error': 'Docker is not installed'}
@@ -77,12 +78,41 @@ class RoundcubeService:
             if result.returncode != 0:
                 return {'success': False, 'error': result.stderr or 'Failed to start container'}
 
-            return {
+            # Build a public URL: prefer a supplied domain, then auto-generate
+            # webmail.<panel_domain>, and only fall back to localhost:port.
+            from app.services.site_domain_service import SiteDomainService
+            public_url = None
+            warning = None
+            if domain:
+                public_url = f'http://{domain}'
+                proxy_res = cls.configure_nginx_proxy(domain)
+                if not proxy_res.get('success'):
+                    warning = proxy_res.get('error')
+            else:
+                panel_origin = SiteDomainService.panel_origin()
+                panel_host = None
+                if panel_origin:
+                    from urllib.parse import urlparse
+                    panel_host = urlparse(panel_origin).hostname
+                if panel_host:
+                    webmail_domain = f'webmail.{panel_host}'
+                    public_url = f'http://{webmail_domain}'
+                    proxy_res = cls.configure_nginx_proxy(webmail_domain)
+                    if not proxy_res.get('success'):
+                        warning = proxy_res.get('error')
+
+            if not public_url:
+                public_url = f'http://localhost:{cls.HOST_PORT}'
+
+            result = {
                 'success': True,
                 'message': 'Roundcube installed successfully',
                 'port': cls.HOST_PORT,
-                'url': f'http://localhost:{cls.HOST_PORT}',
+                'url': public_url,
             }
+            if warning:
+                result['warning'] = warning
+            return result
         except Exception as e:
             return {'success': False, 'error': str(e)}
 

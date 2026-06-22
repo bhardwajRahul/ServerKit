@@ -116,6 +116,45 @@ backfill_encryption_key() {
 backfill_encryption_key
 
 # ---------------------------------------------------------------------------
+# Python virtual environment (release tarballs no longer ship a venv)
+# ---------------------------------------------------------------------------
+locate_python() {
+    local c v
+    for c in python3.12 python3.11 python3; do
+        if command -v "$c" &>/dev/null; then
+            v=$("$c" -c 'import sys;print(".".join(map(str,sys.version_info[:2])))' 2>/dev/null || true)
+            if printf '%s\n%s' "3.11" "$v" | sort -C -V && \
+               printf '%s\n%s' "$v" "3.12" | sort -C -V; then
+                printf '%s' "$c"
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
+
+rebuild_virtualenv() {
+    phase "Python Environment"
+
+    local py_bin
+    py_bin=$(locate_python) || halt "ServerKit requires Python 3.11 or 3.12."
+    good "Using $py_bin"
+
+    step "Recreating the virtual environment locally..."
+    rm -rf "$VENV_DIR"
+    "$py_bin" -m venv "$VENV_DIR"
+    # shellcheck source=/dev/null
+    source "$VENV_DIR/bin/activate"
+
+    step "Installing Python dependencies..."
+    pip install --upgrade pip --quiet
+    pip install -r "$INSTALL_DIR/backend/requirements.txt" --quiet
+    pip install gunicorn gevent gevent-websocket --quiet
+
+    good "Python environment rebuilt."
+}
+
+# ---------------------------------------------------------------------------
 # Header
 # ---------------------------------------------------------------------------
 printf '\n  %s%sServerKit Updater%s\n' "$BLD" "$PAPER" "$RST"
@@ -217,6 +256,10 @@ if [ "$INSTALL_FROM_RELEASE" = "1" ]; then
     mv "$STAGE/serverkit" "$INSTALL_DIR"
     rm -rf "$STAGE"
     good "Release deployed."
+
+    # Release tarballs no longer include a pre-built venv (the absolute paths
+    # break on the target). Rebuild it locally from requirements.txt.
+    rebuild_virtualenv
 else
     phase "Updating Source"
     cd "$INSTALL_DIR"

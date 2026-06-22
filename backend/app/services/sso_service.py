@@ -10,6 +10,7 @@ from flask import current_app, session
 import base64
 import requests as http_requests
 
+from sqlalchemy import func
 from app import db
 from app.models import User, AuditLog
 from app.models.oauth_identity import OAuthIdentity
@@ -336,8 +337,8 @@ def find_or_create_user(provider, profile):
         db.session.commit()
         return user, False
 
-    # 2. Check existing user by email
-    user = User.query.filter_by(email=email).first() if email else None
+    # 2. Check existing user by email (case-insensitive)
+    user = User.query.filter(func.lower(User.email) == func.lower(email)).first() if email else None
     if user:
         if not user.is_active:
             raise ValueError('Account is deactivated')

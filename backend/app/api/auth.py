@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -81,7 +82,7 @@ def register():
     if not all([email, username, password]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter(func.lower(User.email) == func.lower(email)).first():
         return jsonify({'error': 'This email or username is unavailable'}), 409
 
     if User.query.filter_by(username=username).first():
@@ -203,9 +204,9 @@ def login():
     if not all([login_id, password]):
         return jsonify({'error': 'Missing email/username or password'}), 400
 
-    # Try to find user by email or username
+    # Try to find user by email (case-insensitive) or username
     user = User.query.filter(
-        (User.email == login_id) | (User.username == login_id)
+        (func.lower(User.email) == func.lower(login_id)) | (User.username == login_id)
     ).first()
 
     # Check if account is locked
@@ -310,7 +311,9 @@ def update_current_user():
         user.username = data['username']
 
     if 'email' in data:
-        existing = User.query.filter_by(email=data['email']).first()
+        existing = User.query.filter(
+            func.lower(User.email) == func.lower(data['email'])
+        ).first()
         if existing and existing.id != user.id:
             return jsonify({'error': 'Email already registered'}), 409
         user.email = data['email']

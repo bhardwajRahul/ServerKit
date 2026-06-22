@@ -49,7 +49,7 @@ def create_user():
     if role not in User.VALID_ROLES:
         return jsonify({'error': f'Invalid role. Must be one of: {", ".join(User.VALID_ROLES)}'}), 400
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter(func.lower(User.email) == func.lower(email)).first():
         return jsonify({'error': 'Email already registered'}), 409
 
     if User.query.filter_by(username=username).first():
@@ -110,8 +110,10 @@ def update_user(user_id):
     changes = {}
 
     # Update email
-    if 'email' in data and data['email'] != user.email:
-        existing = User.query.filter_by(email=data['email']).first()
+    if 'email' in data and data['email'].lower() != user.email.lower():
+        existing = User.query.filter(
+            func.lower(User.email) == func.lower(data['email'])
+        ).first()
         if existing and existing.id != user.id:
             return jsonify({'error': 'Email already registered'}), 409
         changes['email'] = {'old': user.email, 'new': data['email']}

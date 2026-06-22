@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from sqlalchemy.orm import validates
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 import json
@@ -25,6 +26,11 @@ class User(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login_at = db.Column(db.DateTime, nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+
+    @validates('email')
+    def _normalize_email(self, key, email):
+        """Store emails in lowercase for consistent matching."""
+        return email.lower() if isinstance(email, str) else email
 
     # Account lockout fields
     failed_login_count = db.Column(db.Integer, default=0)

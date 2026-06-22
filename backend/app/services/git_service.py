@@ -621,13 +621,24 @@ class GitService:
         # Load config for ports
         config = cls._load_gitea_config()
 
+        # Prefer the panel's canonical origin so the link works through a domain
+        # and Cloudflare; fall back to the local port only when no domain is set.
+        from app.services.site_domain_service import SiteDomainService
+        panel_origin = SiteDomainService.panel_origin()
+        if panel_origin:
+            public_url = f"{panel_origin}/gitea"
+        elif app.port:
+            public_url = f"http://localhost:{app.port}"
+        else:
+            public_url = None
+
         return {
             'installed': True,
             'running': running,
             'http_port': app.port or config.get('http_port'),
             'ssh_port': config.get('ssh_port'),
-            'url_path': '/gitea',  # Slug-based URL path
-            'url': f"http://localhost:{app.port}" if app.port else None,  # Legacy port-based URL
+            'url_path': '/gitea',
+            'url': public_url,
             'app_id': app.id,
             'version': config.get('version', '1.21')
         }

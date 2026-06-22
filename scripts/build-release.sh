@@ -2,8 +2,10 @@
 #
 # ServerKit release builder.
 #
-# Produces a portable tarball that installs without compiling on the target:
-# the full /opt/serverkit tree with a pre-built venv and a built frontend.
+# Produces a portable tarball that installs without compiling the frontend on
+# the target: the full /opt/serverkit tree with a built frontend. The Python
+# virtualenv is created locally by install.sh/update.sh so absolute paths in
+# the venv always match the target machine.
 #
 #   bash scripts/build-release.sh
 #   VERSION=v1.7.0 bash scripts/build-release.sh
@@ -54,8 +56,7 @@ step "Building release ${RELEASE_TAG} for ${DL_ARCH}"
 # ---------------------------------------------------------------------------
 # Toolchain check
 # ---------------------------------------------------------------------------
-command -v python3 &>/dev/null || halt "python3 is required."
-command -v node    &>/dev/null || halt "Node.js is required."
+command -v node &>/dev/null || halt "Node.js is required."
 
 # ---------------------------------------------------------------------------
 # Stage a clean copy of the repository
@@ -70,16 +71,6 @@ rsync -a --exclude=.git --exclude=node_modules --exclude=venv --exclude=__pycach
     --exclude=.pytest_cache --exclude=instance --exclude=dist \
     --exclude=/backups --exclude=/backend/instance/backups --exclude=/backend/dev-data/backups \
     "$REPO_ROOT/" "$BUILD_DIR/"
-
-# ---------------------------------------------------------------------------
-# Bake the Python virtual environment
-# ---------------------------------------------------------------------------
-step "Creating the Python virtual environment..."
-python3 -m venv "$BUILD_DIR/venv"
-source "$BUILD_DIR/venv/bin/activate"
-pip install --upgrade pip --quiet
-pip install -r "$BUILD_DIR/backend/requirements.txt" --quiet
-pip install gunicorn gevent gevent-websocket --quiet
 
 # ---------------------------------------------------------------------------
 # Build the frontend bundle

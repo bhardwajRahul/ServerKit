@@ -23,7 +23,7 @@ function WordPress() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [createLoading, setCreateLoading] = useState(false);
     const [createForm, setCreateForm] = useState({
-        name: '', adminEmail: '', phpVersion: '', enablePageCache: false, enableObjectCache: false,
+        name: '', domain: '', adminEmail: '', phpVersion: '', enablePageCache: false, enableObjectCache: false,
     });
     const [createdCreds, setCreatedCreds] = useState(null);
     const [showImportModal, setShowImportModal] = useState(false);
@@ -74,7 +74,7 @@ function WordPress() {
                 }
                 toast.success('WordPress site created successfully');
                 setShowCreateModal(false);
-                setCreateForm({ name: '', adminEmail: '', phpVersion: '', enablePageCache: false, enableObjectCache: false });
+                setCreateForm({ name: '', domain: '', adminEmail: '', phpVersion: '', enablePageCache: false, enableObjectCache: false });
                 await loadSites();
             } else {
                 toast.error(result.error || 'Failed to create site');
@@ -524,6 +524,18 @@ function WordPress() {
                                     disabled={createLoading}
                                 />
                                 <span className="form-hint">Used as the Docker project name. Letters, numbers, and hyphens only.</span>
+                            </div>
+
+                            <div className="form-group">
+                                <Label>Custom Domain</Label>
+                                <Input
+                                    type="text"
+                                    value={createForm.domain}
+                                    onChange={e => setCreateForm({ ...createForm, domain: e.target.value })}
+                                    placeholder="example.com"
+                                    disabled={createLoading}
+                                />
+                                <span className="form-hint">Optional. If set, the site will be created and migrated to this domain.</span>
                             </div>
 
                             <div className="form-group">

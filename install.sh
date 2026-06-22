@@ -955,11 +955,11 @@ main() {
         build_frontend
     else
         make_directories
-        # The CLI needs a venv even on release installs.
-        if [ ! -d "$VENV_DIR" ]; then
-            provision_python
-            build_virtualenv
-        fi
+        # Always build the virtualenv locally. Release tarballs no longer ship a
+        # pre-built venv because absolute shebangs/paths in a relocated venv
+        # break on the target machine (e.g. 203/EXEC from systemd).
+        provision_python
+        build_virtualenv
     fi
 
     sync_templates

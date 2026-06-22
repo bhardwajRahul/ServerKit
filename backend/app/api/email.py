@@ -400,6 +400,7 @@ def webmail_install():
     result = RoundcubeService.install(
         imap_host=data.get('imap_host', 'host.docker.internal'),
         smtp_host=data.get('smtp_host', 'host.docker.internal'),
+        domain=(data.get('domain') or '').strip() or None,
     )
     return jsonify(result), 200 if result.get('success') else 400
 
