@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Globe, Layers } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Globe, Layers, Cloud } from 'lucide-react';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
@@ -23,6 +24,7 @@ import {
 
 const DNSZones = () => {
     const toast = useToast();
+    const navigate = useNavigate();
     const { user } = useAuth();
     const [zones, setZones] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -275,6 +277,12 @@ const DNSZones = () => {
                                 <span className="text-muted">{zone.provider} &bull; {zone.record_count} records</span>
                             </div>
                             <div className="dns-zone-item__actions" onClick={e => e.stopPropagation()}>
+                                {zone.provider === 'cloudflare' && (
+                                    <Button variant="outline" size="sm" title="Cloudflare zone settings"
+                                        onClick={() => navigate(`/cloudflare/zones/${zone.id}`)}>
+                                        <Cloud size={14} /> Cloudflare
+                                    </Button>
+                                )}
                                 <Button variant="outline" size="sm" onClick={() => handleCheckPropagation(zone.domain)}>Check</Button>
                                 {user?.is_admin && (
                                     <Button variant="destructive" size="sm" onClick={() => setDeleteConfirm(zone)}>Delete</Button>

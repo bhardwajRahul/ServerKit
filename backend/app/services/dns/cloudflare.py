@@ -212,3 +212,47 @@ class CloudflareClient:
             return {'success': True, 'message': 'Record deleted'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    # ── generic v4 access (zone settings, cache, WAF, Workers, …) ─────────────
+    #
+    # The record methods above are the DNS-specific surface. Everything else in
+    # the Cloudflare operations roadmap (zone settings, cache purge, WAF rules,
+    # Workers, Tunnels, R2) is plain v4 REST, so it shares one thin ``request``
+    # helper rather than a bespoke method per call. It normalizes the envelope so
+    # every caller can rely on ``{success, error?, result?}``.
+    def request(self, method: str, path: str, json: dict = None,
+                params: dict = None, timeout: int = 20) -> dict:
+        """Make a Cloudflare v4 call. ``path`` is relative to the API base (a
+        leading slash is optional). Returns the parsed envelope dict (always with
+        a ``success`` key and, on failure, a human ``error``), or a normalized
+        ``{success: False, error}`` on a transport error."""
+        try:
+            url = f'{API_BASE}/{path.lstrip("/")}'
+            resp = requests.request(method.upper(), url, headers=self._headers(),
+                                    json=json, params=params, timeout=timeout)
+            try:
+                data = resp.json()
+            except ValueError:
+                return {'success': False,
+                        'error': f'HTTP {resp.status_code}: non-JSON response from Cloudflare'}
+            if not isinstance(data, dict):
+                return {'success': False, 'error': 'Unexpected Cloudflare response'}
+            if not data.get('success') and not data.get('error'):
+                data['error'] = _first_error(data)
+            return data
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def get_zone_settings(self, zone_id: str) -> dict:
+        """All zone settings (``result`` is a list of ``{id, value, editable, …}``)."""
+        return self.request('GET', f'/zones/{zone_id}/settings')
+
+    def get_zone_setting(self, zone_id: str, setting_id: str) -> dict:
+        """A single zone setting by id."""
+        return self.request('GET', f'/zones/{zone_id}/settings/{setting_id}')
+
+    def update_zone_setting(self, zone_id: str, setting_id: str, value) -> dict:
+        """Patch a single zone setting. ``value`` is a scalar for most toggles or a
+        structured object for compound settings (e.g. HSTS ``security_header``)."""
+        return self.request('PATCH', f'/zones/{zone_id}/settings/{setting_id}',
+                            json={'value': value})

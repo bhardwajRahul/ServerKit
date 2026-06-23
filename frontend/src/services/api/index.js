@@ -9,6 +9,7 @@ import * as systemMethods from './system.js';
 import * as securityMethods from './security.js';
 import * as fileMethods from './files.js';
 import * as dnsMethods from './dns.js';
+import * as cloudflareMethods from './cloudflare.js';
 import * as pluginMethods from './plugins.js';
 import * as deploymentJobMethods from './deploymentJobs.js';
 import * as pairingMethods from './pairing.js';
@@ -39,6 +40,7 @@ class ApiService extends ApiClient {
             securityMethods,
             fileMethods,
             dnsMethods,
+            cloudflareMethods,
             pluginMethods,
             deploymentJobMethods,
             pairingMethods,

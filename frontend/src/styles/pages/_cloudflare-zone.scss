@@ -1,0 +1,131 @@
+// Cloudflare zone settings — detail page reached from a Cloudflare-managed DNS
+// zone. Full-bleed top bar (PageTopbar) + tabbed setting groups.
+
+.cf-zone {
+    &__body {
+        padding: $spacing-lg;
+        max-width: 880px;
+    }
+
+    &__tabs {
+        margin-top: $spacing-sm;
+    }
+
+    &__error-actions {
+        display: flex;
+        justify-content: center;
+        gap: $spacing-sm;
+        margin-top: $spacing-md;
+    }
+}
+
+// Breadcrumb in the top-bar title slot (mirrors the service-detail crumbs).
+.cf-crumbs {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    font-size: 0.95rem;
+
+    a {
+        color: $text-secondary;
+        text-decoration: none;
+
+        &:hover { color: $primary-color; }
+    }
+
+    &__sep { color: $text-tertiary; }
+    &__cur { color: $text-primary; font-weight: 600; }
+}
+
+.cf-panel {
+    background: $card-bg;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    padding: $spacing-xs $spacing-lg;
+    margin-top: $spacing-md;
+}
+
+// One setting: label/help on the left, control hugging the right.
+.cf-setting {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $spacing-lg;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color;
+
+    &:last-child { border-bottom: none; }
+
+    &__info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    &__label {
+        font-weight: 600;
+        color: $text-primary;
+    }
+
+    &__help {
+        font-size: 0.85rem;
+        color: $text-muted;
+        max-width: 52ch;
+        line-height: 1.4;
+    }
+
+    &__badge {
+        align-self: flex-start;
+        margin-top: 2px;
+    }
+
+    &__control {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        min-height: 32px;
+    }
+
+    &__select {
+        min-width: 200px;
+    }
+}
+
+// HSTS compound control — a small stack of rows.
+.cf-hsts {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-sm;
+    min-width: 240px;
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $spacing-md;
+        font-size: 0.88rem;
+        color: $text-secondary;
+    }
+}
+
+.cf-actions {
+    .cf-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $spacing-lg;
+        padding: $spacing-md 0;
+
+        &__text {
+            h3 { margin: 0 0 4px; font-size: 1rem; }
+            p { margin: 0; color: $text-muted; font-size: 0.88rem; max-width: 60ch; line-height: 1.5; }
+        }
+    }
+
+    &__note {
+        margin: $spacing-sm 0 0;
+        color: $text-muted;
+        font-size: 0.85rem;
+    }
+}

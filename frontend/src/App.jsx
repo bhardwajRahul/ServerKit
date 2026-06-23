@@ -59,6 +59,7 @@ import RemoteAccess from './pages/RemoteAccess';
 import Workspaces from './pages/Workspaces';
 import WorkspaceDetail from './pages/WorkspaceDetail';
 import DNSZones from './pages/DNSZones';
+import CloudflareZoneSettings from './pages/CloudflareZoneSettings';
 import StatusPages from './pages/StatusPages';
 import PublicStatusPage from './pages/PublicStatusPage';
 import CloudProvision from './pages/CloudProvision';
@@ -333,6 +334,9 @@ function AppRoutes() {
                     <Route path="ssl" element={<SSLCertificates />} />
                     <Route path="dynamic-dns" element={<DynamicDns />} />
                 </Route>
+                {/* Cloudflare zone settings — a detail page reached from a
+                    Cloudflare-managed DNS zone (full-bleed, own top bar). */}
+                <Route path="cloudflare/zones/:zoneId" element={<CloudflareZoneSettings />} />
                 <Route path="databases" element={<Databases />} />
                 <Route path="databases/:tab" element={<Databases />} />
                 <Route path="docker" element={<Docker />} />
