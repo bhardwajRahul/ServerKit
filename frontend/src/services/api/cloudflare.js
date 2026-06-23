@@ -63,3 +63,34 @@ export async function deleteCloudflareWafRule(zoneId, rulesetId, ruleId) {
         method: 'DELETE',
     });
 }
+
+// Workers (edge hosting). Account is resolved from the zone server-side.
+export async function getCloudflareWorkers(zoneId) {
+    return this.request(`/cloudflare/zones/${zoneId}/workers`);
+}
+
+export async function deployCloudflareWorker(zoneId, payload) {
+    return this.request(`/cloudflare/zones/${zoneId}/workers`, {
+        method: 'POST',
+        body: payload,
+    });
+}
+
+export async function deleteCloudflareWorker(zoneId, name) {
+    return this.request(`/cloudflare/zones/${zoneId}/workers/${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function addCloudflareWorkerRoute(zoneId, pattern, script) {
+    return this.request(`/cloudflare/zones/${zoneId}/workers/routes`, {
+        method: 'POST',
+        body: { pattern, script },
+    });
+}
+
+export async function deleteCloudflareWorkerRoute(zoneId, routeId) {
+    return this.request(`/cloudflare/zones/${zoneId}/workers/routes/${routeId}`, {
+        method: 'DELETE',
+    });
+}

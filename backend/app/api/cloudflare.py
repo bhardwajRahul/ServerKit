@@ -168,3 +168,72 @@ def delete_waf_rule(zone_id, ruleset_id, rule_id):
     except CloudflareError as e:
         return jsonify({'error': str(e)}), 400
     return _service_response(res)
+
+
+# ── Workers (edge hosting) ───────────────────────────────────────────────────
+
+@cloudflare_bp.route('/zones/<int:zone_id>/workers', methods=['GET'])
+@jwt_required()
+def list_workers(zone_id):
+    try:
+        res = CloudflareService.list_workers(zone_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/workers', methods=['POST'])
+@jwt_required()
+def deploy_worker(zone_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        res = CloudflareService.deploy_worker(
+            zone_id,
+            name=data.get('name'),
+            code=data.get('code'),
+            compatibility_date=data.get('compatibility_date'),
+            route_pattern=data.get('route_pattern'))
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/workers/routes', methods=['POST'])
+@jwt_required()
+def add_worker_route(zone_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        res = CloudflareService.add_worker_route(zone_id, data.get('pattern'), data.get('script'))
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/workers/routes/<route_id>', methods=['DELETE'])
+@jwt_required()
+def delete_worker_route(zone_id, route_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        res = CloudflareService.delete_worker_route(zone_id, route_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+# Note: this dynamic <name> route is registered last so it can't shadow the more
+# specific /workers/routes paths above.
+@cloudflare_bp.route('/zones/<int:zone_id>/workers/<name>', methods=['DELETE'])
+@jwt_required()
+def delete_worker(zone_id, name):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        res = CloudflareService.delete_worker(zone_id, name)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)

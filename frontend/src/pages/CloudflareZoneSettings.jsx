@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Cloud, ShieldCheck, Lock, Gauge, Database, Wand2, Eraser, Flame } from 'lucide-react';
+import { Cloud, ShieldCheck, Lock, Gauge, Database, Wand2, Eraser, Flame, Zap } from 'lucide-react';
 import { PageTopbar } from '@/components/ds';
 import WafPanel from '../components/cloudflare/WafPanel';
+import WorkersPanel from '../components/cloudflare/WorkersPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -187,6 +188,7 @@ const CloudflareZoneSettings = () => {
                             </TabsTrigger>
                         ))}
                         <TabsTrigger value="waf"><Flame size={15} />WAF</TabsTrigger>
+                        <TabsTrigger value="workers"><Zap size={15} />Workers</TabsTrigger>
                         <TabsTrigger value="actions"><Wand2 size={15} />Actions</TabsTrigger>
                     </TabsList>
 
@@ -210,6 +212,12 @@ const CloudflareZoneSettings = () => {
                     <TabsContent value="waf">
                         <div className="cf-panel">
                             <WafPanel zoneId={zoneId} isAdmin={isAdmin} />
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="workers">
+                        <div className="cf-panel">
+                            <WorkersPanel zoneId={zoneId} isAdmin={isAdmin} />
                         </div>
                     </TabsContent>
 

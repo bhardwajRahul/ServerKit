@@ -366,3 +366,106 @@ def test_waf_delete_calls_delete(app, monkeypatch):
     res = CloudflareService.delete_waf_rule(zone.id, 'rs1', 'r1')
     assert res['success'] is True
     assert deleted['url'].endswith('/rulesets/rs1/rules/r1')
+
+
+# ── Workers (Phase 4) ────────────────────────────────────────────────────────
+
+def test_upload_worker_module_is_multipart(monkeypatch):
+    import json as _json
+    from app.services.dns import cloudflare as cf
+    seen = {}
+
+    def put(url, headers=None, files=None, timeout=None):
+        seen.update(url=url, headers=headers, files=files)
+        return _Resp({'success': True, 'result': {'id': 'w'}})
+    monkeypatch.setattr(cf.requests, 'put', put)
+    res = _client().upload_worker_module('acct1', 'w', 'CODE', '2025-01-01')
+    assert res['success'] is True
+    assert seen['url'].endswith('/accounts/acct1/workers/scripts/w')
+    # multipart upload must NOT carry a JSON Content-Type (requests sets the boundary)
+    assert 'Content-Type' not in seen['headers']
+    meta = _json.loads(seen['files']['metadata'][1])
+    assert meta['main_module'] == 'worker.js' and meta['compatibility_date'] == '2025-01-01'
+    assert 'worker.js' in seen['files']
+
+
+def test_deploy_worker_validates_name(app):
+    from app.services.cloudflare_service import CloudflareService, CloudflareError
+    zone = _make_cf_zone()
+    with pytest.raises(CloudflareError):
+        CloudflareService.deploy_worker(zone.id, name='Bad Name!', code='x')
+
+
+def test_deploy_worker_records_source(app, monkeypatch):
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_worker import CloudflareWorker
+    zone = _make_cf_zone()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if method == 'GET' and url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        return _Resp({'success': False})
+
+    def put(url, headers=None, files=None, timeout=None):
+        return _Resp({'success': True, 'result': {'id': 'my-worker'}})
+    monkeypatch.setattr(cf.requests, 'request', req)
+    monkeypatch.setattr(cf.requests, 'put', put)
+
+    res = CloudflareService.deploy_worker(zone.id, name='My-Worker', code='export default {}')
+    assert res['success'] is True
+    assert res['worker']['name'] == 'my-worker'          # lowercased
+    rec = CloudflareWorker.query.filter_by(account_id='acct1', name='my-worker').first()
+    assert rec is not None and rec.source == 'export default {}'
+
+
+def test_list_workers_flags_managed(app, monkeypatch):
+    from app import db
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_worker import CloudflareWorker
+    zone = _make_cf_zone()
+    db.session.add(CloudflareWorker(account_id='acct1', name='managed-one', source='x'))
+    db.session.commit()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if url.endswith('/accounts/acct1/workers/scripts'):
+            return _Resp({'success': True, 'result': [
+                {'id': 'managed-one', 'modified_on': '2026-01-01'},
+                {'id': 'foreign', 'modified_on': '2026-01-02'}]})
+        if url.endswith('/zones/zoneABC/workers/routes'):
+            return _Resp({'success': True, 'result': [
+                {'id': 'rt1', 'pattern': 'example.com/*', 'script': 'managed-one'}]})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+
+    res = CloudflareService.list_workers(zone.id)
+    assert res['account_id'] == 'acct1'
+    by_name = {w['name']: w for w in res['workers']}
+    assert by_name['managed-one']['managed'] is True
+    assert by_name['foreign']['managed'] is False
+    assert res['routes'][0]['pattern'] == 'example.com/*'
+
+
+def test_delete_worker_removes_local_row(app, monkeypatch):
+    from app import db
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_worker import CloudflareWorker
+    zone = _make_cf_zone()
+    db.session.add(CloudflareWorker(account_id='acct1', name='gone', source='x'))
+    db.session.commit()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if method == 'DELETE' and url.endswith('/accounts/acct1/workers/scripts/gone'):
+            return _Resp({'success': True})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+
+    res = CloudflareService.delete_worker(zone.id, 'gone')
+    assert res['success'] is True
+    assert CloudflareWorker.query.filter_by(account_id='acct1', name='gone').first() is None

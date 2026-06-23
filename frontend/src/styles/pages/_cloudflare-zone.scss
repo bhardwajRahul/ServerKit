@@ -272,3 +272,93 @@
         flex-shrink: 0;
     }
 }
+
+// Workers tab — deploy form + script/route lists.
+.cf-workers {
+    &__loading {
+        padding: $spacing-lg;
+        color: $text-muted;
+    }
+
+    &__section {
+        padding: $spacing-md 0;
+        border-bottom: 1px solid $border-color;
+
+        &:last-child { border-bottom: none; }
+    }
+
+    &__heading {
+        margin: 0 0 $spacing-sm;
+        font-size: 0.95rem;
+    }
+
+    &__hint {
+        margin: $spacing-xs 0 0;
+        color: $text-muted;
+        font-size: 0.82rem;
+    }
+
+    &__field {
+        margin-bottom: $spacing-sm;
+    }
+
+    &__label {
+        display: block;
+        font-size: 0.82rem;
+        color: $text-secondary;
+        margin-bottom: 4px;
+    }
+
+    &__code {
+        font-family: $font-mono;
+        font-size: 0.82rem;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    &__list {
+        list-style: none;
+        margin: $spacing-sm 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-xs;
+    }
+
+    &__item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $spacing-md;
+        padding: $spacing-sm $spacing-md;
+        background: $bg-elevated;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+    }
+
+    &__name {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        min-width: 0;
+        flex-wrap: wrap;
+
+        code {
+            font-family: $font-mono;
+            font-size: 0.85rem;
+            color: $text-primary;
+        }
+    }
+
+    &__meta {
+        color: $text-muted;
+        font-size: 0.8rem;
+    }
+
+    &__item-actions {
+        flex-shrink: 0;
+    }
+}

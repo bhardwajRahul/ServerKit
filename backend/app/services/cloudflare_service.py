@@ -12,6 +12,7 @@ the ``/dns`` API uses); credential + Cloudflare zone id are resolved server-side
 via :meth:`DNSZoneService._resolve_credential`, the canonical resolver.
 """
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -420,4 +421,120 @@ class CloudflareService:
         res = client.delete_ruleset_rule(zone.provider_zone_id, ruleset_id, rule_id)
         if not res.get('success'):
             return {'success': False, 'error': res.get('error', 'Failed to delete rule')}
+        return {'success': True}
+
+    # ── Workers (edge hosting) ───────────────────────────────────────────────
+    # Workers are account-scoped; the owning account is read from the zone, so the
+    # whole feature reuses the same Cloudflare connection the DNS zone already has.
+
+    WORKER_NAME_RE = re.compile(r'^[a-z0-9][a-z0-9_-]{0,62}$')
+    DEFAULT_COMPAT_DATE = '2025-01-01'
+
+    @classmethod
+    def _account_id(cls, zone, client):
+        """The Cloudflare account that owns ``zone`` (for account-scoped resources)."""
+        res = client.get_zone_account_id(zone.provider_zone_id)
+        if not res.get('success'):
+            raise CloudflareError(
+                res.get('error') or 'Could not resolve the Cloudflare account for this zone')
+        acct = ((res.get('result') or {}).get('account') or {}).get('id')
+        if not acct:
+            raise CloudflareError('Cloudflare did not return an account for this zone')
+        return acct
+
+    @classmethod
+    def list_workers(cls, zone_id):
+        """Live Worker scripts in the zone's account (flagged when ServerKit manages
+        them), plus the zone's Worker routes."""
+        from app.models.cloudflare_worker import CloudflareWorker
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.list_worker_scripts(account_id)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to list workers')}
+        managed = {w.name: w for w in
+                   CloudflareWorker.query.filter_by(account_id=account_id).all()}
+        scripts = []
+        for s in (res.get('result') or []):
+            name = s.get('id')   # Cloudflare returns the script name in `id`
+            rec = managed.get(name)
+            scripts.append({'name': name, 'created_on': s.get('created_on'),
+                            'modified_on': s.get('modified_on'),
+                            'managed': rec is not None,
+                            'has_source': bool(rec and rec.source)})
+        routes = []
+        rres = client.list_worker_routes(zone.provider_zone_id)
+        if rres.get('success'):
+            routes = [{'id': r.get('id'), 'pattern': r.get('pattern'), 'script': r.get('script')}
+                      for r in (rres.get('result') or [])]
+        return {'success': True, 'account_id': account_id, 'workers': scripts, 'routes': routes}
+
+    @classmethod
+    def deploy_worker(cls, zone_id, *, name, code, compatibility_date=None, route_pattern=None):
+        """Upload a module Worker, record the source locally, and optionally attach a
+        route in this zone."""
+        from app import db
+        from app.models.cloudflare_worker import CloudflareWorker
+
+        name = (name or '').strip().lower()
+        if not cls.WORKER_NAME_RE.match(name):
+            raise CloudflareError('Worker name must be 1–63 chars: lowercase letters, '
+                                  'digits, hyphens or underscores, starting alphanumeric')
+        if not (code or '').strip():
+            raise CloudflareError('Worker code is required')
+        compat = compatibility_date or cls.DEFAULT_COMPAT_DATE
+
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.upload_worker_module(account_id, name, code, compat)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Worker upload failed')}
+
+        rec = CloudflareWorker.query.filter_by(account_id=account_id, name=name).first()
+        if not rec:
+            rec = CloudflareWorker(account_id=account_id, name=name,
+                                   dns_provider_config_id=zone.dns_provider_config_id)
+            db.session.add(rec)
+        rec.source = code
+        rec.compatibility_date = compat
+        db.session.commit()
+
+        route = None
+        if route_pattern and route_pattern.strip():
+            rr = client.add_worker_route(zone.provider_zone_id, route_pattern.strip(), name)
+            route = {'success': bool(rr.get('success')),
+                     'error': None if rr.get('success') else rr.get('error')}
+        return {'success': True, 'worker': rec.to_dict(), 'route': route}
+
+    @classmethod
+    def delete_worker(cls, zone_id, name):
+        from app import db
+        from app.models.cloudflare_worker import CloudflareWorker
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.delete_worker_script(account_id, name)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to delete worker')}
+        rec = CloudflareWorker.query.filter_by(account_id=account_id, name=name).first()
+        if rec:
+            db.session.delete(rec)
+            db.session.commit()
+        return {'success': True}
+
+    @classmethod
+    def add_worker_route(cls, zone_id, pattern, script):
+        if not (pattern or '').strip() or not (script or '').strip():
+            raise CloudflareError('Both a route pattern and a worker name are required')
+        zone, client = cls._zone_and_client(zone_id)
+        res = client.add_worker_route(zone.provider_zone_id, pattern.strip(), script.strip())
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to add route')}
+        return {'success': True, 'result': res.get('result')}
+
+    @classmethod
+    def delete_worker_route(cls, zone_id, route_id):
+        zone, client = cls._zone_and_client(zone_id)
+        res = client.delete_worker_route(zone.provider_zone_id, route_id)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to delete route')}
         return {'success': True}

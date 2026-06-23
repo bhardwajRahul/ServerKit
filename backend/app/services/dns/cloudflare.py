@@ -13,6 +13,7 @@ Centralizes, in one place:
 Both ``DNSProviderService`` (provider layer) and ``DNSZoneService`` (zone layer)
 delegate here, so a wire-format fix is made once rather than twice.
 """
+import json
 import logging
 
 import requests
@@ -293,3 +294,59 @@ class CloudflareClient:
     def delete_ruleset_rule(self, zone_id: str, ruleset_id: str, rule_id: str) -> dict:
         return self.request('DELETE',
                             f'/zones/{zone_id}/rulesets/{ruleset_id}/rules/{rule_id}')
+
+    # ── Workers (edge scripts) ────────────────────────────────────────────────
+    # Workers/R2/Tunnels are account-scoped; the owning account is read from the
+    # zone. Script upload uses the stable multipart PUT /scripts/{name} (module
+    # syntax) rather than the still-beta resource-oriented Workers API.
+    def _auth_only_headers(self) -> dict:
+        """Auth headers WITHOUT ``Content-Type`` — for multipart uploads where
+        ``requests`` must set the multipart boundary itself."""
+        if self.cred.email:
+            return {'X-Auth-Email': self.cred.email, 'X-Auth-Key': self.cred.token or ''}
+        return {'Authorization': f'Bearer {self.cred.token or ""}'}
+
+    def get_zone_account_id(self, zone_id: str) -> dict:
+        """Zone details — used to read the owning ``account.id``."""
+        return self.request('GET', f'/zones/{zone_id}')
+
+    def list_worker_scripts(self, account_id: str) -> dict:
+        return self.request('GET', f'/accounts/{account_id}/workers/scripts')
+
+    def upload_worker_module(self, account_id: str, name: str, code: str,
+                             compatibility_date: str, main: str = 'worker.js') -> dict:
+        """Create/overwrite a module-syntax Worker via the stable multipart
+        ``PUT /accounts/{id}/workers/scripts/{name}`` endpoint."""
+        url = f'{API_BASE}/accounts/{account_id}/workers/scripts/{name}'
+        metadata = {'main_module': main, 'compatibility_date': compatibility_date}
+        files = {
+            'metadata': (None, json.dumps(metadata), 'application/json'),
+            main: (main, code, 'application/javascript+module'),
+        }
+        try:
+            resp = requests.put(url, headers=self._auth_only_headers(), files=files, timeout=30)
+            try:
+                data = resp.json()
+            except ValueError:
+                return {'success': False,
+                        'error': f'HTTP {resp.status_code}: non-JSON response from Cloudflare'}
+            if not isinstance(data, dict):
+                return {'success': False, 'error': 'Unexpected Cloudflare response'}
+            if not data.get('success') and not data.get('error'):
+                data['error'] = _first_error(data)
+            return data
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def delete_worker_script(self, account_id: str, name: str) -> dict:
+        return self.request('DELETE', f'/accounts/{account_id}/workers/scripts/{name}')
+
+    def list_worker_routes(self, zone_id: str) -> dict:
+        return self.request('GET', f'/zones/{zone_id}/workers/routes')
+
+    def add_worker_route(self, zone_id: str, pattern: str, script: str) -> dict:
+        return self.request('POST', f'/zones/{zone_id}/workers/routes',
+                            json={'pattern': pattern, 'script': script})
+
+    def delete_worker_route(self, zone_id: str, route_id: str) -> dict:
+        return self.request('DELETE', f'/zones/{zone_id}/workers/routes/{route_id}')
