@@ -362,3 +362,138 @@
         flex-shrink: 0;
     }
 }
+
+// Tunnels tab — create form, install command box, tunnel list with hostnames.
+.cf-tunnels {
+    &__loading {
+        padding: $spacing-lg;
+        color: $text-muted;
+    }
+
+    &__section {
+        padding: $spacing-md 0;
+        border-bottom: 1px solid $border-color;
+
+        &:last-child { border-bottom: none; }
+    }
+
+    &__heading {
+        margin: 0 0 $spacing-sm;
+        font-size: 0.95rem;
+    }
+
+    &__hint {
+        margin: $spacing-xs 0 0;
+        color: $text-muted;
+        font-size: 0.82rem;
+    }
+
+    &__field {
+        margin-bottom: $spacing-sm;
+        max-width: 420px;
+    }
+
+    &__label {
+        display: block;
+        font-size: 0.82rem;
+        color: $text-secondary;
+        margin-bottom: 4px;
+    }
+
+    &__actions {
+        display: flex;
+        justify-content: flex-start;
+    }
+
+    &__install {
+        margin-top: $spacing-md;
+        padding: $spacing-md;
+        background: $bg-code;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+        align-items: flex-start;
+    }
+
+    &__cmd {
+        display: block;
+        width: 100%;
+        font-family: $font-mono;
+        font-size: 0.8rem;
+        color: $text-primary;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    &__list {
+        list-style: none;
+        margin: $spacing-sm 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+    }
+
+    &__item {
+        padding: $spacing-md;
+        background: $bg-elevated;
+        border: 1px solid $border-color;
+        border-radius: $radius-md;
+    }
+
+    &__item-head {
+        display: flex;
+        align-items: center;
+        gap: $spacing-sm;
+        flex-wrap: wrap;
+    }
+
+    &__name {
+        font-weight: 600;
+        color: $text-primary;
+    }
+
+    &__meta {
+        color: $text-muted;
+        font-size: 0.8rem;
+        font-family: $font-mono;
+    }
+
+    &__item-actions {
+        display: flex;
+        gap: $spacing-sm;
+        margin-top: $spacing-sm;
+        flex-wrap: wrap;
+    }
+
+    &__hostnames {
+        margin-top: $spacing-md;
+        padding-top: $spacing-md;
+        border-top: 1px solid $border-color;
+        display: flex;
+        flex-direction: column;
+        gap: $spacing-sm;
+    }
+
+    &__host {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $spacing-md;
+
+        code {
+            font-family: $font-mono;
+            font-size: 0.82rem;
+            color: $text-secondary;
+        }
+    }
+
+    &__host-add {
+        display: flex;
+        gap: $spacing-sm;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+}

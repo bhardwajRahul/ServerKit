@@ -94,3 +94,43 @@ export async function deleteCloudflareWorkerRoute(zoneId, routeId) {
         method: 'DELETE',
     });
 }
+
+// Cloudflare Tunnels (cloudflared) — expose a local service through the edge.
+export async function getCloudflareTunnels(zoneId) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels`);
+}
+
+export async function createCloudflareTunnel(zoneId, name) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels`, {
+        method: 'POST',
+        body: { name },
+    });
+}
+
+export async function deleteCloudflareTunnel(zoneId, tunnelId) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels/${tunnelId}`, {
+        method: 'DELETE',
+    });
+}
+
+export async function getCloudflareTunnelInstall(zoneId, tunnelId) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels/${tunnelId}/install`);
+}
+
+export async function getCloudflareTunnelHostnames(zoneId, tunnelId) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels/${tunnelId}/hostnames`);
+}
+
+export async function addCloudflareTunnelHostname(zoneId, tunnelId, hostname, service) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels/${tunnelId}/hostnames`, {
+        method: 'POST',
+        body: { hostname, service },
+    });
+}
+
+export async function removeCloudflareTunnelHostname(zoneId, tunnelId, hostname) {
+    return this.request(`/cloudflare/zones/${zoneId}/tunnels/${tunnelId}/hostnames`, {
+        method: 'DELETE',
+        body: { hostname },
+    });
+}

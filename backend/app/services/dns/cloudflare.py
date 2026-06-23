@@ -350,3 +350,34 @@ class CloudflareClient:
 
     def delete_worker_route(self, zone_id: str, route_id: str) -> dict:
         return self.request('DELETE', f'/zones/{zone_id}/workers/routes/{route_id}')
+
+    # ── Tunnels (cloudflared / cfd_tunnel) ────────────────────────────────────
+    # Account-scoped. As of Dec 2025 the list endpoint defaults to active-only;
+    # we pass is_deleted=false explicitly to be unambiguous.
+    def list_tunnels(self, account_id: str) -> dict:
+        return self.request('GET', f'/accounts/{account_id}/cfd_tunnel',
+                            params={'is_deleted': 'false'})
+
+    def create_tunnel(self, account_id: str, name: str) -> dict:
+        """Create a remotely-managed tunnel (config stored at Cloudflare)."""
+        return self.request('POST', f'/accounts/{account_id}/cfd_tunnel',
+                            json={'name': name, 'config_src': 'cloudflare'})
+
+    def delete_tunnel(self, account_id: str, tunnel_id: str) -> dict:
+        return self.request('DELETE', f'/accounts/{account_id}/cfd_tunnel/{tunnel_id}')
+
+    def get_tunnel_token(self, account_id: str, tunnel_id: str) -> dict:
+        """The connector token (``result`` is the token string for ``cloudflared``)."""
+        return self.request('GET', f'/accounts/{account_id}/cfd_tunnel/{tunnel_id}/token')
+
+    def get_tunnel_connections(self, account_id: str, tunnel_id: str) -> dict:
+        return self.request('GET', f'/accounts/{account_id}/cfd_tunnel/{tunnel_id}/connections')
+
+    def get_tunnel_configuration(self, account_id: str, tunnel_id: str) -> dict:
+        return self.request('GET', f'/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations')
+
+    def put_tunnel_configuration(self, account_id: str, tunnel_id: str, config: dict) -> dict:
+        """Set the tunnel's ingress rules (public hostname → local service)."""
+        return self.request('PUT',
+                            f'/accounts/{account_id}/cfd_tunnel/{tunnel_id}/configurations',
+                            json={'config': config})

@@ -469,3 +469,138 @@ def test_delete_worker_removes_local_row(app, monkeypatch):
     res = CloudflareService.delete_worker(zone.id, 'gone')
     assert res['success'] is True
     assert CloudflareWorker.query.filter_by(account_id='acct1', name='gone').first() is None
+
+
+# ── Tunnels (Phase 5) ────────────────────────────────────────────────────────
+
+def test_client_list_tunnels_passes_is_deleted_false(monkeypatch):
+    from app.services.dns import cloudflare as cf
+    seen = {}
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        seen.update(params=params, url=url)
+        return _Resp({'success': True, 'result': []})
+    monkeypatch.setattr(cf.requests, 'request', req)
+    _client().list_tunnels('acct1')
+    assert seen['params'] == {'is_deleted': 'false'}
+    assert seen['url'].endswith('/accounts/acct1/cfd_tunnel')
+
+
+def test_client_create_tunnel_uses_cloudflare_config_src(monkeypatch):
+    from app.services.dns import cloudflare as cf
+    seen = {}
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        seen.update(json=json)
+        return _Resp({'success': True, 'result': {'id': 't'}})
+    monkeypatch.setattr(cf.requests, 'request', req)
+    _client().create_tunnel('acct1', 'home')
+    assert seen['json'] == {'name': 'home', 'config_src': 'cloudflare'}
+
+
+def test_create_tunnel_requires_name(app):
+    from app.services.cloudflare_service import CloudflareService, CloudflareError
+    zone = _make_cf_zone()
+    with pytest.raises(CloudflareError):
+        CloudflareService.create_tunnel(zone.id, '   ')
+
+
+def test_create_tunnel_stores_token_and_returns_install(app, monkeypatch):
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_tunnel import CloudflareTunnel
+    from app.utils.crypto import decrypt_secret_safe
+    zone = _make_cf_zone()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if method == 'GET' and url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if method == 'POST' and url.endswith('/accounts/acct1/cfd_tunnel'):
+            return _Resp({'success': True, 'result': {'id': 'tun1', 'token': 'TOKEN123'}})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+
+    res = CloudflareService.create_tunnel(zone.id, 'home')
+    assert res['success'] is True and res['token'] == 'TOKEN123'
+    assert res['install'] == 'cloudflared service install TOKEN123'
+    rec = CloudflareTunnel.query.filter_by(account_id='acct1', tunnel_id='tun1').first()
+    assert rec is not None
+    # Token stored encrypted at rest, recoverable via the safe decrypt.
+    assert rec.token_encrypted != 'TOKEN123'
+    assert decrypt_secret_safe(rec.token_encrypted) == 'TOKEN123'
+
+
+def test_list_tunnels_flags_managed(app, monkeypatch):
+    from app import db
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_tunnel import CloudflareTunnel
+    zone = _make_cf_zone()
+    db.session.add(CloudflareTunnel(tunnel_id='tun1', name='mine', account_id='acct1'))
+    db.session.commit()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if url.endswith('/accounts/acct1/cfd_tunnel'):
+            return _Resp({'success': True, 'result': [
+                {'id': 'tun1', 'name': 'mine', 'status': 'healthy', 'connections': [{}]},
+                {'id': 'tun2', 'name': 'other', 'status': 'down'}]})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+
+    res = CloudflareService.list_tunnels(zone.id)
+    by_id = {t['id']: t for t in res['tunnels']}
+    assert by_id['tun1']['managed'] is True and by_id['tun1']['connections'] == 1
+    assert by_id['tun2']['managed'] is False
+
+
+def test_delete_tunnel_removes_local_row(app, monkeypatch):
+    from app import db
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    from app.models.cloudflare_tunnel import CloudflareTunnel
+    zone = _make_cf_zone()
+    db.session.add(CloudflareTunnel(tunnel_id='tun1', name='mine', account_id='acct1'))
+    db.session.commit()
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if method == 'DELETE' and url.endswith('/accounts/acct1/cfd_tunnel/tun1'):
+            return _Resp({'success': True})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+
+    res = CloudflareService.delete_tunnel(zone.id, 'tun1')
+    assert res['success'] is True
+    assert CloudflareTunnel.query.filter_by(account_id='acct1', tunnel_id='tun1').first() is None
+
+
+def test_add_tunnel_hostname_sets_ingress_with_catchall(app, monkeypatch):
+    from app.services.dns import cloudflare as cf
+    from app.services.cloudflare_service import CloudflareService
+    zone = _make_cf_zone()
+    put_body = {}
+
+    def req(method, url, headers=None, json=None, params=None, timeout=None):
+        if method == 'GET' and url.endswith('/zones/zoneABC'):
+            return _Resp({'success': True, 'result': {'account': {'id': 'acct1'}}})
+        if method == 'GET' and url.endswith('/cfd_tunnel/tun1/configurations'):
+            return _Resp({'success': True, 'result': {'config': {'ingress': [
+                {'service': 'http_status:404'}]}}})
+        if method == 'PUT' and url.endswith('/cfd_tunnel/tun1/configurations'):
+            put_body.update(json or {})
+            return _Resp({'success': True, 'result': {}})
+        return _Resp({'success': False})
+    monkeypatch.setattr(cf.requests, 'request', req)
+    # Isolate the ingress logic from the best-effort CNAME upsert.
+    monkeypatch.setattr(CloudflareService, '_ensure_tunnel_cname',
+                        lambda zone, client, hostname, tunnel_id: {'created': True, 'error': None})
+
+    res = CloudflareService.add_tunnel_hostname(
+        zone.id, 'tun1', 'App.Example.com', 'http://localhost:8080')
+    assert res['success'] is True and res['dns']['created'] is True
+    ingress = put_body['config']['ingress']
+    assert ingress[0] == {'hostname': 'app.example.com', 'service': 'http://localhost:8080'}
+    assert ingress[-1] == {'service': 'http_status:404'}   # required catch-all is last

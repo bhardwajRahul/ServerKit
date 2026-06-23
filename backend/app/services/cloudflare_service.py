@@ -538,3 +538,167 @@ class CloudflareService:
         if not res.get('success'):
             return {'success': False, 'error': res.get('error', 'Failed to delete route')}
         return {'success': True}
+
+    # ── Tunnels (cloudflared) ────────────────────────────────────────────────
+    # Cloudflare Tunnels expose a local/private service through Cloudflare's edge
+    # without a public IP. Distinct from ServerKit's WireGuard remote-access
+    # tunnels. Account-scoped; account resolved from the zone.
+
+    @staticmethod
+    def _install_command(token):
+        """The one-liner an operator runs on the target host to attach a connector."""
+        if not token:
+            return None
+        return f'cloudflared service install {token}'
+
+    @classmethod
+    def list_tunnels(cls, zone_id):
+        from app.models.cloudflare_tunnel import CloudflareTunnel
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.list_tunnels(account_id)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to list tunnels')}
+        managed = {t.tunnel_id for t in
+                   CloudflareTunnel.query.filter_by(account_id=account_id).all()}
+        tunnels = [{'id': t.get('id'), 'name': t.get('name'), 'status': t.get('status'),
+                    'created_at': t.get('created_at'),
+                    'connections': len(t.get('connections') or []),
+                    'managed': t.get('id') in managed}
+                   for t in (res.get('result') or [])]
+        return {'success': True, 'account_id': account_id, 'tunnels': tunnels}
+
+    @classmethod
+    def create_tunnel(cls, zone_id, name):
+        """Create a tunnel and return the connector token + install command (the
+        token is revealed once here and stored encrypted for later)."""
+        from app import db
+        from app.models.cloudflare_tunnel import CloudflareTunnel
+        from app.utils.crypto import encrypt_secret
+
+        name = (name or '').strip()
+        if not name:
+            raise CloudflareError('A tunnel name is required')
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.create_tunnel(account_id, name)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to create tunnel')}
+        result = res.get('result') or {}
+        tunnel_id = result.get('id')
+        token = result.get('token')
+        if not token and tunnel_id:
+            tres = client.get_tunnel_token(account_id, tunnel_id)
+            token = tres.get('result') if tres.get('success') else None
+
+        rec = CloudflareTunnel(
+            tunnel_id=tunnel_id, name=name, account_id=account_id,
+            dns_provider_config_id=zone.dns_provider_config_id,
+            token_encrypted=encrypt_secret(token) if token else None)
+        db.session.add(rec)
+        db.session.commit()
+        return {'success': True, 'tunnel': rec.to_dict(),
+                'token': token, 'install': cls._install_command(token)}
+
+    @classmethod
+    def get_tunnel_install(cls, zone_id, tunnel_id):
+        """Re-fetch the connector token + install command for a tunnel."""
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        tres = client.get_tunnel_token(account_id, tunnel_id)
+        if not tres.get('success'):
+            return {'success': False, 'error': tres.get('error', 'Failed to fetch token')}
+        token = tres.get('result')
+        return {'success': True, 'token': token, 'install': cls._install_command(token)}
+
+    @classmethod
+    def delete_tunnel(cls, zone_id, tunnel_id):
+        from app import db
+        from app.models.cloudflare_tunnel import CloudflareTunnel
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.delete_tunnel(account_id, tunnel_id)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to delete tunnel')}
+        rec = CloudflareTunnel.query.filter_by(account_id=account_id, tunnel_id=tunnel_id).first()
+        if rec:
+            db.session.delete(rec)
+            db.session.commit()
+        return {'success': True}
+
+    @classmethod
+    def get_tunnel_hostnames(cls, zone_id, tunnel_id):
+        """The public-hostname ingress rules configured on a tunnel."""
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        res = client.get_tunnel_configuration(account_id, tunnel_id)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to load tunnel config')}
+        ingress = ((res.get('result') or {}).get('config') or {}).get('ingress') or []
+        hostnames = [{'hostname': r.get('hostname'), 'service': r.get('service')}
+                     for r in ingress if r.get('hostname')]
+        return {'success': True, 'hostnames': hostnames}
+
+    @classmethod
+    def add_tunnel_hostname(cls, zone_id, tunnel_id, hostname, service):
+        """Route a public hostname to a local service through the tunnel, and
+        best-effort create the proxied CNAME that points it at the tunnel."""
+        hostname = (hostname or '').strip().lower().rstrip('.')
+        service = (service or '').strip()
+        if not hostname or not service:
+            raise CloudflareError('Both a hostname and a service '
+                                  '(e.g. http://localhost:8080) are required')
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+
+        cur = client.get_tunnel_configuration(account_id, tunnel_id)
+        config = ((cur.get('result') or {}).get('config') or {}) if cur.get('success') else {}
+        # Keep only real hostname rules, replace/insert this one, re-add catch-all.
+        ingress = [r for r in (config.get('ingress') or [])
+                   if r.get('hostname') and r.get('hostname') != hostname]
+        ingress.append({'hostname': hostname, 'service': service})
+        ingress.append({'service': 'http_status:404'})
+        config['ingress'] = ingress
+
+        res = client.put_tunnel_configuration(account_id, tunnel_id, config)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to set tunnel route')}
+        dns = cls._ensure_tunnel_cname(zone, client, hostname, tunnel_id)
+        return {'success': True, 'dns': dns}
+
+    @classmethod
+    def remove_tunnel_hostname(cls, zone_id, tunnel_id, hostname):
+        hostname = (hostname or '').strip().lower().rstrip('.')
+        if not hostname:
+            raise CloudflareError('A hostname is required')
+        zone, client = cls._zone_and_client(zone_id)
+        account_id = cls._account_id(zone, client)
+        cur = client.get_tunnel_configuration(account_id, tunnel_id)
+        config = ((cur.get('result') or {}).get('config') or {}) if cur.get('success') else {}
+        ingress = [r for r in (config.get('ingress') or [])
+                   if r.get('hostname') and r.get('hostname') != hostname]
+        ingress.append({'service': 'http_status:404'})
+        config['ingress'] = ingress
+        res = client.put_tunnel_configuration(account_id, tunnel_id, config)
+        if not res.get('success'):
+            return {'success': False, 'error': res.get('error', 'Failed to remove tunnel route')}
+        return {'success': True}
+
+    @staticmethod
+    def _ensure_tunnel_cname(zone, client, hostname, tunnel_id):
+        """Best-effort: upsert the proxied CNAME ``hostname → <id>.cfargotunnel.com``
+        that publishes the tunnel. Reported, never fatal — the route is already set."""
+        try:
+            from app.services.dns.base import DnsRecordSpec
+            from app.services.dns_ownership_service import DnsOwnershipService
+            target = f'{tunnel_id}.cfargotunnel.com'
+            spec = DnsRecordSpec(record_type='CNAME', name=hostname, content=target,
+                                 ttl=1, proxied=True)
+            res = DnsOwnershipService.guarded_upsert(
+                client, provider='cloudflare', provider_zone_id=zone.provider_zone_id,
+                spec=spec, source='cf-tunnel', config_id=zone.dns_provider_config_id,
+                allow_foreign=True)
+            return {'created': bool(res.get('success')),
+                    'error': None if res.get('success') else res.get('error')}
+        except Exception as e:
+            return {'created': False, 'error': str(e)}

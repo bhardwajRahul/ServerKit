@@ -237,3 +237,89 @@ def delete_worker(zone_id, name):
     except CloudflareError as e:
         return jsonify({'error': str(e)}), 400
     return _service_response(res)
+
+
+# ── Tunnels (cloudflared) ────────────────────────────────────────────────────
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels', methods=['GET'])
+@jwt_required()
+def list_tunnels(zone_id):
+    try:
+        res = CloudflareService.list_tunnels(zone_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels', methods=['POST'])
+@jwt_required()
+def create_tunnel(zone_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        res = CloudflareService.create_tunnel(zone_id, data.get('name'))
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels/<tunnel_id>/install', methods=['GET'])
+@jwt_required()
+def tunnel_install(zone_id, tunnel_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        res = CloudflareService.get_tunnel_install(zone_id, tunnel_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels/<tunnel_id>/hostnames', methods=['GET'])
+@jwt_required()
+def tunnel_hostnames(zone_id, tunnel_id):
+    try:
+        res = CloudflareService.get_tunnel_hostnames(zone_id, tunnel_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels/<tunnel_id>/hostnames', methods=['POST'])
+@jwt_required()
+def add_tunnel_hostname(zone_id, tunnel_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        res = CloudflareService.add_tunnel_hostname(
+            zone_id, tunnel_id, data.get('hostname'), data.get('service'))
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels/<tunnel_id>/hostnames', methods=['DELETE'])
+@jwt_required()
+def remove_tunnel_hostname(zone_id, tunnel_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        res = CloudflareService.remove_tunnel_hostname(zone_id, tunnel_id, data.get('hostname'))
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
+
+
+@cloudflare_bp.route('/zones/<int:zone_id>/tunnels/<tunnel_id>', methods=['DELETE'])
+@jwt_required()
+def delete_tunnel(zone_id, tunnel_id):
+    if not _require_admin():
+        return jsonify({'error': 'Admin access required'}), 403
+    try:
+        res = CloudflareService.delete_tunnel(zone_id, tunnel_id)
+    except CloudflareError as e:
+        return jsonify({'error': str(e)}), 400
+    return _service_response(res)
