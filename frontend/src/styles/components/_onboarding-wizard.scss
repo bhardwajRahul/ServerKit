@@ -1,0 +1,179 @@
+// ============================================
+// ONBOARDING WIZARD
+// Step indicator + live state for the server onboarding lifecycle
+// (validating -> prerequisites -> docker -> pair agent -> ready).
+// ============================================
+
+// Spacing for the wizard when embedded at the top of the server Overview tab.
+.overview-tab__onboarding {
+    margin-bottom: $space-5;
+}
+
+.onboarding-wizard {
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: $radius-lg;
+    padding: $space-5;
+
+    &__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-3;
+        margin-bottom: $space-4;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+
+        h3 {
+            margin: 0;
+            font-size: $font-size-base;
+            font-weight: $font-weight-semibold;
+            color: $text-primary;
+        }
+    }
+
+    &__error {
+        display: flex;
+        align-items: flex-start;
+        gap: $space-2;
+        padding: $space-3 $space-4;
+        margin-bottom: $space-4;
+        border-radius: $radius-md;
+        background: $danger-bg;
+        border: 1px solid $danger-border;
+        color: $danger;
+        font-size: $font-size-sm;
+        line-height: 1.4;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+    }
+
+    &__steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    &__step {
+        position: relative;
+        display: flex;
+        gap: $space-3;
+        padding-bottom: $space-4;
+
+        // Connector line down to the next step.
+        &:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 22px;
+            bottom: 0;
+            width: 2px;
+            background: $border-color;
+        }
+
+        &--done:not(:last-child)::before {
+            background: $success-border;
+        }
+    }
+
+    &__step-icon {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        z-index: 1;
+        background: $bg-card;
+        color: $text-tertiary;
+    }
+
+    &__step--done &__step-icon {
+        color: $success;
+    }
+
+    &__step--active &__step-icon {
+        color: $accent-primary;
+    }
+
+    &__step--failed &__step-icon {
+        color: $danger;
+    }
+
+    &__step-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    &__step-head {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+    }
+
+    &__step-label {
+        font-weight: $font-weight-medium;
+        color: $text-primary;
+        font-size: $font-size-sm;
+    }
+
+    &__step--pending &__step-label {
+        color: $text-tertiary;
+    }
+
+    &__step-desc {
+        margin: 2px 0 0;
+        font-size: $font-size-xs;
+        color: $text-secondary;
+    }
+
+    &__step-logs {
+        list-style: none;
+        margin: $space-2 0 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__log {
+        font-size: $font-size-xs;
+        color: $text-tertiary;
+        padding-left: $space-2;
+        border-left: 2px solid $border-color;
+
+        &--succeeded {
+            color: $success;
+            border-left-color: $success-border;
+        }
+
+        &--failed {
+            color: $danger;
+            border-left-color: $danger-border;
+        }
+    }
+
+    &__loading {
+        margin: $space-3 0 0;
+        font-size: $font-size-sm;
+        color: $text-secondary;
+    }
+
+    &__spin {
+        animation: onboarding-spin 1s linear infinite;
+    }
+}
+
+@keyframes onboarding-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

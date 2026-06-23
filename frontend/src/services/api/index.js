@@ -24,6 +24,7 @@ import * as notificationMethods from './notifications.js';
 import * as telemetryMethods from './telemetry.js';
 import * as jobMethods from './jobs.js';
 import * as backupProtectionMethods from './backupProtection.js';
+import * as containerStatusMethods from './containerStatus.js';
 
 class ApiService extends ApiClient {
     constructor() {
@@ -55,6 +56,7 @@ class ApiService extends ApiClient {
             telemetryMethods,
             jobMethods,
             backupProtectionMethods,
+            containerStatusMethods,
         ];
         for (const mod of modules) {
             for (const [key, fn] of Object.entries(mod)) {

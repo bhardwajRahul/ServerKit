@@ -115,6 +115,54 @@ def get_template(template_id):
     }), 200
 
 
+# ==================== CATALOG SCHEMA ====================
+
+@templates_bp.route('/catalog/schema', methods=['GET'])
+@jwt_required()
+def catalog_schema():
+    """Describe the declarative template catalog schema for the UI.
+
+    Returns the supported variable ``type`` values and the auto-resolved
+    "magic variable" tokens (``${SERVICE_*}``) so the template editor / docs can
+    surface them without hardcoding the list. Mirrors
+    ``docs/TEMPLATE_CATALOG_SCHEMA.md``.
+    """
+    schema = {
+        'schema_version': TemplateService.SCHEMA_VERSION,
+        'variable_types': [
+            {'type': 'string', 'auto_generated': False,
+             'description': 'Free-text value; uses default unless required and user-provided.'},
+            {'type': 'password', 'auto_generated': True,
+             'description': 'Generated strong secret. Honors length and special_chars.'},
+            {'type': 'port', 'auto_generated': True,
+             'description': 'Always auto-assigned to a free host port; never user-supplied.'},
+            {'type': 'uuid', 'auto_generated': True,
+             'description': 'Generated UUIDv4.'},
+            {'type': 'random', 'auto_generated': True,
+             'description': 'Generated random hex token. Honors length.'},
+        ],
+        'magic_variables': [
+            {'token': '${SERVICE_PASSWORD_<NAME>}',
+             'description': 'Generated strong password, stable per <NAME> within an install.'},
+            {'token': '${SERVICE_USER_<NAME>}',
+             'description': 'Generated service username (svc_<name>_<rand>).'},
+            {'token': '${SERVICE_FQDN_<NAME>}',
+             'description': "Auto-assigned hostname (<slug>.<base_domain>) when auto_domain is set; "
+                            "falls back to a localhost placeholder."},
+            {'token': '${SERVICE_URL_<NAME>}',
+             'description': 'Full URL derived from the FQDN and scheme.'},
+            {'token': '${SERVICE_BASE64_<NAME>}',
+             'description': 'Base64 of a freshly generated secret.'},
+        ],
+        'notes': [
+            'Magic tokens need no variables: entry; they are resolved at install '
+            'and persisted to .env / surfaced post-install.',
+            '<NAME> groups related tokens: the same <NAME> resolves to a consistent value.',
+        ],
+    }
+    return jsonify(schema), 200
+
+
 # ==================== TEMPLATE INSTALLATION ====================
 
 @templates_bp.route('/<template_id>/install', methods=['POST'])

@@ -159,6 +159,10 @@ def create_app(config_name=None):
     from app.api.monitoring import monitoring_bp
     app.register_blueprint(monitoring_bp, url_prefix='/api/v1/monitoring')
 
+    # Register blueprints - Container status aggregator
+    from app.api.container_status import container_status_bp
+    app.register_blueprint(container_status_bp, url_prefix='/api/v1/status')
+
     # Register blueprints - Notifications
     from app.api.notifications import notifications_bp
     app.register_blueprint(notifications_bp, url_prefix='/api/v1/notifications')
@@ -457,6 +461,8 @@ def create_app(config_name=None):
         BackupService.register_jobs()
         from app.services.backup_policy_service import BackupPolicyService
         BackupPolicyService.register_jobs()
+        from app.services.server_onboarding_service import ServerOnboardingService
+        ServerOnboardingService.register_jobs()
         start_job_system(app, seed=seed_builtin_schedules)
 
     # Request body size limit

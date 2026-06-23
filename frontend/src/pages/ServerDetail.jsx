@@ -30,6 +30,7 @@ import {
 import PackagesTab from '../components/serverdetail/PackagesTab';
 import ServicesTab from '../components/serverdetail/ServicesTab';
 import SystemStatusCard from '../components/serverdetail/SystemStatusCard';
+import OnboardingWizard from '../components/server/OnboardingWizard';
 import RemoteAccess from '../pages/RemoteAccess';
 import EmptyState from '../components/EmptyState';
 import { BellRing, Boxes, Container, Clock3, Cloud } from 'lucide-react';
@@ -435,8 +436,30 @@ const OverviewTab = ({ server, metrics, systemInfo, onRefreshServer }) => {
     const totalDisk = systemInfo?.total_disk || server.total_disk;
     const osLabel = `${systemInfo?.os || server.os_type || 'Unknown'}${systemInfo?.os_version || server.os_version ? ` ${systemInfo?.os_version || server.os_version}` : ''}`;
 
+    // Surface the onboarding wizard while a server is still being
+    // provisioned. Hidden once onboarding reaches 'ready' (or was never
+    // started) so it doesn't clutter a healthy server's overview.
+    const showOnboarding =
+        server.onboarding_state &&
+        !['ready', 'pending'].includes(server.onboarding_state);
+
     return (
         <div className="overview-tab">
+            {showOnboarding && (
+                <div className="overview-tab__onboarding">
+                    <OnboardingWizard
+                        serverId={server.id}
+                        initialState={server.onboarding_state}
+                        onStateChange={(newState) => {
+                            // Refresh the parent server payload when onboarding
+                            // reaches a terminal state so the card hides itself.
+                            if (newState === 'ready' || newState === 'failed') {
+                                onRefreshServer?.();
+                            }
+                        }}
+                    />
+                </div>
+            )}
             <div className="server-stats-strip">
                 <KpiTile
                     icon={<PulseIcon />}

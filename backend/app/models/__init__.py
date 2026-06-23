@@ -11,6 +11,7 @@ from app.models.metrics_history import MetricsHistory
 from app.models.workflow import Workflow, WorkflowExecution, WorkflowLog
 from app.models.webhook import GitWebhook, WebhookLog, GitDeployment
 from app.models.server import Server, ServerGroup, ServerMetrics, ServerCommand, AgentSession, AgentVersion, AgentRollout
+from app.models.server_onboarding_log import ServerOnboardingLog
 from app.models.security_alert import SecurityAlert
 from app.models.wordpress_site import WordPressSite, DatabaseSnapshot, SyncJob, WordPressVulnerability
 from app.models.environment_activity import EnvironmentActivity
@@ -58,7 +59,7 @@ __all__ = [
     'User', 'Application', 'Domain', 'EnvironmentVariable', 'EnvironmentVariableHistory',
     'NotificationPreferences', 'Deployment', 'DeploymentDiff', 'DeploymentJob', 'DeploymentJobLog', 'SystemSettings', 'AuditLog',
     'MetricsHistory', 'Workflow', 'WorkflowExecution', 'WorkflowLog', 'GitWebhook', 'WebhookLog', 'GitDeployment',
-    'Server', 'ServerGroup', 'ServerMetrics', 'ServerCommand', 'AgentSession', 'AgentVersion', 'AgentRollout', 'SecurityAlert',
+    'Server', 'ServerGroup', 'ServerMetrics', 'ServerCommand', 'AgentSession', 'AgentVersion', 'AgentRollout', 'ServerOnboardingLog', 'SecurityAlert',
     'WordPressSite', 'DatabaseSnapshot', 'SyncJob', 'WordPressVulnerability',
     'EnvironmentActivity', 'PromotionJob', 'SanitizationProfile',
     'EmailDomain', 'EmailAccount', 'EmailAlias', 'EmailForwardingRule', 'DNSProviderConfig', 'EmailRelayConfig',
