@@ -2128,6 +2128,20 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
         v = cls._write_app_vhost(app)
         if v.get('warning'):
             warning = (warning + '; ' + v['warning']) if warning else v['warning']
+
+        # Brute-force protection is on by default: now that the per-site vhost (and
+        # therefore its access log) exists, stand up the WP-login Fail2ban jail.
+        # Best-effort and never fatal — a host without fail2ban (e.g. Windows dev)
+        # is silently skipped; only a real failure (e.g. reload error) warns.
+        try:
+            from app.services.fail2ban_jail_service import Fail2banJailService
+            jail = Fail2banJailService.enable_wp_jail(app)
+        except Exception as e:
+            jail = {'success': False, 'error': str(e)}
+        if jail and not jail.get('success') and not jail.get('skipped') and jail.get('error'):
+            msg = f"brute-force jail: {jail['error']}"
+            warning = (warning + '; ' + msg) if warning else msg
+
         return {'domain': site_host, 'nginx': v.get('nginx'), 'warning': warning}
 
     @classmethod
@@ -2539,6 +2553,13 @@ RewriteRule ^wp-content/uploads/.*\\.php$ - [F]
             # with the Application (Application.domains is delete-orphan).
             try:
                 NginxService.delete_site(wp_site.application.name)
+            except Exception:
+                pass
+            # Remove the per-site brute-force jail too, so a deleted site leaves no
+            # dangling Fail2ban config. Best-effort (no-op without fail2ban).
+            try:
+                from app.services.fail2ban_jail_service import Fail2banJailService
+                Fail2banJailService.disable_jail(wp_site.application)
             except Exception:
                 pass
             db.session.delete(wp_site.application)
