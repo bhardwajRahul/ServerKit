@@ -336,8 +336,13 @@ def create_app(config_name=None):
     app.register_blueprint(workspaces_bp, url_prefix='/api/v1/workspaces')
 
     # Register blueprints - Advanced SSL
+    # §5 unification: one SSL surface. The advanced cert operations (wildcard,
+    # SAN, custom upload, profiles, health, expiry alerts) mount under the same
+    # /api/v1/ssl prefix as the basic certbot routes (no path collisions). The
+    # original /api/v1/ssl/advanced prefix is kept as a deprecated alias.
     from app.api.advanced_ssl import advanced_ssl_bp
     app.register_blueprint(advanced_ssl_bp, url_prefix='/api/v1/ssl/advanced')
+    app.register_blueprint(advanced_ssl_bp, url_prefix='/api/v1/ssl', name='advanced_ssl_unified')
 
     # Register blueprints - DNS Zones
     from app.api.dns_zones import dns_zones_bp
