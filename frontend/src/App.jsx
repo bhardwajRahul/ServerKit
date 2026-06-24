@@ -108,6 +108,7 @@ const PAGE_TITLES = {
     '/downloads': 'Downloads',
     '/files': 'File Manager',
     '/ftp': 'FTP Server',
+    '/observability': 'Observability',
     '/monitoring': 'Monitoring',
     '/backups': 'Backups',
     '/cron': 'Cron Jobs',
@@ -413,11 +414,15 @@ function AppRoutes() {
                     <Route path="ftp" element={<FTPServer />} />
                     <Route path="ftp/:tab" element={<FTPServer />} />
                 </Route>
+                {/* Observability tab group (§4): Monitoring / Events / Status
+                    Pages share one PageTopbar. /observability lands on Monitoring. */}
                 <Route element={<TabGroupLayout tabs={MONITOR_TABS} />}>
                     <Route path="monitoring" element={<Monitoring />} />
                     <Route path="monitoring/:tab" element={<Monitoring />} />
+                    <Route path="telemetry" element={<Telemetry />} />
                     <Route path="status-pages" element={<StatusPages />} />
                 </Route>
+                <Route path="observability" element={<Navigate to="/monitoring" replace />} />
                 <Route path="gpu" element={<GpuMonitor />} />
                 <Route element={<TabGroupLayout tabs={BACKUP_TABS} />}>
                     <Route path="backups" element={<Backups />} />
@@ -444,7 +449,6 @@ function AppRoutes() {
                 <Route path="queue/:groupSlug/:queueSlug" element={<QueueDetail />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="admin/notifications" element={<DeliveryLog />} />
-                <Route path="telemetry" element={<Telemetry />} />
                 <Route path="jobs" element={<Jobs />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/:tab" element={<Settings />} />

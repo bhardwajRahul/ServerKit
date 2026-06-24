@@ -419,6 +419,19 @@ def create_app(config_name=None):
     from app.api.telemetry import telemetry_bp
     app.register_blueprint(telemetry_bp, url_prefix='/api/v1/telemetry')
 
+    # §4 unification: one observability namespace. The monitoring / metrics /
+    # telemetry / uptime / fleet / status-page read surfaces are re-mounted under
+    # /api/v1/observability/<domain> as true aliases (same blueprints, distinct
+    # names) so callers have a single front door. The original prefixes remain,
+    # and the PUBLIC status page route (/api/v1/status/public/<slug>) is
+    # unchanged — its canonical mount is untouched.
+    app.register_blueprint(monitoring_bp, url_prefix='/api/v1/observability/monitoring', name='obs_monitoring')
+    app.register_blueprint(metrics_bp, url_prefix='/api/v1/observability/metrics', name='obs_metrics')
+    app.register_blueprint(telemetry_bp, url_prefix='/api/v1/observability/events', name='obs_events')
+    app.register_blueprint(uptime_bp, url_prefix='/api/v1/observability/uptime', name='obs_uptime')
+    app.register_blueprint(fleet_monitor_bp, url_prefix='/api/v1/observability/fleet', name='obs_fleet')
+    app.register_blueprint(status_pages_bp, url_prefix='/api/v1/observability/status-pages', name='obs_status_pages')
+
     # Register blueprints - Agent Pairing (RustDesk-style short-code flow)
     from app.api.pairing import pairing_bp
     app.register_blueprint(pairing_bp, url_prefix='/api/v1/pairing')

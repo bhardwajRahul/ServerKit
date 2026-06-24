@@ -137,10 +137,11 @@ export const SIDEBAR_ITEMS = [
     },
     {
         // Redesign: Monitoring uses the top-bar layout (REDESIGN_MAP §6 dec. 3).
-        // Status Pages now lives in the page's top bar (PageTopbar MONITOR_TABS),
-        // not as a sidebar sub-item. Route /status-pages is unchanged.
+        // Observability group (§4): Monitoring / Events / Status Pages share the
+        // top bar (PageTopbar MONITOR_TABS). The sidebar entry lights for any of
+        // them via matchPrefixes. Events absorbed the old standalone Telemetry.
         id: 'monitoring',
-        label: 'Monitoring',
+        label: 'Observability',
         route: '/monitoring',
         matchPrefixes: groupPrefixes(MONITOR_TABS),
         category: 'operations',
@@ -189,13 +190,6 @@ export const SIDEBAR_ITEMS = [
         icon: '<path d="M4 17l6-6-6-6M12 19h8"/>'
     },
     {
-        id: 'telemetry',
-        label: 'Telemetry',
-        route: '/telemetry',
-        category: 'system',
-        icon: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>'
-    },
-    {
         id: 'jobs',
         label: 'Jobs',
         route: '/jobs',
@@ -240,7 +234,7 @@ export const SIDEBAR_ITEMS = [
 // inbound-Webhooks console. They're hidden by the default ("Recommended") view
 // and every curated preset, but stay one click away via the "Full" view or
 // Customize Sidebar — and remain fully routable (deep links, command palette).
-export const ADVANCED_ITEM_IDS = ['marketplace', 'queue', 'webhooks', 'telemetry'];
+export const ADVANCED_ITEM_IDS = ['marketplace', 'queue', 'webhooks'];
 
 // Preset profiles define which items are hidden (top-level only)
 export const SIDEBAR_PRESETS = {
