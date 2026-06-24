@@ -13,8 +13,9 @@ import { useToast } from '../../contexts/ToastContext';
  * Provenance: when the hierarchical resolver is available, each variable shows
  * which scope it won at (workspace < project < environment < direct attachment).
  * For applications we also cross-check the app's LOCAL env vars: shared groups
- * are a facade and are NOT injected into the running container, so when the same
- * key exists locally the local value is what actually applies — we flag that.
+ * ARE injected into the container at deploy, but the app's own local env vars
+ * take precedence, so when the same key exists locally the local value is what
+ * actually applies — we flag that collision.
  *
  * Props:
  *   resourceType  one of SharedResourceService.RESOURCE_TYPES
@@ -146,9 +147,9 @@ const EnvironmentVariablesPanel = ({ resourceType, resourceId }) => {
 
             {resourceType === 'application' && localKeys && (
                 <p className="shared-vars-panel__hint shared-vars-panel__hint--note">
-                    Shared groups are a facade — they are not yet injected into the
-                    running container. Where a key also exists in this app&apos;s own
-                    Environment tab, the local value is what the container uses.
+                    Shared variables are injected into the container at deploy. The
+                    app&apos;s own Environment tab takes precedence, so where a key also
+                    exists locally the local value is what the container uses.
                 </p>
             )}
 

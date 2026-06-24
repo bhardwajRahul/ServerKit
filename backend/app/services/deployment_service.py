@@ -260,13 +260,11 @@ class DeploymentService:
         if app.port:
             ports.append(f"{app.port}:{app.port}")
 
-        env = {}
-        # Get env vars from app config if available
+        # Resolved deploy env: shared variable groups (workspace < project <
+        # environment < direct) underneath the app's own local env vars, which
+        # take precedence. get_effective_env returns a decrypted {key: value}.
         from app.services.env_service import EnvService
-        env_vars = EnvService.get_env_vars(app.id)
-        if env_vars.get('success'):
-            for var in env_vars.get('variables', []):
-                env[var['key']] = var['value']
+        env = EnvService.get_effective_env(app.id)
 
         # Run new container
         if log_callback:

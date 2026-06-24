@@ -5,9 +5,12 @@ Handles CRUD operations for application environment variables,
 including encryption, history tracking, and .env file operations.
 """
 
+import logging
 import re
 from app import db
 from app.models import Application, EnvironmentVariable, EnvironmentVariableHistory
+
+logger = logging.getLogger(__name__)
 
 
 class EnvService:
@@ -35,6 +38,57 @@ class EnvService:
         ).order_by(EnvironmentVariable.key).all()
 
         return [ev.to_dict(include_value=True, mask_secrets=mask_secrets) for ev in env_vars]
+
+    @staticmethod
+    def get_effective_env(application_id):
+        """Resolve the environment an app's container should actually receive.
+
+        Merges, lowest → highest precedence:
+
+            shared variable groups (workspace < project < environment < direct)
+                < the app's own local environment variables
+
+        So a key set both in a shared group and locally yields the LOCAL value
+        (matching the "Set locally — local value applies" hint in the UI), and
+        shared groups fill in everything the app doesn't define itself.
+
+        Returns a plain ``{key: value}`` dict with secrets DECRYPTED — this is
+        the value injected into the running container, so callers must treat it
+        as sensitive. Shared resolution is best-effort: if it fails, the app's
+        local env vars are still returned so a deploy is never blocked.
+        """
+        app = Application.query.get(application_id)
+        if not app:
+            return {}
+
+        merged = {}
+
+        # 1) Shared variable groups — the base layer (lowest precedence).
+        try:
+            from app.services.shared_resource_service import SharedResourceService
+            context = {
+                # scope_id is stored as a string when groups are created, so
+                # coerce the app's numeric ids to match on lookup.
+                'workspace_id': str(app.workspace_id) if app.workspace_id is not None else None,
+                'project_id': str(app.project_id) if app.project_id is not None else None,
+                'environment_id': str(app.environment_id) if app.environment_id is not None else None,
+            }
+            resolved = SharedResourceService.resolve_hierarchical(
+                'application', application_id, context=context,
+                mask_secrets=False, interpolate=True,
+            )
+            for entry in resolved or []:
+                key = entry.get('key')
+                if key:
+                    merged[key] = entry.get('value')
+        except Exception as e:  # best-effort — never block a deploy on shared vars
+            logger.warning('Shared variable resolution failed for app %s: %s', application_id, e)
+
+        # 2) Local env vars — the override layer (highest precedence wins).
+        for ev in EnvironmentVariable.query.filter_by(application_id=application_id).all():
+            merged[ev.key] = ev.value  # decrypted via the model's `value` property
+
+        return merged
 
     @staticmethod
     def get_env_var(application_id, key):
