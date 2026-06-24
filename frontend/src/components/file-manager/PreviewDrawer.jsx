@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 import { X, Edit3, Download, EyeOff, Lock, Trash2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FileIcon from './FileIcon';
@@ -31,12 +31,7 @@ export default function PreviewDrawer({
 }) {
     // Lock body scroll only for the overlay drawer; the inline pane scrolls
     // within its own column and must not freeze the page.
-    useEffect(() => {
-        if (!file || inline) return;
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = prev; };
-    }, [file, inline]);
+    useLockBodyScroll(Boolean(file) && !inline);
 
     if (!file) return null;
 
