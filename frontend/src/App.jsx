@@ -69,7 +69,8 @@ import StatusPages from './pages/StatusPages';
 import PublicStatusPage from './pages/PublicStatusPage';
 import CloudProvision from './pages/CloudProvision';
 import Marketplace from './pages/Marketplace';
-import SecretsWebhooks from './pages/SecretsWebhooks';
+import Vaults from './pages/Vaults';
+import Webhooks from './pages/Webhooks';
 import StyleGuide from './pages/StyleGuide';
 import AppMap from './pages/AppMap';
 import Documentation from './pages/Documentation';
@@ -136,8 +137,8 @@ const PAGE_TITLES = {
     '/status-pages': 'Status Pages',
     '/cloud': 'Cloud Provisioning',
     '/marketplace': 'Marketplace',
-    '/secrets': 'Secrets & Webhooks',
-    '/secrets/:tab': 'Secrets & Webhooks',
+    '/vaults': 'Vaults',
+    '/webhooks': 'Webhooks',
     '/style-guide': 'Style Guide',
     '/app-map': 'App Map',
     '/documentation': 'Documentation',
@@ -369,6 +370,7 @@ function AppRoutes() {
                 <Route element={<TabGroupLayout tabs={ORG_TABS} />}>
                     <Route path="projects" element={<Projects />} />
                     <Route path="shared-variables" element={<SharedVariables />} />
+                    <Route path="vaults" element={<Vaults />} />
                     <Route path="workspaces" element={<Workspaces />} />
                 </Route>
                 <Route path="projects/:id" element={<ProjectDetail />} />
@@ -413,8 +415,13 @@ function AppRoutes() {
                 <Route path="terminal" element={<Terminal />} />
                 <Route path="terminal/terminal" element={<Navigate to="/terminal/shell" replace />} />
                 <Route path="terminal/:tab" element={<Terminal />} />
-                <Route path="secrets" element={<SecretsWebhooks />} />
-                <Route path="secrets/:tab" element={<SecretsWebhooks />} />
+                <Route path="webhooks" element={<Webhooks />} />
+                {/* Retired "Secrets & Webhooks" page: Vaults moved into the
+                    Organization tab group (/vaults), Webhooks got its own page.
+                    Redirect old links/bookmarks to their new homes. */}
+                <Route path="secrets/webhooks" element={<Navigate to="/webhooks" replace />} />
+                <Route path="secrets" element={<Navigate to="/vaults" replace />} />
+                <Route path="secrets/:tab" element={<Navigate to="/vaults" replace />} />
                 <Route path="queue" element={<QueueOperations />} />
                 <Route path="queue/:groupSlug/:queueSlug" element={<QueueDetail />} />
                 <Route path="notifications" element={<Notifications />} />

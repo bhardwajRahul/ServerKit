@@ -212,11 +212,14 @@ export const SIDEBAR_ITEMS = [
         icon: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 6v12"/><circle cx="13" cy="12" r="2.5"/><path d="M17 6v12"/>'
     },
     {
-        id: 'secrets',
-        label: 'Secrets & Webhooks',
-        route: '/secrets',
+        // Inbound webhook console. Secret storage ("Vaults") that used to share
+        // this page now lives under the Organization tab group (/vaults); only
+        // the receive/verify/forward half remains here on its own page.
+        id: 'webhooks',
+        label: 'Webhooks',
+        route: '/webhooks',
         category: 'system',
-        icon: '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><circle cx="12" cy="12" r="2"/><path d="M12 12v-6"/><path d="M16 12h3"/><path d="M8 12H5"/>'
+        icon: '<path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2"/><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06"/><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8"/>'
     },
     {
         // Redesign: Marketplace uses the top-bar layout (REDESIGN_MAP §6 dec. 3).
@@ -233,10 +236,10 @@ export const SIDEBAR_ITEMS = [
 
 // "Advanced" items are powerful but not part of the everyday core for a solo
 // dev / small team: the Marketplace, the internal job-queue console, and the
-// Secrets & Webhooks vault. They're hidden by the default ("Recommended") view
+// inbound-Webhooks console. They're hidden by the default ("Recommended") view
 // and every curated preset, but stay one click away via the "Full" view or
 // Customize Sidebar — and remain fully routable (deep links, command palette).
-export const ADVANCED_ITEM_IDS = ['marketplace', 'queue', 'secrets', 'telemetry'];
+export const ADVANCED_ITEM_IDS = ['marketplace', 'queue', 'webhooks', 'telemetry'];
 
 // Preset profiles define which items are hidden (top-level only)
 export const SIDEBAR_PRESETS = {
