@@ -207,5 +207,74 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# T8 — os_family_from: ID mapping + ID_LIKE fallback (incl. rhel-before-fedora).
+# --------------------------------------------------------------------------
+fam_ok=1
+check_fam() { # check_fam <id> <id_like> <expected>
+    local got; got="$(os_family_from "$1" "$2")"
+    [ "$got" = "$3" ] || { bad "os_family_from('$1','$2') -> [$got], expected $3"; fam_ok=0; }
+}
+check_fam ubuntu "" debian
+check_fam debian "" debian
+check_fam rocky "" rhel
+check_fam fedora "" fedora
+check_fam opensuse-leap "" suse
+check_fam arch "" arch
+check_fam alpine "" alpine
+check_fam mydistro "debian" debian              # unknown ID, debian-like
+check_fam clone "rhel centos fedora" rhel        # RHEL clone: rhel wins over fedora
+check_fam spin "fedora" fedora                    # pure fedora spin
+check_fam suselike "suse opensuse" suse
+check_fam wat "" unknown
+[ "$fam_ok" = "1" ] && ok "os_family_from maps known IDs and falls back to ID_LIKE (rhel before fedora)"
+
+# --------------------------------------------------------------------------
+# T9 — render_service_unit honors a custom SERVERKIT_DIR (no @PLACEHOLDERS@).
+# --------------------------------------------------------------------------
+inst2="$WORK/custom/srv"
+mkdir -p "$inst2/templates"
+cp "$REPO_DIR/templates/serverkit-backend.service.in" "$inst2/templates/"
+unit_out="$WORK/rendered.service"
+(
+    set -Eeuo pipefail
+    INSTALL_DIR="$inst2"; VENV_DIR="$inst2/venv"; LOG_DIR="/var/log/serverkit"
+    render_service_unit "$unit_out"
+)
+if grep -q "WorkingDirectory=$inst2/backend" "$unit_out" && \
+   grep -q "$inst2/venv/bin/gunicorn" "$unit_out" && \
+   ! grep -q '@SERVERKIT_DIR@\|@SERVERKIT_VENV_DIR@\|@PORT@' "$unit_out"; then
+    ok "render_service_unit substitutes a custom SERVERKIT_DIR and leaves no placeholders"
+else
+    bad "render_service_unit left placeholders or used the wrong paths"
+fi
+
+# --------------------------------------------------------------------------
+# T10 — harden_global_tls: conf.d snippet when safe, in-place edit otherwise.
+# --------------------------------------------------------------------------
+# (A) RHEL-style: no ssl_protocols, has conf.d include → reversible snippet.
+ndA="$WORK/nginxA"; mkdir -p "$ndA/conf.d"
+printf 'http {\n    include /etc/nginx/conf.d/*.conf;\n}\n' > "$ndA/nginx.conf"
+( set -Eeuo pipefail; SERVERKIT_NGINX_DIR="$ndA" harden_global_tls )
+if [ -f "$ndA/conf.d/serverkit-tls.conf" ] && \
+   grep -q 'TLSv1.2 TLSv1.3' "$ndA/conf.d/serverkit-tls.conf" && \
+   ! grep -q 'ssl_protocols' "$ndA/nginx.conf"; then
+    ok "harden_global_tls drops a reversible conf.d snippet when nginx.conf has none"
+else
+    bad "harden_global_tls should have written a conf.d snippet (RHEL-style)"
+fi
+
+# (B) Debian-style: ssl_protocols already present → edit in place, NO snippet
+# (a second declaration would be a 'duplicate ssl_protocols' error).
+ndB="$WORK/nginxB"; mkdir -p "$ndB/conf.d"
+printf 'http {\n    ssl_protocols TLSv1.1 TLSv1.2;\n    include /etc/nginx/conf.d/*.conf;\n}\n' > "$ndB/nginx.conf"
+( set -Eeuo pipefail; SERVERKIT_NGINX_DIR="$ndB" harden_global_tls )
+if [ ! -f "$ndB/conf.d/serverkit-tls.conf" ] && \
+   grep -q 'ssl_protocols TLSv1.2 TLSv1.3;' "$ndB/nginx.conf"; then
+    ok "harden_global_tls edits nginx.conf in place (no duplicate) when ssl_protocols exists"
+else
+    bad "harden_global_tls should have edited in place (Debian-style)"
+fi
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]
