@@ -207,7 +207,11 @@ cmd_help() {
     echo "                      --force          Force update even if already latest"
     echo "                      --dry-run        Show what would change without applying"
     echo "  branch            Show current branch"
-    echo "  uninstall         Uninstall ServerKit"
+    echo "  uninstall         Uninstall ServerKit (preserves data by default)"
+    echo "                      --purge / --delete-volumes  also delete volumes, DB, data"
+    echo "                      --keep-data                 also keep /etc/serverkit"
+    echo "                      --yes                       skip the confirmation prompt"
+    echo "                      --dry-run                   show actions without changing anything"
     echo ""
     echo "User Management:"
     echo "  create-admin      Create a new admin user"
@@ -454,73 +458,64 @@ cmd_update() {
 
 cmd_uninstall() {
     check_root
+
+    # Flags mirror uninstall.sh so both entry points accept the same options.
+    local purge=0 keep_data=0 assume_yes=0 dry_run=0
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --purge|--delete-volumes) purge=1; shift ;;
+            --keep-data)              keep_data=1; shift ;;
+            --yes|-y)                 assume_yes=1; shift ;;
+            --dry-run|-n)             dry_run=1; shift ;;
+            *) shift ;;
+        esac
+    done
+
     print_header
     echo ""
-    print_warning "This will remove ServerKit and all data!"
-    echo ""
-    echo "The following will be removed:"
-    echo "  - ServerKit backend service (systemd)"
-    echo "  - Frontend Docker container and images"
-    echo "  - Installation directory ($INSTALL_DIR)"
-    echo "  - Configuration (/etc/serverkit)"
-    echo "  - App data (/var/serverkit)"
-    echo "  - Logs (/var/log/serverkit)"
-    echo "  - Nginx site configs for ServerKit"
-    echo "  - CLI symlink (/usr/local/bin/serverkit)"
-    echo ""
-    read -p "Are you sure? (y/N) " -n 1 -r
-    echo
-
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Track uninstall before removing files
-        UNINSTALL_VERSION=$(get_local_version)
-        curl -s "https://serverkit.ai/track/uninstall?v=${UNINSTALL_VERSION}" >/dev/null 2>&1 || true
-
-        print_info "Stopping services..."
-        systemctl stop $BACKEND_SERVICE 2>/dev/null || true
-        systemctl disable $BACKEND_SERVICE 2>/dev/null || true
-
-        cd "$INSTALL_DIR" 2>/dev/null && docker compose down -v 2>/dev/null || true
-
-        # Move to safe directory before deleting install dir
-        cd /tmp 2>/dev/null || cd / || true
-
-        print_info "Removing files..."
-        rm -f /etc/systemd/system/serverkit.service
-        rm -f /usr/local/bin/serverkit
-
-        # Remove the active symlink plus both blue/green slots and backups.
-        rm -rf "$INSTALL_DIR"
-        rm -rf "${INSTALL_DIR}-a"
-        rm -rf "${INSTALL_DIR}-b"
-        rm -rf "${INSTALL_DIR}.backup"
-        rm -rf /var/log/serverkit
-        rm -rf /var/lib/serverkit
-
-        # Remove ServerKit config and app data
-        rm -rf /etc/serverkit
-        rm -rf /var/serverkit
-
-        # Remove nginx site configs installed by ServerKit
-        print_info "Removing nginx configs..."
-        rm -f /etc/nginx/sites-enabled/serverkit.conf
-        rm -f /etc/nginx/sites-available/serverkit.conf
-        rm -f /etc/nginx/sites-available/example.conf.template
-        # Reload nginx if it's still running (don't stop it — user may use it for other sites)
-        if systemctl is-active --quiet nginx 2>/dev/null; then
-            systemctl reload nginx 2>/dev/null || true
-        fi
-
-        systemctl daemon-reload
-
-        print_success "ServerKit uninstalled"
-        echo ""
-        echo "Note: System packages (Docker, Node.js, nginx, Python) were NOT removed."
-        echo "Remove them manually if no longer needed."
-        echo ""
-        echo "To reinstall, run:"
-        echo "  cd ~ && curl -fsSL https://serverkit.ai/install.sh | sudo bash"
+    if [ "$purge" = "1" ]; then
+        print_warning "This will remove ServerKit AND delete all data (volumes, database, backups)."
+    else
+        print_warning "This will remove ServerKit. User data (volumes, /var/lib, backups) is preserved."
+        echo "  Use --purge to also delete data, or --keep-data to also keep /etc/serverkit."
     fi
+    [ "$dry_run" = "1" ] && print_warning "DRY RUN — nothing will actually be changed."
+    echo ""
+
+    if [ "$assume_yes" != "1" ]; then
+        read -p "Are you sure? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_warning "Uninstall cancelled"
+            return 0
+        fi
+    fi
+
+    local lib="$INSTALL_DIR/scripts/lib/uninstall.sh"
+    if [ ! -f "$lib" ]; then
+        print_error "Canonical uninstall routine not found at $lib"
+        exit 1
+    fi
+
+    # Source the shared routine into memory *before* it starts deleting the
+    # install tree (which is where the file lives), then step out of that tree.
+    # shellcheck source=/dev/null
+    source "$lib"
+    cd /tmp 2>/dev/null || cd / || true
+
+    export SERVERKIT_DIR="$INSTALL_DIR"
+    export SERVERKIT_PURGE="$purge"
+    export SERVERKIT_KEEP_DATA="$keep_data"
+    export SERVERKIT_UNINSTALL_DRY_RUN="$dry_run"
+    serverkit_uninstall_core
+
+    print_success "ServerKit uninstalled"
+    echo ""
+    echo "Note: System packages (Docker, Node.js, nginx, Python) were NOT removed."
+    echo "Remove them manually if no longer needed."
+    echo ""
+    echo "To reinstall, run:"
+    echo "  cd ~ && curl -fsSL https://serverkit.ai/install.sh | sudo bash"
 }
 
 cmd_create_admin() {
@@ -1259,7 +1254,8 @@ case "${1:-help}" in
         cmd_check_update
         ;;
     uninstall)
-        cmd_uninstall
+        shift
+        cmd_uninstall "$@"
         ;;
     create-admin)
         cmd_create_admin

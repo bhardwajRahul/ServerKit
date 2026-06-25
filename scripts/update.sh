@@ -776,6 +776,43 @@ cleanup() {
 }
 
 # ---------------------------------------------------------------------------
+# Firewall — keep 80/443 open across updates.
+# ---------------------------------------------------------------------------
+# Idempotent and best-effort: a box installed before firewall automation existed
+# gets its ports opened on the next update; an already-configured box is a no-op.
+# Records what we opened in install-state.json so uninstall can undo it. Sources
+# the helpers from the (now-current) install tree, which carries scripts/lib.
+ensure_firewall() {
+    local lib="$INSTALL_DIR/scripts/lib"
+    [ -f "$lib/firewall.sh" ] || return 0
+    # shellcheck source=/dev/null
+    source "$lib/firewall.sh"
+    if [ -f "$lib/state.sh" ]; then
+        # shellcheck source=/dev/null
+        source "$lib/state.sh"
+    fi
+
+    local backend
+    backend="$(firewall_detect)"
+    if [ "$backend" = "none" ]; then
+        return 0
+    fi
+
+    if [ "$DRY_RUN" = "1" ]; then
+        info "[dry-run] would ensure firewall ($backend) allows 80/tcp and 443/tcp"
+        return 0
+    fi
+
+    firewall_open "$backend" 80/tcp 443/tcp || true
+    if command -v state_set >/dev/null 2>&1; then
+        state_set firewall_backend "$backend" || true
+        state_append firewall_ports 80/tcp || true
+        state_append firewall_ports 443/tcp || true
+    fi
+    good "Firewall ensured ($backend): 80/tcp and 443/tcp open"
+}
+
+# ---------------------------------------------------------------------------
 # All-Docker deployment (compose) detection + update path
 # ---------------------------------------------------------------------------
 # A ServerKit box runs in one of two shapes:
@@ -996,6 +1033,9 @@ update_docker_compose() {
     # Healthy (or no healthcheck defined): the upgrade stuck, drop the snapshot.
     clear_docker_rollback
 
+    # Keep the firewall in sync (idempotent, best-effort).
+    ensure_firewall || true
+
     local new_version
     new_version="$(cat "$INSTALL_DIR/VERSION" 2>/dev/null | tr -d '\n\r ' || echo unknown)"
     curl -s "https://serverkit.ai/track/update?v=${new_version}" >/dev/null 2>&1 || true
@@ -1125,6 +1165,9 @@ good "Services started"
 
 # Health check.
 health_check
+
+# Keep the firewall in sync (idempotent, best-effort).
+ensure_firewall || true
 
 # Cleanup.
 cleanup

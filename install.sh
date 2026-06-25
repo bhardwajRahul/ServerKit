@@ -57,6 +57,23 @@ SAFE_MODE=false
 SSL_MODE="insecure"
 FIRST_SLOT="$DIR_A"
 
+# Resolve where this script (and thus the bundled scripts/lib helpers) lives so
+# shared libraries load whether we run from a clone, a release tree, or piped
+# through `curl | bash`. The clone-relative path is tried first; once the source
+# is on disk under $INSTALL_DIR that path works too.
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+load_serverkit_lib() {
+    local name="$1" d
+    for d in "$SELF_DIR/scripts/lib" "$INSTALL_DIR/scripts/lib"; do
+        if [ -n "$d" ] && [ -f "$d/$name" ]; then
+            # shellcheck source=/dev/null
+            source "$d/$name"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # ---------------------------------------------------------------------------
 # Terminal styling
 #
@@ -270,16 +287,23 @@ ver_in_range() {
 }
 
 locate_python() {
-    if command -v python3 &>/dev/null; then
-        local v
-        v=$(python3 -c 'import sys;print(".".join(map(str,sys.version_info[:2])))')
-        if ver_in_range "$v"; then
-            PYTHON_BIN="python3"
-            good "Using system Python $v"
-            return
+    # Prefer an explicit minor version, newest first, then bare python3. This
+    # mirrors scripts/update.sh so a box that has python3.11 (Debian 12) but a
+    # too-new/too-old default python3 is still recognized. Sets PYTHON_BIN and
+    # returns 0 on success; returns 1 (without aborting) when nothing fits.
+    local c v
+    for c in python3.12 python3.11 python3; do
+        if command -v "$c" &>/dev/null; then
+            v=$("$c" -c 'import sys;print(".".join(map(str,sys.version_info[:2])))' 2>/dev/null || true)
+            if [ -n "$v" ] && ver_in_range "$v"; then
+                PYTHON_BIN="$c"
+                good "Using $c (Python $v)"
+                return 0
+            fi
         fi
-    fi
-    warn "System Python is outside the supported $PYTHON_MIN–$PYTHON_MAX range."
+    done
+    PYTHON_BIN=""
+    return 1
 }
 
 build_python_from_source() {
@@ -296,37 +320,58 @@ build_python_from_source() {
 provision_python() {
     phase "Installing Python"
 
-    locate_python
-    [ -n "$PYTHON_BIN" ] && return
-
-    step "Installing Python 3.12..."
-    if [ "$OS_FAMILY" = "debian" ]; then
-        if [ "$ID" = "ubuntu" ]; then
-            pkg_add software-properties-common
-            add-apt-repository -y ppa:deadsnakes/ppa
-            refresh_pkg_index
-            pkg_add python3.12 python3.12-venv python3.12-dev
-        else
-            step "Compiling Python 3.12 from source (a few minutes)..."
-            pkg_add wget zlib1g-dev libbz2-dev libreadline-dev \
-                libsqlite3-dev libncurses5-dev libncursesw5-dev \
-                xz-utils tk-dev liblzma-dev libffi-dev libssl-dev
-            build_python_from_source
-        fi
-        PYTHON_BIN="python3.12"
-    elif [ "$OS_FAMILY" = "fedora" ] || [ "$OS_FAMILY" = "rhel" ]; then
-        if ! pkg_add python3.12 python3.12-devel; then
-            step "Compiling Python 3.12 from source (a few minutes)..."
-            pkg_add wget zlib-devel bzip2-devel readline-devel \
-                sqlite-devel ncurses-devel xz-devel tk-devel libffi-devel
-            build_python_from_source
-        fi
-        PYTHON_BIN="python3.12"
+    # Already have a supported interpreter? Nothing to do.
+    if locate_python; then
+        return
     fi
 
+    warn "No supported Python ($PYTHON_MIN–$PYTHON_MAX) found — installing one."
+
+    # Prefer the distro's own package over a source compile. Debian 12 ships
+    # python3.11; Ubuntu 24.04 ships python3.12 (older Ubuntu falls back to the
+    # deadsnakes PPA); Fedora/RHEL provide 3.12 or 3.11 in their repos. A slow,
+    # fragile source build is now strictly the last resort.
+    if [ "$OS_FAMILY" = "debian" ]; then
+        if [ "${ID:-}" = "ubuntu" ]; then
+            if ! pkg_add python3.12 python3.12-venv python3.12-dev; then
+                step "Adding deadsnakes PPA for Python 3.12..."
+                pkg_add software-properties-common
+                add-apt-repository -y ppa:deadsnakes/ppa
+                refresh_pkg_index
+                pkg_add python3.12 python3.12-venv python3.12-dev
+            fi
+        else
+            # Debian (and Debian-like): python3.11 lives in the main repo.
+            refresh_pkg_index
+            pkg_add python3.11 python3.11-venv python3.11-dev || \
+                pkg_add python3.12 python3.12-venv python3.12-dev || true
+        fi
+    elif [ "$OS_FAMILY" = "fedora" ] || [ "$OS_FAMILY" = "rhel" ]; then
+        pkg_add python3.12 python3.12-devel || pkg_add python3.11 python3.11-devel || true
+    fi
+
+    # Did a distro package give us something usable?
+    if locate_python; then
+        good "Python ready: $PYTHON_BIN"
+        return
+    fi
+
+    # Last resort: compile from source.
+    warn "Distro packages did not provide a supported Python — building from source."
+    if [ "$OS_FAMILY" = "debian" ]; then
+        pkg_add wget zlib1g-dev libbz2-dev libreadline-dev \
+            libsqlite3-dev libncurses5-dev libncursesw5-dev \
+            xz-utils tk-dev liblzma-dev libffi-dev libssl-dev
+    else
+        pkg_add wget zlib-devel bzip2-devel readline-devel \
+            sqlite-devel ncurses-devel xz-devel tk-devel libffi-devel
+    fi
+    build_python_from_source
+    PYTHON_BIN="python3.12"
+
     command -v "$PYTHON_BIN" &>/dev/null || \
-        halt "Could not install Python 3.12 — install Python 3.11 or 3.12 by hand."
-    good "Python 3.12 installed."
+        halt "Could not install a supported Python — install Python 3.11 or 3.12 by hand."
+    good "Python installed ($PYTHON_BIN)."
 }
 
 # ---------------------------------------------------------------------------
@@ -375,6 +420,17 @@ ensure_compose_plugin() {
 # ---------------------------------------------------------------------------
 # Node.js 20 (only needed for source builds — releases ship a built frontend)
 # ---------------------------------------------------------------------------
+# Node 18+ is the floor for the Vite frontend build. Distro nodejs on every
+# currently-supported target (Ubuntu 24.04, Debian 12, Fedora 40+) already meets
+# it, so we install the distro package first and only pipe NodeSource into bash
+# when the distro can't deliver a new-enough Node + npm.
+node_major()  { node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/'; }
+node_ready()  {
+    command -v node &>/dev/null && command -v npm &>/dev/null || return 1
+    local m; m="$(node_major)"
+    [ -n "$m" ] && [ "$m" -ge 18 ] 2>/dev/null
+}
+
 provision_node() {
     phase "Node.js"
 
@@ -383,18 +439,28 @@ provision_node() {
         return
     fi
 
-    if command -v node &>/dev/null; then
+    if node_ready; then
         good "Node.js already present: $(node --version)"
         return
     fi
 
-    step "Installing Node.js 20 LTS..."
-    if [ "$OS_FAMILY" = "debian" ]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
-    else
-        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1
+    step "Installing Node.js (distro repo first)..."
+    # Debian/Ubuntu split npm into its own package; Fedora bundles it.
+    pkg_add nodejs npm 2>/dev/null || pkg_add nodejs 2>/dev/null || true
+    command -v npm &>/dev/null || pkg_add npm 2>/dev/null || true
+
+    if ! node_ready; then
+        warn "Distro Node.js is missing or older than 18 — falling back to NodeSource 20."
+        if [ "$OS_FAMILY" = "debian" ]; then
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1 || true
+        else
+            curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1 || true
+        fi
+        pkg_add nodejs || true
     fi
-    pkg_add nodejs
+
+    node_ready || \
+        halt "Node.js 18+ (with npm) is required but could not be installed. Install Node 20 LTS and re-run."
     good "Node.js $(node --version) installed."
 }
 
@@ -586,7 +652,7 @@ write_config() {
     local secret_key jwt_secret encryption_key
     secret_key=$(openssl rand -hex 32)
     jwt_secret=$(openssl rand -hex 32)
-    encryption_key=$(python3 -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')
+    encryption_key=$("${PYTHON_BIN:-python3}" -c 'import base64, os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())')
 
     # Widen CORS / advertise a public URL when a panel domain is known.
     local public_url="" cors_origins="http://localhost,https://localhost"
@@ -671,6 +737,38 @@ build_frontend() {
     step "Compiling the frontend bundle..."
     NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -5
     good "Frontend built."
+}
+
+# ---------------------------------------------------------------------------
+# Firewall: open 80/443 so the panel is reachable from the outside, and record
+# exactly what we opened in /etc/serverkit/install-state.json so uninstall can
+# undo only those rules. Fresh RHEL-family boxes run firewalld by default, which
+# is the #1 reason an otherwise-good install looks "broken" (port 80 blocked).
+# ---------------------------------------------------------------------------
+configure_firewall() {
+    phase "Firewall"
+
+    if ! load_serverkit_lib firewall.sh; then
+        warn "Firewall helper not found — open ports 80/443 manually if needed."
+        return 0
+    fi
+    load_serverkit_lib state.sh || true
+
+    local backend
+    backend="$(firewall_detect)"
+    if [ "$backend" = "none" ]; then
+        warn "No active firewall detected — assuming ports 80/443 are already open."
+        return 0
+    fi
+
+    step "Opening HTTP/HTTPS (80, 443) via $backend..."
+    firewall_open "$backend" 80/tcp 443/tcp
+    if [ "${FW_DRY_RUN:-0}" != "1" ] && command -v state_set >/dev/null 2>&1; then
+        state_set firewall_backend "$backend"
+        state_append firewall_ports 80/tcp
+        state_append firewall_ports 443/tcp
+    fi
+    good "Firewall configured ($backend): 80/tcp and 443/tcp open."
 }
 
 # ---------------------------------------------------------------------------
@@ -1045,6 +1143,7 @@ main() {
 
     sync_templates
     configure_nginx
+    configure_firewall
     write_config
     install_service
 
@@ -1057,5 +1156,10 @@ main() {
     ping_telemetry
     print_outro
 }
+
+# Sourcing this file (e.g. from scripts/test/test_install.sh) defines every
+# function above for unit testing without running an install. Only a direct
+# execution falls through to the run below.
+[ "${BASH_SOURCE[0]}" = "${0}" ] || return 0
 
 main "$@"
