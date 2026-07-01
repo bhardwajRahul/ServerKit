@@ -615,10 +615,27 @@ class DockerService:
             return []
 
     @staticmethod
-    def pull_image(image_name, tag='latest'):
-        """Pull an image from registry."""
+    def pull_image(image_name, tag='latest', registry=None):
+        """Pull an image from a registry.
+
+        When ``registry`` (a ``ContainerRegistry``) is provided, ``docker login``
+        runs first and ``docker logout`` after, so private images pull with the
+        stored credentials. Login/pull/logout is wrapped in ``try/finally`` so we
+        always log out — even when the pull fails. The signature stays
+        backward-compatible: ``registry=None`` is an anonymous pull (today's
+        behavior).
+        """
+        full_name = f'{image_name}:{tag}' if tag else image_name
+        logged_in = False
         try:
-            full_name = f'{image_name}:{tag}' if tag else image_name
+            if registry is not None:
+                from app.services.container_registry_service import ContainerRegistryService
+                login = ContainerRegistryService.login(registry)
+                if not login.get('success'):
+                    return {'success': False,
+                            'error': f"Registry login failed: {login.get('error')}"}
+                logged_in = True
+
             result = subprocess.run(
                 ['docker', 'pull', full_name],
                 capture_output=True, text=True
@@ -628,6 +645,10 @@ class DockerService:
             return {'success': False, 'error': result.stderr}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+        finally:
+            if logged_in and registry is not None:
+                from app.services.container_registry_service import ContainerRegistryService
+                ContainerRegistryService.logout(registry.login_host())
 
     @staticmethod
     def remove_image(image_id, force=False):

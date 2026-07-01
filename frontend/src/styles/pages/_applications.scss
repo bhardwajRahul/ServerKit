@@ -1507,6 +1507,26 @@
         text-align: right;
     }
 
+    // registry picker (native select, themed to match the Input control)
+    &__select {
+        max-width: 280px;
+        padding: 8px 10px;
+        border: 1px solid var(--border-soft);
+        border-radius: $radius-md;
+        background: var(--surface-2, var(--bg-card));
+        color: var(--text-strong, inherit);
+        font-size: 13px;
+
+        &:focus {
+            outline: none;
+            border-color: var(--primary-color, #6366f1);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+        }
+    }
+
     // grid of labelled inputs (auto-scale config)
     &__grid {
         display: grid;

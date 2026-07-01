@@ -20,6 +20,12 @@ awaiting a stable release:
 
 ### Added
 
+- **Private container registries** — store credentials once under Settings →
+  Connections (GHCR, Docker Hub, GitLab, ECR, or any generic registry) and
+  ServerKit runs `docker login` before pulling a private image, then logs out.
+  Secrets are Fernet-encrypted at rest and piped via stdin (never on argv);
+  attach a registry to a service under Container Ops. Anonymous pulls are
+  unchanged. API under `/api/v1/connections/registries`.
 - **Container status aggregator** — collapses an app's per-container Docker
   states into one deterministic status (`running:healthy` … `degraded` …
   `unknown`) at `/api/v1/status/app/<id>` and `/api/v1/status/apps`, with
