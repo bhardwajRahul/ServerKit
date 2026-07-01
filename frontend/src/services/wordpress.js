@@ -11,6 +11,10 @@ const wordpressApi = {
         body: data
     }),
 
+    // Base domains a new site can be published under (<slug>.<base>), for the
+    // create-flow picker. Returns { base_domains: [...], default }.
+    listBaseDomains: () => api.request('/domains/base-domains'),
+
     // Import an existing WP site from an uploaded SQL dump, plus an optional
     // wp-content/full-site .zip (plugins/themes/uploads). Multipart upload.
     importSite: ({ name, adminEmail, oldUrl, sqlFile, wpContentFile }) => {
