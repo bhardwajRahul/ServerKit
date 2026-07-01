@@ -22,17 +22,73 @@ from app.utils.slug import slugify as _slugify
 class SiteDomainService:
     DEFAULT_BASE_DOMAIN = 'lvh.me'
 
+    @staticmethod
+    def _norm(value):
+        return (str(value).strip().lstrip('.').lower()) if value else ''
+
+    @classmethod
+    def _default_row(cls):
+        """The default SiteBaseDomain row, or None when the registry is empty
+        (legacy single-setting / dev installs)."""
+        try:
+            from app.services.site_base_domain_service import SiteBaseDomainService
+            return SiteBaseDomainService.default()
+        except Exception:
+            return None
+
+    @classmethod
+    def _row_for(cls, base):
+        """The registry row for ``base`` (or the default row when base is None),
+        or None when there's no matching/registered row."""
+        try:
+            from app.services.site_base_domain_service import SiteBaseDomainService
+            if not base:
+                return SiteBaseDomainService.default()
+            return SiteBaseDomainService.get(base)
+        except Exception:
+            return None
+
     @classmethod
     def base_domain(cls):
-        """The configured base domain, or '' when site routing is not set up.
+        """The *default* base domain, or '' when site routing is not set up.
 
-        Prefers the runtime setting (editable in-app) over the config default so
-        an operator can change it without redeploying.
+        Prefers the registry's default row; falls back to the legacy
+        ``sites_base_domain`` setting, then the ``SITES_BASE_DOMAIN`` config
+        default (so dev / not-yet-migrated installs keep working unchanged).
         """
+        row = cls._default_row()
+        if row:
+            return row.domain
         val = SystemSettings.get('sites_base_domain')
         if val:
-            return str(val).strip().lstrip('.').lower()
-        return (current_app.config.get('SITES_BASE_DOMAIN') or '').strip().lstrip('.').lower()
+            return cls._norm(val)
+        return cls._norm(current_app.config.get('SITES_BASE_DOMAIN'))
+
+    @classmethod
+    def all_base_domains(cls):
+        """Every base domain a site may be published under (registry rows, else
+        the single legacy base). Empty when site routing isn't configured."""
+        try:
+            from app.services.site_base_domain_service import SiteBaseDomainService
+            rows = SiteBaseDomainService.list_rows()
+            if rows:
+                return [r.domain for r in rows]
+        except Exception:
+            pass
+        base = cls.base_domain()
+        return [base] if base else []
+
+    @classmethod
+    def resolve_base(cls, base=None):
+        """The concrete base domain to publish under. An explicit ``base`` is
+        honoured only when it's a registered/legacy base — an unknown value falls
+        back to the default rather than publishing under an unmanaged domain."""
+        if not base:
+            return cls.base_domain()
+        b = cls._norm(base)
+        if b in cls.all_base_domains():
+            return b
+        return cls.base_domain()
 
     @classmethod
     def server_ip(cls):
@@ -64,29 +120,47 @@ class SiteDomainService:
         return None
 
     @classmethod
-    def https_enabled(cls):
-        """True once the wildcard certificate for the base domain is set up, so
-        managed subdomains should be served over HTTPS (Phase 5)."""
-        return bool(SystemSettings.get('sites_https_enabled', False))
+    def https_enabled(cls, base=None):
+        """True once the wildcard certificate for the given base (default when
+        None) is set up, so its managed subdomains should be served over HTTPS.
+
+        Reads the registry row when present; falls back to the legacy
+        ``sites_https_enabled`` setting for the default/legacy base."""
+        row = cls._row_for(base)
+        if row is not None:
+            return bool(row.https_enabled)
+        if base is None or cls._norm(base) == cls.base_domain():
+            return bool(SystemSettings.get('sites_https_enabled', False))
+        return False
 
     @classmethod
-    def wildcard_cert_paths(cls):
-        """(fullchain, privkey) paths for the base domain's wildcard cert, or
-        (None, None) when no base domain is configured."""
-        base = cls.base_domain()
+    def wildcard_cert_paths(cls, base=None):
+        """(fullchain, privkey) paths for a base's wildcard cert (default base
+        when None), or (None, None) when no base domain is configured."""
+        base = cls.resolve_base(base)
         if not base:
             return (None, None)
         return (f'/etc/letsencrypt/live/{base}/fullchain.pem',
                 f'/etc/letsencrypt/live/{base}/privkey.pem')
 
     @classmethod
+    def covering_base(cls, host):
+        """The registered base domain whose wildcard covers ``host`` (host is the
+        base or a subdomain of it), longest match wins, or None. Used to pick the
+        right per-base certificate for a site's domains."""
+        if not host:
+            return None
+        best = None
+        for base in cls.all_base_domains():
+            if host == base or host.endswith('.' + base):
+                if best is None or len(base) > len(best):
+                    best = base
+        return best
+
+    @classmethod
     def covers(cls, host):
-        """Whether the base domain's wildcard cert covers ``host`` — i.e. host is
-        the base domain or a direct subdomain of it."""
-        base = cls.base_domain()
-        if not base or not host:
-            return False
-        return host == base or host.endswith('.' + base)
+        """Whether *any* registered base domain's wildcard cert covers ``host``."""
+        return cls.covering_base(host) is not None
 
     @staticmethod
     def slugify(name):
@@ -94,10 +168,10 @@ class SiteDomainService:
         return _slugify(name) or 'site'
 
     @classmethod
-    def subdomain_for(cls, name):
-        """``<slug>.<base_domain>`` for a site name, or ``None`` when no base
-        domain is configured (site routing disabled)."""
-        base = cls.base_domain()
+    def subdomain_for(cls, name, base=None):
+        """``<slug>.<base>`` for a site name (default base when None), or ``None``
+        when no base domain is configured (site routing disabled)."""
+        base = cls.resolve_base(base)
         if not base:
             return None
         return f'{cls.slugify(name)}.{base}'
@@ -110,24 +184,31 @@ class SiteDomainService:
         return f'{scheme}://{host}'
 
     @classmethod
-    def dns_mode(cls):
-        """How managed-site subdomains get their DNS:
+    def dns_mode(cls, base=None):
+        """How a base's managed-site subdomains get their DNS (default base when
+        None):
 
-        * ``wildcard`` (default) — one ``*.<base_domain>`` record covers every site,
-          so a new site needs no per-site DNS work, and
+        * ``wildcard`` (default) — one ``*.<base>`` record covers every site, and
         * ``per-site`` — each site gets its own A record, auto-created via a
-          connected provider, so every site is an explicit, visible record.
-        """
+          connected provider.
+
+        Reads the registry row when present; falls back to the legacy
+        ``sites_dns_mode`` setting for the default/legacy base."""
+        row = cls._row_for(base)
+        if row is not None:
+            return row.dns_mode if row.dns_mode in ('wildcard', 'per-site') else 'wildcard'
         val = (SystemSettings.get('sites_dns_mode') or '').strip().lower()
         return val if val in ('wildcard', 'per-site') else 'wildcard'
 
     @classmethod
     def ensure_site_dns(cls, host):
-        """Auto-create a managed site's A record when in ``per-site`` mode (via a
-        connected provider, ownership-guarded + logged). In ``wildcard`` mode this is
-        a no-op — the single ``*.<base>`` record already covers ``host``. Never raises;
-        returns the provider result (or a ``skipped``/``no_server_ip`` descriptor)."""
-        if not host or cls.dns_mode() != 'per-site':
+        """Auto-create a managed site's A record when its base is in ``per-site``
+        mode (via a connected provider, ownership-guarded + logged). In ``wildcard``
+        mode this is a no-op — the single ``*.<base>`` record already covers ``host``.
+        Never raises; returns the provider result (or a ``skipped``/``no_server_ip``
+        descriptor)."""
+        base = cls.covering_base(host)
+        if not host or cls.dns_mode(base) != 'per-site':
             return {'created': False, 'skipped': True, 'reason': 'wildcard'}
         ip = cls.server_ip()
         if not ip:
@@ -348,9 +429,9 @@ class SiteDomainService:
 
         Handles all host-nginx app types: docker/wordpress and
         python/flask/django reverse-proxy to the app's port; php/static serve a
-        filesystem root. Serves the base-domain wildcard cert when HTTPS is
-        enabled and every domain is a covered subdomain (custom domains bring
-        their own cert). Best-effort — never raises; returns ``{'nginx',
+        filesystem root. Serves a base's wildcard cert when every domain is a
+        subdomain of that *same* base and its HTTPS is enabled (custom domains
+        bring their own cert). Best-effort — never raises; returns ``{'nginx',
         'warning'}`` (``nginx`` is ``None`` when nothing was written).
         """
         from app.models.domain import Domain
@@ -360,9 +441,12 @@ class SiteDomainService:
         if not domains:
             return {'nginx': None, 'warning': None}
 
+        # Pick a wildcard cert only when all domains sit under one base (whichever
+        # base covers them) and that base has HTTPS set up.
         ssl_cert = ssl_key = None
-        if cls.https_enabled() and all(cls.covers(d) for d in domains):
-            ssl_cert, ssl_key = cls.wildcard_cert_paths()
+        cover = cls.covering_base(domains[0])
+        if cover and cls.https_enabled(cover) and all(cls.covering_base(d) == cover for d in domains):
+            ssl_cert, ssl_key = cls.wildcard_cert_paths(cover)
 
         kwargs, reason = cls._vhost_create_kwargs(app, domains, ssl_cert, ssl_key, force_type)
         if reason:
@@ -380,11 +464,12 @@ class SiteDomainService:
         return {'nginx': res, 'warning': None}
 
     @classmethod
-    def give_subdomain(cls, app, label=None):
+    def give_subdomain(cls, app, label=None, base=None):
         """One-click 'give this app a subdomain': publish ``app`` at
-        ``<label>.<base_domain>`` (label defaults to the app-name slug). Creates the
-        primary Domain row, (re)writes its nginx vhost, and — in per-site DNS mode —
-        auto-creates the A record (wildcard mode relies on ``*.<base>``).
+        ``<label>.<base>`` (label defaults to the app-name slug; ``base`` defaults
+        to the default registered base domain). Creates the primary Domain row,
+        (re)writes its nginx vhost, and — in per-site DNS mode — auto-creates the A
+        record (wildcard mode relies on ``*.<base>``).
 
         Returns ``{success, host, url, dns, nginx, warning}`` or
         ``{success: False, error}``.
@@ -392,7 +477,7 @@ class SiteDomainService:
         from app import db
         from app.models.domain import Domain
 
-        base = cls.base_domain()
+        base = cls.resolve_base(base)
         if not base:
             return {'success': False, 'error': 'Set the managed-sites base domain first (Settings).'}
 
@@ -431,5 +516,5 @@ class SiteDomainService:
         cls.notify_publishing_gaps()
 
         return {'success': True, 'host': host,
-                'url': cls.site_url(host, ssl=cls.https_enabled() and cls.covers(host)),
+                'url': cls.site_url(host, ssl=cls.https_enabled(base) and cls.covers(host)),
                 'dns': dns, 'nginx': nginx, 'warning': warning}

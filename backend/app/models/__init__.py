@@ -10,6 +10,7 @@ from app.models.environment import Environment
 from app.models.shared_resource import ResourceTag, SharedVariableGroup, SharedVariable, SharedVariableGroupAttachment
 from app.models.application_preview import ApplicationPreview, ApplicationPreviewSettings
 from app.models.proxy_stack import ProxyStack
+from app.models.site_base_domain import SiteBaseDomain
 from app.models.deployment_job import DeploymentJob, DeploymentJobLog
 from app.models.system_settings import SystemSettings
 from app.models.audit_log import AuditLog
@@ -99,4 +100,5 @@ __all__ = [
     'ResourceTag', 'SharedVariableGroup', 'SharedVariable', 'SharedVariableGroupAttachment',
     'ApplicationPreview', 'ApplicationPreviewSettings',
     'ProxyStack',
+    'SiteBaseDomain',
 ]
