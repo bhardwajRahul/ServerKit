@@ -87,6 +87,12 @@ _CATALOG = {
         'severity': 'warning',
         'category': 'system',
     },
+    'sites.publish.base_overlaps_panel': {
+        'title': 'Site base domain overlaps the panel domain',
+        'template': 'generic',
+        'severity': 'warning',
+        'category': 'system',
+    },
     # Multi-alert monitoring digest (used by the legacy send_all path).
     'monitoring.alert': {
         'title': 'ServerKit alert',

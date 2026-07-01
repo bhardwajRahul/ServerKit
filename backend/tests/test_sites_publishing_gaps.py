@@ -90,6 +90,39 @@ def test_no_base_domain_message_includes_suggestion(app, monkeypatch):
     assert 'apps.example.com' in msg
 
 
+# ── base-domain / panel-domain overlap (the wildcard footgun) ────────────────
+
+def test_overlap_when_base_equals_panel(app, monkeypatch):
+    from app.services.site_domain_service import SiteDomainService
+    _set('sites_base_domain', 'example.com')
+    _set('canonical_domain', 'example.com')                # panel IS the base
+    assert SiteDomainService.base_domain_overlaps_panel() is not None
+    assert 'base_overlaps_panel' in [g['code'] for g in SiteDomainService.publishing_gaps()]
+
+
+def test_overlap_when_panel_is_direct_child_of_base(app, monkeypatch):
+    from app.services.site_domain_service import SiteDomainService
+    _set('sites_base_domain', 'example.com')
+    _set('canonical_domain', 'panel.example.com')          # *.example.com matches panel
+    msg = SiteDomainService.base_domain_overlaps_panel()
+    assert msg and 'panel.example.com' in msg
+
+
+def test_no_overlap_for_deep_descendant(app, monkeypatch):
+    from app.services.site_domain_service import SiteDomainService
+    _set('sites_base_domain', 'example.com')
+    _set('canonical_domain', 'a.b.example.com')            # wildcard is single-label
+    assert SiteDomainService.base_domain_overlaps_panel() is None
+
+
+def test_no_overlap_when_base_is_scoped_label(app, monkeypatch):
+    from app.services.site_domain_service import SiteDomainService
+    _set('sites_base_domain', 'apps.example.com')          # the recommended shape
+    _set('canonical_domain', 'panel.example.com')
+    assert SiteDomainService.base_domain_overlaps_panel() is None
+    assert 'base_overlaps_panel' not in [g['code'] for g in SiteDomainService.publishing_gaps()]
+
+
 # ── notify_publishing_gaps (in-app, deduped) ─────────────────────────────────
 
 def test_notify_sends_once_then_dedupes(app, monkeypatch):

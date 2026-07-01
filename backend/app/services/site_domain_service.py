@@ -141,14 +141,21 @@ class SiteDomainService:
 
     @classmethod
     def panel_host(cls):
-        """Hostname the ServerKit panel itself is served on (from the canonical
-        domain / panel origin), or ``None``. Used to tailor DNS guidance — an
-        install on a subdomain (``panel.example.com``) needs a different base
-        domain than one on the apex (``example.com``)."""
-        origin = cls.panel_origin()
-        if not origin:
+        """Hostname the ServerKit panel *itself* is served on, from an explicitly
+        configured panel domain (``canonical_domain`` setting, else the
+        ``PUBLIC_URL`` / ``SERVERKIT_PUBLIC_URL`` env), or ``None``.
+
+        Deliberately does NOT use ``panel_origin``'s base-domain fallback — that
+        would make the panel host equal the sites base domain and defeat both the
+        subdomain-vs-apex suggestion and the base/panel overlap check.
+        """
+        domain = SystemSettings.get('canonical_domain')
+        if not domain:
+            domain = (current_app.config.get('PUBLIC_URL')
+                      or current_app.config.get('SERVERKIT_PUBLIC_URL'))
+        if not domain:
             return None
-        host = origin.split('://', 1)[-1].split('/', 1)[0].split(':', 1)[0]
+        host = str(domain).split('://', 1)[-1].split('/', 1)[0].split(':', 1)[0]
         return host.strip().lower().strip('.') or None
 
     @classmethod
@@ -174,6 +181,43 @@ class SiteDomainService:
         return f'apps.{parent}'
 
     @classmethod
+    def base_domain_overlaps_panel(cls):
+        """When the managed-sites wildcard (``*.<base>``) would also capture the
+        panel's own hostname, return a human explanation; else ``None``.
+
+        Two overlaps matter:
+
+        * **panel host == base** — the wildcard setup's apex ``<base>`` A record
+          repoints the panel's own domain at the site server, and every
+          ``*.<base>`` becomes a managed site.
+        * **panel host is a direct (single-label) child of base**
+          (``panel.example.com`` under ``example.com``) — ``*.<base>`` matches the
+          panel host, so it keeps working only while its explicit ``<panel>``
+          record out-specifies the wildcard; drop that record and the panel
+          silently falls into the site-serving nginx.
+
+        A *deeper* descendant (``a.b.<base>``) is safe — a wildcard is single-label.
+        """
+        base = cls.base_domain()
+        panel = cls.panel_host()
+        if not base or not panel or panel == 'localhost' or panel.replace('.', '').isdigit():
+            return None
+        if panel == base:
+            return (f'The panel is served at {panel} — the same domain set as the '
+                    f'managed-sites base. Every *.{base} then becomes a site and the '
+                    f'{base} record is managed for you. Use a dedicated base such as '
+                    f'apps.{base} to keep the panel separate.')
+        if panel.endswith('.' + base):
+            label = panel[: -(len(base) + 1)]
+            if '.' not in label:  # direct child only — *.<base> is single-label
+                return (f'The panel host {panel} sits directly under the managed-sites '
+                        f'base {base}, so the *.{base} wildcard also matches it. The '
+                        f'panel keeps working only while its own {panel} DNS record '
+                        f'out-specifies the wildcard — pick a base that does not '
+                        f'contain the panel host (e.g. apps.{base}) to avoid this.')
+        return None
+
+    @classmethod
     def publishing_gaps(cls):
         """The managed-sites publishing config gaps that are open *right now*, as
         a list of ``{code, event, message}`` (empty when publishing is fully set
@@ -196,6 +240,13 @@ class SiteDomainService:
             }]
 
         gaps = []
+        overlap = cls.base_domain_overlaps_panel()
+        if overlap:
+            gaps.append({
+                'code': 'base_overlaps_panel',
+                'event': 'sites.publish.base_overlaps_panel',
+                'message': overlap,
+            })
         if not cls.https_enabled():
             gaps.append({
                 'code': 'http_only',
