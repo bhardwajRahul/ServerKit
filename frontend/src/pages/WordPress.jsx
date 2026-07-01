@@ -27,6 +27,11 @@ function WordPress() {
         name: '', domain: '', adminEmail: '', phpVersion: '', enablePageCache: false, enableObjectCache: false,
     });
     const [createdCreds, setCreatedCreds] = useState(null);
+    // Where a freshly-created site is reachable, so we can tell the user it is
+    // already live (at <slug>.<base>, HTTPS when the wildcard cert is set up)
+    // rather than leaving them to wonder — or nudge them to set a base domain
+    // when the site only came up on localhost.
+    const [createdSite, setCreatedSite] = useState(null);
     const [showImportModal, setShowImportModal] = useState(false);
     const [importLoading, setImportLoading] = useState(false);
     const [importForm, setImportForm] = useState({ name: '', adminEmail: '', oldUrl: '' });
@@ -69,6 +74,9 @@ function WordPress() {
                 if (result.admin_password) {
                     // The generated admin password is returned once — surface it.
                     setCreatedCreds({ user: result.admin_user || 'admin', password: result.admin_password });
+                }
+                if (result.url) {
+                    setCreatedSite({ url: result.url, domain: result.domain || null });
                 }
                 if (result.warning) {
                     toast.info(result.warning, { duration: 8000 });
@@ -301,14 +309,31 @@ function WordPress() {
             keyField="id"
             onRowClick={(site) => navigate(`/wordpress/${site.id}`)}
             rowClassName={(site) => (selectedIds.has(site.id) ? 'is-selected' : '')}
-            header={createdCreds && (
+            header={(createdCreds || createdSite) && (
                 <div className="wp-creds-banner">
                     <div className="wp-creds-banner-text">
-                        <strong>Save these admin credentials — they are shown only once.</strong>
-                        <span>Username: <code>{createdCreds.user}</code></span>
-                        <span>Password: <code>{createdCreds.password}</code></span>
+                        {createdSite && (createdSite.domain ? (
+                            <span>
+                                Your site is live at{' '}
+                                <a href={createdSite.url} target="_blank" rel="noopener noreferrer"><code>{createdSite.domain}</code></a>
+                                {createdSite.url?.startsWith('https') ? ' — HTTPS is ready.' : '.'}
+                            </span>
+                        ) : (
+                            <span>
+                                Your site is running at{' '}
+                                <a href={createdSite.url} target="_blank" rel="noopener noreferrer"><code>{createdSite.url}</code></a>.
+                                {' '}Set a managed-sites base domain in Settings to publish it at a public URL.
+                            </span>
+                        ))}
+                        {createdCreds && (
+                            <>
+                                <strong>Save these admin credentials — they are shown only once.</strong>
+                                <span>Username: <code>{createdCreds.user}</code></span>
+                                <span>Password: <code>{createdCreds.password}</code></span>
+                            </>
+                        )}
                     </div>
-                    <Button variant="ghost" onClick={() => setCreatedCreds(null)}>Dismiss</Button>
+                    <Button variant="ghost" onClick={() => { setCreatedCreds(null); setCreatedSite(null); }}>Dismiss</Button>
                 </div>
             )}
             filters={[
