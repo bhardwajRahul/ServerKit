@@ -21,6 +21,7 @@ from app.models.server import Server, ServerGroup, ServerMetrics, ServerCommand,
 from app.models.server_onboarding_log import ServerOnboardingLog
 from app.models.security_alert import SecurityAlert
 from app.models.wordpress_site import WordPressSite, DatabaseSnapshot, SyncJob, WordPressVulnerability
+from app.models.wordpress_custom_plugin import WordPressCustomPlugin, WordPressSitePlugin
 from app.models.environment_activity import EnvironmentActivity
 from app.models.promotion_job import PromotionJob
 from app.models.sanitization_profile import SanitizationProfile
@@ -68,6 +69,7 @@ __all__ = [
     'MetricsHistory', 'Workflow', 'WorkflowExecution', 'WorkflowLog', 'GitWebhook', 'WebhookLog', 'GitDeployment',
     'Server', 'ServerGroup', 'ServerMetrics', 'ServerCommand', 'AgentSession', 'AgentVersion', 'AgentRollout', 'ServerOnboardingLog', 'SecurityAlert',
     'WordPressSite', 'DatabaseSnapshot', 'SyncJob', 'WordPressVulnerability',
+    'WordPressCustomPlugin', 'WordPressSitePlugin',
     'EnvironmentActivity', 'PromotionJob', 'SanitizationProfile',
     'EmailDomain', 'EmailAccount', 'EmailAlias', 'EmailForwardingRule', 'DNSProviderConfig', 'EmailRelayConfig',
     'OAuthIdentity', 'SourceConnection', 'RegistrarConnection', 'ApiKey', 'ApiUsageLog', 'ApiUsageSummary',

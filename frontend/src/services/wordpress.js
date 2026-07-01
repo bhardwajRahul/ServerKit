@@ -151,6 +151,58 @@ const wordpressApi = {
         method: 'POST'
     }),
 
+    // =========================================
+    // Global Plugin Library
+    // =========================================
+    LIBRARY_PATH: '/wordpress/plugins/library',
+
+    getLibraryPlugins: () => api.request('/wordpress/plugins/library'),
+
+    getLibraryPlugin: (id) => api.request(`/wordpress/plugins/library/${id}`),
+
+    addLibraryPlugin: (data) => api.request('/wordpress/plugins/library', {
+        method: 'POST',
+        body: data
+    }),
+
+    updateLibraryPlugin: (id, data) => api.request(`/wordpress/plugins/library/${id}`, {
+        method: 'PUT',
+        body: data
+    }),
+
+    deleteLibraryPlugin: (id) => api.request(`/wordpress/plugins/library/${id}`, {
+        method: 'DELETE'
+    }),
+
+    syncLibraryPlugin: (id) => api.request(`/wordpress/plugins/library/${id}/sync`, {
+        method: 'POST'
+    }),
+
+    // Install/update a library plugin on a specific site.
+    installLibraryPluginOnSite: (id, siteId, activate = true) =>
+        api.request(`/wordpress/plugins/library/${id}/install`, {
+            method: 'POST',
+            body: { site_id: siteId, activate }
+        }),
+
+    uninstallLibraryPluginFromSite: (id, siteId) =>
+        api.request(`/wordpress/plugins/library/${id}/uninstall`, {
+            method: 'POST',
+            body: { site_id: siteId }
+        }),
+
+    // Push the latest cached version to every site that has the plugin.
+    bulkUpdateLibraryPlugin: (id) => api.request(`/wordpress/plugins/library/${id}/bulk-update`, {
+        method: 'POST'
+    }),
+
+    // Per-site: which installed plugins are library-managed (+ update state).
+    getManagedPlugins: (siteId) => api.request(`${BASE_PATH}/${siteId}/plugins/managed`),
+
+    scanManagedPlugins: (siteId) => api.request(`${BASE_PATH}/${siteId}/plugins/library-scan`, {
+        method: 'POST'
+    }),
+
     // Themes
     getThemes: (siteId) => api.request(`${BASE_PATH}/${siteId}/themes`),
 
