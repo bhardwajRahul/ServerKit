@@ -152,24 +152,44 @@ masthead() {
 preflight() {
     step "Running pre-flight checks..."
 
+    # Root first: every check and phase after this point may write to the
+    # host (choose_pkg_manager drops an apt config file), so a non-root run
+    # must die on THIS friendly message, not on the first raw
+    # "Permission denied". (I11)
+    if [ "$EUID" -ne 0 ]; then
+        halt "Please run this installer as root (use sudo)."
+    fi
+
     # Source builds need more headroom than unpacking a release.
     local need_kb=5242880
     [ "$INSTALL_FROM_RELEASE" = "1" ] && need_kb=2097152
 
+    # Probe the filesystem that will actually hold the install — the target
+    # tree rarely exists yet, so walk up to the nearest existing ancestor —
+    # and use POSIX -Pk output so a long device name cannot wrap the line
+    # and skew the awk parse. (I14)
+    local probe="$INSTALL_DIR" parent
+    while [ ! -d "$probe" ]; do
+        parent="$(dirname "$probe")"
+        [ "$parent" != "$probe" ] || break
+        probe="$parent"
+    done
     local free_kb
-    free_kb=$(df /opt 2>/dev/null | awk 'NR==2 {print $4}')
+    free_kb=$(df -Pk "$probe" 2>/dev/null | awk 'NR==2 {print $4}') || free_kb=""
     if [ -n "$free_kb" ] && [ "$free_kb" -lt "$need_kb" ]; then
-        halt "Need at least $((need_kb / 1024 / 1024))GB free on /opt; less is available."
+        halt "Need at least $((need_kb / 1024 / 1024))GB free on $probe; less is available."
     fi
 
-    local free_mem
-    free_mem=$(free -m | awk '/^Mem:/ {print $7}')
+    # `free` is missing from some LXC templates — skip the advisory memory
+    # check rather than aborting on the bare assignment. (I14)
+    local free_mem=""
+    if command -v free &>/dev/null; then
+        free_mem=$(free -m 2>/dev/null | awk '/^Mem:/ {print $7}') || free_mem=""
+    else
+        warn "'free' not found — skipping the memory check."
+    fi
     if [ -n "$free_mem" ] && [ "$free_mem" -lt 256 ]; then
         warn "Under 256MB memory free — the install may run slowly."
-    fi
-
-    if [ "$EUID" -ne 0 ]; then
-        halt "Please run this installer as root (use sudo)."
     fi
 
     good "Pre-flight checks passed."
@@ -216,7 +236,13 @@ identify_system() {
 
     local os_release="${SERVERKIT_OS_RELEASE:-/etc/os-release}"
     [ -f "$os_release" ] || halt "Cannot detect OS — $os_release is missing."
+    # os-release defines its own VERSION ("24.04.1 LTS ..."), which would
+    # clobber the installer's version string; ID/PRETTY_NAME are wanted
+    # globals (provision_python keys off ID), so source in place and restore
+    # just our VERSION afterwards. (I22)
+    local sk_version="$VERSION"
     . "$os_release"
+    VERSION="$sk_version"
 
     OS_FAMILY="$(os_family_from "${ID:-}" "${ID_LIKE:-}")"
     case "$OS_FAMILY" in
@@ -339,8 +365,17 @@ upgrade_rhel_crypto_stack() {
 # Memory tuning: low-RAM safe mode and a swap fallback
 # ---------------------------------------------------------------------------
 gauge_memory() {
-    local total
-    total=$(free -m | awk '/^Mem:/ {print $2}')
+    # `free` is missing from some LXC templates — degrade to "no safe mode"
+    # instead of aborting on the bare assignment under pipefail. (I14)
+    local total=""
+    if command -v free &>/dev/null; then
+        total=$(free -m 2>/dev/null | awk '/^Mem:/ {print $2}') || total=""
+    fi
+    if [ -z "$total" ]; then
+        SAFE_MODE=false
+        warn "Cannot read total memory ('free' missing) — skipping the low-RAM check."
+        return 0
+    fi
     if [ "$total" -le 700 ]; then
         SAFE_MODE=true
         warn "Low RAM (${total}MB) — enabling VPS safe mode."
@@ -350,19 +385,46 @@ gauge_memory() {
 }
 
 ensure_swap() {
+    # No `free` (some LXC templates) → cannot gauge swap; skip quietly. (I14)
+    if ! command -v free &>/dev/null; then
+        warn "'free' not found — skipping the swap check."
+        return 0
+    fi
+    # The swapfile path and /proc/swaps are overridable so the unit tests can
+    # exercise this against fixtures (same pattern as SERVERKIT_NGINX_DIR).
+    local swapfile="${SERVERKIT_SWAPFILE:-/swapfile}"
+    local proc_swaps="${SERVERKIT_PROC_SWAPS:-/proc/swaps}"
     local swap
-    swap=$(free -m | awk '/^Swap:/ {print $2}')
+    swap=$(free -m 2>/dev/null | awk '/^Swap:/ {print $2}') || swap=""
+    [ -n "$swap" ] || return 0
     if [ "$swap" -lt 512 ]; then
         step "Adding 1GB of swap..."
-        if [ ! -f /swapfile ]; then
-            fallocate -l 1G /swapfile 2>/dev/null || \
-                dd if=/dev/zero of=/swapfile bs=1M count=1024 status=none
-            chmod 600 /swapfile
-            mkswap /swapfile >/dev/null
+        # Every arm is guarded: fallocate is unsupported on some filesystems,
+        # dd dies on a full disk, and swapon fails outright on btrfs/zfs and
+        # in most containers. The old body claimed "Swap active." no matter
+        # what and the Vite build then OOM'd — verify via swapon --show /
+        # /proc/swaps before saying so, and degrade to a warning when no swap
+        # could actually be brought up. (I19)
+        if [ ! -f "$swapfile" ]; then
+            if fallocate -l 1G "$swapfile" 2>/dev/null || \
+               dd if=/dev/zero of="$swapfile" bs=1M count=1024 status=none 2>/dev/null; then
+                chmod 600 "$swapfile" 2>/dev/null || true
+                mkswap "$swapfile" >/dev/null 2>&1 || true
+            else
+                # A dd that died on a full disk leaves a partial file behind.
+                rm -f "$swapfile" 2>/dev/null || true
+            fi
         fi
-        swapon /swapfile 2>/dev/null || true
-        good "Swap active."
+        swapon "$swapfile" 2>/dev/null || true
+        if swapon --show 2>/dev/null | grep -q "$swapfile" || \
+           grep -qs "$swapfile" "$proc_swaps"; then
+            good "Swap active."
+        else
+            warn "Could not activate swap (full disk, unsupported filesystem, or container limits)."
+            warn "Continuing without it — a low-RAM box may need swap for the frontend build."
+        fi
     fi
+    return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -544,7 +606,23 @@ provision_docker() {
             pkg_add docker docker-cli-compose
             ;;
         *)
-            curl -fsSL https://get.docker.com | sh
+            # Docker's convenience script (the default Debian/Ubuntu path).
+            # Stage it to a temp file with retries instead of piping curl
+            # straight into sh — a connection dropped mid-download would
+            # otherwise execute half a script. Warn-and-continue on failure,
+            # falling back to the distro package (docker.io on Debian). (I13)
+            local dget drc=0
+            dget="$(mktemp 2>/dev/null)" || dget="/tmp/serverkit-get-docker.sh"
+            if curl -fsSL --retry 3 https://get.docker.com -o "$dget"; then
+                sh "$dget" || drc=$?
+            else
+                drc=1
+            fi
+            rm -f "$dget" 2>/dev/null || true
+            if [ "$drc" -ne 0 ]; then
+                warn "The get.docker.com install script failed — trying the distro package instead."
+                pkg_add docker.io docker-compose-v2
+            fi
             ;;
     esac
 
@@ -557,7 +635,15 @@ provision_docker() {
         rc-update add docker default 2>/dev/null || true
         rc-service docker start 2>/dev/null || true
     fi
-    good "Docker installed."
+    # Don't claim success the old unconditional way — probe. Docker stays
+    # best-effort here (managed app deploys need it, the panel itself runs
+    # without it), so a miss is a loud warning, not a halt. (I13)
+    if command -v docker &>/dev/null; then
+        good "Docker installed."
+    else
+        warn "Docker could not be installed — managed app deployments need it."
+        warn "Install it manually (https://docs.docker.com/engine/install/) when you need containers."
+    fi
 }
 
 ensure_compose_plugin() {
@@ -679,8 +765,22 @@ resolve_release_tag() {
         printf '%s' "$SERVERKIT_VERSION"
         return
     fi
-    curl -sf "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" \
-        | grep '"tag_name"' | head -1 | cut -d'"' -f4
+    # Primary: the releases/latest redirect. Its Location header carries the
+    # tag and — unlike api.github.com, which allows only 60 requests/hour per
+    # IP and is routinely exhausted behind shared cloud NAT — it has no API
+    # quota. The API lookup stays as the fallback. Both arms are guarded so
+    # an unresolvable tag comes back as EMPTY output (the caller warns loudly)
+    # instead of a set -e abort. (I15)
+    local tag=""
+    tag=$(curl -sfLI -o /dev/null -w '%{url_effective}' \
+            "https://github.com/${GITHUB_REPO}/releases/latest" 2>/dev/null \
+        | sed -n 's|.*/releases/tag/||p') || tag=""
+    if [ -n "$tag" ]; then
+        printf '%s' "$tag"
+        return 0
+    fi
+    curl -sf "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null \
+        | grep '"tag_name"' | head -1 | cut -d'"' -f4 || true
 }
 
 fetch_release() {
@@ -694,9 +794,13 @@ fetch_release() {
         tarball="$SERVERKIT_OFFLINE_TARBALL"
         good "Using offline tarball: $tarball"
     else
-        tag=$(resolve_release_tag)
+        tag=$(resolve_release_tag) || tag=""
         if [ -z "$tag" ]; then
-            warn "Latest release tag unknown — falling back to a source build."
+            # Loud on purpose: this used to be a silent downgrade that turned
+            # a 2-minute release install into a full compile. (I15)
+            warn "Could not resolve the latest release tag (GitHub unreachable or API rate-limited)."
+            warn "FALLING BACK TO A FULL SOURCE BUILD — much slower, and it compiles the frontend here."
+            warn "To install a release instead, pin one: SERVERKIT_VERSION=vX.Y.Z"
             INSTALL_FROM_RELEASE=0
             return 1
         fi
@@ -730,7 +834,14 @@ fetch_release() {
 
     step "Unpacking release..."
     tmp_dir="$(mktemp -d)"
-    tar xzf "$tarball" -C "$tmp_dir"
+    # A failed unpack (corrupt download, disk full) must take the clean
+    # source fallback, not "succeed" into a half-written tree. (I16)
+    if ! tar xzf "$tarball" -C "$tmp_dir"; then
+        warn "Could not unpack the release tarball (corrupt download or disk full) — falling back to source."
+        rm -rf "$tmp_dir"
+        INSTALL_FROM_RELEASE=0
+        return 1
+    fi
 
     unpacked="$tmp_dir/serverkit"
     [ ! -d "$unpacked" ] && unpacked="$tmp_dir/opt/serverkit"
@@ -750,7 +861,17 @@ fetch_release() {
     stash="$(stash_live_state "$live_dir")"
 
     rm -rf "$FIRST_SLOT"
-    cp -a "$unpacked" "$FIRST_SLOT"
+    # Disk full mid-copy: a half-written slot must not masquerade as a
+    # success. Put the live state back and hand control to the caller's
+    # source fallback. (I16)
+    if ! cp -a "$unpacked" "$FIRST_SLOT"; then
+        warn "Could not copy the release into $FIRST_SLOT (disk full?) — falling back to source."
+        rm -rf "$tmp_dir"
+        mkdir -p "$FIRST_SLOT" 2>/dev/null || true
+        restore_live_state "$stash" "$FIRST_SLOT"
+        INSTALL_FROM_RELEASE=0
+        return 1
+    fi
     rm -rf "$tmp_dir"
     restore_live_state "$stash" "$FIRST_SLOT"
 
@@ -810,6 +931,14 @@ ensure_install_layout() {
     # Migrate legacy real-directory installs into the blue/green layout.
     if [ -d "$INSTALL_DIR" ] && [ ! -L "$INSTALL_DIR" ]; then
         step "Migrating to blue/green install layout..."
+        # A stale slot left by an aborted earlier run would make `mv` NEST
+        # the live tree inside it ($FIRST_SLOT/serverkit). The live install
+        # is $INSTALL_DIR (a real dir here, so nothing links to the slot) —
+        # clear the stale slot before moving. (I18)
+        if [ -e "$FIRST_SLOT" ]; then
+            warn "Removing a stale $FIRST_SLOT left by an earlier run."
+            rm -rf "$FIRST_SLOT"
+        fi
         mv "$INSTALL_DIR" "$FIRST_SLOT"
         ln -s "$FIRST_SLOT" "$INSTALL_DIR"
         good "Active install is now $INSTALL_DIR → $FIRST_SLOT"
@@ -890,6 +1019,15 @@ write_config() {
 
     if [ -f "$INSTALL_DIR/.env" ]; then
         warn ".env already exists — leaving the current configuration in place."
+        # ...except the SSL mode, which reflects THIS run's outcome (a re-run
+        # may have gained or lost HTTPS). Refresh just that key so the
+        # panel's HSTS gate matches /etc/serverkit/ssl-mode instead of a
+        # stale value from the previous install. (I24)
+        if grep -q '^SERVERKIT_SSL_MODE=' "$INSTALL_DIR/.env"; then
+            sed -i "s|^SERVERKIT_SSL_MODE=.*|SERVERKIT_SSL_MODE=$SSL_MODE|" "$INSTALL_DIR/.env"
+        else
+            printf 'SERVERKIT_SSL_MODE=%s\n' "$SSL_MODE" >> "$INSTALL_DIR/.env"
+        fi
         return
     fi
 
@@ -1020,6 +1158,53 @@ configure_firewall() {
 }
 
 # ---------------------------------------------------------------------------
+# Init-system probe + tiny service verbs (mirrors scripts/lib/init.sh)
+# ---------------------------------------------------------------------------
+# install.sh runs pre-clone in the `curl | bash` path, so it cannot source
+# scripts/lib/init.sh — the detection is inline here and kept in sync with the
+# lib: systemd when /run/systemd/system exists, then OpenRC/SysV fallbacks.
+# INIT_OVERRIDE (same contract as init.sh) forces the answer for unit tests.
+# Best-effort: on a box none of these can drive (containers, WSL) the verbs
+# warn and return 0 — a missing init system must never abort the install. (I17)
+svc_has_systemd() {
+    if [ -n "${INIT_OVERRIDE:-}" ]; then
+        [ "$INIT_OVERRIDE" = "systemd" ]
+        return
+    fi
+    [ -d /run/systemd/system ] && command -v systemctl &>/dev/null
+}
+
+svc_enable() {
+    local svc="$1"
+    if svc_has_systemd; then
+        systemctl enable "$svc" 2>/dev/null || warn "Could not enable $svc at boot."
+    elif command -v rc-update &>/dev/null; then
+        rc-update add "$svc" default 2>/dev/null || warn "Could not enable $svc at boot."
+    elif command -v chkconfig &>/dev/null; then
+        chkconfig "$svc" on 2>/dev/null || warn "Could not enable $svc at boot."
+    elif command -v update-rc.d &>/dev/null; then
+        update-rc.d "$svc" enable 2>/dev/null || warn "Could not enable $svc at boot."
+    else
+        warn "No init system found to enable $svc — enable it at boot manually."
+    fi
+    return 0
+}
+
+svc_start() {
+    local svc="$1"
+    if svc_has_systemd; then
+        systemctl start "$svc" 2>/dev/null || warn "Could not start $svc."
+    elif command -v rc-service &>/dev/null; then
+        rc-service "$svc" start 2>/dev/null || warn "Could not start $svc."
+    elif command -v service &>/dev/null; then
+        service "$svc" start 2>/dev/null || warn "Could not start $svc."
+    else
+        warn "No init system found to start $svc — start it manually."
+    fi
+    return 0
+}
+
+# ---------------------------------------------------------------------------
 # nginx site + reverse-proxy wiring
 # ---------------------------------------------------------------------------
 configure_nginx() {
@@ -1030,7 +1215,7 @@ configure_nginx() {
     else
         step "Installing Nginx..."
         pkg_add nginx
-        systemctl enable nginx
+        svc_enable nginx
         good "Nginx installed."
     fi
 
@@ -1164,8 +1349,15 @@ apply_frontend_root() {
     [ "$INSTALL_DIR" = "/opt/serverkit" ] && return 0
     local f
     for f in "$@"; do
-        [ -f "$f" ] && sed -i "s|/opt/serverkit/frontend/dist|$INSTALL_DIR/frontend/dist|g" "$f"
+        # `if`, not a `[ -f ] && ...` list: with the list form a missing conf
+        # as the LAST file made the loop (and thus the function) return 1,
+        # and set -e killed the custom-SERVERKIT_DIR install right here —
+        # the same species as I1/I2.
+        if [ -f "$f" ]; then
+            sed -i "s|/opt/serverkit/frontend/dist|$INSTALL_DIR/frontend/dist|g" "$f"
+        fi
     done
+    return 0
 }
 
 # Label the SPA bundle so SELinux-enforcing hosts (Fedora/RHEL) let nginx read
@@ -1276,9 +1468,10 @@ install_service() {
     ln -sf "$INSTALL_DIR/serverkit" /usr/local/bin/serverkit
 
     # Without systemd (LXC/WSL/containers) we can't enable the unit — say so
-    # clearly instead of failing cryptically (Goal G5).
-    load_serverkit_lib env.sh || true
-    if command -v has_systemd >/dev/null 2>&1 && ! has_systemd; then
+    # clearly instead of failing cryptically (Goal G5). The probe is inline
+    # (svc_has_systemd) so it holds even when scripts/lib never made it to
+    # disk, where the old env.sh-based check silently skipped itself. (I17)
+    if ! svc_has_systemd; then
         warn "systemd not detected — installed the unit but cannot enable/start it here."
         warn "Start the backend with a supervisor, or run it in the foreground; see docs/ARCHITECTURE.md."
         return 0
@@ -1311,12 +1504,12 @@ launch_services() {
     phase "Starting Services"
 
     step "Starting the backend..."
-    systemctl start serverkit
+    svc_start serverkit
 
     # The frontend is static files served by host nginx (built into
     # frontend/dist by build_frontend) — no container to build or start.
     step "Starting nginx..."
-    systemctl start nginx
+    svc_start nginx
     good "Services started."
 }
 
@@ -1440,8 +1633,10 @@ print_outro() {
 # Anonymous install ping (best-effort)
 # ---------------------------------------------------------------------------
 ping_telemetry() {
+    # Guarded: a missing VERSION file fails the pipeline under pipefail, and
+    # this runs AFTER a successful install — it must never abort it. (I23)
     local v
-    v=$(cat "$INSTALL_DIR/VERSION" 2>/dev/null | tr -d '\n\r ')
+    v=$(cat "$INSTALL_DIR/VERSION" 2>/dev/null | tr -d '\n\r ') || v=""
     curl -s "https://serverkit.ai/track/install?v=${v}" >/dev/null 2>&1 || true
 }
 
@@ -1501,8 +1696,10 @@ main() {
     fi
 
     identify_system
-    choose_pkg_manager
+    # preflight's root check must run before choose_pkg_manager, which
+    # writes the apt lock-wait drop-in to /etc. (I11)
     preflight
+    choose_pkg_manager
     gauge_memory
     ensure_swap
     prompt_for_domain

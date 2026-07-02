@@ -711,5 +711,420 @@ fi
 [ "$guards_ok" = "1" ] && ok "source guards: no backend/src probe; main runs the RHEL crypto upgrade"
 
 # --------------------------------------------------------------------------
+# T27 — I11: nothing may write to the host before the root check. main() must
+# run preflight BEFORE choose_pkg_manager (which drops the apt lock-wait file
+# into /etc), and inside preflight the root check must come first — so a
+# non-root run halts on the friendly message, not a raw "Permission denied".
+# Behavioral half is dual: as non-root the friendly halt fires even with NO
+# df/free on PATH (the check precedes every probe); as root (distro-container
+# CI) preflight passes on stubbed df/free and probes the actual install
+# target with `df -Pk` (I14).
+# --------------------------------------------------------------------------
+main_body="$(awk '/^main\(\) \{/,/^\}/' "$INSTALL_SH")"
+pf_at="$(printf '%s\n' "$main_body" | grep -n '^[[:space:]]*preflight$' | cut -d: -f1 | head -1)"
+pkg_at="$(printf '%s\n' "$main_body" | grep -n '^[[:space:]]*choose_pkg_manager$' | cut -d: -f1 | head -1)"
+if [ -n "$pf_at" ] && [ -n "$pkg_at" ] && [ "$pf_at" -lt "$pkg_at" ]; then
+    ok "main() runs preflight (root check) before choose_pkg_manager's host write"
+else
+    bad "main() order wrong: preflight at [$pf_at], choose_pkg_manager at [$pkg_at] (I11 regression)"
+fi
+t="$WORK/t27"; mkdir -p "$t/bin" "$t/deep"
+if [ "$(id -u)" -ne 0 ]; then
+    out="$( set -Eeuo pipefail; PATH="$t/bin"; preflight 2>&1 )"
+    rc=$?
+    if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q 'as root'; then
+        ok "preflight halts a non-root run on the friendly message before any probe or write"
+    else
+        bad "preflight (non-root) rc=$rc without the friendly root halt (I11 regression): [$out]"
+    fi
+else
+    DF_LOG="$t/df.log"; : > "$DF_LOG"
+    cat > "$t/bin/df" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$DF_LOG"
+printf 'Filesystem 1024-blocks Used Available Capacity Mounted on\n'
+printf '/dev/sda1 99999999 1 99999999 1%% /\n'
+EOF
+    chmod +x "$t/bin/df"
+    printf '#!/usr/bin/env bash\nprintf "Mem: 4096 1024 3072 0 0 3072\\n"\n' > "$t/bin/free"
+    chmod +x "$t/bin/free"
+    out="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"; INSTALL_DIR="$t/deep/nested/target" preflight 2>&1 )"
+    rc=$?
+    if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'Pre-flight checks passed' && \
+       grep -q -- "-Pk $t/deep" "$DF_LOG"; then
+        ok "preflight (root) probes the install target's filesystem with df -Pk (I14)"
+    else
+        bad "preflight (root) rc=$rc; df saw: $(tr '\n' ';' < "$DF_LOG") (I14 regression): [$out]"
+    fi
+fi
+
+# --------------------------------------------------------------------------
+# T28 — I14: `free` is absent from some LXC templates; gauge_memory must
+# degrade to no-safe-mode with a warning, not abort on the bare assignment
+# under pipefail.
+# --------------------------------------------------------------------------
+t="$WORK/t28"; mkdir -p "$t/nofree"
+res="$( set -Eeuo pipefail; PATH="$t/nofree"; SAFE_MODE=true; gauge_memory >/dev/null 2>&1; printf '%s' "$SAFE_MODE" )"
+if [ "$res" = "false" ]; then
+    ok "gauge_memory degrades gracefully when 'free' is absent (LXC templates)"
+else
+    bad "gauge_memory aborted or left SAFE_MODE=[$res] without 'free' (I14 regression)"
+fi
+
+# --------------------------------------------------------------------------
+# T29 — I19: ensure_swap must verify swap actually came up before claiming
+# "Swap active." (on btrfs/containers swapon silently fails and the Vite
+# build later OOMs), and a full disk (fallocate AND dd fail) must degrade to
+# a warning, never an abort.
+# --------------------------------------------------------------------------
+t="$WORK/t29"; mkdir -p "$t/bin"
+printf '#!/usr/bin/env bash\nprintf "Mem: 2048 512 1536 0 0 1536\\nSwap: 0 0 0\\n"\n' > "$t/bin/free"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/fallocate"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/dd"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/mkswap"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/swapon"
+chmod +x "$t/bin/"*
+out="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+        SERVERKIT_SWAPFILE="$t/swapfile" SERVERKIT_PROC_SWAPS="$t/proc_swaps" ensure_swap 2>&1 )"
+rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'Could not activate swap' && \
+   ! printf '%s' "$out" | grep -q 'Swap active'; then
+    ok "ensure_swap warns and continues when no swap can be brought up (full disk / btrfs)"
+else
+    bad "ensure_swap rc=$rc or claimed swap it never activated (I19 regression): [$out]"
+fi
+PROCS="$t/proc_swaps2"; : > "$PROCS"
+cat > "$t/bin/fallocate" <<'FALLOC_EOF'
+#!/usr/bin/env bash
+touch "${@: -1}"
+FALLOC_EOF
+cat > "$t/bin/swapon" <<EOF
+#!/usr/bin/env bash
+if [ "\${1:-}" = "--show" ]; then cat "$PROCS" 2>/dev/null; exit 0; fi
+printf '%s\n' "\$1" >> "$PROCS"
+EOF
+printf '#!/usr/bin/env bash\nexit 0\n' > "$t/bin/mkswap"
+chmod +x "$t/bin/"*
+out="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+        SERVERKIT_SWAPFILE="$t/swapfile2" SERVERKIT_PROC_SWAPS="$PROCS" ensure_swap 2>&1 )"
+if printf '%s' "$out" | grep -q 'Swap active' && grep -q "$t/swapfile2" "$PROCS"; then
+    ok "ensure_swap claims success only after swapon verifiably activated the file"
+else
+    bad "ensure_swap did not verify/activate swap on the success path (I19): [$out]"
+fi
+
+# --------------------------------------------------------------------------
+# T30 — I13: the get.docker.com convenience script (the DEFAULT Debian/Ubuntu
+# path) must be staged to a file with curl --retry and run from disk — never
+# piped straight into sh — and a failed download must warn and fall back to
+# the distro package instead of aborting. Curated PATH: exec-wrappers for the
+# real tools plus curl/apt-get stubs, and crucially NO docker (the global
+# stub would short-circuit provision_docker).
+# --------------------------------------------------------------------------
+t="$WORK/t30"; mkdir -p "$t/bin"
+# Absolute-path shebangs: this test runs with PATH="$t/bin" ONLY (so that
+# `command -v docker` genuinely fails), which means `/usr/bin/env bash` could
+# not resolve bash for the stubs themselves.
+REAL_BASH="${BASH:-$(command -v bash)}"
+for tool in sh mktemp rm tail; do
+    printf '#!%s\nexec %s "$@"\n' "$REAL_BASH" "$(command -v "$tool")" > "$t/bin/$tool"
+    chmod +x "$t/bin/$tool"
+done
+CURL_LOG="$t/curl.log"; : > "$CURL_LOG"
+cat > "$t/bin/curl" <<EOF
+#!$REAL_BASH
+printf '%s\n' "\$*" >> "$CURL_LOG"
+out=""
+while [ \$# -gt 0 ]; do
+    if [ "\$1" = "-o" ]; then out="\$2"; shift; fi
+    shift
+done
+if [ -n "\$out" ]; then printf 'echo ran > "%s"\n' "$t/get-docker-ran" > "\$out"; fi
+exit 0
+EOF
+chmod +x "$t/bin/curl"
+if ( set -Eeuo pipefail; PATH="$t/bin"
+     OS_FAMILY=debian PKG_MGR=apt provision_docker ) >/dev/null 2>&1 \
+   && [ -f "$t/get-docker-ran" ] && grep -q -- '--retry 3' "$CURL_LOG"; then
+    ok "provision_docker stages get.docker.com to a file with retries and executes it (no curl|sh)"
+else
+    bad "provision_docker did not stage/run the docker script (I13); curl saw: $(tr '\n' ';' < "$CURL_LOG")"
+fi
+APT_LOG="$t/apt.log"; : > "$APT_LOG"
+printf '#!%s\nexit 22\n' "$REAL_BASH" > "$t/bin/curl"; chmod +x "$t/bin/curl"
+cat > "$t/bin/apt-get" <<EOF
+#!$REAL_BASH
+printf '%s\n' "\$*" >> "$APT_LOG"
+exit 100
+EOF
+chmod +x "$t/bin/apt-get"
+out="$( set -Eeuo pipefail; PATH="$t/bin"
+        OS_FAMILY=debian PKG_MGR=apt provision_docker 2>&1 )"
+rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'get.docker.com' && \
+   grep -q 'install -y docker.io' "$APT_LOG"; then
+    ok "provision_docker warns and falls back to the distro package when the download fails"
+else
+    bad "provision_docker rc=$rc on a failed download (I13); apt saw: $(tr '\n' ';' < "$APT_LOG"): [$out]"
+fi
+
+# --------------------------------------------------------------------------
+# T31 — I15: the release tag must come from the releases/latest redirect
+# (no API quota) with api.github.com only as a fallback — the 60-req/hr
+# unauthenticated API limit is routinely exhausted behind shared cloud NAT —
+# and an unresolvable tag must produce a LOUD source-build warning, never the
+# old silent downgrade.
+# --------------------------------------------------------------------------
+t="$WORK/t31"; mkdir -p "$t/bin"
+CURL_LOG="$t/curl.log"; : > "$CURL_LOG"
+cat > "$t/bin/curl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$CURL_LOG"
+case "\$*" in
+    *github.com/*/releases/latest*) printf 'https://github.com/x/y/releases/tag/v9.9.9'; exit 0 ;;
+esac
+exit 22
+EOF
+chmod +x "$t/bin/curl"
+res="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"; SERVERKIT_VERSION="" resolve_release_tag )"
+if [ "$res" = "v9.9.9" ] && ! grep -q 'api.github.com' "$CURL_LOG"; then
+    ok "resolve_release_tag reads the tag from the releases/latest redirect (no API quota burned)"
+else
+    bad "resolve_release_tag primary path returned [$res]; curl saw: $(tr '\n' ';' < "$CURL_LOG")"
+fi
+: > "$CURL_LOG"
+cat > "$t/bin/curl" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$CURL_LOG"
+case "\$*" in
+    *api.github.com*) printf '{"tag_name": "v8.8.8",\n'; exit 0 ;;
+esac
+exit 22
+EOF
+chmod +x "$t/bin/curl"
+res="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"; SERVERKIT_VERSION="" resolve_release_tag )"
+if [ "$res" = "v8.8.8" ]; then
+    ok "resolve_release_tag falls back to the GitHub API when the redirect is unreachable"
+else
+    bad "resolve_release_tag API fallback returned [$res] (I15)"
+fi
+printf '#!/usr/bin/env bash\nexit 22\n' > "$t/bin/curl"; chmod +x "$t/bin/curl"
+res="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+        SERVERKIT_OFFLINE_TARBALL=""; SERVERKIT_VERSION=""; INSTALL_FROM_RELEASE=1
+        rc=0; fetch_release >"$t/fetch.out" 2>&1 || rc=$?
+        printf '%s|%s' "$rc" "$INSTALL_FROM_RELEASE" )"
+if [ "$res" = "1|0" ] && grep -q 'SOURCE BUILD' "$t/fetch.out"; then
+    ok "fetch_release warns LOUDLY and flips to source when no tag resolves (no silent downgrade)"
+else
+    bad "fetch_release tag-fallback wrong: state [$res]: $(tr '\n' ';' < "$t/fetch.out" 2>/dev/null)"
+fi
+
+# --------------------------------------------------------------------------
+# T32 — I16: failures inside fetch_release's unpack/copy (corrupt download,
+# disk full) must take the clean fallback-to-source path — return nonzero so
+# main()'s existing fallback fires — never a half-copied tree that "succeeds"
+# and fails confusingly later. The cp half also proves the live .env is put
+# back before handing over (symlink layout: skipped on Git Bash, runs on CI).
+# --------------------------------------------------------------------------
+t="$WORK/t32"; mkdir -p "$t"
+printf 'this is not a tarball\n' > "$t/garbage.tar.gz"
+res="$( set -Eeuo pipefail
+        INSTALL_DIR="$t/opt/sk"; DIR_A="$t/opt/sk-a"; DIR_B="$t/opt/sk-b"; FIRST_SLOT="$t/opt/sk-a"
+        SERVERKIT_OFFLINE_TARBALL="$t/garbage.tar.gz"; INSTALL_FROM_RELEASE=1
+        rc=0; fetch_release >"$t/fetch.out" 2>&1 || rc=$?
+        printf '%s|%s' "$rc" "$INSTALL_FROM_RELEASE" )"
+if [ "$res" = "1|0" ] && grep -q 'falling back to source' "$t/fetch.out"; then
+    ok "fetch_release: a failed tar unpack takes the clean source fallback, not a fake success"
+else
+    bad "fetch_release tar-failure path wrong (I16 regression): [$res]: $(tr '\n' ';' < "$t/fetch.out" 2>/dev/null)"
+fi
+t="$WORK/t32c"; slotA="$t/sk-a"; slotB="$t/sk-b"; inst="$t/sk"
+mkdir -p "$slotA/backend/instance" "$t/bin"
+printf 'SECRET_KEY=survive-cp\n' > "$slotA/.env"
+cp "$slotA/.env" "$t/env.orig"
+ln -sfn "$slotA" "$inst" 2>/dev/null || true
+if [ ! -L "$inst" ]; then
+    skip "fetch_release cp-failure fallback — symlinks unsupported here (runs on Linux CI)"
+else
+    stage="$t/stage"; mkdir -p "$stage/serverkit/backend/app"
+    printf '#!/bin/sh\n' > "$stage/serverkit/serverkit"
+    tar czf "$t/rel.tar.gz" -C "$stage" serverkit
+    cat > "$t/bin/cp" <<EOF
+#!/usr/bin/env bash
+last=""
+for a in "\$@"; do last="\$a"; done
+if [ "\$last" = "$slotA" ]; then exit 1; fi
+exec $(command -v cp) "\$@"
+EOF
+    chmod +x "$t/bin/cp"
+    res="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+            INSTALL_DIR="$inst"; DIR_A="$slotA"; DIR_B="$slotB"; FIRST_SLOT="$slotA"
+            SERVERKIT_OFFLINE_TARBALL="$t/rel.tar.gz"; INSTALL_FROM_RELEASE=1
+            rc=0; fetch_release >/dev/null 2>&1 || rc=$?
+            printf '%s|%s' "$rc" "$INSTALL_FROM_RELEASE" )"
+    if [ "$res" = "1|0" ] && cmp -s "$slotA/.env" "$t/env.orig"; then
+        ok "fetch_release: a failed slot copy restores the live .env and falls back to source"
+    else
+        bad "fetch_release cp-failure lost live state or faked success (I16 regression): [$res]"
+    fi
+fi
+
+# --------------------------------------------------------------------------
+# T33 — I17: the inline service verbs (mirroring scripts/lib/init.sh, which
+# install.sh cannot source pre-clone) must drive systemctl on systemd boxes,
+# fall back to OpenRC/SysV elsewhere, and warn-and-continue when nothing can
+# be driven. INIT_OVERRIDE pins detection (same contract as init.sh).
+# --------------------------------------------------------------------------
+t="$WORK/t33"; mkdir -p "$t/sysd" "$t/rc" "$t/none"
+SVC_LOG="$t/svc.log"; : > "$SVC_LOG"
+cat > "$t/sysd/systemctl" <<EOF
+#!/usr/bin/env bash
+printf 'systemctl %s\n' "\$*" >> "$SVC_LOG"
+EOF
+chmod +x "$t/sysd/systemctl"
+( set -Eeuo pipefail; PATH="$t/sysd:$PATH"
+  INIT_OVERRIDE=systemd svc_enable nginx; INIT_OVERRIDE=systemd svc_start nginx ) >/dev/null 2>&1
+if grep -q 'systemctl enable nginx' "$SVC_LOG" && grep -q 'systemctl start nginx' "$SVC_LOG"; then
+    ok "svc_enable/svc_start drive systemctl on systemd boxes"
+else
+    bad "svc verbs missed systemctl (I17): $(tr '\n' ';' < "$SVC_LOG")"
+fi
+: > "$SVC_LOG"
+cat > "$t/rc/rc-update" <<EOF
+#!/usr/bin/env bash
+printf 'rc-update %s\n' "\$*" >> "$SVC_LOG"
+EOF
+cat > "$t/rc/rc-service" <<EOF
+#!/usr/bin/env bash
+printf 'rc-service %s\n' "\$*" >> "$SVC_LOG"
+EOF
+chmod +x "$t/rc/"*
+# Full PATH kept (the stubs' env-bash shebang needs it); the override makes
+# svc_has_systemd false, so the real systemctl is never consulted.
+( set -Eeuo pipefail; PATH="$t/rc:$PATH"
+  INIT_OVERRIDE=openrc svc_enable docker; INIT_OVERRIDE=openrc svc_start docker ) >/dev/null 2>&1
+rc=$?
+if [ "$rc" -eq 0 ] && grep -q 'rc-update add docker default' "$SVC_LOG" && \
+   grep -q 'rc-service docker start' "$SVC_LOG"; then
+    ok "svc verbs fall back to OpenRC without systemd (no bare-systemctl abort)"
+else
+    bad "svc OpenRC fallback rc=$rc (I17): $(tr '\n' ';' < "$SVC_LOG")"
+fi
+out="$( set -Eeuo pipefail; PATH="$t/none"
+        INIT_OVERRIDE=none svc_start nginx 2>&1; INIT_OVERRIDE=none svc_enable nginx 2>&1 )"
+rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'No init system'; then
+    ok "svc verbs warn-and-continue when no init system can be driven (WSL/containers)"
+else
+    bad "svc verbs rc=$rc with no init system — must warn and return 0 (I17): [$out]"
+fi
+
+# --------------------------------------------------------------------------
+# T34 — I18: migrating a legacy real-directory install while a stale slot
+# from an aborted earlier run exists must not `mv` the live tree INSIDE it
+# (/opt/serverkit-a/serverkit); the stale slot is cleared first.
+# --------------------------------------------------------------------------
+t="$WORK/t34"; mkdir -p "$t/opt/serverkit" "$t/opt/serverkit-a/stale"
+printf 'live\n' > "$t/opt/serverkit/marker"
+( set -Eeuo pipefail
+  INSTALL_DIR="$t/opt/serverkit"; DIR_A="$t/opt/serverkit-a"; DIR_B="$t/opt/serverkit-b"
+  FIRST_SLOT="$t/opt/serverkit-a"
+  ensure_install_layout ) >/dev/null 2>&1
+if [ -f "$t/opt/serverkit-a/marker" ] && [ ! -e "$t/opt/serverkit-a/serverkit" ]; then
+    ok "ensure_install_layout clears a stale slot instead of nesting the live tree inside it"
+else
+    bad "ensure_install_layout nested/lost the live tree on a stale-slot collision (I18 regression)"
+fi
+
+# --------------------------------------------------------------------------
+# T35 — I22: /etc/os-release defines its own VERSION ("24.04.1 LTS ..."),
+# which used to clobber the installer's version string when sourced.
+# --------------------------------------------------------------------------
+t="$WORK/t35"; mkdir -p "$t"
+cat > "$t/os-release" <<'OSR_EOF'
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 24.04 LTS"
+VERSION="24.04.1 LTS (Noble Numbat)"
+OSR_EOF
+res="$( set -Eeuo pipefail
+        VERSION="sk-sentinel"
+        SERVERKIT_OS_RELEASE="$t/os-release" identify_system >/dev/null 2>&1
+        printf '%s|%s' "$VERSION" "$OS_FAMILY" )"
+if [ "$res" = "sk-sentinel|debian" ]; then
+    ok "identify_system keeps the installer's \$VERSION across the os-release source"
+else
+    bad "identify_system clobbered VERSION/OS_FAMILY (I22 regression): [$res]"
+fi
+
+# --------------------------------------------------------------------------
+# T36 — I23: ping_telemetry runs AFTER a successful install; a missing
+# VERSION file (pipefail on cat|tr) must never abort it. Empty PATH also
+# proves the curl is best-effort.
+# --------------------------------------------------------------------------
+t="$WORK/t36"; mkdir -p "$t/empty" "$t/noinstall"
+if ( set -Eeuo pipefail; PATH="$t/empty"; INSTALL_DIR="$t/noinstall" ping_telemetry ) >/dev/null 2>&1; then
+    ok "ping_telemetry survives a missing VERSION file after a successful install"
+else
+    bad "ping_telemetry DIED on a missing VERSION under pipefail (I23 regression)"
+fi
+
+# --------------------------------------------------------------------------
+# T37 — I24: write_config's early return must still refresh the SSL-mode key
+# in a pre-existing .env — a re-run that gained/lost HTTPS otherwise leaves
+# the panel's HSTS gate reading a stale value — without touching the
+# irreplaceable generated secrets.
+# --------------------------------------------------------------------------
+t="$WORK/t37"; mkdir -p "$t/inst"
+printf 'SECRET_KEY=sentinel-keep\nSERVERKIT_SSL_MODE=insecure\nPORT=80\n' > "$t/inst/.env"
+( set -Eeuo pipefail; INSTALL_DIR="$t/inst"; SSL_MODE=secure; write_config ) >/dev/null 2>&1
+if grep -q '^SERVERKIT_SSL_MODE=secure$' "$t/inst/.env" && \
+   grep -q '^SECRET_KEY=sentinel-keep$' "$t/inst/.env" && \
+   [ "$(grep -c '^SERVERKIT_SSL_MODE=' "$t/inst/.env")" = "1" ]; then
+    ok "write_config early-return refreshes SERVERKIT_SSL_MODE in an existing .env (secrets intact)"
+else
+    bad "write_config left a stale/duplicated SSL mode in the existing .env (I24 regression)"
+fi
+printf 'SECRET_KEY=nokey-line\n' > "$t/inst/.env"
+( set -Eeuo pipefail; INSTALL_DIR="$t/inst"; SSL_MODE=insecure; write_config ) >/dev/null 2>&1
+if grep -q '^SERVERKIT_SSL_MODE=insecure$' "$t/inst/.env" && grep -q '^SECRET_KEY=nokey-line$' "$t/inst/.env"; then
+    ok "write_config appends SERVERKIT_SSL_MODE when a pre-existing .env lacks it"
+else
+    bad "write_config did not add the missing SSL-mode key to a pre-existing .env (I24)"
+fi
+
+# --------------------------------------------------------------------------
+# T38 — apply_frontend_root: same end-of-function `[ -f ] && ...` species as
+# I1/I2, reachable with a custom SERVERKIT_DIR when the last conf is missing.
+# --------------------------------------------------------------------------
+t="$WORK/t38"; mkdir -p "$t"
+printf 'root /opt/serverkit/frontend/dist;\n' > "$t/site.conf"
+if ( set -Eeuo pipefail; INSTALL_DIR="$t/custom"
+     apply_frontend_root "$t/site.conf" "$t/does-not-exist.conf" ) >/dev/null 2>&1 \
+   && grep -q "root $t/custom/frontend/dist;" "$t/site.conf"; then
+    ok "apply_frontend_root rewrites the root and survives a missing conf as the last arg"
+else
+    bad "apply_frontend_root aborted on a missing conf under set -e (the I1/I2 species)"
+fi
+
+# --------------------------------------------------------------------------
+# T39 — static guards for this slice's one-liner shapes (same spirit as T26).
+# --------------------------------------------------------------------------
+guards2_ok=1
+if grep -qE '^[^#]*get\.docker\.com[^|#]*\|[[:space:]]*sh' "$INSTALL_SH"; then
+    bad "install.sh pipes get.docker.com straight into sh again (I13 regression)"
+    guards2_ok=0
+fi
+if grep -qE '^[^#]*df /opt' "$INSTALL_SH"; then
+    bad "preflight hardcodes 'df /opt' again — must probe \$INSTALL_DIR with df -Pk (I14 regression)"
+    guards2_ok=0
+fi
+if ! grep -q 'svc_enable nginx' "$INSTALL_SH" || ! grep -q 'svc_start serverkit' "$INSTALL_SH"; then
+    bad "nginx/serverkit are enabled/started with bare systemctl again (I17 regression)"
+    guards2_ok=0
+fi
+[ "$guards2_ok" = "1" ] && ok "source guards: no curl|sh docker pipe, no 'df /opt', svc verbs at the call sites"
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]
