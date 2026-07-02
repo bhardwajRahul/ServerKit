@@ -397,7 +397,7 @@ selinux_label_dist() {
 discover_app_upstreams() {
     [ -d "$APP_LOCATIONS_DIR" ] || return 0
     grep -rhoE 'proxy_pass[[:space:]]+https?://127\.0\.0\.1:[0-9]+' "$APP_LOCATIONS_DIR" 2>/dev/null \
-        | grep -oE '127\.0\.0\.1:[0-9]+' | sort -u
+        | grep -oE '127\.0\.0\.1:[0-9]+' | sort -u || true
 }
 
 # Probe each upstream on stdin; emit "host:port up" / "host:port down". "up" means
