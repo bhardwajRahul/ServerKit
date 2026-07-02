@@ -112,6 +112,33 @@ const getInstalledPublishedEntry = (extension) => ({
     installId: extension.id,
 });
 
+const getRegistryCatalogEntry = (entry) => ({
+    key: `registry:${entry.slug}`,
+    source: 'registry',
+    sourceLabel: 'Registry',
+    sourceDetail: 'Remote registry package',
+    installKey: entry.slug,
+    displayName: entry.display_name || entry.slug,
+    description: entry.description || 'No description provided.',
+    category: entry.category || 'utility',
+    version: entry.version || '0.0.0',
+    author: entry.author,
+    firstParty: isFirstParty(entry.author, entry),
+    icon: entry.icon || null,
+    screenshots: Array.isArray(entry.screenshots) ? entry.screenshots : [],
+    extensionType: 'registry',
+    installed: Boolean(entry.installed),
+    status: entry.status,
+});
+
+// Source badge tint: built-in is 'warning', registry is 'info', published falls
+// back to the neutral 'outline' variant.
+const sourceBadgeVariant = (source) => {
+    if (source === 'local') return 'warning';
+    if (source === 'registry') return 'info';
+    return 'outline';
+};
+
 const getLocalCatalogEntry = (builtin) => {
     const manifest = builtin.manifest || {};
 
@@ -156,6 +183,8 @@ const Marketplace = () => {
     const [myExtensions, setMyExtensions] = useState([]);
     const [plugins, setPlugins] = useState([]);
     const [builtins, setBuiltins] = useState([]);
+    const [registryExtensions, setRegistryExtensions] = useState([]);
+    const [pluginUpdates, setPluginUpdates] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('');
@@ -169,16 +198,20 @@ const Marketplace = () => {
 
     const loadExtensions = useCallback(async () => {
         try {
-            const [eData, mData, pData, bData] = await Promise.all([
+            const [eData, mData, pData, bData, rData, uData] = await Promise.all([
                 api.getMarketplaceExtensions(category, search),
                 api.getMyExtensions(),
                 api.getInstalledPlugins().catch(() => ({ plugins: [] })),
                 api.getBuiltinExtensions().catch(() => ({ builtin: [] })),
+                api.getRegistryExtensions().catch(() => ({ extensions: [] })),
+                api.getPluginUpdates().catch(() => ({ updates: [] })),
             ]);
             setExtensions(eData.extensions || []);
             setMyExtensions(mData.extensions || []);
             setPlugins(pData.plugins || []);
             setBuiltins(bData.builtin || []);
+            setRegistryExtensions(rData.extensions || []);
+            setPluginUpdates(uData.updates || []);
         } catch {
             toast.error('Failed to load extensions');
         } finally {
@@ -217,9 +250,24 @@ const Marketplace = () => {
         }
     };
 
+    const handleRegistryInstall = async (slug) => {
+        setInstalling(true);
+        try {
+            const result = await api.installRegistryExtension(slug);
+            toast.success(`Installed "${result.display_name}". Restart backend if blueprint routes do not appear.`);
+            loadExtensions();
+        } catch (err) {
+            toast.error(err.message || 'Registry install failed');
+        } finally {
+            setInstalling(false);
+        }
+    };
+
     const installEntry = (entry) => {
         if (entry.source === 'local') {
             handleBuiltinInstall(entry.installKey);
+        } else if (entry.source === 'registry') {
+            handleRegistryInstall(entry.installKey);
         } else {
             handleInstall(entry.installKey);
         }
@@ -261,6 +309,19 @@ const Marketplace = () => {
             toast.success('Plugin uninstalled');
             loadExtensions();
         } catch (err) { toast.error(err.message); }
+    };
+
+    const handlePluginUpdate = async (pluginId) => {
+        setInstalling(true);
+        try {
+            const result = await api.updatePlugin(pluginId);
+            toast.success(`Plugin "${result.display_name}" updated to v${result.version}.`);
+            loadExtensions();
+        } catch (err) {
+            toast.error(err.message || 'Plugin update failed');
+        } finally {
+            setInstalling(false);
+        }
     };
 
     const handlePluginToggle = async (plugin) => {
@@ -306,6 +367,7 @@ const Marketplace = () => {
 
     const installedIds = new Set(myExtensions.map((extension) => String(extension.extension_id)));
     const localCatalogEntries = builtins.map(getLocalCatalogEntry);
+    const registryCatalogEntries = registryExtensions.map(getRegistryCatalogEntry);
     const publishedCatalogEntries = extensions.map((extension) => (
         getPublishedCatalogEntry(extension, installedIds.has(String(extension.id)))
     ));
@@ -317,9 +379,16 @@ const Marketplace = () => {
     const activePluginCount = plugins.filter((plugin) => plugin.status === 'active').length;
     const pluginIssueCount = plugins.filter((plugin) => plugin.status === 'error').length;
     const totalDownloads = extensions.reduce((total, extension) => total + (Number(extension.download_count) || 0), 0);
-    const availableCount = extensions.length + builtins.length;
+    const availableCount = extensions.length + builtins.length + registryExtensions.length;
     const installedCatalogCount = installedCatalogEntries.length;
-    const mergedCatalogEntries = [...localCatalogEntries, ...publishedCatalogEntries];
+    // Update descriptors keyed by both plugin_id and slug so PluginRow can match
+    // whichever identifier it has on hand.
+    const updatesByKey = new Map();
+    pluginUpdates.forEach((update) => {
+        if (update.plugin_id != null) updatesByKey.set(String(update.plugin_id), update);
+        if (update.slug) updatesByKey.set(update.slug, update);
+    });
+    const mergedCatalogEntries = [...localCatalogEntries, ...registryCatalogEntries, ...publishedCatalogEntries];
     const catalogCategories = deriveCatalogCategories(mergedCatalogEntries);
     const catalogEntries = mergedCatalogEntries
         .filter((entry) => catalogEntryMatches(entry, search, category));
@@ -423,7 +492,9 @@ const Marketplace = () => {
                                                 onInstall={
                                                     entry.source === 'local'
                                                         ? handleBuiltinInstall
-                                                        : handleInstall
+                                                        : entry.source === 'registry'
+                                                            ? handleRegistryInstall
+                                                            : handleInstall
                                                 }
                                                 onOpenDetail={setDetailEntry}
                                                 statusVariant={pluginStatusVariant}
@@ -478,6 +549,7 @@ const Marketplace = () => {
                                 </div>
                                 <div className="marketplace-runtime">
                                     <RuntimeRow label="Published installs" value={formatCount(totalDownloads)} />
+                                    <RuntimeRow label="Registry" value={registryExtensions.length} />
                                     <RuntimeRow label="Built-in" value={builtins.length} />
                                     <RuntimeRow label="Built-in installed" value={`${installedBuiltinCount}/${builtins.length}`} />
                                     <RuntimeRow label="Active plugins" value={`${activePluginCount}/${plugins.length}`} />
@@ -624,7 +696,10 @@ const Marketplace = () => {
                                         <PluginRow
                                             key={plugin.id}
                                             plugin={plugin}
+                                            update={updatesByKey.get(String(plugin.id))}
+                                            installing={installing}
                                             onToggle={handlePluginToggle}
+                                            onUpdate={handlePluginUpdate}
                                             onUninstall={handlePluginUninstall}
                                             statusVariant={pluginStatusVariant}
                                         />
@@ -672,7 +747,8 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
     const category = entry.category || 'utility';
     const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
-    const installedLabel = isLocal && entry.status && entry.status !== 'active'
+    const isPublished = entry.source === 'published';
+    const installedLabel = !isPublished && entry.status && entry.status !== 'active'
         ? titleCase(entry.status)
         : 'Installed';
 
@@ -700,7 +776,7 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
                     {entry.firstParty && (
                         <Badge variant="secondary" className="extension-firstparty">by ServerKit</Badge>
                     )}
-                    <Badge variant={isLocal ? 'warning' : 'outline'}>{entry.sourceLabel}</Badge>
+                    <Badge variant={sourceBadgeVariant(entry.source)}>{entry.sourceLabel}</Badge>
                     <Badge variant="outline">{titleCase(category)}</Badge>
                 </div>
             </div>
@@ -709,7 +785,7 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
                 <p className="extension-card__desc">{entry.description}</p>
             </div>
             <div className="extension-card__signals">
-                {isLocal ? (
+                {!isPublished ? (
                     <>
                         <span>{entry.sourceDetail}</span>
                         <span>{entry.installed ? installedLabel : 'Ready to install'}</span>
@@ -745,14 +821,14 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
                     ) : (
                         <Button
                             size="sm"
-                            disabled={isLocal && installing}
+                            disabled={!isPublished && installing}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 onInstall(entry.installKey);
                             }}
                         >
                             <DownloadCloud aria-hidden="true" />
-                            {isLocal && installing ? 'Installing...' : 'Install'}
+                            {!isPublished && installing ? 'Installing...' : 'Install'}
                         </Button>
                     )}
                 </div>
@@ -765,9 +841,10 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
     const category = entry.category || 'utility';
     const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
+    const isPublished = entry.source === 'published';
     const iconSvg = entry.icon ? sanitizeSvgInner(entry.icon) : '';
     const screenshots = entry.screenshots || [];
-    const installedLabel = isLocal && entry.status && entry.status !== 'active'
+    const installedLabel = !isPublished && entry.status && entry.status !== 'active'
         ? titleCase(entry.status)
         : 'Installed';
 
@@ -794,7 +871,7 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
                             {entry.firstParty && (
                                 <Badge variant="secondary" className="extension-firstparty">by ServerKit</Badge>
                             )}
-                            <Badge variant={isLocal ? 'warning' : 'outline'}>{entry.sourceLabel}</Badge>
+                            <Badge variant={sourceBadgeVariant(entry.source)}>{entry.sourceLabel}</Badge>
                             <Badge variant="outline">{titleCase(category)}</Badge>
                         </div>
                         <div className="extension-detail__meta">
@@ -828,9 +905,9 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
                             {installedLabel}
                         </Badge>
                     ) : (
-                        <Button disabled={isLocal && installing} onClick={onInstall}>
+                        <Button disabled={!isPublished && installing} onClick={onInstall}>
                             <DownloadCloud aria-hidden="true" />
-                            {isLocal && installing ? 'Installing...' : 'Install'}
+                            {!isPublished && installing ? 'Installing...' : 'Install'}
                         </Button>
                     )}
                 </div>
@@ -875,38 +952,59 @@ const InstalledCatalogRow = ({ entry, onUninstall }) => {
     );
 };
 
-const PluginRow = ({ plugin, onToggle, onUninstall, statusVariant }) => (
-    <article className={`installed-item installed-item--plugin card ${plugin.status === 'error' ? 'installed-item--error' : ''}`}>
-        <div className="installed-item__main">
-            <div className="installed-item__icon installed-item__icon--plugin">
-                <PlugZap aria-hidden="true" />
-            </div>
-            <div className="installed-item__content">
-                <div className="installed-item__title-line">
-                    <strong>{plugin.display_name}</strong>
-                    <span className="text-muted">v{plugin.version}</span>
-                    <Badge variant={statusVariant(plugin.status)}>{plugin.status}</Badge>
-                    {plugin.has_backend && <Badge variant="secondary">Backend</Badge>}
-                    {plugin.has_frontend && <Badge variant="secondary">Frontend</Badge>}
+const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall, statusVariant }) => {
+    const updateAvailable = Boolean(update?.update_available);
+    const compatible = update?.compatible !== false;
+
+    return (
+        <article className={`installed-item installed-item--plugin card ${plugin.status === 'error' ? 'installed-item--error' : ''}`}>
+            <div className="installed-item__main">
+                <div className="installed-item__icon installed-item__icon--plugin">
+                    <PlugZap aria-hidden="true" />
                 </div>
-                {plugin.description && <p className="installed-item__description">{plugin.description}</p>}
-                {plugin.error_message && <p className="installed-item__error">{plugin.error_message}</p>}
+                <div className="installed-item__content">
+                    <div className="installed-item__title-line">
+                        <strong>{plugin.display_name}</strong>
+                        <span className="text-muted">v{plugin.version}</span>
+                        <Badge variant={statusVariant(plugin.status)}>{plugin.status}</Badge>
+                        {plugin.has_backend && <Badge variant="secondary">Backend</Badge>}
+                        {plugin.has_frontend && <Badge variant="secondary">Frontend</Badge>}
+                        {updateAvailable && (
+                            <Badge variant="info" className="plugin-update-badge">
+                                Update available → v{update.available_version}
+                            </Badge>
+                        )}
+                    </div>
+                    {plugin.description && <p className="installed-item__description">{plugin.description}</p>}
+                    {plugin.error_message && <p className="installed-item__error">{plugin.error_message}</p>}
+                </div>
             </div>
-        </div>
-        <div className="installed-item__actions">
-            <Button
-                size="sm"
-                variant={plugin.status === 'active' ? 'outline' : 'default'}
-                onClick={() => onToggle(plugin)}
-            >
-                {plugin.status === 'active' ? 'Disable' : 'Enable'}
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => onUninstall(plugin.id)}>
-                Uninstall
-            </Button>
-        </div>
-    </article>
-);
+            <div className="installed-item__actions">
+                {updateAvailable && (
+                    <Button
+                        size="sm"
+                        disabled={!compatible || installing}
+                        title={compatible ? undefined : 'Panel version is too old for this update'}
+                        onClick={() => onUpdate(plugin.id)}
+                    >
+                        <DownloadCloud aria-hidden="true" />
+                        Update
+                    </Button>
+                )}
+                <Button
+                    size="sm"
+                    variant={plugin.status === 'active' ? 'outline' : 'default'}
+                    onClick={() => onToggle(plugin)}
+                >
+                    {plugin.status === 'active' ? 'Disable' : 'Enable'}
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => onUninstall(plugin.id)}>
+                    Uninstall
+                </Button>
+            </div>
+        </article>
+    );
+};
 
 const PluginInstallInput = ({
     description,

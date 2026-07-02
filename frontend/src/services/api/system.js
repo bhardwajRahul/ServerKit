@@ -924,6 +924,23 @@ export async function getMyExtensions() {
     return this.request('/marketplace/my-extensions');
 }
 
+// Remote/bundled registry catalog. Returns:
+//   { extensions: [ { slug, display_name, description, version, category,
+//                     author, first_party, permissions, min_panel_version,
+//                     max_panel_version, source, sha256, icon, screenshots,
+//                     installed, status, installed_version, source_kind } ],
+//     source: 'bundled'|'remote'|null }
+export async function getRegistryExtensions() {
+    return this.request('/marketplace/registry');
+}
+
+// One-click install for a registry extension by slug (admin-only).
+export async function installRegistryExtension(slug) {
+    return this.request(`/marketplace/registry/${encodeURIComponent(slug)}/install`, {
+        method: 'POST',
+    });
+}
+
 export async function rateExtension(extId, rating) {
     return this.request(`/marketplace/${extId}/rate`, {
         method: 'POST', body: { rating }

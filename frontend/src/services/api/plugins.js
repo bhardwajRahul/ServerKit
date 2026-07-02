@@ -70,3 +70,17 @@ export async function installBuiltinExtension(slug) {
         method: 'POST',
     });
 }
+
+// Returns available updates for installed plugins:
+//   { updates: [ { slug, plugin_id, installed_version, available_version,
+//                  update_available, compatible, source } ] }
+export async function getPluginUpdates() {
+    return this.request('/plugins/updates');
+}
+
+// Updates an installed plugin in place; returns the updated plugin dict.
+export async function updatePlugin(pluginId) {
+    return this.request(`/plugins/${pluginId}/update`, {
+        method: 'POST',
+    });
+}

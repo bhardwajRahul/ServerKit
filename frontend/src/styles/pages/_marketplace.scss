@@ -553,6 +553,13 @@
         border-color: fade($danger, 30%);
     }
 
+    // "Update available" pill on plugin rows. Uses the info badge variant for
+    // color; this just tightens the icon/text rhythm and weight.
+    .plugin-update-badge {
+        gap: $space-1;
+        font-weight: $font-weight-semibold;
+    }
+
     .plugin-install-form {
         padding: $space-5;
         border: 1px solid $border-subtle;
