@@ -310,5 +310,406 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# T13 — I1: the default no-domain install must survive install_nginx_config_
+# for_mode. `[ -n "$PANEL_DOMAIN" ] && printf ...` as the function's LAST
+# statement returned 1 on an empty domain and set -e killed every curl-pipe
+# install at the nginx phase (shipped broken since v1.6.25).
+# --------------------------------------------------------------------------
+t="$WORK/t13"; mkdir -p "$t/nginx/sites-available" "$t/nginx/sites-enabled" "$t/cfg"
+printf 'server { listen 80; }\n' > "$t/nginx/sites-available/serverkit-insecure.conf"
+printf 'ssl_certificate /etc/letsencrypt/live/YOUR_DOMAIN/fullchain.pem;\n' \
+    > "$t/nginx/sites-available/serverkit.conf"
+if ( set -Eeuo pipefail
+     SERVERKIT_NGINX_DIR="$t/nginx" SERVERKIT_CONFIG_DIR="$t/cfg" \
+     PANEL_DOMAIN="" SSL_MODE=insecure install_nginx_config_for_mode ) >/dev/null 2>&1; then
+    if [ "$(cat "$t/cfg/ssl-mode")" = "insecure" ] && [ ! -f "$t/cfg/panel-domain" ]; then
+        ok "install_nginx_config_for_mode survives an empty PANEL_DOMAIN (the v1.6.25 no-domain abort)"
+    else
+        bad "install_nginx_config_for_mode wrote the wrong mode/domain state for a no-domain install"
+    fi
+else
+    bad "install_nginx_config_for_mode DIED with an empty PANEL_DOMAIN under set -e (I1 regression)"
+fi
+if ( set -Eeuo pipefail
+     SERVERKIT_NGINX_DIR="$t/nginx" SERVERKIT_CONFIG_DIR="$t/cfg" \
+     PANEL_DOMAIN="panel.example.com" SSL_MODE=secure install_nginx_config_for_mode ) >/dev/null 2>&1 \
+   && grep -q 'live/panel.example.com/' "$t/nginx/sites-available/serverkit.conf" \
+   && [ "$(cat "$t/cfg/panel-domain")" = "panel.example.com" ]; then
+    ok "install_nginx_config_for_mode (secure) applies the cert path and persists the domain"
+else
+    bad "install_nginx_config_for_mode (secure) did not apply the cert path / persist the domain"
+fi
+
+# --------------------------------------------------------------------------
+# T14 — I2: plain Enter at the interactive domain prompt must not abort.
+# Same end-of-function `[ -n ] && ...` shape as I1. SERVERKIT_FORCE_PROMPT=1
+# lets the test drive the prompt from a pipe instead of a tty.
+# --------------------------------------------------------------------------
+if printf '\n' | ( set -Eeuo pipefail
+                   PANEL_DOMAIN="" SERVERKIT_FORCE_PROMPT=1 prompt_for_domain ) >/dev/null 2>&1; then
+    ok "prompt_for_domain survives a blank answer (plain Enter, the no-domain default)"
+else
+    bad "prompt_for_domain DIED on a blank answer under set -e (I2 regression)"
+fi
+res="$(printf 'panel.example.com\n' | (
+    set -Eeuo pipefail
+    PANEL_DOMAIN=""; PANEL_PORT=""; SERVERKIT_FORCE_PROMPT=1
+    prompt_for_domain >/dev/null 2>&1
+    printf '%s|%s' "$PANEL_DOMAIN" "$PANEL_PORT"
+))"
+if [ "$res" = "panel.example.com|80" ]; then
+    ok "prompt_for_domain accepts a typed domain and sets the port"
+else
+    bad "prompt_for_domain returned [$res], expected panel.example.com|80"
+fi
+
+# --------------------------------------------------------------------------
+# T15 — I4 (detection half): should_default_to_release must see an EXISTING
+# install. The old check probed backend/src (never exists — the tree is
+# backend/app), so every re-run picked release mode and fetch_release
+# rm -rf'd the live install, .env + SQLite DB included.
+# --------------------------------------------------------------------------
+t="$WORK/t15"
+mkdir -p "$t/fresh" "$t/existing/backend/app" "$t/envonly"
+printf 'SECRET_KEY=x\n' > "$t/envonly/.env"
+det_ok=1
+( set -Eeuo pipefail; INSTALL_DIR="$t/fresh"; BUILD_FROM_SOURCE=0; SERVERKIT_VERSION=""
+  should_default_to_release ) || { bad "fresh box should default to a release install"; det_ok=0; }
+( set -Eeuo pipefail; INSTALL_DIR="$t/existing"; BUILD_FROM_SOURCE=0; SERVERKIT_VERSION=""
+  should_default_to_release ) && { bad "existing backend/app tree must NOT default to release (data loss)"; det_ok=0; }
+( set -Eeuo pipefail; INSTALL_DIR="$t/envonly"; BUILD_FROM_SOURCE=0; SERVERKIT_VERSION=""
+  should_default_to_release ) && { bad "existing .env must NOT default to release (data loss)"; det_ok=0; }
+( set -Eeuo pipefail; INSTALL_DIR="$t/fresh"; BUILD_FROM_SOURCE=1; SERVERKIT_VERSION=""
+  should_default_to_release ) && { bad "BUILD_FROM_SOURCE=1 must force the source path"; det_ok=0; }
+[ "$det_ok" = "1" ] && ok "should_default_to_release detects an existing install (backend/app or .env)"
+
+# --------------------------------------------------------------------------
+# T16 — I4 (preservation half): live state survives a slot rewrite
+# byte-identical. First the helpers in isolation, then the real fetch_release
+# offline-tarball path over a symlinked blue/green layout (Linux CI; skipped
+# where symlinks are unsupported, same convention as test_update.sh T4).
+# --------------------------------------------------------------------------
+t="$WORK/t16"; mkdir -p "$t/slot/backend/instance"
+printf 'SECRET_KEY=sentinel-abc123\nSERVERKIT_ENCRYPTION_KEY=k\n' > "$t/slot/.env"
+printf 'SQLITE-SENTINEL-BYTES\n' > "$t/slot/backend/instance/serverkit.db"
+cp "$t/slot/.env" "$t/env.orig"
+cp "$t/slot/backend/instance/serverkit.db" "$t/db.orig"
+if (
+    set -Eeuo pipefail
+    stash="$(stash_live_state "$t/slot")"
+    [ -n "$stash" ]
+    rm -rf "$t/slot"                 # the rewrite
+    mkdir -p "$t/slot/backend"       # fresh tree: no .env, no instance/
+    restore_live_state "$stash" "$t/slot"
+    cmp -s "$t/slot/.env" "$t/env.orig"
+    cmp -s "$t/slot/backend/instance/serverkit.db" "$t/db.orig"
+) >/dev/null 2>&1; then
+    ok "stash/restore_live_state carries .env + instance DB byte-identical across a rewrite"
+else
+    bad "stash/restore_live_state lost or altered the live state"
+fi
+
+t="$WORK/t16r"; slotA="$t/sk-a"; slotB="$t/sk-b"; inst="$t/sk"
+mkdir -p "$slotA/backend/instance"
+printf 'SECRET_KEY=keep-me\n' > "$slotA/.env"
+printf 'DB-SENTINEL\n' > "$slotA/backend/instance/serverkit.db"
+cp "$slotA/.env" "$t/env.orig"; cp "$slotA/backend/instance/serverkit.db" "$t/db.orig"
+ln -sfn "$slotA" "$inst" 2>/dev/null || true
+if [ ! -L "$inst" ]; then
+    skip "fetch_release live-state carry — symlinks unsupported here (runs on Linux CI)"
+else
+    stage="$t/stage"; mkdir -p "$stage/serverkit/backend/app" "$stage/serverkit/scripts"
+    printf '#!/bin/sh\n' > "$stage/serverkit/serverkit"
+    printf '9.9.9\n' > "$stage/serverkit/VERSION"
+    tar czf "$t/rel.tar.gz" -C "$stage" serverkit
+    if (
+        set -Eeuo pipefail
+        INSTALL_DIR="$inst"; DIR_A="$slotA"; DIR_B="$slotB"; FIRST_SLOT="$slotA"
+        SERVERKIT_OFFLINE_TARBALL="$t/rel.tar.gz"
+        fetch_release
+        cmp -s "$slotA/.env" "$t/env.orig"
+        cmp -s "$slotA/backend/instance/serverkit.db" "$t/db.orig"
+        [ -d "$slotA/backend/app" ]
+    ) >/dev/null 2>&1; then
+        ok "fetch_release re-run preserves .env + database byte-identical (the data-loss bug)"
+    else
+        bad "fetch_release re-run destroyed or altered .env / the database (I4 regression)"
+    fi
+fi
+
+# --------------------------------------------------------------------------
+# T17 — I20: snapshot_existing must refresh a stale .backup instead of
+# silently keeping a months-old tree (which revert_install would then
+# restore over a much newer install).
+# --------------------------------------------------------------------------
+t="$WORK/t17"; mkdir -p "$t/inst"
+printf 'v1\n' > "$t/inst/marker"
+( set -Eeuo pipefail; INSTALL_DIR="$t/inst"; snapshot_existing ) >/dev/null 2>&1
+if [ -f "$t/inst.backup/marker" ] && grep -q v1 "$t/inst.backup/marker"; then
+    ok "snapshot_existing creates the first backup"
+else
+    bad "snapshot_existing did not create a backup"
+fi
+printf 'v2\n' > "$t/inst/marker"
+( set -Eeuo pipefail; INSTALL_DIR="$t/inst"; snapshot_existing ) >/dev/null 2>&1
+if grep -q v2 "$t/inst.backup/marker" 2>/dev/null && [ ! -d "$t/inst.backup.new" ]; then
+    ok "snapshot_existing refreshes a stale .backup on re-run (no months-old rollback source)"
+else
+    bad "snapshot_existing kept the stale backup (I20 regression) or left .backup.new behind"
+fi
+
+# --------------------------------------------------------------------------
+# T18 — I3: the release-venv install must not delete its own copy source. In
+# the default layout $VENV_DIR resolves to $FIRST_SLOT/venv, so the old
+# rm -rf + cp deleted the venv then failed to copy it. Same-path → keep in
+# place; distinct path → still copies.
+# --------------------------------------------------------------------------
+t="$WORK/t18"; mkdir -p "$t/slot/venv/bin" "$t/elsewhere"
+: > "$t/slot/venv/bin/activate"
+printf '#!/bin/sh\n' > "$t/slot/venv/bin/python"; chmod +x "$t/slot/venv/bin/python"
+if (
+    set -Eeuo pipefail
+    INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/slot/venv"
+    build_virtualenv
+    [ -f "$t/slot/venv/bin/activate" ]
+) >/dev/null 2>&1; then
+    ok "build_virtualenv keeps the venv when source and destination are the same directory"
+else
+    bad "build_virtualenv deleted its own venv on the same-path layout (I3 regression)"
+fi
+if (
+    set -Eeuo pipefail
+    INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/elsewhere/venv"
+    build_virtualenv
+    [ -f "$t/elsewhere/venv/bin/activate" ] && [ -f "$t/slot/venv/bin/activate" ]
+) >/dev/null 2>&1; then
+    ok "build_virtualenv still copies the release venv to a distinct VENV_DIR"
+else
+    bad "build_virtualenv failed to copy the release venv to a custom VENV_DIR"
+fi
+ln -sfn "$t/slot" "$t/link" 2>/dev/null || true
+if [ ! -L "$t/link" ]; then
+    skip "build_virtualenv symlinked default layout — symlinks unsupported here (runs on Linux CI)"
+else
+    if (
+        set -Eeuo pipefail
+        INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/link/venv"
+        build_virtualenv
+        [ -x "$t/slot/venv/bin/python" ]
+    ) >/dev/null 2>&1; then
+        ok "build_virtualenv survives the default symlinked layout (/opt/serverkit → slot)"
+    else
+        bad "build_virtualenv broke on the symlinked layout (I3 regression)"
+    fi
+fi
+
+# --------------------------------------------------------------------------
+# T19 — I6/I12: pkg_add promises warn-and-continue, so a failing package
+# manager must produce a warning and exit 0 — the old body died on the
+# out=$(...) assignment under set -e, printing NOTHING. refresh_pkg_index is
+# best-effort too, and its yum arm must not use the dnf-only --refresh flag.
+# --------------------------------------------------------------------------
+t="$WORK/t19"; mkdir -p "$t/bin"
+printf '#!/usr/bin/env bash\necho "E: Unable to locate package"\nexit 100\n' > "$t/bin/apt-get"
+chmod +x "$t/bin/apt-get"
+out="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"; PKG_MGR=apt pkg_add nosuchpkg 2>&1 )"
+rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'Could not install: nosuchpkg'; then
+    ok "pkg_add warns and returns 0 when the package manager fails (errexit-immune body)"
+else
+    bad "pkg_add rc=$rc (expected 0) or printed no warning: [$out]"
+fi
+if ( set -Eeuo pipefail; PATH="$t/bin:$PATH"; PKG_MGR=apt refresh_pkg_index ) >/dev/null 2>&1; then
+    ok "refresh_pkg_index is best-effort (a failed index refresh never aborts)"
+else
+    bad "refresh_pkg_index propagated a failure under set -e (I6 regression)"
+fi
+if ! grep -qE '^[^#]*yum makecache --refresh' "$INSTALL_SH"; then
+    ok "refresh_pkg_index yum arm avoids the dnf-only --refresh flag (I12)"
+else
+    bad "the yum arm uses 'makecache --refresh' again — that flag is dnf-only (I12 regression)"
+fi
+
+# --------------------------------------------------------------------------
+# T20 — I5: the RHEL-9 upfront openssh+openssl paired upgrade (drops sshd
+# 'OpenSSL version mismatch' on Rocky 9) must run the exact paired
+# transaction, survive a failing dnf, and no-op on other families.
+# --------------------------------------------------------------------------
+t="$WORK/t20"; mkdir -p "$t/bin"
+DNF_LOG="$t/dnf.log"; : > "$DNF_LOG"
+cat > "$t/bin/dnf" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$DNF_LOG"
+exit 1
+EOF
+chmod +x "$t/bin/dnf"
+if ( set -Eeuo pipefail; PATH="$t/bin:$PATH"; OS_FAMILY=rhel upgrade_rhel_crypto_stack ) >/dev/null 2>&1 \
+   && grep -q 'upgrade -y openssh openssh-server openssh-clients openssl openssl-libs openssl-devel' "$DNF_LOG"; then
+    ok "upgrade_rhel_crypto_stack upgrades openssh+openssl in ONE transaction and survives a failing dnf"
+else
+    bad "upgrade_rhel_crypto_stack missing/wrong dnf transaction or aborted (I5 regression)"
+fi
+: > "$DNF_LOG"
+( set -Eeuo pipefail; PATH="$t/bin:$PATH"; OS_FAMILY=debian upgrade_rhel_crypto_stack ) >/dev/null 2>&1
+if [ ! -s "$DNF_LOG" ]; then
+    ok "upgrade_rhel_crypto_stack is a no-op outside the RHEL family"
+else
+    bad "upgrade_rhel_crypto_stack ran dnf on a non-RHEL family"
+fi
+
+# --------------------------------------------------------------------------
+# T21 — I7: sync_source needs git but nothing installed it. Without git and
+# with the on-demand install failing, sync_source must halt LOUDLY (clear
+# message) before ever attempting the clone. Curated PATH: a failing apt-get
+# plus a real tail; no git anywhere.
+# --------------------------------------------------------------------------
+t="$WORK/t21"; mkdir -p "$t/bin"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/apt-get"; chmod +x "$t/bin/apt-get"
+printf '#!/usr/bin/env bash\nexec %s "$@"\n' "$(command -v tail)" > "$t/bin/tail"; chmod +x "$t/bin/tail"
+out="$( set -Eeuo pipefail; PATH="$t/bin"; PKG_MGR=apt sync_source 2>&1 )"
+rc=$?
+if [ "$rc" -ne 0 ] && printf '%s' "$out" | grep -q 'git is required'; then
+    ok "sync_source installs git on demand and halts clearly when that fails (never a cryptic clone error)"
+else
+    bad "sync_source rc=$rc without the 'git is required' halt: [$out]"
+fi
+
+# --------------------------------------------------------------------------
+# T22 — I8: locate_python must reject an interpreter whose venv module is
+# broken (Debian/Ubuntu minimal without pythonX.Y-venv → 'ensurepip is not
+# available' much later), and on Debian-family it must first try to install
+# the matching pythonX.Y-venv package.
+# --------------------------------------------------------------------------
+t="$WORK/t22"; PYX="$t/py"; mkdir -p "$PYX" "$t/bin"
+mkvless() {  # mkvless <name> <major.minor> — version OK, `-m venv` broken
+    {
+        printf '#!/usr/bin/env bash\n'
+        printf 'if [ "${1:-}" = "-c" ]; then printf "%s"; exit 0; fi\n' "$2"
+        printf 'if [ "${1:-}" = "-m" ]; then exit 1; fi\n'
+        printf 'exit 0\n'
+    } > "$PYX/$1"
+    chmod +x "$PYX/$1"
+}
+mkvless python3.12 3.13     # out of range — rejected before the venv probe
+mkvless python3.11 3.11     # in range but venv-less — must be rejected
+mkvless python3     3.10    # too old
+if ( set -Eeuo pipefail; PATH="$PYX:$PATH"; locate_python ) >/dev/null 2>&1; then
+    bad "locate_python accepted a venv-less interpreter (I8 regression)"
+else
+    ok "locate_python rejects an interpreter whose '-m venv' is broken"
+fi
+APT_LOG="$t/apt.log"; : > "$APT_LOG"
+cat > "$t/bin/apt-get" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$APT_LOG"
+exit 1
+EOF
+chmod +x "$t/bin/apt-get"
+( set -Eeuo pipefail; PATH="$t/bin:$PYX:$PATH"; OS_FAMILY=debian PKG_MGR=apt locate_python ) >/dev/null 2>&1
+if grep -q 'install -y python3.11-venv' "$APT_LOG"; then
+    ok "locate_python (Debian family) tries to install the matching pythonX.Y-venv package"
+else
+    bad "locate_python never attempted the python3.11-venv fallback; apt saw: $(tr '\n' ';' < "$APT_LOG")"
+fi
+
+# --------------------------------------------------------------------------
+# T23 — I9: distro-repo Docker (docker.io) has no Docker-repo
+# 'docker-compose-plugin'; ensure_compose_plugin must fall back to Ubuntu's
+# 'docker-compose-v2' and, when neither lands, warn and continue instead of
+# aborting the install.
+# --------------------------------------------------------------------------
+t="$WORK/t23"; mkdir -p "$t/bin"
+APT_LOG="$t/apt.log"; : > "$APT_LOG"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/docker"; chmod +x "$t/bin/docker"
+cat > "$t/bin/apt-get" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$APT_LOG"
+exit 100
+EOF
+chmod +x "$t/bin/apt-get"
+out="$( set -Eeuo pipefail; PATH="$t/bin:$PATH"; PKG_MGR=apt ensure_compose_plugin 2>&1 )"
+rc=$?
+if [ "$rc" -eq 0 ] && grep -q 'install -y docker-compose-plugin' "$APT_LOG" \
+   && grep -q 'install -y docker-compose-v2' "$APT_LOG" \
+   && printf '%s' "$out" | grep -q 'docker compose'; then
+    ok "ensure_compose_plugin tries plugin → docker-compose-v2 → warn-and-continue (never aborts)"
+else
+    bad "ensure_compose_plugin rc=$rc; apt saw: $(tr '\n' ';' < "$APT_LOG")"
+fi
+
+# --------------------------------------------------------------------------
+# T24 — I10: dnf5 (Fedora 41+) removed `config-manager --add-repo URL`;
+# docker_repo_add must fall back to the dnf5 `addrepo --from-repofile=` form,
+# and stay warn-and-continue when both forms fail.
+# --------------------------------------------------------------------------
+t="$WORK/t24"; mkdir -p "$t/bin"
+DNF_LOG="$t/dnf.log"; : > "$DNF_LOG"
+cat > "$t/bin/dnf" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "\$*" >> "$DNF_LOG"
+case "\$*" in
+    "config-manager --add-repo "*) exit 1 ;;   # dnf5: flag removed
+    "config-manager addrepo "*)    exit 0 ;;
+esac
+exit 0
+EOF
+chmod +x "$t/bin/dnf"
+if ( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+     docker_repo_add https://example.invalid/docker-ce.repo ) >/dev/null 2>&1 \
+   && grep -q 'config-manager addrepo --from-repofile=https://example.invalid/docker-ce.repo' "$DNF_LOG"; then
+    ok "docker_repo_add falls back to the dnf5 addrepo syntax when --add-repo fails"
+else
+    bad "docker_repo_add never tried the dnf5 syntax; dnf saw: $(tr '\n' ';' < "$DNF_LOG")"
+fi
+printf '#!/usr/bin/env bash\nexit 1\n' > "$t/bin/dnf"; chmod +x "$t/bin/dnf"
+if ( set -Eeuo pipefail; PATH="$t/bin:$PATH"
+     docker_repo_add https://example.invalid/docker-ce.repo ) >/dev/null 2>&1; then
+    ok "docker_repo_add warns and continues when both config-manager forms fail"
+else
+    bad "docker_repo_add aborted when both config-manager forms failed (must warn-and-continue)"
+fi
+
+# --------------------------------------------------------------------------
+# T25 — I21: a failing state_set/state_append (e.g. unwritable
+# install-state.json) must not abort the firewall phase whose actual firewall
+# work already succeeded. The state file is pointed under a regular FILE so
+# state.sh's python genuinely fails; ufw is stubbed so firewall_open runs.
+# --------------------------------------------------------------------------
+if command -v python3 >/dev/null 2>&1; then
+    t="$WORK/t25"; mkdir -p "$t/bin"
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$t/bin/ufw"; chmod +x "$t/bin/ufw"
+    : > "$t/blocker"                       # regular file — state.json can't live under it
+    out="$(
+        set -Eeuo pipefail
+        export PATH="$t/bin:$PATH"
+        export SERVERKIT_STATE_FILE="$t/blocker/state.json"
+        FIREWALL_BACKEND=ufw configure_firewall 2>&1
+    )"
+    rc=$?
+    if [ "$rc" -eq 0 ] && printf '%s' "$out" | grep -q 'Firewall configured'; then
+        ok "configure_firewall survives failing state_set/state_append (records are best-effort)"
+    else
+        bad "configure_firewall rc=$rc when state writes fail (I21 regression): [$out]"
+    fi
+else
+    skip "configure_firewall state-failure guard — python3 unavailable here"
+fi
+
+# --------------------------------------------------------------------------
+# T26 — regression guards baked into the source (same spirit as
+# test_update.sh T26): the audited failure shapes must never creep back in.
+# --------------------------------------------------------------------------
+guards_ok=1
+if grep -qE '^[^#]*backend/src' "$INSTALL_SH"; then
+    bad "install.sh probes backend/src again — that path never exists (I4 detection regression)"
+    guards_ok=0
+fi
+if ! grep -qE '^[[:space:]]*upgrade_rhel_crypto_stack$' "$INSTALL_SH"; then
+    bad "main() no longer calls upgrade_rhel_crypto_stack (I5 regression)"
+    guards_ok=0
+fi
+[ "$guards_ok" = "1" ] && ok "source guards: no backend/src probe; main runs the RHEL crypto upgrade"
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]
