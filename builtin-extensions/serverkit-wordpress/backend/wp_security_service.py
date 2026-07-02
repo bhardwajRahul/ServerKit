@@ -51,7 +51,7 @@ class WpSecurityService:
     @classmethod
     def _run_integrity(cls, app, site_id, path):
         with app.app_context():
-            from app.services.wordpress_service import WordPressService
+            from .wordpress_service import WordPressService
             try:
                 if not path:
                     raise RuntimeError('Site has no root path')
@@ -95,7 +95,7 @@ class WpSecurityService:
 
     @classmethod
     def get_debug(cls, path):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
 
         def _val(k):
             res = WordPressService.wp_cli(path, ['config', 'get', k])
@@ -112,7 +112,7 @@ class WpSecurityService:
 
     @classmethod
     def set_debug(cls, path, enabled):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
 
         def wp(*args):
             return WordPressService.wp_cli(path, ['config', 'set', *args])
@@ -136,7 +136,7 @@ class WpSecurityService:
 
     @classmethod
     def get_cron(cls, path):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         dis = WordPressService.wp_cli(path, ['config', 'get', 'DISABLE_WP_CRON'])
         disabled = (dis.get('output') or '').strip().lower() in ('1', 'true') if dis.get('success') else False
         events = []
@@ -150,7 +150,7 @@ class WpSecurityService:
 
     @classmethod
     def run_cron(cls, path):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         res = WordPressService.wp_cli(path, ['cron', 'event', 'run', '--due-now'])
         return {
             'success': bool(res.get('success')),
@@ -160,7 +160,7 @@ class WpSecurityService:
 
     @classmethod
     def set_cron_disabled(cls, path, disabled):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         val = 'true' if disabled else 'false'
         res = WordPressService.wp_cli(path, ['config', 'set', 'DISABLE_WP_CRON', val, '--raw'])
         if not res.get('success'):

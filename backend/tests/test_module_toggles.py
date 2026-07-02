@@ -1,23 +1,22 @@
-"""Module toggles (#14): hide/503 a core vertical on demand.
+"""Module toggles (#14): the generic core-vertical toggle machinery.
 
-Email used to be a module toggle; it's now the serverkit-email extension (#32),
-so WordPress is the remaining core module and drives these tests.
+Email (#32) and WordPress (#38) both graduated from module toggles to bundled
+extensions (serverkit-email / serverkit-wordpress), so the MODULES map is now
+empty. Their APIs are gated by the plugin status guard instead — proven in
+test_wordpress_extraction.py / test_email_extraction.py. These tests keep the
+generic toggle machinery honest so a future core-vertical toggle can be added
+without re-plumbing.
 """
 from app.services import module_service
 
 
-def test_modules_default_enabled(app, client, auth_headers):
+def test_modules_default_empty(app, client, auth_headers):
     resp = client.get('/api/v1/modules', headers=auth_headers)
     assert resp.status_code == 200
     mods = {m['name']: m for m in resp.get_json()['modules']}
-    assert mods['wordpress']['enabled'] is True
-    # Email is no longer a module toggle (it's an extension now).
+    # WordPress and Email are extensions now, not module toggles.
+    assert 'wordpress' not in mods
     assert 'email' not in mods
-
-
-def test_toggle_requires_admin_body(app, client, auth_headers):
-    resp = client.put('/api/v1/modules/wordpress', headers=auth_headers, json={})
-    assert resp.status_code == 400
 
 
 def test_unknown_module_404(app, client, auth_headers):
@@ -25,22 +24,9 @@ def test_unknown_module_404(app, client, auth_headers):
     assert resp.status_code == 404
 
 
-def test_wordpress_api_503s_when_module_disabled(app, client, auth_headers):
-    # Enabled → the wordpress route is reachable (any status that isn't 503).
-    resp = client.get('/api/v1/wordpress/sites', headers=auth_headers)
-    assert resp.status_code != 503
-
-    # Disable via the API, then the same route is guarded with 503.
-    toggle = client.put('/api/v1/modules/wordpress', headers=auth_headers, json={'enabled': False})
-    assert toggle.status_code == 200
-    assert toggle.get_json()['enabled'] is False
-
-    resp = client.get('/api/v1/wordpress/sites', headers=auth_headers)
-    assert resp.status_code == 503
-    assert resp.get_json()['module'] == 'wordpress'
-
-    # Re-enable restores it.
-    client.put('/api/v1/modules/wordpress', headers=auth_headers, json={'enabled': True})
+def test_wordpress_api_reachable_via_extension(app, client, auth_headers):
+    """WordPress ships as a default-installed flagship extension, so its API is
+    reachable (not 503) on a stock panel — no module toggle stands in front."""
     resp = client.get('/api/v1/wordpress/sites', headers=auth_headers)
     assert resp.status_code != 503
 

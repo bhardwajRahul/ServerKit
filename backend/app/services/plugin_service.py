@@ -721,7 +721,13 @@ def _register_extra_blueprints(register, plugin, manifest):
         mod = importlib.import_module(full_module)
         bp = getattr(mod, attr)
         _attach_status_guard(bp, plugin.slug)
-        register(bp, url_prefix=url_prefix, name=name)
+        # Only pass name= when the manifest supplies one (mounting the SAME
+        # blueprint at a second prefix needs a distinct name, e.g. the WordPress
+        # /pipelines alias); passing name=None would clobber the blueprint name.
+        opts = {'url_prefix': url_prefix}
+        if name:
+            opts['name'] = name
+        register(bp, **opts)
         logger.info(f'Registered extra blueprint {attr} at {url_prefix}'
                     + (f' (as {name})' if name else ''))
 
@@ -764,7 +770,18 @@ def _regenerate_frontend_manifest():
     plugin install where no frontend was ever extracted, or a Docker
     panel without the bind mount), we just log and move on rather than
     failing the install.
+
+    Never runs under the testing config: the test DB only has whatever a given
+    test installed, so regenerating would clobber the repo's checked-in
+    plugins-manifest.json with partial state (the flagship seed runs on every
+    test boot). Tests that care about the manifest monkeypatch the dir.
     """
+    try:
+        from flask import current_app
+        if current_app and current_app.config.get('TESTING'):
+            return
+    except Exception:
+        pass
     if not os.path.isdir(FRONTEND_PLUGINS_DIR):
         logger.info(
             f'Skipping frontend manifest regeneration: '
@@ -1259,10 +1276,15 @@ def _seed_flagship_row(entry):
         logger.warning(f'Flagship lifecycle setup for {slug}: {e}')
 
     _refresh_plugin_ai(plugin)
-    try:
-        _regenerate_frontend_manifest()
-    except Exception as e:
-        logger.warning(f'Frontend manifest regen after flagship seed for {slug}: {e}')
+    # Only touch the frontend build manifest if the flagship actually ships a
+    # frontend (WordPress is backend-only — its UI stays core for now). A
+    # pre-bundled flagship frontend (D5) is already represented in the checked-in
+    # manifest, so there's nothing to regenerate here.
+    if plugin.has_frontend:
+        try:
+            _regenerate_frontend_manifest()
+        except Exception as e:
+            logger.warning(f'Frontend manifest regen after flagship seed for {slug}: {e}')
     logger.info(f'Seeded flagship extension row: {slug} v{manifest["version"]}')
     return plugin
 
@@ -1285,7 +1307,15 @@ def seed_flagship_extensions():
         # Make the backend importable in-place regardless (the bridge and the
         # loader both rely on app.plugins.<slug> resolving).
         _ensure_builtin_backend_importable(slug)
-        if InstalledPlugin.query.filter_by(slug=slug).first():
+        existing = InstalledPlugin.query.filter_by(slug=slug).first()
+        if existing:
+            # Heal a row left in ERROR by a prior failed load so the flagship
+            # comes back active on the next boot (the seed is authoritative for a
+            # flagship the user hasn't uninstalled). A deliberate DISABLE is kept.
+            if existing.status == InstalledPlugin.STATUS_ERROR:
+                existing.status = InstalledPlugin.STATUS_ACTIVE
+                existing.error_message = None
+                db.session.commit()
             continue
         try:
             _seed_flagship_row(entry)

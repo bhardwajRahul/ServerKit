@@ -21,7 +21,7 @@ from app import db
 from app.models.application import Application
 from app.models.wordpress_site import WordPressSite, DatabaseSnapshot, SyncJob
 from app.services.db_sync_service import DatabaseSyncService
-from app.services.wordpress_service import WordPressService
+from .wordpress_service import WordPressService
 from app.services.database_service import DatabaseService
 
 

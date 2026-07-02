@@ -27,7 +27,7 @@ from typing import Dict, List, Optional
 from app import db, paths
 from app.models.wordpress_custom_plugin import WordPressCustomPlugin, WordPressSitePlugin
 from app.models.wordpress_site import WordPressSite
-from app.services.wordpress_service import WordPressService
+from .wordpress_service import WordPressService
 from app.utils.system import run_privileged
 
 # Slug rule: lowercase letters, digits, single dashes (a wp-content/plugins dir name).

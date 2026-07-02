@@ -1,7 +1,12 @@
 # WordPress extraction — boundary audit (Phase 5, #37)
 
-**Status:** Audit complete — extraction (#38) is the follow-up, and is the largest
-single move in the plan. Do it only **after** Email (#32) proves the machinery.
+**Status:** Audit complete; **backend extraction (#38) SHIPPED** — the WordPress
+backend now lives in `builtin-extensions/serverkit-wordpress/` as a bundled,
+default-installed flagship (D4), loaded via an importlib bridge. See the Phase 5
+section of `docs/plans/12_EXTENSIONS_PLATFORM_PLAN.md` for the shipped scope and
+deviations (models stay core; event-catalog + Fail2ban WP filter kept core as
+two-speed items; frontend UI stays core — its tab-grouped conversion is the
+scoped follow-up). Largest single move in the plan; done after Email (#32).
 **Verdict:** extractable, but WordPress has **real core hooks** that must be
 inverted/guarded first. WordPress ships as a bundled, default-installed,
 uninstallable extension (D4) — never a marketplace hunt.

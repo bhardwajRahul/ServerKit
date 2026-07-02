@@ -20,6 +20,19 @@ awaiting a stable release:
 
 ### Added
 
+- **Extensions platform (Phase 5 — WordPress is now a bundled extension)** — the
+  entire WordPress backend (site provisioning, plugin library, environments/
+  pipelines, updates, security, vulnerability scanning, analytics & reports, and
+  the `/api/v1/wordpress` API family) has moved out of core into the
+  **`serverkit-wordpress`** extension. Because WordPress is a flagship, it ships
+  **installed by default on every panel** and can be uninstalled to slim the core —
+  it never becomes a Marketplace hunt (decision D4). API paths are unchanged
+  (`/api/v1/wordpress`, `/projects`, and the `/pipelines` alias all survive, D9),
+  and every WordPress model stays core so backups, Fail2ban, status pages, and
+  environment activity keep their foreign keys. The old WordPress "module toggle"
+  is retired — the extension's install/enable state is the gate. Core code reaches
+  the extension's services through an importlib bridge, so a panel with WordPress
+  uninstalled no longer loads any of the ~6k lines of WordPress service code.
 - **Extensions platform (Phase 4 — Email is now an extension)** — the mail-server
   stack (Postfix/Dovecot, domains, mailboxes, DKIM/SpamAssassin, Roundcube webmail,
   and the `/api/v1/email` API) has moved out of core into the bundled

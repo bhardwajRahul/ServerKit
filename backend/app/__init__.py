@@ -141,24 +141,15 @@ def create_app(config_name=None):
     app.register_blueprint(nginx_bp, url_prefix='/api/v1/nginx')
     app.register_blueprint(ssl_bp, url_prefix='/api/v1/ssl')
 
-    # Register blueprints - PHP & WordPress
+    # Register blueprints - PHP
     from app.api.php import php_bp
-    from app.api.wordpress import wordpress_bp
-    from app.api.wordpress_sites import wordpress_sites_bp
-    from app.api.environment_pipeline import environment_pipeline_bp
     app.register_blueprint(php_bp, url_prefix='/api/v1/php')
-    # WordPress is a toggleable module (#14): 503 its API when disabled.
-    from app.services.module_service import attach_module_guard
-    attach_module_guard(wordpress_bp, 'wordpress')
-    attach_module_guard(wordpress_sites_bp, 'wordpress')
-    attach_module_guard(environment_pipeline_bp, 'wordpress')
-    app.register_blueprint(wordpress_bp, url_prefix='/api/v1/wordpress')
-    app.register_blueprint(wordpress_sites_bp, url_prefix='/api/v1/wordpress')
-    app.register_blueprint(environment_pipeline_bp, url_prefix='/api/v1/wordpress/projects')
-    # "WordPress Projects" was renamed to "Pipelines" (§2 unification). Mount the
-    # same blueprint under /wordpress/pipelines as a true alias so both URL
-    # spaces resolve identically during the deprecation window.
-    app.register_blueprint(environment_pipeline_bp, url_prefix='/api/v1/wordpress/pipelines', name='environment_pipeline_pipelines')
+    # WordPress moved into the bundled, default-installed `serverkit-wordpress`
+    # extension (#38). Its blueprints (wordpress / wordpress_sites /
+    # environment_pipeline, keeping the /api/v1/wordpress[/projects|/pipelines]
+    # prefixes per D9, incl. the /pipelines alias) are registered from the
+    # extension by the plugin loader — seeded as a flagship in create_app. The old
+    # `wordpress` module toggle is retired; the plugin status guard is the gate.
 
     # Register blueprints - Python
     from app.api.python import python_bp

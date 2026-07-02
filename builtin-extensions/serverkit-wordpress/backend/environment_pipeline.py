@@ -24,7 +24,7 @@ from app.models.promotion_job import PromotionJob
 from app.models.sanitization_profile import SanitizationProfile
 from app.services.environment_pipeline_service import EnvironmentPipelineService
 from app.services.environment_docker_service import EnvironmentDockerService
-from app.services.git_wordpress_service import GitWordPressService
+from .git_wordpress_service import GitWordPressService
 
 environment_pipeline_bp = Blueprint('environment_pipeline', __name__)
 

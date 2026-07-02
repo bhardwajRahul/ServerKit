@@ -82,7 +82,7 @@ class WpUpdateService:
         with app.app_context():
             from app import db
             from app.models.wordpress_site import WordPressSite, WordPressUpdateRun
-            from app.services.wordpress_service import WordPressService
+            from .wordpress_service import WordPressService
             run = WordPressUpdateRun.query.get(run_id)
             details = json.loads(run.details) if run and run.details else {}
             snapshot = f'/tmp/wp-preupdate-{run_id}.sql'
@@ -169,7 +169,7 @@ class WpUpdateService:
 
     @staticmethod
     def _versions(path):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         core = WordPressService.wp_cli(path, ['core', 'version'])
         return {
             'core': (core.get('output') or '').strip() if core.get('success') else None,
@@ -186,7 +186,7 @@ class WpUpdateService:
         — so an auto-rollback never pages on-call with spurious down/up). `wp eval`
         loads WP incl. plugins so a PHP fatal is caught; the HTTP probe catches a
         5xx/connection regression. Returns healthy | degraded | unhealthy | unknown."""
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         from app.services.environment_health_service import EnvironmentHealthService
         wp_ok = WordPressService.wp_cli(path, ['eval', "echo 'OK';"]).get('success', False)
         http_status = 'unknown'
@@ -202,7 +202,7 @@ class WpUpdateService:
 
     @classmethod
     def _apply_updates(cls, path, targets, exclude):
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         ex = set(exclude or [])
         if targets.get('core'):
             WordPressService.update_wordpress(path)
@@ -236,7 +236,7 @@ class WpUpdateService:
         runs even if a bad update left the site fatally broken (a loaded plugin
         would otherwise crash wp-cli). Best-effort (a component not on
         wordpress.org can't be version-downgraded; the DB snapshot is the net)."""
-        from app.services.wordpress_service import WordPressService
+        from .wordpress_service import WordPressService
         skip = ['--skip-plugins', '--skip-themes']
         for u in updated:
             t, slug, old = u.get('type'), u.get('slug'), u.get('from')

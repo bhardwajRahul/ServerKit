@@ -16,15 +16,12 @@ logger = logging.getLogger(__name__)
 
 # name -> presentation metadata. The settings key is module_<name>_enabled.
 #
-# Email used to be a module toggle here; it's now the serverkit-email extension
-# (Phase 4, #32) — install/disable it from the Marketplace instead. WordPress
-# remains a core module toggle until its own extraction (Phase 5, #38).
-MODULES = {
-    'wordpress': {
-        'label': 'WordPress',
-        'description': 'WordPress site management, plugin library, and the /api/v1/wordpress API.',
-    },
-}
+# Email and WordPress used to be module toggles here; both are now bundled
+# extensions (serverkit-email #32, serverkit-wordpress #38) — install/uninstall
+# them from the Marketplace instead, and the plugin status guard gates their APIs.
+# The map is intentionally empty now; the machinery below stays so future
+# core-vertical toggles can be added without re-plumbing.
+MODULES = {}
 
 
 def _setting_key(name):

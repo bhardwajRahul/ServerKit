@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.middleware.rbac import admin_required
 from app.models import User, Application, WordPressSite
-from app.services.wordpress_service import WordPressService
+from .wordpress_service import WordPressService
 from app import db
 
 wordpress_bp = Blueprint('wordpress', __name__)
@@ -549,7 +549,7 @@ def detach_site_status_page(app_id):
 def get_site_analytics(app_id):
     """Per-site traffic + error analytics, parsed on-demand from the container's
     Apache access log (visits / bandwidth / status codes / 404s / bots / top URLs)."""
-    from app.services.wp_analytics_service import WpAnalyticsService
+    from .wp_analytics_service import WpAnalyticsService
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
     app = _resolve_app(app_id)
@@ -567,7 +567,7 @@ def get_site_analytics(app_id):
 @jwt_required()
 def get_site_vulnerabilities(app_id):
     """Return persisted vulnerability findings + live scan status for a site."""
-    from app.services.wp_vulnerability_service import WpVulnerabilityService
+    from .wp_vulnerability_service import WpVulnerabilityService
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
     app = _resolve_app(app_id)
@@ -586,7 +586,7 @@ def get_site_vulnerabilities(app_id):
 @admin_required
 def scan_site_vulnerabilities(app_id):
     """Start a background vulnerability scan (cross-references the WPVulnerability feed)."""
-    from app.services.wp_vulnerability_service import WpVulnerabilityService
+    from .wp_vulnerability_service import WpVulnerabilityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -618,7 +618,7 @@ def _owner_or_admin_app(app_id):
 @jwt_required()
 def get_site_integrity(app_id):
     """Return the latest file-integrity result + scan status for a site."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -633,7 +633,7 @@ def get_site_integrity(app_id):
 @admin_required
 def scan_site_integrity(app_id):
     """Start a background file-integrity check (wp core/plugin verify-checksums)."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -647,7 +647,7 @@ def scan_site_integrity(app_id):
 @jwt_required()
 def get_site_debug(app_id):
     """Return the site's WP_DEBUG / WP_DEBUG_LOG / SCRIPT_DEBUG state."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -659,7 +659,7 @@ def get_site_debug(app_id):
 @admin_required
 def set_site_debug(app_id):
     """Toggle debug logging (WP_DEBUG/WP_DEBUG_LOG/SCRIPT_DEBUG on; display always off)."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -671,7 +671,7 @@ def set_site_debug(app_id):
 @jwt_required()
 def get_site_cron(app_id):
     """Return WP-Cron status (DISABLE_WP_CRON + due events)."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -683,7 +683,7 @@ def get_site_cron(app_id):
 @admin_required
 def run_site_cron(app_id):
     """Run all due WP-Cron events now."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -695,7 +695,7 @@ def run_site_cron(app_id):
 @admin_required
 def set_site_cron(app_id):
     """Enable/disable WP's pseudo-cron (DISABLE_WP_CRON)."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -707,7 +707,7 @@ def set_site_cron(app_id):
 @jwt_required()
 def get_site_bruteforce(app_id):
     """Per-site login brute-force status: fail2ban availability, jail on/off, bans."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -722,7 +722,7 @@ def get_site_bruteforce(app_id):
 @admin_required
 def set_site_bruteforce(app_id):
     """Enable/disable the site's WP-login brute-force jail."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -738,7 +738,7 @@ def set_site_bruteforce(app_id):
 @admin_required
 def unban_site_bruteforce(app_id):
     """Unban an IP from the site's brute-force jail."""
-    from app.services.wp_security_service import WpSecurityService
+    from .wp_security_service import WpSecurityService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -757,7 +757,7 @@ def unban_site_bruteforce(app_id):
 @jwt_required()
 def get_site_updates(app_id):
     """Return safe-update run history + status + the site's update schedule."""
-    from app.services.wp_update_service import WpUpdateService
+    from .wp_update_service import WpUpdateService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -775,7 +775,7 @@ def get_site_updates(app_id):
 @admin_required
 def run_site_updates(app_id):
     """Start a background safe update (snapshot -> update -> health-check -> auto-rollback)."""
-    from app.services.wp_update_service import WpUpdateService
+    from .wp_update_service import WpUpdateService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -817,7 +817,7 @@ def set_site_update_schedule(app_id):
 @jwt_required()
 def get_site_reports(app_id):
     """Return all persisted monthly reports for a site (newest month first)."""
-    from app.services.wp_reports_service import WpReportsService
+    from .wp_reports_service import WpReportsService
     app, err = _owner_or_admin_app(app_id)
     if err:
         return err
@@ -833,7 +833,7 @@ def get_site_reports(app_id):
 def generate_site_report(app_id):
     """Generate (or regenerate) the monthly report for a site. Body may carry
     {year, month}; defaults to the current UTC month."""
-    from app.services.wp_reports_service import WpReportsService
+    from .wp_reports_service import WpReportsService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -850,7 +850,7 @@ def generate_site_report(app_id):
 @admin_required
 def delete_site_report(app_id, report_id):
     """Delete one persisted monthly report."""
-    from app.services.wp_reports_service import WpReportsService
+    from .wp_reports_service import WpReportsService
     app = _resolve_app(app_id)
     if not app:
         return jsonify({'error': 'Application not found'}), 404
@@ -1473,7 +1473,7 @@ def _resolve_wp_site(site_or_app_id):
 @jwt_required()
 def list_library_plugins():
     """List all plugins in the global library."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     return jsonify({'plugins': WordPressPluginLibraryService.list_plugins()}), 200
 
 
@@ -1482,7 +1482,7 @@ def list_library_plugins():
 @admin_required
 def add_library_plugin():
     """Register a new plugin in the library and sync it into the cache."""
-    from app.services.wordpress_plugin_library_service import (
+    from .wordpress_plugin_library_service import (
         WordPressPluginLibraryService, PluginLibraryError)
     data = request.get_json() or {}
     try:
@@ -1496,7 +1496,7 @@ def add_library_plugin():
 @jwt_required()
 def get_library_plugin(plugin_id):
     """Library plugin detail, including per-site installations."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     data = WordPressPluginLibraryService.get_plugin(plugin_id)
     if not data:
         return jsonify({'error': 'Plugin not found'}), 404
@@ -1508,7 +1508,7 @@ def get_library_plugin(plugin_id):
 @admin_required
 def update_library_plugin(plugin_id):
     """Update a library plugin's source / branch / active state."""
-    from app.services.wordpress_plugin_library_service import (
+    from .wordpress_plugin_library_service import (
         WordPressPluginLibraryService, PluginLibraryError)
     data = request.get_json() or {}
     try:
@@ -1524,7 +1524,7 @@ def update_library_plugin(plugin_id):
 @admin_required
 def delete_library_plugin(plugin_id):
     """Remove a plugin from the library (and delete its cache directory)."""
-    from app.services.wordpress_plugin_library_service import (
+    from .wordpress_plugin_library_service import (
         WordPressPluginLibraryService, PluginLibraryError)
     try:
         return jsonify(WordPressPluginLibraryService.delete_plugin(plugin_id)), 200
@@ -1537,7 +1537,7 @@ def delete_library_plugin(plugin_id):
 @admin_required
 def sync_library_plugin(plugin_id):
     """Pull the latest source into the cache and re-parse the plugin header."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     from app.models import WordPressCustomPlugin
     plugin = WordPressCustomPlugin.query.get(plugin_id)
     if not plugin:
@@ -1551,7 +1551,7 @@ def sync_library_plugin(plugin_id):
 @admin_required
 def install_library_plugin(plugin_id):
     """Install (or update) a library plugin on a specific site."""
-    from app.services.wordpress_plugin_library_service import (
+    from .wordpress_plugin_library_service import (
         WordPressPluginLibraryService, PluginLibraryError)
     from app.models import WordPressCustomPlugin
     data = request.get_json() or {}
@@ -1579,7 +1579,7 @@ def install_library_plugin(plugin_id):
 @admin_required
 def bulk_update_library_plugin(plugin_id):
     """Push the latest cached version to every site that has the plugin."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     from app.models import WordPressCustomPlugin
     plugin = WordPressCustomPlugin.query.get(plugin_id)
     if not plugin:
@@ -1592,7 +1592,7 @@ def bulk_update_library_plugin(plugin_id):
 @admin_required
 def uninstall_library_plugin(plugin_id):
     """Remove a library plugin from a specific site."""
-    from app.services.wordpress_plugin_library_service import (
+    from .wordpress_plugin_library_service import (
         WordPressPluginLibraryService, PluginLibraryError)
     from app.models import WordPressCustomPlugin
     data = request.get_json() or {}
@@ -1616,7 +1616,7 @@ def uninstall_library_plugin(plugin_id):
 @admin_required
 def scan_site_library_plugins(app_id):
     """Scan a site and tag which installed plugins are library-managed."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     site = _resolve_wp_site(app_id)
     if not site:
         return jsonify({'error': 'Site not found'}), 404
@@ -1627,7 +1627,7 @@ def scan_site_library_plugins(app_id):
 @jwt_required()
 def get_site_managed_plugins(app_id):
     """Which of a site's installed plugins are library-managed (+ update state)."""
-    from app.services.wordpress_plugin_library_service import WordPressPluginLibraryService
+    from .wordpress_plugin_library_service import WordPressPluginLibraryService
     site = _resolve_wp_site(app_id)
     if not site:
         return jsonify({'error': 'Site not found'}), 404

@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 from app import db
 from app.models.wordpress_site import WordPressSite, DatabaseSnapshot
 from app.services.db_sync_service import DatabaseSyncService
-from app.services.wordpress_env_service import WordPressEnvService
+from .wordpress_env_service import WordPressEnvService
 
 
 class GitWordPressService:

@@ -18,9 +18,9 @@ import json
 from app import db
 from app.models.application import Application
 from app.models.wordpress_site import WordPressSite, DatabaseSnapshot
-from app.services.wordpress_env_service import WordPressEnvService
+from .wordpress_env_service import WordPressEnvService
 from app.services.db_sync_service import DatabaseSyncService
-from app.services.git_wordpress_service import GitWordPressService
+from .git_wordpress_service import GitWordPressService
 from app.services.backup_policy_service import BackupPolicyService, BackupPolicyError
 
 wordpress_sites_bp = Blueprint('wordpress_sites', __name__)
