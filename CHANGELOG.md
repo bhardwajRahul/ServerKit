@@ -32,7 +32,13 @@ awaiting a stable release:
   environment activity keep their foreign keys. The old WordPress "module toggle"
   is retired — the extension's install/enable state is the gate. Core code reaches
   the extension's services through an importlib bridge, so a panel with WordPress
-  uninstalled no longer loads any of the ~6k lines of WordPress service code.
+  uninstalled no longer loads any of the ~6k lines of WordPress service code. The
+  **WordPress UI is contributed by the extension too** — a single `wordpress/*`
+  route self-renders the whole WordPress sub-router (site list + plugin library +
+  pipelines tab group, plus the full-bleed site/pipeline detail pages), and the
+  sidebar item, command-palette entries, and page titles all come from the
+  extension manifest. Uninstalling WordPress now cleanly removes its nav, routes,
+  and API in one go.
 - **Extensions platform (Phase 4 — Email is now an extension)** — the mail-server
   stack (Postfix/Dovecot, domains, mailboxes, DKIM/SpamAssassin, Roundcube webmail,
   and the `/api/v1/email` API) has moved out of core into the bundled

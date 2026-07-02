@@ -7,7 +7,13 @@
   "license": "MIT",
   "category": "integration",
   "homepage": "https://github.com/jhd3197/ServerKit",
-  "permissions": ["shell", "filesystem", "network", "docker", "database"],
+  "permissions": [
+    "shell",
+    "filesystem",
+    "network",
+    "docker",
+    "database"
+  ],
   "min_panel_version": "1.7.0",
   "entry_point": "wordpress:wordpress_bp",
   "url_prefix": "/api/v1/wordpress",
@@ -41,7 +47,10 @@
       }
     ],
     "routes": [
-      { "path": "wordpress/*", "component": "WordPressExtension" }
+      {
+        "path": "wordpress/*",
+        "component": "WordPressExtension"
+      }
     ],
     "page_titles": {
       "/wordpress": "WordPress Sites",
@@ -49,8 +58,18 @@
       "/wordpress/pipelines": "WordPress Pipelines"
     },
     "command_palette": [
-      { "label": "WordPress", "path": "/wordpress", "category": "Pages", "keywords": "wp sites" },
-      { "label": "WordPress Pipelines", "path": "/wordpress/pipelines", "category": "Pages", "keywords": "wp environments projects pipeline" }
+      {
+        "label": "WordPress",
+        "path": "/wordpress",
+        "category": "Pages",
+        "keywords": "wp sites"
+      },
+      {
+        "label": "WordPress Pipelines",
+        "path": "/wordpress/pipelines",
+        "category": "Pages",
+        "keywords": "wp environments projects pipeline"
+      }
     ]
   }
 }

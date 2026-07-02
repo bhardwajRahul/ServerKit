@@ -19,8 +19,7 @@ const STATIC_PAGES = [
     { label: 'SSL Certificates', path: '/ssl', category: 'Pages', keywords: 'https tls' },
     { label: 'Templates', path: '/templates', category: 'Pages', keywords: 'deploy one-click' },
     { label: 'Deployments', path: '/deployments', category: 'Pages', keywords: 'deploy jobs status logs' },
-    { label: 'WordPress', path: '/wordpress', category: 'Pages', keywords: 'wp sites' },
-    { label: 'WordPress Pipelines', path: '/wordpress/pipelines', category: 'Pages', keywords: 'wp environments projects pipeline' },
+    // WordPress palette entries are contributed by the serverkit-wordpress extension.
     { label: 'Files', path: '/files', category: 'Pages', keywords: 'file manager explorer' },
     { label: 'FTP Server', path: '/ftp', category: 'Pages', keywords: 'sftp upload' },
     { label: 'Observability', path: '/monitoring', category: 'Pages', keywords: 'metrics uptime monitoring alerts' },

@@ -5,8 +5,10 @@ backend now lives in `builtin-extensions/serverkit-wordpress/` as a bundled,
 default-installed flagship (D4), loaded via an importlib bridge. See the Phase 5
 section of `docs/plans/12_EXTENSIONS_PLATFORM_PLAN.md` for the shipped scope and
 deviations (models stay core; event-catalog + Fail2ban WP filter kept core as
-two-speed items; frontend UI stays core — its tab-grouped conversion is the
-scoped follow-up). Largest single move in the plan; done after Email (#32).
+two-speed items). The **frontend UI is now contributed by the extension too** — a
+single `wordpress/*` splat route self-renders the whole WordPress sub-router (tab
+group + full-bleed detail), so the sidebar item, routes, palette, and page titles
+all come from the manifest. Largest single move in the plan; done after Email (#32).
 **Verdict:** extractable, but WordPress has **real core hooks** that must be
 inverted/guarded first. WordPress ships as a bundled, default-installed,
 uninstallable extension (D4) — never a marketplace hunt.

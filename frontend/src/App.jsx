@@ -40,16 +40,10 @@ import { SERVICE_TABS } from './components/services/serviceTabs';
 import { FILE_TABS } from './components/files/fileTabs';
 import { MONITOR_TABS } from './components/monitoring/monitorTabs';
 import { MARKET_TABS } from './components/marketplace/marketTabs';
-import { WORDPRESS_TABS } from './components/wordpress/wordpressTabs';
 import { BACKUP_TABS } from './components/backups/backupTabs';
 import { SECURITY_TABS } from './components/security/securityTabs';
 import { ORG_TABS } from './components/organization/organizationTabs';
 import Downloads from './pages/Downloads';
-import WordPress from './pages/WordPress';
-import WordPressDetail from './pages/WordPressDetail';
-import WordPressProjects from './pages/WordPressProjects';
-import WordPressPluginLibrary from './pages/WordPressPluginLibrary';
-import WordPressProject from './pages/WordPressProject';
 import SSLCertificates from './pages/SSLCertificates';
 import SSOCallback from './pages/SSOCallback';
 import SourceConnectionCallback from './pages/SourceConnectionCallback';
@@ -81,7 +75,6 @@ import Telemetry from './pages/Telemetry';
 import Jobs from './pages/Jobs';
 import useExtensionRoutes from './plugins/ExtensionRoutes';
 import { useContributions } from './plugins/contributions';
-import ModuleRoute from './components/ModuleRoute';
 
 // Page title mapping
 const PAGE_TITLES = {
@@ -94,9 +87,8 @@ const PAGE_TITLES = {
     '/projects': 'Projects',
     '/shared-variables': 'Shared Variables',
     '/fleet-proxy': 'Fleet Proxy',
-    '/wordpress': 'WordPress Sites',
-    '/wordpress/plugins/library': 'WordPress Plugin Library',
-    '/wordpress/pipelines': 'WordPress Pipelines',
+    // WordPress list-page titles come from the serverkit-wordpress manifest
+    // (page_titles) now; the dynamic detail-page fallbacks below stay in core.
     '/templates': 'Templates',
     '/deployments': 'Deployment Activity',
     '/domains': 'Domains',
@@ -154,14 +146,6 @@ function LegacyAppRedirect() {
     const { id, tab } = useParams();
     const suffix = [id, tab].filter(Boolean).join('/');
     return <Navigate to={`/services/${suffix}`} replace />;
-}
-
-// "WordPress Projects" was renamed to "Pipelines" (§2 unification) to end the
-// collision with generic /projects. Forward old deep links to the new space.
-function LegacyWpPipelineRedirect() {
-    const { id, tab } = useParams();
-    const suffix = [id, tab].filter(Boolean).join('/');
-    return <Navigate to={`/wordpress/pipelines/${suffix}`} replace />;
 }
 
 function PageTitleUpdater() {
@@ -336,24 +320,11 @@ function AppRoutes() {
                 <Route path="apps" element={<Navigate to="/services" replace />} />
                 <Route path="apps/:id" element={<LegacyAppRedirect />} />
                 <Route path="apps/:id/:tab" element={<LegacyAppRedirect />} />
-                {/* WordPress routes are gated by the WordPress module toggle
-                    (Settings → Modules); disabled ⇒ redirect to the dashboard. */}
-                <Route element={<TabGroupLayout tabs={WORDPRESS_TABS} />}>
-                    <Route path="wordpress" element={<ModuleRoute name="wordpress"><WordPress /></ModuleRoute>} />
-                    <Route path="wordpress/plugins/library" element={<ModuleRoute name="wordpress"><WordPressPluginLibrary /></ModuleRoute>} />
-                    <Route path="wordpress/pipelines" element={<ModuleRoute name="wordpress"><WordPressProjects /></ModuleRoute>} />
-                </Route>
-                <Route path="wordpress/pipelines/:id" element={<ModuleRoute name="wordpress"><WordPressProject /></ModuleRoute>} />
-                <Route path="wordpress/pipelines/:id/:tab" element={<ModuleRoute name="wordpress"><WordPressProject /></ModuleRoute>} />
-                {/* Legacy "WordPress Projects" URLs → Pipelines (§2). */}
-                <Route path="wordpress/projects" element={<Navigate to="/wordpress/pipelines" replace />} />
-                <Route path="wordpress/projects/:id" element={<LegacyWpPipelineRedirect />} />
-                <Route path="wordpress/projects/:id/:tab" element={<LegacyWpPipelineRedirect />} />
-                <Route path="wordpress/:id" element={<ModuleRoute name="wordpress"><WordPressDetail /></ModuleRoute>} />
-                <Route path="wordpress/:id/:tab" element={<ModuleRoute name="wordpress"><WordPressDetail /></ModuleRoute>} />
-                {/* Settings sub-section in the URL (e.g. .../settings/git) so the
-                    Settings left-nav is shareable and survives a refresh. */}
-                <Route path="wordpress/:id/:tab/:section" element={<ModuleRoute name="wordpress"><WordPressDetail /></ModuleRoute>} />
+                {/* WordPress moved into the serverkit-wordpress builtin extension
+                    (Phase 5 #38). It contributes a single splat route wordpress/*
+                    via its manifest and self-renders the whole sub-router (tab
+                    group + full-bleed detail + legacy /projects redirects), so all
+                    the WordPress routing now lives in the extension. */}
                 {/* /workflow is now the serverkit-workflows builtin extension
                     (contributes the route via its manifest, full layout). */}
                 <Route element={<TabGroupLayout tabs={DOMAIN_TABS} />}>
