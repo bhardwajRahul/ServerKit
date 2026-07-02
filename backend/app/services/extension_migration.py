@@ -30,6 +30,9 @@ CONVERTED_BUILTIN_SLUGS = [
     'serverkit-gpu',
     'serverkit-workflows',
     'serverkit-ftp',
+    'serverkit-cloud-provision',
+    'serverkit-remote-access',
+    'serverkit-status',
 ]
 
 

@@ -48,16 +48,13 @@ import SSOCallback from './pages/SSOCallback';
 import SourceConnectionCallback from './pages/SourceConnectionCallback';
 import DatabaseMigration from './pages/DatabaseMigration';
 import ServerTemplates from './pages/ServerTemplates';
-import RemoteAccess from './pages/RemoteAccess';
 import Workspaces from './pages/Workspaces';
 import WorkspaceDetail from './pages/WorkspaceDetail';
 import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import SharedVariables from './pages/SharedVariables';
 import FleetProxy from './pages/FleetProxy';
-import StatusPages from './pages/StatusPages';
 import PublicStatusPage from './pages/PublicStatusPage';
-import CloudProvision from './pages/CloudProvision';
 import Marketplace from './pages/Marketplace';
 import Vaults from './pages/Vaults';
 import Webhooks from './pages/Webhooks';
@@ -120,8 +117,6 @@ const PAGE_TITLES = {
     '/workspaces/:id/settings/general': 'Workspace Settings',
     '/workspaces/:id/settings/navigation': 'Workspace Navigation Permissions',
     '/dns': 'DNS Zones',
-    '/status-pages': 'Status Pages',
-    '/cloud': 'Cloud Provisioning',
     '/marketplace': 'Marketplace',
     '/vaults': 'Vaults',
     '/webhooks': 'Webhooks',
@@ -341,13 +336,15 @@ function AppRoutes() {
                 <Route path="databases/:tab" element={<Databases />} />
                 <Route path="docker" element={<Docker />} />
                 <Route path="docker/:tab" element={<Docker />} />
+                {/* /cloud and /remote-access are now the serverkit-cloud-provision
+                    and serverkit-remote-access builtin extensions: they join this
+                    group via tabs contributions + group-nested routes
+                    (groupRoutes.servers). */}
                 <Route element={<TabGroupLayout tabs={SERVER_TABS} groupId="servers" />}>
                     <Route path="servers" element={<Servers />} />
                     <Route path="fleet" element={<AgentFleet />} />
                     <Route path="fleet-monitor" element={<FleetMonitor />} />
                     <Route path="fleet-proxy" element={<FleetProxy />} />
-                    <Route path="cloud" element={<CloudProvision />} />
-                    <Route path="remote-access" element={<RemoteAccess />} />
                     <Route path="server-templates" element={<ServerTemplates />} />
                     {groupRoutes.servers}
                 </Route>
@@ -390,11 +387,13 @@ function AppRoutes() {
                 </Route>
                 {/* Observability tab group (§4): Monitoring / Events / Status
                     Pages share one PageTopbar. /observability lands on Monitoring. */}
+                {/* /status-pages is now the serverkit-status builtin extension
+                    (tabs contribution + group-nested route, groupRoutes.monitoring);
+                    the public /status/:slug route stays core above. */}
                 <Route element={<TabGroupLayout tabs={MONITOR_TABS} groupId="monitoring" />}>
                     <Route path="monitoring" element={<Monitoring />} />
                     <Route path="monitoring/:tab" element={<Monitoring />} />
                     <Route path="telemetry" element={<Telemetry />} />
-                    <Route path="status-pages" element={<StatusPages />} />
                     {groupRoutes.monitoring}
                 </Route>
                 <Route path="observability" element={<Navigate to="/monitoring" replace />} />

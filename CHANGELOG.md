@@ -25,11 +25,15 @@ awaiting a stable release:
   a real tab to a core-owned tab group (Files, Servers, Observability): the tab
   joins the shared top-bar strip, its routes render inside the group's layout so
   the chrome stays, and the group's sidebar item stays lit on the extension's
-  routes. First consumer: **the FTP Server page is now the `serverkit-ftp`
-  extension** — it appears as the familiar tab in the Files group when installed,
-  and tab + page + palette entry disappear together when uninstalled. Existing
-  panels auto-install it once on upgrade so nothing disappears; fresh installs
-  find it in the Marketplace.
+  routes. Four pages moved out of core onto it: **FTP Server → `serverkit-ftp`**
+  (Files group), **Cloud Provisioning → `serverkit-cloud-provision`** and
+  **Remote Access → `serverkit-remote-access`** (Servers group, keeping their
+  original tab positions; the per-server Remote Access tab on the server detail
+  page stays core), and **Status Pages → `serverkit-status`** (Observability
+  group; the public `/status/<slug>` page stays core). Each tab + page + palette
+  entry disappears together when its extension is uninstalled. Existing panels
+  auto-install all four once on upgrade so nothing disappears; fresh installs
+  find them in the Marketplace.
 - **Extensions platform (Phase 5 — Cloudflare zone-ops is now a bundled extension)** —
   the Cloudflare per-zone control panel (zone settings, cache purge, WAF, Workers,
   Tunnels, and R2/KV/D1 storage, reached from the "Open in Cloudflare" button on a

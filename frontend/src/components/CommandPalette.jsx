@@ -29,8 +29,9 @@ const STATIC_PAGES = [
     { label: 'Terminal', path: '/terminal', category: 'Pages', keywords: 'shell ssh console' },
     { label: 'Servers', path: '/servers', category: 'Pages', keywords: 'fleet agents' },
     { label: 'Fleet Monitor', path: '/fleet-monitor', category: 'Pages', keywords: 'agents status' },
-    { label: 'Status Pages', path: '/status-pages', category: 'Pages', keywords: 'uptime incidents' },
-    { label: 'Cloud Provision', path: '/cloud', category: 'Pages', keywords: 'vps deploy' },
+    // Status Pages / Cloud Provision / Remote Access palette entries are
+    // contributed by the serverkit-status / serverkit-cloud-provision /
+    // serverkit-remote-access extensions.
     { label: 'Marketplace', path: '/marketplace', category: 'Pages', keywords: 'extensions plugins' },
     { label: 'Downloads', path: '/downloads', category: 'Pages', keywords: 'agent installer' },
     { label: 'Projects', path: '/projects', category: 'Pages', keywords: 'organization group' },
