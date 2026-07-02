@@ -175,7 +175,8 @@ def _prune_old_health_checks():
 
 def check_update_schedules():
     from app.models.wordpress_site import WordPressSite, WordPressUpdateRun
-    from app.services.wp_update_service import WpUpdateService
+    from app.services.wordpress_bridge import wp_update_service
+    WpUpdateService = wp_update_service()
     from datetime import datetime
     import json as _json
 

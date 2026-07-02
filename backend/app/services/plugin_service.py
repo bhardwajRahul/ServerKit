@@ -57,6 +57,53 @@ BUILTIN_EXTENSIONS_DIR = os.environ.get(
     os.path.join(_PROJECT_ROOT, 'builtin-extensions'),
 )
 
+# Flagship extensions (decision D4): bundled, installed-by-default on EVERY panel
+# (fresh and upgrade), and uninstallable. Unlike the niche Tier-1 conversions
+# (handled one-shot in extension_migration), a flagship is seeded in-place — no
+# file copy — its backend loads straight from builtin-extensions/ and its frontend
+# is pre-bundled (D5). A user uninstall records a marker so it stays gone.
+FLAGSHIP_SLUGS = ['serverkit-wordpress']
+_FLAGSHIP_UNINSTALLED_KEY = 'extensions.flagship_uninstalled'
+
+
+def _ensure_builtin_backend_importable(slug):
+    """Register ``builtin-extensions/<slug>/backend`` as the dashed package
+    ``app.plugins.<slug>`` in ``sys.modules`` (in-place, no copy), so its
+    blueprints and services import — and relative imports inside resolve —
+    without the plugin being copy-installed under ``app/plugins/``.
+
+    This is what makes a dashed, default-installed flagship loadable uniformly in
+    production, dev checkouts, and the test suite. Idempotent; returns ``True`` if
+    the package is (now) importable.
+    """
+    import importlib
+    import importlib.util
+    pkg = f'app.plugins.{slug}'
+    if pkg in sys.modules:
+        return True
+    try:
+        importlib.import_module(pkg)  # already copy-installed under app/plugins/
+        return True
+    except ImportError:
+        pass
+    backend_dir = os.path.join(BUILTIN_EXTENSIONS_DIR, slug, 'backend')
+    init_py = os.path.join(backend_dir, '__init__.py')
+    if not os.path.isfile(init_py):
+        return False
+    try:
+        importlib.import_module('app.plugins')  # ensure the parent package exists
+        spec = importlib.util.spec_from_file_location(
+            pkg, init_py, submodule_search_locations=[backend_dir]
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[pkg] = module
+        spec.loader.exec_module(module)
+        return True
+    except Exception as e:
+        logger.warning(f'In-place load of {pkg} failed: {e}')
+        sys.modules.pop(pkg, None)
+        return False
+
 
 def _ensure_backend_dir():
     """Create the backend plugin dir; raise a useful error if we can't."""
@@ -626,6 +673,10 @@ def _attach_status_guard(bp, slug):
     guard makes the in-DB status authoritative at request time, so
     disabling a plugin actually stops serving its routes.
     """
+    # A blueprint may be mounted at more than one url_prefix (e.g. an alias),
+    # but the guard only needs to run once per blueprint object.
+    if getattr(bp, '_sk_status_guarded', False):
+        return
     def _check():
         from flask import jsonify
         p = InstalledPlugin.query.filter_by(slug=slug).first()
@@ -636,6 +687,43 @@ def _attach_status_guard(bp, slug):
             }), 503
         return None
     bp.before_request(_check)
+    bp._sk_status_guarded = True
+
+
+def _register_extra_blueprints(register, plugin, manifest):
+    """Register a plugin's ``extra_blueprints`` beyond the single ``entry_point``.
+
+    Some extensions (WordPress) expose several blueprints and even mount one
+    blueprint at more than one prefix (a deprecation-window alias). The manifest
+    declares them as::
+
+        "extra_blueprints": [
+            {"module": "wordpress_sites", "attr": "wordpress_sites_bp",
+             "url_prefix": "/api/v1/wordpress"},
+            {"module": "environment_pipeline", "attr": "environment_pipeline_bp",
+             "url_prefix": "/api/v1/wordpress/pipelines",
+             "name": "environment_pipeline_pipelines"}
+        ]
+
+    ``register`` is a ``callable(bp, url_prefix, name=None)`` — either
+    ``current_app.register_blueprint`` (hot-load) or ``app.register_blueprint``
+    (boot). Each blueprint gets the same status guard as the entry blueprint.
+    """
+    import importlib
+    for extra in (manifest or {}).get('extra_blueprints', []):
+        module_name = extra.get('module')
+        attr = extra.get('attr')
+        url_prefix = extra.get('url_prefix')
+        name = extra.get('name')
+        if not (module_name and attr):
+            continue
+        full_module = f'app.plugins.{plugin.slug}.{module_name}'
+        mod = importlib.import_module(full_module)
+        bp = getattr(mod, attr)
+        _attach_status_guard(bp, plugin.slug)
+        register(bp, url_prefix=url_prefix, name=name)
+        logger.info(f'Registered extra blueprint {attr} at {url_prefix}'
+                    + (f' (as {name})' if name else ''))
 
 
 def _register_plugin_blueprint(plugin):
@@ -660,6 +748,8 @@ def _register_plugin_blueprint(plugin):
         _attach_status_guard(bp, plugin.slug)
         current_app.register_blueprint(bp, url_prefix=plugin.url_prefix)
         logger.info(f'Registered blueprint {bp_name} at {plugin.url_prefix}')
+        _register_extra_blueprints(
+            current_app.register_blueprint, plugin, plugin.manifest or {})
     except Exception as e:
         raise ValueError(f'Failed to register blueprint: {e}')
 
@@ -745,10 +835,12 @@ def load_all_plugins(app):
                 app.register_blueprint(bp, url_prefix=plugin.url_prefix)
                 logger.info(f'Loaded plugin: {plugin.display_name} v{plugin.version} at {plugin.url_prefix}')
 
+                manifest = plugin.manifest or {}
+                _register_extra_blueprints(app.register_blueprint, plugin, manifest)
+
                 # Re-establish the plugin's data models, jobs, and socket
                 # namespace on boot (install-time registration doesn't survive
                 # a restart).
-                manifest = plugin.manifest or {}
                 try:
                     from app.services import extension_lifecycle
                     extension_lifecycle.register_models(plugin, manifest)
@@ -794,15 +886,22 @@ def uninstall_plugin(plugin_id, purge=False):
     # Drop any AI tools/context this plugin contributed to the assistant.
     _unregister_plugin_ai(slug)
 
-    # Remove backend files
-    backend_dest = os.path.join(BACKEND_PLUGINS_DIR, slug)
-    if os.path.exists(backend_dest):
-        shutil.rmtree(backend_dest)
+    if slug in FLAGSHIP_SLUGS:
+        # Flagships live in-place (backend in builtin-extensions/, frontend
+        # pre-bundled under src/plugins/ — both tracked in the repo). Never delete
+        # those; just record the user's choice so the boot seed leaves it out, and
+        # drop the row (the status guard 503s any still-registered routes).
+        _set_flagship_uninstalled(slug, True)
+    else:
+        # Remove backend files
+        backend_dest = os.path.join(BACKEND_PLUGINS_DIR, slug)
+        if os.path.exists(backend_dest):
+            shutil.rmtree(backend_dest)
 
-    # Remove frontend files
-    frontend_dest = os.path.join(FRONTEND_PLUGINS_DIR, slug)
-    if os.path.exists(frontend_dest):
-        shutil.rmtree(frontend_dest)
+        # Remove frontend files
+        frontend_dest = os.path.join(FRONTEND_PLUGINS_DIR, slug)
+        if os.path.exists(frontend_dest):
+            shutil.rmtree(frontend_dest)
 
     db.session.delete(plugin)
     db.session.commit()
@@ -1057,11 +1156,141 @@ def install_builtin_extension(slug, user_id=None):
     if not os.path.isdir(BUILTIN_EXTENSIONS_DIR):
         raise ValueError(f'Builtin extensions dir not found: {BUILTIN_EXTENSIONS_DIR}')
 
+    # Flagships (D4) re-install in-place: clear the user-uninstall marker and
+    # re-seed the active row — no file copy, since the backend loads from
+    # builtin-extensions/ and the frontend is pre-bundled.
+    if slug in FLAGSHIP_SLUGS:
+        _set_flagship_uninstalled(slug, False)
+        for entry in list_builtin_extensions():
+            if entry['slug'] == slug:
+                _ensure_builtin_backend_importable(slug)
+                existing = InstalledPlugin.query.filter_by(slug=slug).first()
+                if existing:
+                    existing.status = InstalledPlugin.STATUS_ACTIVE
+                    db.session.commit()
+                    return existing
+                plugin = _seed_flagship_row(entry)
+                try:
+                    _register_plugin_blueprint(plugin)
+                except Exception as e:
+                    logger.warning(
+                        f'Flagship blueprint hot-load failed for {slug} '
+                        f'(will load on restart): {e}')
+                return plugin
+        raise ValueError(f"No builtin extension with slug '{slug}'")
+
     for entry in list_builtin_extensions():
         if entry['slug'] == slug:
             return install_from_path(entry['path'], user_id=user_id)
 
     raise ValueError(f"No builtin extension with slug '{slug}'")
+
+
+# ── Flagship (D4) default-install machinery ──
+
+def _flagship_uninstalled_set():
+    """Slugs the user explicitly uninstalled — never re-seeded on boot."""
+    from app.services.settings_service import SettingsService
+    raw = SettingsService.get(_FLAGSHIP_UNINSTALLED_KEY, '')
+    if not raw:
+        return set()
+    try:
+        return set(json.loads(raw))
+    except (ValueError, TypeError):
+        return {s.strip() for s in str(raw).split(',') if s.strip()}
+
+
+def _set_flagship_uninstalled(slug, uninstalled):
+    from app.services.settings_service import SettingsService
+    current = _flagship_uninstalled_set()
+    if uninstalled:
+        current.add(slug)
+    else:
+        current.discard(slug)
+    SettingsService.set(_FLAGSHIP_UNINSTALLED_KEY, json.dumps(sorted(current)))
+
+
+def _seed_flagship_row(entry):
+    """Create an active InstalledPlugin row for a flagship without copying files.
+
+    The backend is loaded in-place from builtin-extensions/ (see
+    ``_ensure_builtin_backend_importable``) and the frontend is pre-bundled under
+    ``frontend/src/plugins/<slug>`` (D5), so the row only records install state
+    for the Marketplace/contributions surfaces and drives the status guard.
+    """
+    manifest = entry['manifest']
+    slug = entry['slug']
+    has_backend = os.path.isdir(os.path.join(entry['path'], 'backend'))
+    has_frontend = os.path.isdir(os.path.join(entry['path'], 'frontend'))
+
+    plugin = InstalledPlugin(
+        name=manifest['name'],
+        display_name=manifest.get('display_name', slug),
+        slug=slug,
+        version=manifest['version'],
+        description=manifest.get('description', ''),
+        author=manifest.get('author', ''),
+        homepage=manifest.get('homepage', ''),
+        repository=manifest.get('repository', ''),
+        license=manifest.get('license', ''),
+        category=manifest.get('category', 'utility'),
+        source_type='builtin',
+        status=InstalledPlugin.STATUS_ACTIVE,
+    )
+    plugin.manifest = manifest
+    plugin.has_backend = has_backend
+    plugin.has_frontend = has_frontend
+    plugin.backend_path = f'builtin-extensions/{slug}/backend' if has_backend else None
+    plugin.frontend_path = f'src/plugins/{slug}' if has_frontend else None
+    plugin.entry_point = manifest.get('entry_point', '')
+    plugin.url_prefix = manifest.get('url_prefix', f'/api/v1/{slug}')
+    plugin.frontend_entry = manifest.get('frontend_entry', '')
+    db.session.add(plugin)
+    db.session.commit()
+
+    # Register plugin-owned data models / jobs / sockets, same as a copy-install.
+    try:
+        from app.services import extension_lifecycle
+        extension_lifecycle.register_models(plugin, manifest)
+        extension_lifecycle.register_jobs(plugin, manifest)
+        from app.plugins_sdk import sockets as _ext_sockets
+        _ext_sockets.register_from_manifest(plugin, manifest)
+    except Exception as e:
+        logger.warning(f'Flagship lifecycle setup for {slug}: {e}')
+
+    _refresh_plugin_ai(plugin)
+    try:
+        _regenerate_frontend_manifest()
+    except Exception as e:
+        logger.warning(f'Frontend manifest regen after flagship seed for {slug}: {e}')
+    logger.info(f'Seeded flagship extension row: {slug} v{manifest["version"]}')
+    return plugin
+
+
+def seed_flagship_extensions():
+    """Ensure bundled flagship extensions (D4) have an active row on EVERY panel
+    — fresh AND upgrade — unless the user explicitly uninstalled them.
+
+    Called from ``create_app`` right before ``load_all_plugins`` so the loader
+    picks up the seeded row and registers the blueprints (in-place). Best-effort.
+    """
+    uninstalled = _flagship_uninstalled_set()
+    available = {e['slug']: e for e in list_builtin_extensions()}
+    for slug in FLAGSHIP_SLUGS:
+        if slug in uninstalled:
+            continue
+        entry = available.get(slug)
+        if not entry:
+            continue
+        # Make the backend importable in-place regardless (the bridge and the
+        # loader both rely on app.plugins.<slug> resolving).
+        _ensure_builtin_backend_importable(slug)
+        if InstalledPlugin.query.filter_by(slug=slug).first():
+            continue
+        try:
+            _seed_flagship_row(entry)
+        except Exception as e:
+            logger.warning(f'Flagship seed for {slug} failed (retry next boot): {e}')
 
 
 def _assert_panel_compatible(entry):
