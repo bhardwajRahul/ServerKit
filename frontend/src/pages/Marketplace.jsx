@@ -17,7 +17,6 @@ import {
     ServerCog,
     ShieldCheck,
     Sparkles,
-    Star,
     UploadCloud,
 } from 'lucide-react';
 import api from '../services/api';
@@ -51,10 +50,6 @@ const PLUGIN_INSTALL_SOURCES = [
     { id: 'upload', label: 'Zip', icon: FileArchive },
 ];
 
-const numberFormatter = new Intl.NumberFormat();
-
-const formatCount = (value) => numberFormatter.format(Number(value) || 0);
-
 const titleCase = (value = '') => {
     const cleaned = String(value || 'utility').replace(/[-_]/g, ' ');
     return cleaned
@@ -82,38 +77,6 @@ const deriveCatalogCategories = (entries) => {
     return [...known, ...extra];
 };
 
-const getPublishedCatalogEntry = (extension, installed) => ({
-    key: `published:${extension.id}`,
-    source: 'published',
-    sourceLabel: 'Published',
-    sourceDetail: 'Registry package',
-    installKey: extension.id,
-    displayName: extension.display_name || extension.name,
-    description: extension.description || 'No description provided.',
-    category: extension.category || 'utility',
-    version: extension.version || '0.0.0',
-    author: extension.author,
-    firstParty: isFirstParty(extension.author, extension),
-    icon: extension.icon || null,
-    screenshots: Array.isArray(extension.screenshots) ? extension.screenshots : [],
-    permissions: Array.isArray(extension.permissions) ? extension.permissions : [],
-    configSchema: extension.config_schema && typeof extension.config_schema === 'object' ? extension.config_schema : null,
-    extensionType: extension.extension_type,
-    installed,
-    rating: extension.rating,
-    ratingCount: extension.rating_count,
-    downloadCount: extension.download_count,
-});
-
-const getInstalledPublishedEntry = (extension) => ({
-    key: `installed:${extension.id}`,
-    source: 'published',
-    sourceLabel: 'Published',
-    displayName: extension.extension_name,
-    version: extension.installed_version || '0.0.0',
-    installId: extension.id,
-});
-
 const getRegistryCatalogEntry = (entry) => ({
     key: `registry:${entry.slug}`,
     source: 'registry',
@@ -135,8 +98,7 @@ const getRegistryCatalogEntry = (entry) => ({
     status: entry.status,
 });
 
-// Source badge tint: built-in is 'warning', registry is 'info', published falls
-// back to the neutral 'outline' variant.
+// Source badge tint: built-in is 'warning', registry is 'info'.
 const sourceBadgeVariant = (source) => {
     if (source === 'local') return 'warning';
     if (source === 'registry') return 'info';
@@ -185,8 +147,6 @@ const catalogEntryMatches = (entry, search, category) => {
 
 const Marketplace = () => {
     const toast = useToast();
-    const [extensions, setExtensions] = useState([]);
-    const [myExtensions, setMyExtensions] = useState([]);
     const [plugins, setPlugins] = useState([]);
     const [builtins, setBuiltins] = useState([]);
     const [registryExtensions, setRegistryExtensions] = useState([]);
@@ -208,16 +168,12 @@ const Marketplace = () => {
 
     const loadExtensions = useCallback(async () => {
         try {
-            const [eData, mData, pData, bData, rData, uData] = await Promise.all([
-                api.getMarketplaceExtensions(category, search),
-                api.getMyExtensions(),
+            const [pData, bData, rData, uData] = await Promise.all([
                 api.getInstalledPlugins().catch(() => ({ plugins: [] })),
                 api.getBuiltinExtensions().catch(() => ({ builtin: [] })),
                 api.getRegistryExtensions().catch(() => ({ extensions: [] })),
                 api.getPluginUpdates().catch(() => ({ updates: [] })),
             ]);
-            setExtensions(eData.extensions || []);
-            setMyExtensions(mData.extensions || []);
             setPlugins(pData.plugins || []);
             setBuiltins(bData.builtin || []);
             setRegistryExtensions(rData.extensions || []);
@@ -227,25 +183,9 @@ const Marketplace = () => {
         } finally {
             setLoading(false);
         }
-    }, [category, search, toast]);
+    }, [toast]);
 
     useEffect(() => { loadExtensions(); }, [loadExtensions]);
-
-    const handleInstall = async (extId) => {
-        try {
-            await api.installMarketplaceExtension(extId);
-            toast.success('Extension installed');
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
-    };
-
-    const handleUninstall = async (installId) => {
-        try {
-            await api.uninstallMarketplaceExtension(installId);
-            toast.success('Extension uninstalled');
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
-    };
 
     const handleBuiltinInstall = async (slug) => {
         setInstalling(true);
@@ -276,10 +216,8 @@ const Marketplace = () => {
     const installEntry = (entry) => {
         if (entry.source === 'local') {
             handleBuiltinInstall(entry.installKey);
-        } else if (entry.source === 'registry') {
-            handleRegistryInstall(entry.installKey);
         } else {
-            handleInstall(entry.installKey);
+            handleRegistryInstall(entry.installKey);
         }
     };
 
@@ -382,21 +320,13 @@ const Marketplace = () => {
 
     if (loading) return <PageLoader />;
 
-    const installedIds = new Set(myExtensions.map((extension) => String(extension.extension_id)));
     const localCatalogEntries = builtins.map(getLocalCatalogEntry);
     const registryCatalogEntries = registryExtensions.map(getRegistryCatalogEntry);
-    const publishedCatalogEntries = extensions.map((extension) => (
-        getPublishedCatalogEntry(extension, installedIds.has(String(extension.id)))
-    ));
-    const installedCatalogEntries = [
-        ...localCatalogEntries.filter((entry) => entry.installed),
-        ...myExtensions.map(getInstalledPublishedEntry),
-    ];
-    const installedBuiltinCount = localCatalogEntries.filter((entry) => entry.installed).length;
+    const installedCatalogEntries = localCatalogEntries.filter((entry) => entry.installed);
+    const installedBuiltinCount = installedCatalogEntries.length;
     const activePluginCount = plugins.filter((plugin) => plugin.status === 'active').length;
     const pluginIssueCount = plugins.filter((plugin) => plugin.status === 'error').length;
-    const totalDownloads = extensions.reduce((total, extension) => total + (Number(extension.download_count) || 0), 0);
-    const availableCount = extensions.length + builtins.length + registryExtensions.length;
+    const availableCount = builtins.length + registryExtensions.length;
     const installedCatalogCount = installedCatalogEntries.length;
     // Update descriptors keyed by both plugin_id and slug so PluginRow can match
     // whichever identifier it has on hand.
@@ -405,7 +335,7 @@ const Marketplace = () => {
         if (update.plugin_id != null) updatesByKey.set(String(update.plugin_id), update);
         if (update.slug) updatesByKey.set(update.slug, update);
     });
-    const mergedCatalogEntries = [...localCatalogEntries, ...registryCatalogEntries, ...publishedCatalogEntries];
+    const mergedCatalogEntries = [...localCatalogEntries, ...registryCatalogEntries];
     const catalogCategories = deriveCatalogCategories(mergedCatalogEntries);
     const catalogEntries = mergedCatalogEntries
         .filter((entry) => catalogEntryMatches(entry, search, category));
@@ -509,9 +439,7 @@ const Marketplace = () => {
                                                 onInstall={
                                                     entry.source === 'local'
                                                         ? handleBuiltinInstall
-                                                        : entry.source === 'registry'
-                                                            ? handleRegistryInstall
-                                                            : handleInstall
+                                                        : handleRegistryInstall
                                                 }
                                                 onOpenDetail={setDetailEntry}
                                                 statusVariant={pluginStatusVariant}
@@ -522,7 +450,7 @@ const Marketplace = () => {
                                     <EmptyState
                                         icon={Package}
                                         title="No catalog entries found"
-                                        description={hasFilters ? 'No local or published entries match the current filter.' : 'No extension entries are available yet.'}
+                                        description={hasFilters ? 'No built-in or registry entries match the current filter.' : 'No extension entries are available yet.'}
                                     />
                                 )}
                             </section>
@@ -565,7 +493,6 @@ const Marketplace = () => {
                                     Runtime
                                 </div>
                                 <div className="marketplace-runtime">
-                                    <RuntimeRow label="Published installs" value={formatCount(totalDownloads)} />
                                     <RuntimeRow label="Registry" value={registryExtensions.length} />
                                     <RuntimeRow label="Built-in" value={builtins.length} />
                                     <RuntimeRow label="Built-in installed" value={`${installedBuiltinCount}/${builtins.length}`} />
@@ -591,18 +518,14 @@ const Marketplace = () => {
                         {installedCatalogEntries.length > 0 ? (
                             <div className="installed-list">
                                 {installedCatalogEntries.map((entry) => (
-                                    <InstalledCatalogRow
-                                        key={entry.key}
-                                        entry={entry}
-                                        onUninstall={handleUninstall}
-                                    />
+                                    <InstalledCatalogRow key={entry.key} entry={entry} />
                                 ))}
                             </div>
                         ) : (
                             <EmptyState
                                 icon={PackageCheck}
                                 title="No extensions installed"
-                                description="Install a local or published extension to see it here."
+                                description="Install a built-in or registry extension to see it here."
                             />
                         )}
                     </section>
@@ -780,8 +703,7 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
     const category = entry.category || 'utility';
     const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
-    const isPublished = entry.source === 'published';
-    const installedLabel = !isPublished && entry.status && entry.status !== 'active'
+    const installedLabel = entry.status && entry.status !== 'active'
         ? titleCase(entry.status)
         : 'Installed';
 
@@ -818,22 +740,8 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
                 <p className="extension-card__desc">{entry.description}</p>
             </div>
             <div className="extension-card__signals">
-                {!isPublished ? (
-                    <>
-                        <span>{entry.sourceDetail}</span>
-                        <span>{entry.installed ? installedLabel : 'Ready to install'}</span>
-                    </>
-                ) : (
-                    <>
-                        <span>
-                            {renderStars(entry.rating)}
-                            <span className="extension-card__signal-text">
-                                {formatCount(entry.ratingCount)} reviews
-                            </span>
-                        </span>
-                        <span>{formatCount(entry.downloadCount)} installs</span>
-                    </>
-                )}
+                <span>{entry.sourceDetail}</span>
+                <span>{entry.installed ? installedLabel : 'Ready to install'}</span>
             </div>
             <div className="extension-card__footer">
                 <div className="extension-card__info">
@@ -854,14 +762,14 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
                     ) : (
                         <Button
                             size="sm"
-                            disabled={!isPublished && installing}
+                            disabled={installing}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 onInstall(entry.installKey);
                             }}
                         >
                             <DownloadCloud aria-hidden="true" />
-                            {!isPublished && installing ? 'Installing...' : 'Install'}
+                            {installing ? 'Installing...' : 'Install'}
                         </Button>
                     )}
                 </div>
@@ -874,14 +782,13 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
     const category = entry.category || 'utility';
     const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
-    const isPublished = entry.source === 'published';
     const iconSvg = entry.icon ? sanitizeSvgInner(entry.icon) : '';
     const screenshots = entry.screenshots || [];
     const permissions = Array.isArray(entry.permissions) ? entry.permissions : [];
     const configKeys = entry.configSchema && typeof entry.configSchema === 'object'
         ? Object.keys(entry.configSchema)
         : [];
-    const installedLabel = !isPublished && entry.status && entry.status !== 'active'
+    const installedLabel = entry.status && entry.status !== 'active'
         ? titleCase(entry.status)
         : 'Installed';
 
@@ -964,9 +871,9 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
                             {installedLabel}
                         </Badge>
                     ) : (
-                        <Button disabled={!isPublished && installing} onClick={onInstall}>
+                        <Button disabled={installing} onClick={onInstall}>
                             <DownloadCloud aria-hidden="true" />
-                            {!isPublished && installing ? 'Installing...' : 'Install'}
+                            {installing ? 'Installing...' : 'Install'}
                         </Button>
                     )}
                 </div>
@@ -975,41 +882,28 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
     );
 };
 
-const InstalledCatalogRow = ({ entry, onUninstall }) => {
-    const isLocal = entry.source === 'local';
-    const Icon = isLocal ? Archive : PackageCheck;
-
-    return (
-        <article className="installed-item card">
-            <div className="installed-item__main">
-                <div className={`installed-item__icon installed-item__icon--${isLocal ? 'local' : 'extension'}`}>
-                    <Icon aria-hidden="true" />
-                </div>
-                <div className="installed-item__content">
-                    <div className="installed-item__title-line">
-                        <strong>{entry.displayName}</strong>
-                        <span className="text-muted">v{entry.version}</span>
-                        <Badge variant={isLocal ? 'warning' : 'outline'}>{entry.sourceLabel}</Badge>
-                    </div>
-                    {isLocal && (
-                        <p className="installed-item__description">
-                            Managed as a local registry mapping.
-                        </p>
-                    )}
+// Installed catalog entries are builtin installs (the legacy "published"
+// lane was retired, #51); their manage/uninstall actions live on the
+// ServerKit Plugins tab, so this row is informational.
+const InstalledCatalogRow = ({ entry }) => (
+    <article className="installed-item card">
+        <div className="installed-item__main">
+            <div className="installed-item__icon installed-item__icon--local">
+                <Archive aria-hidden="true" />
+            </div>
+            <div className="installed-item__content">
+                <div className="installed-item__title-line">
+                    <strong>{entry.displayName}</strong>
+                    <span className="text-muted">v{entry.version}</span>
+                    <Badge variant="warning">{entry.sourceLabel}</Badge>
                 </div>
             </div>
-            <div className="installed-item__actions">
-                {isLocal ? (
-                    <Badge variant="success">Installed</Badge>
-                ) : (
-                    <Button size="sm" variant="destructive" onClick={() => onUninstall(entry.installId)}>
-                        Uninstall
-                    </Button>
-                )}
-            </div>
-        </article>
-    );
-};
+        </div>
+        <div className="installed-item__actions">
+            <Badge variant="success">Installed</Badge>
+        </div>
+    </article>
+);
 
 const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall, onConfigure, statusVariant }) => {
     const updateAvailable = Boolean(update?.update_available);
@@ -1239,21 +1133,5 @@ const RuntimeRow = ({ label, value, danger }) => (
         <strong>{value}</strong>
     </div>
 );
-
-const renderStars = (rating) => {
-    const normalizedRating = Math.max(0, Math.min(5, Number(rating) || 0));
-
-    return (
-        <span className="extension-card__stars" aria-label={`${normalizedRating.toFixed(1)} rating`}>
-            {Array.from({ length: 5 }, (_, index) => (
-                <Star
-                    key={index}
-                    aria-hidden="true"
-                    className={index < Math.round(normalizedRating) ? 'is-filled' : ''}
-                />
-            ))}
-        </span>
-    );
-};
 
 export default Marketplace;

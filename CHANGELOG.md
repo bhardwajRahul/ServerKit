@@ -18,6 +18,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/spec/v2.
 The `dev` branch is well ahead of the last `main` release. The headline work
 awaiting a stable release:
 
+### Removed
+
+- **Legacy marketplace catalog** — the DB-seeded `Extension`/`ExtensionInstall`
+  catalog (a third, always-empty lane in Marketplace Browse) was retired. Browse
+  now has exactly the real sources: bundled built-ins, the remote registry, and
+  installed-plugin state. The orphaned `extensions`/`extension_installs` tables
+  are dropped by migration 046 (they never held real data — nothing seeded them).
+
 ### Added
 
 - **Extensions platform (Phase 7 — scheduled update checks)** — the panel now
