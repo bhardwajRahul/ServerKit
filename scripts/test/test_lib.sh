@@ -249,8 +249,13 @@ UFW_EOF
 chmod +x "$t/on/ufw"
 printf '#!/bin/sh\necho "Status: inactive"\n' > "$t/off/ufw"; chmod +x "$t/off/ufw"
 fw_rc=0
-got="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh"; PATH="$t/on" FIREWALL_BACKEND="" firewall_detect )" || fw_rc=$?
-got2="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh"; PATH="$t/off" FIREWALL_BACKEND="" firewall_detect )" || fw_rc=$?
+# && chains: these captures sit on the left of `||` (and the if-conditions
+# below), where bash suppresses set -e even inside the subshell/substitution —
+# sequential statements would gate only on the LAST one.
+got="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh" \
+        && PATH="$t/on" FIREWALL_BACKEND="" firewall_detect )" || fw_rc=$?
+got2="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh" \
+        && PATH="$t/off" FIREWALL_BACKEND="" firewall_detect )" || fw_rc=$?
 if [ "$fw_rc" -eq 0 ] && [ "$got" = "ufw" ] && [ "$got2" = "none" ]; then
     ok "firewall_detect sees an active ufw under pipefail and never misreads 'inactive'"
 else
@@ -258,8 +263,8 @@ else
 fi
 
 errf="$WORK/fw-noargs.err"
-if ( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh"
-     firewall_open && firewall_close && firewall_manual_hint >/dev/null ) 2>"$errf"; then
+if ( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh" \
+     && firewall_open && firewall_close && firewall_manual_hint >/dev/null ) 2>"$errf"; then
     if grep -q 'unbound variable' "$errf"; then
         bad "zero-arg firewall helpers leaked an unbound-variable error"
     else
@@ -278,8 +283,8 @@ fi
 if command -v python3 >/dev/null 2>&1; then
     sdir="$WORK/state-as-dir"; mkdir -p "$sdir"
     errf="$WORK/state-l1.err"
-    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh"
-         SERVERKIT_STATE_FILE="$sdir" state_set firewall_backend ufw ) 2>"$errf"; then
+    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh" \
+         && SERVERKIT_STATE_FILE="$sdir" state_set firewall_backend ufw ) 2>"$errf"; then
         if grep -q '\[state\]' "$errf"; then
             ok "state_set warns and exits 0 when the state path is a directory"
         else
@@ -289,25 +294,25 @@ if command -v python3 >/dev/null 2>&1; then
         bad "state_set ABORTED when the state path is a directory (L1 regression)"
     fi
 
-    if out="$( set -Eeuo pipefail; source "$LIB_DIR/state.sh"
-               SERVERKIT_STATE_FILE="$sdir" state_get firewall_backend 2>/dev/null )" \
+    if out="$( set -Eeuo pipefail; source "$LIB_DIR/state.sh" \
+               && SERVERKIT_STATE_FILE="$sdir" state_get firewall_backend 2>/dev/null )" \
        && [ -z "$out" ]; then
         ok "state_get is quiet-empty (exit 0) on an unreadable state path"
     else
         bad "state_get aborted or printed [$out] on an unreadable state path"
     fi
 
-    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh"
-         ports="$(SERVERKIT_STATE_FILE="$sdir" state_list firewall_ports | tr '\n' ' ')"
-         [ -z "${ports// /}" ] ); then
+    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh" \
+         && ports="$(SERVERKIT_STATE_FILE="$sdir" state_list firewall_ports | tr '\n' ' ')" \
+         && [ -z "${ports// /}" ] ); then
         ok "state_list | tr survives set -Eeuo pipefail on an unreadable state path"
     else
         bad "state_list | tr aborted under pipefail (the L2-shaped uninstall killer)"
     fi
 
     : > "$WORK/state-blocker"
-    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh"
-         SERVERKIT_STATE_FILE="$WORK/state-blocker/state.json" state_append firewall_ports 80/tcp ) 2>/dev/null; then
+    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh" \
+         && SERVERKIT_STATE_FILE="$WORK/state-blocker/state.json" state_append firewall_ports 80/tcp ) 2>/dev/null; then
         ok "state_append warns and exits 0 when the state parent is a regular file"
     else
         bad "state_append ABORTED when the state parent is a regular file (L1 regression)"
@@ -317,8 +322,8 @@ if command -v python3 >/dev/null 2>&1; then
     # write may legitimately succeed — the contract under test is only
     # "never non-zero", which must hold either way.
     ro="$WORK/state-ro"; mkdir -p "$ro"; chmod 555 "$ro" 2>/dev/null || true
-    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh"
-         SERVERKIT_STATE_FILE="$ro/state.json" state_set k v ) 2>/dev/null; then
+    if ( set -Eeuo pipefail; source "$LIB_DIR/state.sh" \
+         && SERVERKIT_STATE_FILE="$ro/state.json" state_set k v ) 2>/dev/null; then
         ok "state_set exits 0 with an unwritable state directory"
     else
         bad "state_set ABORTED on an unwritable state directory (L1 regression)"
@@ -380,10 +385,10 @@ fi
 : > "$CURL_LOG"
 if (
     set -Eeuo pipefail
-    source "$LIB_DIR/uninstall.sh"
-    export PATH="$t/bin:$PATH"
-    export SERVERKIT_DIR="$t/inst" SERVERKIT_UNINSTALL_DRY_RUN=1
-    serverkit_uninstall_core
+    source "$LIB_DIR/uninstall.sh" \
+        && export PATH="$t/bin:$PATH" \
+        && export SERVERKIT_DIR="$t/inst" SERVERKIT_UNINSTALL_DRY_RUN=1 \
+        && serverkit_uninstall_core
 ) >/dev/null 2>&1 && [ ! -s "$CURL_LOG" ]; then
     ok "uninstall --dry-run never phones home (L8)"
 else

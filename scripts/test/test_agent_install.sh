@@ -84,10 +84,12 @@ printf '[{"tag_name": "v1.6.0"},{"tag_name": "agent-v0.3.2"},{"tag_name": "agent
 
 : > "$CURL_LOG"
 if ! got="$(
+    # && chain: set -e is suppressed inside an if-condition substitution, so
+    # only an explicit chain makes get_latest_version's status gate the result.
     set -Eeuo pipefail
     VERSION="latest"; SERVERKIT_AGENT_VERSION=""; GITHUB_REPO="jhd3197/ServerKit"
-    get_latest_version >/dev/null
-    printf '%s' "$VERSION"
+    get_latest_version >/dev/null \
+        && printf '%s' "$VERSION"
 )"; then
     bad "paged discovery aborted under set -Eeuo pipefail"
 elif [ "$got" = "0.3.2" ]; then
@@ -138,8 +140,8 @@ fi
 if ! got="$(
     set -Eeuo pipefail
     VERSION="latest"; SERVERKIT_AGENT_VERSION="9.9.9"; GITHUB_REPO="jhd3197/ServerKit"
-    get_latest_version >/dev/null
-    printf '%s' "$VERSION"
+    get_latest_version >/dev/null \
+        && printf '%s' "$VERSION"
 )"; then
     bad "panel-injected version path aborted under set -Eeuo pipefail"
 elif [ "$got" = "9.9.9" ] && [ ! -s "$CURL_LOG" ]; then
@@ -152,8 +154,8 @@ fi
 if ! got="$(
     set -Eeuo pipefail
     VERSION="1.2.3"; SERVERKIT_AGENT_VERSION=""; GITHUB_REPO="jhd3197/ServerKit"
-    get_latest_version >/dev/null
-    printf '%s' "$VERSION"
+    get_latest_version >/dev/null \
+        && printf '%s' "$VERSION"
 )"; then
     bad "explicit --version path aborted under set -Eeuo pipefail"
 elif [ "$got" = "1.2.3" ] && [ ! -s "$CURL_LOG" ]; then

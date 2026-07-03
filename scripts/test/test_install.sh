@@ -77,7 +77,9 @@ printf '\ninstall.sh + lib unit tests\n\n'
 # --------------------------------------------------------------------------
 # T1 — locate_python prefers a supported minor version over a too-old python3.
 # --------------------------------------------------------------------------
-if ! res="$( set -Eeuo pipefail; PATH="$PY_STUB:$PATH"; locate_python >/dev/null 2>&1; printf '%s' "$PYTHON_BIN" )"; then
+# && chain: set -e is suppressed inside an if-condition substitution (see T16).
+if ! res="$( set -Eeuo pipefail; PATH="$PY_STUB:$PATH"
+             locate_python >/dev/null 2>&1 && printf '%s' "$PYTHON_BIN" )"; then
     bad "locate_python aborted under set -Eeuo pipefail"
 elif [ "$res" = "python3.11" ]; then
     ok "locate_python picks python3.11 when python3 is 3.10 and python3.12 is out of range"
@@ -139,7 +141,8 @@ fi
 # --------------------------------------------------------------------------
 # T5 — firewall_detect honors the FIREWALL_BACKEND override.
 # --------------------------------------------------------------------------
-if ! res="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh"; FIREWALL_BACKEND=ufw firewall_detect )"; then
+if ! res="$( set -Eeuo pipefail; source "$LIB_DIR/firewall.sh" \
+             && FIREWALL_BACKEND=ufw firewall_detect )"; then
     bad "firewall_detect aborted under set -Eeuo pipefail"
 elif [ "$res" = "ufw" ]; then
     ok "firewall_detect honors FIREWALL_BACKEND override"
@@ -153,17 +156,19 @@ fi
 if command -v python3 >/dev/null 2>&1; then
     t6_rc=0
     res="$(
-        set -Eeuo pipefail
-        export SERVERKIT_STATE_FILE="$WORK/state-t6.json"
-        source "$LIB_DIR/state.sh"
-        state_set firewall_backend firewalld
-        state_append firewall_ports 80/tcp
-        state_append firewall_ports 443/tcp
-        state_append firewall_ports 80/tcp     # duplicate — must be ignored
+        # && chain: this capture sits on the left of `||`, where bash
+        # suppresses set -e even inside the substitution (see T16).
         # tr -d '\r' normalizes the CRLF that Python's text-mode stdout emits on
         # Windows; on Linux there is nothing to strip.
-        printf '%s|%s' "$(state_get firewall_backend | tr -d '\r')" \
-            "$(state_list firewall_ports | tr -d '\r' | tr '\n' ',')"
+        set -Eeuo pipefail
+        export SERVERKIT_STATE_FILE="$WORK/state-t6.json"
+        source "$LIB_DIR/state.sh" \
+            && state_set firewall_backend firewalld \
+            && state_append firewall_ports 80/tcp \
+            && state_append firewall_ports 443/tcp \
+            && state_append firewall_ports 80/tcp `# duplicate — must be ignored` \
+            && printf '%s|%s' "$(state_get firewall_backend | tr -d '\r')" \
+                "$(state_list firewall_ports | tr -d '\r' | tr '\n' ',')"
     )" || t6_rc=$?
     if [ "$t6_rc" -eq 0 ] && [ "$res" = "firewalld|80/tcp,443/tcp," ]; then
         ok "state.sh set/get/append(dedup)/list roundtrip"
@@ -185,11 +190,13 @@ touch "$inst/docker-compose.yml"
 
 uninstall_out() {  # uninstall_out <extra-env>
     (
+        # && chain: called from if-conditions, where set -e is suppressed
+        # all the way down (see T16).
         set -Eeuo pipefail
-        source "$LIB_DIR/uninstall.sh"
-        export SERVERKIT_DIR="$inst" SERVERKIT_UNINSTALL_DRY_RUN=1
-        eval "$1"
-        serverkit_uninstall_core 2>&1
+        source "$LIB_DIR/uninstall.sh" \
+            && export SERVERKIT_DIR="$inst" SERVERKIT_UNINSTALL_DRY_RUN=1 \
+            && eval "$1" \
+            && serverkit_uninstall_core 2>&1
     )
 }
 
@@ -368,8 +375,8 @@ fi
 if ! res="$(printf 'panel.example.com\n' | (
     set -Eeuo pipefail
     PANEL_DOMAIN=""; PANEL_PORT=""; SERVERKIT_FORCE_PROMPT=1
-    prompt_for_domain >/dev/null 2>&1
-    printf '%s|%s' "$PANEL_DOMAIN" "$PANEL_PORT"
+    prompt_for_domain >/dev/null 2>&1 \
+        && printf '%s|%s' "$PANEL_DOMAIN" "$PANEL_PORT"
 ))"; then
     bad "prompt_for_domain aborted on a typed domain under set -Eeuo pipefail"
 elif [ "$res" = "panel.example.com|80" ]; then
@@ -495,8 +502,8 @@ printf '#!/bin/sh\n' > "$t/slot/venv/bin/python"; chmod +x "$t/slot/venv/bin/pyt
 if (
     set -Eeuo pipefail
     INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/slot/venv"
-    build_virtualenv
-    [ -f "$t/slot/venv/bin/activate" ]
+    build_virtualenv \
+        && [ -f "$t/slot/venv/bin/activate" ]
 ) >/dev/null 2>&1; then
     ok "build_virtualenv keeps the venv when source and destination are the same directory"
 else
@@ -505,8 +512,9 @@ fi
 if (
     set -Eeuo pipefail
     INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/elsewhere/venv"
-    build_virtualenv
-    [ -f "$t/elsewhere/venv/bin/activate" ] && [ -f "$t/slot/venv/bin/activate" ]
+    build_virtualenv \
+        && [ -f "$t/elsewhere/venv/bin/activate" ] \
+        && [ -f "$t/slot/venv/bin/activate" ]
 ) >/dev/null 2>&1; then
     ok "build_virtualenv still copies the release venv to a distinct VENV_DIR"
 else
@@ -519,8 +527,8 @@ else
     if (
         set -Eeuo pipefail
         INSTALL_FROM_RELEASE=1; FIRST_SLOT="$t/slot"; VENV_DIR="$t/link/venv"
-        build_virtualenv
-        [ -x "$t/slot/venv/bin/python" ]
+        build_virtualenv \
+            && [ -x "$t/slot/venv/bin/python" ]
     ) >/dev/null 2>&1; then
         ok "build_virtualenv survives the default symlinked layout (/opt/serverkit → slot)"
     else
@@ -790,7 +798,8 @@ fi
 # under pipefail.
 # --------------------------------------------------------------------------
 t="$WORK/t28"; mkdir -p "$t/nofree"
-if ! res="$( set -Eeuo pipefail; PATH="$t/nofree"; SAFE_MODE=true; gauge_memory >/dev/null 2>&1; printf '%s' "$SAFE_MODE" )"; then
+if ! res="$( set -Eeuo pipefail; PATH="$t/nofree"; SAFE_MODE=true
+             gauge_memory >/dev/null 2>&1 && printf '%s' "$SAFE_MODE" )"; then
     bad "gauge_memory aborted without 'free' under set -Eeuo pipefail (I14 regression)"
 elif [ "$res" = "false" ]; then
     ok "gauge_memory degrades gracefully when 'free' is absent (LXC templates)"
@@ -1016,7 +1025,8 @@ EOF
 chmod +x "$t/sysd/systemctl"
 svc_rc=0
 ( set -Eeuo pipefail; PATH="$t/sysd:$PATH"
-  INIT_OVERRIDE=systemd svc_enable nginx; INIT_OVERRIDE=systemd svc_start nginx ) >/dev/null 2>&1 || svc_rc=$?
+  INIT_OVERRIDE=systemd svc_enable nginx \
+      && INIT_OVERRIDE=systemd svc_start nginx ) >/dev/null 2>&1 || svc_rc=$?
 if [ "$svc_rc" -eq 0 ] && grep -q 'systemctl enable nginx' "$SVC_LOG" && grep -q 'systemctl start nginx' "$SVC_LOG"; then
     ok "svc_enable/svc_start drive systemctl on systemd boxes"
 else
@@ -1086,8 +1096,8 @@ VERSION="24.04.1 LTS (Noble Numbat)"
 OSR_EOF
 if ! res="$( set -Eeuo pipefail
         VERSION="sk-sentinel"
-        SERVERKIT_OS_RELEASE="$t/os-release" identify_system >/dev/null 2>&1
-        printf '%s|%s' "$VERSION" "$OS_FAMILY" )"; then
+        SERVERKIT_OS_RELEASE="$t/os-release" identify_system >/dev/null 2>&1 \
+            && printf '%s|%s' "$VERSION" "$OS_FAMILY" )"; then
     bad "identify_system aborted under set -Eeuo pipefail"
 elif [ "$res" = "sk-sentinel|debian" ]; then
     ok "identify_system keeps the installer's \$VERSION across the os-release source"

@@ -452,12 +452,15 @@ printf 'old-copy\n'  > "$t/old/backend/app/plugins/shipped-plugin/__init__.py"
 printf 'stale\n'     > "$t/old/backend/app/plugins/__pycache__/x.pyc"
 printf 'repo-copy\n' > "$t/new/backend/app/plugins/shipped-plugin/__init__.py"
 if (
+    # One && chain, not sequential statements: bash suppresses set -e inside
+    # an if-condition subshell, so only an explicit chain makes every
+    # assertion gate the result (same fix as test_install.sh T16).
     set -Eeuo pipefail
-    preserve_installed_plugins "$t/old" "$t/new"
-    [ -f "$t/new/backend/app/plugins/third-party/blueprint.py" ]
-    [ -f "$t/new/frontend/src/plugins/third-party/index.jsx" ]
-    [ ! -d "$t/new/backend/app/plugins/__pycache__" ]
-    grep -q repo-copy "$t/new/backend/app/plugins/shipped-plugin/__init__.py"
+    preserve_installed_plugins "$t/old" "$t/new" \
+        && [ -f "$t/new/backend/app/plugins/third-party/blueprint.py" ] \
+        && [ -f "$t/new/frontend/src/plugins/third-party/index.jsx" ] \
+        && [ ! -d "$t/new/backend/app/plugins/__pycache__" ] \
+        && grep -q repo-copy "$t/new/backend/app/plugins/shipped-plugin/__init__.py"
 ) >/dev/null 2>&1; then
     ok "preserve_installed_plugins carries user plugins forward without clobbering repo-shipped ones"
 else
@@ -473,8 +476,8 @@ fi
 t="$WORK/t19"; mkdir -p "$t/empty" "$t/ret"
 prune_survives() {
     ( set -Eeuo pipefail; BACKUP_DIR="$t/empty"
-      prune_old_backups 'serverkit-tree-*' 10
-      prune_old_backups 'serverkit-pre-upgrade-*.db' 10 ) &&
+      prune_old_backups 'serverkit-tree-*' 10 \
+          && prune_old_backups 'serverkit-pre-upgrade-*.db' 10 ) &&
     ( set -Eeuo pipefail; BACKUP_DIR="$t/gone"; prune_old_backups 'serverkit-tree-*' 10 ) &&
     ( set -Eeuo pipefail; BACKUP_DIR="$t/empty"; INSTALL_DIR="$t/no-install"; DRY_RUN=0; cleanup )
 }
@@ -669,11 +672,14 @@ chmod +x "$STUB_BIN/flask"
 exp="$(cd "$WORK" && pwd)"
 t24_rc=0
 res="$(
+    # && chain: this capture sits on the left of `||`, where bash suppresses
+    # set -e even inside the substitution — sequential statements would let a
+    # failing cd/migrate slip through ungated.
     set -Eeuo pipefail
     DRY_RUN=0
-    cd "$WORK"
-    migrate_database "$t" >/dev/null 2>&1
-    pwd
+    cd "$WORK" \
+        && migrate_database "$t" >/dev/null 2>&1 \
+        && pwd
 )" || t24_rc=$?
 rm -f "$STUB_BIN/flask"
 if [ "$t24_rc" -eq 0 ] && [ "$res" = "$exp" ]; then
@@ -817,13 +823,17 @@ make_stub_curl_fail22 "$t/bindown"         # every upstream refuses → "down"
 t28_rc=0
 out="$(
     {
+        # && chain: this capture sits on the left of `||`, where bash
+        # suppresses set -e even inside the substitution. The chain gates on
+        # every statement, which is exactly what set -e does to the real
+        # (sequential) run block.
         set -Eeuo pipefail
         export PATH="$FRESH/bin:$PATH"
         APP_LOCATIONS_DIR="$FRESH/etc/nginx/serverkit-locations"; DRY_RUN=0
-        APP_BASELINE="$(snapshot_app_reachability)"
-        phase "Verifying App Uptime"
-        APP_AFTER="$(snapshot_app_reachability)"
-        report_app_uptime_regressions "$APP_BASELINE" "$APP_AFTER" || true
+        APP_BASELINE="$(snapshot_app_reachability)" \
+            && phase "Verifying App Uptime" \
+            && APP_AFTER="$(snapshot_app_reachability)" \
+            && { report_app_uptime_regressions "$APP_BASELINE" "$APP_AFTER" || true; }
     } 2>&1
 )" || t28_rc=$?
 if [ "$t28_rc" -eq 0 ] && printf '%s' "$out" | grep -q 'No managed apps'; then
@@ -839,11 +849,11 @@ out="$(
         set -Eeuo pipefail
         APP_LOCATIONS_DIR="$t/loc"; DRY_RUN=0
         export PATH="$t/binup:$PATH"       # app reachable pre-switch
-        APP_BASELINE="$(snapshot_app_reachability)"
-        export PATH="$t/bindown:$PATH"     # app dead post-switch → regression
-        phase "Verifying App Uptime"
-        APP_AFTER="$(snapshot_app_reachability)"
-        report_app_uptime_regressions "$APP_BASELINE" "$APP_AFTER" || true
+        APP_BASELINE="$(snapshot_app_reachability)" \
+            && export PATH="$t/bindown:$PATH" `# app dead post-switch → regression` \
+            && phase "Verifying App Uptime" \
+            && APP_AFTER="$(snapshot_app_reachability)" \
+            && { report_app_uptime_regressions "$APP_BASELINE" "$APP_AFTER" || true; }
     } 2>&1
 )" || t28_rc=$?
 if [ "$t28_rc" -eq 0 ] && printf '%s' "$out" | grep -q 'DOWN now'; then
