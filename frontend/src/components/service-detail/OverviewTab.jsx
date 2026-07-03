@@ -3,6 +3,8 @@ import { Activity, Rocket, CheckCircle2, XCircle } from 'lucide-react';
 import api from '../../services/api';
 import { useDeployments } from '../../hooks/useDeployments';
 import { getDeployStatus, formatRelativeTime, formatDuration } from '../../utils/serviceTypes';
+import { formatBytes } from '../../utils/formatBytes';
+import BandwidthSparkline from '../BandwidthSparkline';
 import { MetricCard, Pill, Gauge, EnvTag } from '@/components/ds';
 
 // Deployment status → semantic tone (ds Pill kind / dot modifier)
@@ -24,6 +26,7 @@ const ENV_LABEL = {
 const OverviewTab = ({ app, deployConfig }) => {
     const [metrics, setMetrics] = useState(null);
     const [metricsLoading, setMetricsLoading] = useState(true);
+    const [bandwidth, setBandwidth] = useState(null);
     const { deployments, loading: deploymentsLoading } = useDeployments(app.id);
 
     const isDocker = app.app_type === 'docker';
@@ -33,6 +36,15 @@ const OverviewTab = ({ app, deployConfig }) => {
         loadMetrics();
         const interval = setInterval(loadMetrics, 10000);
         return () => clearInterval(interval);
+    }, [app.id]);
+
+    useEffect(() => {
+        // Best-effort daily rollups; hide the card when there is no data.
+        let cancelled = false;
+        api.getAppBandwidth(app.id, 90)
+            .then((data) => { if (!cancelled) setBandwidth(data); })
+            .catch(() => {});
+        return () => { cancelled = true; };
     }, [app.id]);
 
     async function loadMetrics() {
@@ -252,6 +264,25 @@ const OverviewTab = ({ app, deployConfig }) => {
                     )}
                 </div>
             </div>
+
+            {/* Bandwidth (daily nginx rollups; hidden until data exists) */}
+            {bandwidth?.series?.some(p => p.bytes_sent > 0) && (
+                <div className="overview-tab__card overview-tab__card--full overview-tab__bandwidth">
+                    <div className="overview-tab__card-header-row">
+                        <h3 className="overview-tab__card-title">Bandwidth</h3>
+                        <span className="overview-tab__bandwidth-month">
+                            {formatBytes(bandwidth.month_bytes)} this month
+                        </span>
+                    </div>
+                    <BandwidthSparkline
+                        data={bandwidth.series.map(p => p.bytes_sent)}
+                        width={600}
+                        height={48}
+                        className="bw-spark--wide"
+                    />
+                    <span className="overview-tab__bandwidth-caption">Last 90 days</span>
+                </div>
+            )}
 
             {/* Recent Deployments */}
             <div className="overview-tab__card overview-tab__card--full">

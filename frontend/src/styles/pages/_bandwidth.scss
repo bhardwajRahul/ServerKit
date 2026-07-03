@@ -1,0 +1,50 @@
+// ============================================
+// PER-DOMAIN BANDWIDTH
+// Sparkline cell on the Services list + the Bandwidth card on the
+// service detail Overview tab. The <svg> itself is BandwidthSparkline.jsx.
+// ============================================
+
+// Shared sparkline styling (stroke inherits currentColor).
+.bw-spark {
+    display: block;
+    color: var(--accent, #4f8ef7);
+    opacity: 0.9;
+
+    &--wide {
+        width: 100%;
+        max-width: 640px;
+        height: 48px;
+    }
+}
+
+// Services list cell: sparkline + month total side by side.
+.bw-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    .bw-spark { flex-shrink: 0; }
+
+    &__month {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-dim);
+        white-space: nowrap;
+    }
+}
+
+// Service detail Overview: full-width bandwidth card additions.
+.overview-tab__bandwidth {
+    &-month {
+        font-family: var(--mono);
+        font-size: 12.5px;
+        color: var(--text-dim);
+    }
+
+    &-caption {
+        display: block;
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+}

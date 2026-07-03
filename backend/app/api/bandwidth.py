@@ -1,0 +1,54 @@
+"""REST surface for per-domain bandwidth accounting.
+
+Mounted at /api/v1/bandwidth (registered in app/__init__.py).
+"""
+from flask import Blueprint, jsonify, request
+
+from ..middleware.rbac import admin_required, viewer_required
+from ..services.bandwidth_service import BandwidthService
+
+bandwidth_bp = Blueprint('bandwidth', __name__)
+
+
+@bandwidth_bp.route('/apps', methods=['GET'])
+@viewer_required
+def get_apps_bandwidth():
+    """Month totals + 30-day sparkline series for every app with traffic —
+    one call for the Services list."""
+    try:
+        data = BandwidthService.overview(days=30)
+        # JSON object keys must be strings.
+        return jsonify({'apps': {str(k): v for k, v in data.items()}})
+    except Exception as exc:  # noqa: BLE001 — surface as a clean JSON error
+        return jsonify({'error': str(exc)}), 500
+
+
+@bandwidth_bp.route('/apps/<int:app_id>', methods=['GET'])
+@viewer_required
+def get_app_bandwidth(app_id):
+    """Full daily series (default 90 days) + current-month total for one app."""
+    try:
+        days = request.args.get('days', 90, type=int)
+        series = BandwidthService.series(app_id=app_id, days=days)
+        return jsonify({
+            'app_id': app_id,
+            'days': len(series),
+            'series': series,
+            'month_bytes': BandwidthService.monthly_total(app_id),
+        })
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({'error': str(exc)}), 500
+
+
+@bandwidth_bp.route('/aggregate', methods=['POST'])
+@admin_required
+def run_aggregate():
+    """Run the daily aggregation now (optionally for a specific day)."""
+    try:
+        payload = request.get_json(silent=True) or {}
+        result = BandwidthService.aggregate(day=payload.get('day'))
+        return jsonify(result)
+    except ValueError:
+        return jsonify({'error': 'day must be YYYY-MM-DD'}), 400
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({'error': str(exc)}), 500

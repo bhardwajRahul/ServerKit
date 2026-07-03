@@ -5,6 +5,8 @@ import api from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { getServiceType, getStatusConfig, formatRelativeTime } from '../utils/serviceTypes';
 import ResourceListPage from '../components/layouts/ResourceListPage';
+import BandwidthSparkline from '../components/BandwidthSparkline';
+import { formatBytes } from '../utils/formatBytes';
 import { Pill, ServiceTile, EnvTag } from '@/components/ds';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import { Button } from '@/components/ui/button';
@@ -43,9 +45,14 @@ const Services = () => {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [showMoveDialog, setShowMoveDialog] = useState(false);
+    const [bandwidth, setBandwidth] = useState({});
 
     useEffect(() => {
         loadApps();
+        // Best-effort: one call for every row's sparkline; absence is fine.
+        api.getBandwidthApps()
+            .then((data) => setBandwidth(data?.apps || {}))
+            .catch(() => {});
     }, []);
 
     async function loadApps() {
@@ -240,6 +247,22 @@ const Services = () => {
             render: (app) => {
                 const primaryDomain = (app.domains?.find(d => d.is_primary) || app.domains?.[0])?.name || '';
                 return primaryDomain || <span className="wp-list__dash">—</span>;
+            },
+        },
+        {
+            key: 'bandwidth',
+            header: 'Transfer',
+            render: (app) => {
+                const bw = bandwidth[String(app.id)];
+                if (!bw || !bw.series30?.some(v => v > 0)) {
+                    return <span className="wp-list__dash">—</span>;
+                }
+                return (
+                    <span className="bw-cell" title="Transfer — last 30 days">
+                        <BandwidthSparkline data={bw.series30} width={72} height={20} />
+                        <span className="bw-cell__month">{formatBytes(bw.month_bytes)}/mo</span>
+                    </span>
+                );
             },
         },
         {
