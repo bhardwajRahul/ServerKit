@@ -11,9 +11,11 @@ import { api } from '../services/api';
 // reported capabilities yet (older builds) are filtered out — same
 // pattern as the cron picker.
 //
-// onChange receives `{ kind: 'local' } | { kind: 'agent', server_id, name, allowedPaths }`,
-// or `{ kind: <extra.value> }` for any caller-supplied `extraOptions` (e.g. an
-// "S3 bucket" target in the File Manager).
+// onChange receives `{ kind: 'local' } | { kind: 'agent', server_id, name,
+// allowedPaths, os_type }` (os_type: linux/windows/darwin or null for agents
+// that predate sysinfo reporting), or `{ kind: <extra.value> }` for any
+// caller-supplied `extraOptions` (e.g. an "S3 bucket" target in the File
+// Manager).
 export default function TargetPicker({ feature, value, onChange, includeLocal = true, extraOptions = [] }) {
     const [servers, setServers] = useState([]);
 
@@ -51,6 +53,7 @@ export default function TargetPicker({ feature, value, onChange, includeLocal = 
             server_id: s.id,
             name: s.name || s.hostname || s.id,
             allowedPaths: s.allowed_paths || [],
+            os_type: s.os_type || null,
         });
     }
 

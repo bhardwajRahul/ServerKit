@@ -511,6 +511,9 @@ class RemoteDockerService:
                 'group_name': server.group.name if server.group else None,
                 'capabilities': caps or {},
                 'allowed_paths': allowed_paths,
+                # linux/windows/darwin — lets target-aware UIs (File Manager
+                # quick links) offer paths that exist on that box.
+                'os_type': server.os_type,
             })
 
         return servers

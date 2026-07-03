@@ -287,7 +287,11 @@ awaiting a stable release:
   `SERVERKIT_DIR`), prefers the running tree over a stale `/opt/serverkit`, and
   the Docker image now ships the `VERSION` file (containers previously showed
   the `1.0.0` fallback). The File Manager's "Stack" quick link follows the same
-  resolved install directory instead of assuming `/opt/serverkit`.
+  resolved install directory instead of assuming `/opt/serverkit`, and when
+  browsing a remote agent the quick-access rail now matches that box: Linux
+  agents get their agent config dir alongside the generic paths, Windows agents
+  get `ProgramData\ServerKit\Agent` + `C:\Users` instead of Unix paths that
+  don't exist there.
 - **Scripts reliability (round 2)** — swept the whole install/update/uninstall/CLI
   shell surface for the "benign non-zero under `set -e`/`pipefail`" failure class
   behind the July 2 update outage:

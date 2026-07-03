@@ -37,6 +37,29 @@ const QUICK_ACCESS = [
     { label: 'Logs', path: '/var/log', icon: FileText },
 ];
 
+// Remote-agent rails: the panel stack doesn't exist on an agent box, so link
+// the agent's own footprint instead. These paths are fixed by the agent
+// installers the panel serves (scripts/install.sh: /etc/serverkit-agent;
+// scripts/install.ps1: ProgramData\ServerKit\Agent) — agents run on the wire
+// with forward-slash paths, Windows included.
+const QUICK_ACCESS_AGENT = {
+    linux: [
+        { label: 'Sites', path: '/var/www', icon: Globe },
+        { label: 'Agent', path: '/etc/serverkit-agent', icon: Boxes },
+        { label: 'Web config', path: '/etc/nginx', icon: SlidersHorizontal },
+        { label: 'Logs', path: '/var/log', icon: FileText },
+    ],
+    windows: [
+        { label: 'Agent', path: 'C:/ProgramData/ServerKit/Agent', icon: Boxes },
+        { label: 'Agent logs', path: 'C:/ProgramData/ServerKit/Agent/logs', icon: FileText },
+        { label: 'Users', path: 'C:/Users', icon: Home },
+    ],
+    darwin: [
+        { label: 'Home', path: '/Users', icon: Home },
+        { label: 'Logs', path: '/var/log', icon: FileText },
+    ],
+};
+
 // File manager operations that the agent can serve over file:* commands.
 // Anything else (mkdir, delete, rename, copy, chmod, search, disk usage,
 // upload/download) is panel-host-only until the matching agent verbs land.
@@ -124,19 +147,29 @@ function FileManager() {
 
     // The "Stack" quick link tracks the panel's real install dir (custom
     // SERVERKIT_DIR installs aren't at /opt/serverkit).
-    const [quickAccess, setQuickAccess] = useState(QUICK_ACCESS);
+    const [panelInstallDir, setPanelInstallDir] = useState('/opt/serverkit');
     useEffect(() => {
         let cancelled = false;
         api.getVersion()
             .then((v) => {
-                if (cancelled || !v?.install_dir) return;
-                setQuickAccess((links) => links.map((q) =>
-                    q.label === 'Stack' ? { ...q, path: v.install_dir } : q
-                ));
+                if (!cancelled && v?.install_dir) setPanelInstallDir(v.install_dir);
             })
             .catch(() => {});
         return () => { cancelled = true; };
     }, []);
+
+    // Per-target rail: agents get their OS's set (unknown os_type — an agent
+    // predating sysinfo reporting — is treated as linux, the historical
+    // behavior); the local host gets the panel set with the resolved Stack dir.
+    const quickAccess = useMemo(() => {
+        if (isRemote) {
+            const os = (target.os_type || 'linux').toLowerCase();
+            return QUICK_ACCESS_AGENT[os] || QUICK_ACCESS_AGENT.linux;
+        }
+        return QUICK_ACCESS.map((q) =>
+            q.label === 'Stack' ? { ...q, path: panelInstallDir } : q
+        );
+    }, [isRemote, target.os_type, panelInstallDir]);
 
     // ─── core ────────────────────────────────────────────
     const [currentPath, setCurrentPath] = useState(() => searchParams.get('path') || '/home');
