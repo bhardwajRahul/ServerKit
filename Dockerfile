@@ -76,6 +76,10 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 # Copy backend source
 COPY backend/ ./backend/
 
+# Ship the VERSION file next to the backend tree (/app/VERSION) so the panel
+# reports its real version in containers instead of the unknown-version fallback
+COPY VERSION ./VERSION
+
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 

@@ -23,11 +23,22 @@ def get_panel_version():
 
     here = os.path.dirname(os.path.abspath(__file__))       # backend/app/utils
     backend_root = os.path.dirname(os.path.dirname(here))    # backend/
-    candidates = [
-        '/opt/serverkit/VERSION',
-        os.path.join(backend_root, '..', 'VERSION'),
-        os.path.join(backend_root, 'VERSION'),
-    ]
+    candidates = []
+    # Explicit override first — the systemd unit renders SERVERKIT_INSTALL_DIR
+    # from the installer's SERVERKIT_DIR, so custom install locations are
+    # pinned positively. Deliberately NOT the bare SERVERKIT_DIR env var: the
+    # backend already uses that name for the /var/serverkit data root
+    # (app/paths.py), a different directory with a different default.
+    install_dir = os.environ.get('SERVERKIT_INSTALL_DIR')
+    if install_dir:
+        candidates.append(os.path.join(install_dir, 'VERSION'))
+    # The running code's own tree next: correct for any custom install dir and
+    # for the Docker image (/app/VERSION), and never a stale parallel tree.
+    candidates.append(os.path.join(backend_root, '..', 'VERSION'))
+    candidates.append(os.path.join(backend_root, 'VERSION'))
+    # Legacy default install location last — a box moved to a custom dir may
+    # still have an abandoned tree here.
+    candidates.append('/opt/serverkit/VERSION')
     version = '0.0.0'
     for path in candidates:
         try:

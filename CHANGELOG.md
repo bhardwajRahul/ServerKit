@@ -281,6 +281,12 @@ awaiting a stable release:
 - Hardened the installer: Docker install on Fedora/RHEL, SELinux + nginx
   reverse-proxy configuration, and low-RAM swap setup.
 - Stopped dropping capability/sysinfo payloads on transient `/poll` failures.
+- Settings → About now reports the real panel version on custom-directory
+  installs and in Docker: version resolution honors the install location
+  (`SERVERKIT_INSTALL_DIR`, rendered into the service unit from the installer's
+  `SERVERKIT_DIR`), prefers the running tree over a stale `/opt/serverkit`, and
+  the Docker image now ships the `VERSION` file (containers previously showed
+  the `1.0.0` fallback).
 - **Scripts reliability (round 2)** — swept the whole install/update/uninstall/CLI
   shell surface for the "benign non-zero under `set -e`/`pipefail`" failure class
   behind the July 2 update outage:

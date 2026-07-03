@@ -27,6 +27,14 @@ def _find_env_file() -> Path:
 
     candidates = []
 
+    # SERVERKIT_INSTALL_DIR is rendered into the systemd unit from the
+    # installer's SERVERKIT_DIR — the unambiguous "where is the install" var
+    # (the bare SERVERKIT_DIR name doubles as the /var/serverkit data root in
+    # app/paths.py, so it stays a lower-priority hint here).
+    install_dir = os.environ.get('SERVERKIT_INSTALL_DIR')
+    if install_dir:
+        candidates.append(Path(install_dir) / '.env')
+
     # SERVERKIT_DIR is used by the CLI and install script
     serverkit_dir = os.environ.get('SERVERKIT_DIR')
     if serverkit_dir:

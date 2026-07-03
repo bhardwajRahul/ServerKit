@@ -10,6 +10,7 @@ Group=@USER@
 WorkingDirectory=@SERVERKIT_DIR@/backend
 Environment="PATH=@SERVERKIT_VENV_DIR@/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="FLASK_ENV=production"
+Environment="SERVERKIT_INSTALL_DIR=@SERVERKIT_DIR@"
 EnvironmentFile=@SERVERKIT_DIR@/.env
 ExecStart=@SERVERKIT_VENV_DIR@/bin/gunicorn -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 -b 0.0.0.0:@PORT@ --timeout 120 --access-logfile @LOG_DIR@/access.log --error-logfile @LOG_DIR@/error.log run:app
 ExecReload=/bin/kill -HUP $MAINPID
