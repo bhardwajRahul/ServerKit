@@ -22,6 +22,18 @@
 # `shellcheck --severity=error` and `bash -n` on scripts/test/*.sh across a
 # 7-distro matrix.
 
+# files_identical <a> <b> — byte-equality that works on minimal CI images:
+# EL9/Fedora containers ship without diffutils (`cmp`), so fall back to a
+# checksum compare (sha256sum is coreutils, present everywhere we run).
+files_identical() {
+    [ -f "$1" ] && [ -f "$2" ] || return 1
+    if command -v cmp >/dev/null 2>&1; then
+        cmp -s "$1" "$2"
+    else
+        [ "$(sha256sum < "$1")" = "$(sha256sum < "$2")" ]
+    fi
+}
+
 # make_stub_exit <bindir> <code> <name...> — each <name> becomes a stub that
 # ignores its arguments and exits <code>.
 make_stub_exit() {

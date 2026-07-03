@@ -410,14 +410,18 @@ printf 'SQLITE-SENTINEL-BYTES\n' > "$t/slot/backend/instance/serverkit.db"
 cp "$t/slot/.env" "$t/env.orig"
 cp "$t/slot/backend/instance/serverkit.db" "$t/db.orig"
 if (
+    # One && chain, not sequential statements: bash suppresses set -e inside
+    # an if-condition subshell, so only an explicit chain makes every
+    # assertion gate the result (a cmp-less EL9 CI image proved this —
+    # the sibling t16r test passed vacuously while cmp exited 127).
     set -Eeuo pipefail
-    stash="$(stash_live_state "$t/slot")"
-    [ -n "$stash" ]
-    rm -rf "$t/slot"                 # the rewrite
-    mkdir -p "$t/slot/backend"       # fresh tree: no .env, no instance/
-    restore_live_state "$stash" "$t/slot"
-    cmp -s "$t/slot/.env" "$t/env.orig"
-    cmp -s "$t/slot/backend/instance/serverkit.db" "$t/db.orig"
+    stash="$(stash_live_state "$t/slot")" \
+        && [ -n "$stash" ] \
+        && rm -rf "$t/slot" \
+        && mkdir -p "$t/slot/backend" `# fresh tree: no .env, no instance/` \
+        && restore_live_state "$stash" "$t/slot" \
+        && files_identical "$t/slot/.env" "$t/env.orig" \
+        && files_identical "$t/slot/backend/instance/serverkit.db" "$t/db.orig"
 ) >/dev/null 2>&1; then
     ok "stash/restore_live_state carries .env + instance DB byte-identical across a rewrite"
 else
@@ -432,6 +436,10 @@ cp "$slotA/.env" "$t/env.orig"; cp "$slotA/backend/instance/serverkit.db" "$t/db
 ln -sfn "$slotA" "$inst" 2>/dev/null || true
 if [ ! -L "$inst" ]; then
     skip "fetch_release live-state carry — symlinks unsupported here (runs on Linux CI)"
+elif ! command -v tar >/dev/null 2>&1; then
+    # openSUSE Leap minimal images ship without tar; neither the fixture nor
+    # fetch_release itself can run there. Proven on the other 6 distros.
+    skip "fetch_release live-state carry — tar unavailable here"
 else
     stage="$t/stage"; mkdir -p "$stage/serverkit/backend/app" "$stage/serverkit/scripts"
     printf '#!/bin/sh\n' > "$stage/serverkit/serverkit"
@@ -441,10 +449,10 @@ else
         set -Eeuo pipefail
         INSTALL_DIR="$inst"; DIR_A="$slotA"; DIR_B="$slotB"; FIRST_SLOT="$slotA"
         SERVERKIT_OFFLINE_TARBALL="$t/rel.tar.gz"
-        fetch_release
-        cmp -s "$slotA/.env" "$t/env.orig"
-        cmp -s "$slotA/backend/instance/serverkit.db" "$t/db.orig"
-        [ -d "$slotA/backend/app" ]
+        fetch_release \
+            && files_identical "$slotA/.env" "$t/env.orig" \
+            && files_identical "$slotA/backend/instance/serverkit.db" "$t/db.orig" \
+            && [ -d "$slotA/backend/app" ]
     ) >/dev/null 2>&1; then
         ok "fetch_release re-run preserves .env + database byte-identical (the data-loss bug)"
     else
@@ -967,6 +975,8 @@ cp "$slotA/.env" "$t/env.orig"
 ln -sfn "$slotA" "$inst" 2>/dev/null || true
 if [ ! -L "$inst" ]; then
     skip "fetch_release cp-failure fallback — symlinks unsupported here (runs on Linux CI)"
+elif ! command -v tar >/dev/null 2>&1; then
+    skip "fetch_release cp-failure fallback — tar unavailable here"
 else
     stage="$t/stage"; mkdir -p "$stage/serverkit/backend/app"
     printf '#!/bin/sh\n' > "$stage/serverkit/serverkit"
@@ -984,7 +994,7 @@ EOF
             SERVERKIT_OFFLINE_TARBALL="$t/rel.tar.gz"; INSTALL_FROM_RELEASE=1
             rc=0; fetch_release >/dev/null 2>&1 || rc=$?
             printf '%s|%s' "$rc" "$INSTALL_FROM_RELEASE" )"
-    if [ "$res" = "1|0" ] && cmp -s "$slotA/.env" "$t/env.orig"; then
+    if [ "$res" = "1|0" ] && files_identical "$slotA/.env" "$t/env.orig"; then
         ok "fetch_release: a failed slot copy restores the live .env and falls back to source"
     else
         bad "fetch_release cp-failure lost live state or faked success (I16 regression): [$res]"
