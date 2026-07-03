@@ -6,6 +6,7 @@ import Modal from '../Modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Pill, SegControl } from '@/components/ds';
 import { Shield } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
@@ -30,6 +31,8 @@ const FirewallTab = () => {
     const [selectedFirewall, setSelectedFirewall] = useState('ufw');
     const [actionLoading, setActionLoading] = useState(false);
     const [confirmDialog, setConfirmDialog] = useState(null);
+    const [guard, setGuard] = useState(null);
+    const [guardLoading, setGuardLoading] = useState(false);
     const toast = useToast();
 
     const commonPorts = [
@@ -51,7 +54,7 @@ const FirewallTab = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            await Promise.all([loadStatus(), loadRules(), loadBlockedIPs()]);
+            await Promise.all([loadStatus(), loadRules(), loadBlockedIPs(), loadGuard()]);
         } catch (error) {
             console.error('Failed to load firewall data:', error);
         } finally {
@@ -83,6 +86,29 @@ const FirewallTab = () => {
             setBlockedIPs(data.blocked_ips || []);
         } catch (error) {
             console.error('Failed to load blocked IPs:', error);
+        }
+    };
+
+    const loadGuard = async () => {
+        try {
+            const data = await api.getMetadataGuard();
+            setGuard(data);
+        } catch (error) {
+            console.error('Failed to load metadata guard status:', error);
+        }
+    };
+
+    const handleGuardToggle = async (enabled) => {
+        setGuardLoading(true);
+        try {
+            const data = await api.setMetadataGuard(enabled);
+            setGuard(data);
+            toast.success(`Cloud metadata guard ${enabled ? 'enabled' : 'disabled'}`);
+        } catch (error) {
+            toast.error(`Failed to update metadata guard: ${error.message}`);
+            await loadGuard();
+        } finally {
+            setGuardLoading(false);
         }
     };
 
@@ -443,6 +469,44 @@ const FirewallTab = () => {
                         </div>
                     )}
                 </>
+            )}
+
+            {guard && (
+                <div className="card">
+                    <div className="card-header">
+                        <h3>Cloud Metadata Guard</h3>
+                        {guard.supported ? (
+                            <Pill kind={guard.active ? 'green' : 'gray'}>
+                                {guard.active ? 'Active' : 'Inactive'}
+                            </Pill>
+                        ) : (
+                            <Pill kind="gray">Unsupported on this host</Pill>
+                        )}
+                    </div>
+                    <div className="card-body">
+                        <div className="sec-rows">
+                            <div className="sk-info-row">
+                                <span className="k">Block container access to 169.254.169.254</span>
+                                <Switch
+                                    checked={!!guard.enabled_setting}
+                                    onCheckedChange={handleGuardToggle}
+                                    disabled={guardLoading || !guard.supported}
+                                    aria-label="Toggle cloud metadata guard"
+                                />
+                            </div>
+                            {guard.supported && guard.backend && (
+                                <div className="sk-info-row">
+                                    <span className="k">Backend</span>
+                                    <span className="v">{guard.backend}</span>
+                                </div>
+                            )}
+                        </div>
+                        <p className="sec-hint">
+                            Stops app containers from reaching the cloud metadata endpoint,
+                            preventing SSRF attacks from stealing instance credentials.
+                        </p>
+                    </div>
+                </div>
             )}
 
             {/* Block IP Modal */}

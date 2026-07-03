@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 
 from ..middleware.rbac import admin_required, viewer_required
 from ..services.firewall_service import FirewallService
+from ..services.metadata_guard_service import MetadataGuardService, SETTING_KEY
 
 firewall_bp = Blueprint('firewall', __name__)
 
@@ -231,6 +232,35 @@ def set_default_zone():
     if result.get('success'):
         return jsonify(result), 200
     return jsonify(result), 400
+
+
+@firewall_bp.route('/metadata-guard', methods=['GET'])
+@viewer_required
+def get_metadata_guard():
+    """Get cloud metadata guard status."""
+    return jsonify(MetadataGuardService.status()), 200
+
+
+@firewall_bp.route('/metadata-guard', methods=['PUT'])
+@admin_required
+def set_metadata_guard():
+    """Enable or disable the cloud metadata egress guard."""
+    data = request.get_json()
+
+    if not data or 'enabled' not in data:
+        return jsonify({'error': "Request body with 'enabled' required"}), 400
+
+    enabled = bool(data['enabled'])
+
+    from ..services.settings_service import SettingsService
+    SettingsService.set(SETTING_KEY, enabled)
+
+    result = MetadataGuardService.ensure()
+    status = MetadataGuardService.status()
+    if not result.get('success') and result.get('supported', True):
+        status['error'] = result.get('error', 'Failed to update metadata guard')
+        return jsonify(status), 500
+    return jsonify(status), 200
 
 
 @firewall_bp.route('/install', methods=['POST'])
