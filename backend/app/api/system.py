@@ -9,7 +9,7 @@ from app.services.system_service import SystemService
 from app.services.resource_tier_service import ResourceTierService
 from app.services.site_domain_service import SiteDomainService
 from app.utils.domain import is_valid_canonical_domain
-from app.utils.version import get_panel_version
+from app.utils.version import get_panel_version, get_install_dir
 
 # Cache for update check (to avoid hitting GitHub API too often)
 _update_cache = {
@@ -31,7 +31,10 @@ def get_version():
     """
     return jsonify({
         'version': get_panel_version(),
-        'name': 'ServerKit'
+        'name': 'ServerKit',
+        # Where the panel is installed — consumers (e.g. the File Manager's
+        # "Stack" quick link) must not assume /opt/serverkit.
+        'install_dir': get_install_dir()
     }), 200
 
 

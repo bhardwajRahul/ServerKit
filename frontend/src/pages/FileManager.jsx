@@ -27,7 +27,9 @@ import TargetPicker from '../components/TargetPicker';
 import { TREE_ROOTS, getFileType, formatBytes } from '../components/file-manager/fileTypes';
 
 // Demo rail shortcuts (Quick access) — one-click jumps to the paths people
-// actually visit on a ServerKit host.
+// actually visit on a ServerKit host. "Stack" starts at the default install
+// location and is re-pointed from /system/version's install_dir, so a custom
+// SERVERKIT_DIR install jumps to the real tree.
 const QUICK_ACCESS = [
     { label: 'Sites', path: '/var/www', icon: Globe },
     { label: 'Stack', path: '/opt/serverkit', icon: Boxes },
@@ -115,6 +117,22 @@ function FileManager() {
                 if (cancelled) return;
                 const p = c?.provider;
                 setS3Available((p === 's3' || p === 'b2') && Boolean(c?.[p]?.bucket));
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
+
+    // The "Stack" quick link tracks the panel's real install dir (custom
+    // SERVERKIT_DIR installs aren't at /opt/serverkit).
+    const [quickAccess, setQuickAccess] = useState(QUICK_ACCESS);
+    useEffect(() => {
+        let cancelled = false;
+        api.getVersion()
+            .then((v) => {
+                if (cancelled || !v?.install_dir) return;
+                setQuickAccess((links) => links.map((q) =>
+                    q.label === 'Stack' ? { ...q, path: v.install_dir } : q
+                ));
             })
             .catch(() => {});
         return () => { cancelled = true; };
@@ -1004,7 +1022,7 @@ function FileManager() {
                                 <span>Quick access</span>
                             </div>
                             <div className="sidebar-section-content quick-access-list">
-                                {QUICK_ACCESS.map(q => (
+                                {quickAccess.map(q => (
                                     <button type="button"
                                         key={q.label}
                                         className={`quick-access-item ${currentPath === q.path ? 'active' : ''}`}

@@ -286,7 +286,8 @@ awaiting a stable release:
   (`SERVERKIT_INSTALL_DIR`, rendered into the service unit from the installer's
   `SERVERKIT_DIR`), prefers the running tree over a stale `/opt/serverkit`, and
   the Docker image now ships the `VERSION` file (containers previously showed
-  the `1.0.0` fallback).
+  the `1.0.0` fallback). The File Manager's "Stack" quick link follows the same
+  resolved install directory instead of assuming `/opt/serverkit`.
 - **Scripts reliability (round 2)** — swept the whole install/update/uninstall/CLI
   shell surface for the "benign non-zero under `set -e`/`pipefail`" failure class
   behind the July 2 update outage:

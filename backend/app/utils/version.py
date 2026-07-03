@@ -52,6 +52,23 @@ def get_panel_version():
     return version
 
 
+def get_install_dir():
+    """Best-effort panel install root (the tree holding backend/, frontend/,
+    VERSION). Same resolution contract as get_panel_version: explicit
+    SERVERKIT_INSTALL_DIR override, then the running code's own tree, then the
+    default install location. abspath (not realpath) on purpose — a blue/green
+    box should report the stable /opt/serverkit symlink, not a slot dir.
+    """
+    install_dir = os.environ.get('SERVERKIT_INSTALL_DIR')
+    if install_dir:
+        return install_dir
+    here = os.path.dirname(os.path.abspath(__file__))        # backend/app/utils
+    tree_root = os.path.abspath(os.path.join(here, '..', '..', '..'))
+    if os.path.exists(os.path.join(tree_root, 'VERSION')):
+        return tree_root
+    return '/opt/serverkit'
+
+
 def _parse(v):
     """Best-effort parse into a comparable object. Uses packaging when possible,
     falling back to a tuple of leading integer components."""

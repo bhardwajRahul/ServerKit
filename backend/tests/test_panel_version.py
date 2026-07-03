@@ -69,3 +69,20 @@ def test_version_endpoint_reports_resolved_version(client, auth_headers, tmp_pat
     data = resp.get_json()
     assert data['version'] == '8.8.8-endpoint'
     assert data['name'] == 'ServerKit'
+    assert data['install_dir'] == str(tmp_path)
+
+
+def test_install_dir_override(tmp_path, monkeypatch):
+    """get_install_dir honors the explicit override (custom SERVERKIT_DIR)."""
+    monkeypatch.setenv('SERVERKIT_INSTALL_DIR', str(tmp_path))
+    assert version_mod.get_install_dir() == str(tmp_path)
+
+
+def test_install_dir_own_tree_without_override(monkeypatch):
+    """No override: the running code's own tree wins (it has a VERSION file
+    here and in the Docker image) — never a hardcoded /opt/serverkit."""
+    monkeypatch.delenv('SERVERKIT_INSTALL_DIR', raising=False)
+    tree_root = os.path.abspath(os.path.join(
+        os.path.dirname(os.path.abspath(version_mod.__file__)), '..', '..', '..'
+    ))
+    assert version_mod.get_install_dir() == tree_root
