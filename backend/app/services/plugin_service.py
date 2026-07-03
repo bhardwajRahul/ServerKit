@@ -395,7 +395,7 @@ def _update_plugin_metadata(plugin, manifest):
 
 
 def install_from_url(url, user_id=None, expected_sha256=None, force=False,
-                     hot_load=True):
+                     hot_load=True, source_type=None):
     """Download and install a plugin from a URL.
 
     Args:
@@ -407,6 +407,9 @@ def install_from_url(url, user_id=None, expected_sha256=None, force=False,
         hot_load: register the blueprint into the running app immediately.
             The boot-time repair pass (#48) passes False — load_all_plugins
             registers right after, and a double registration would error.
+        source_type: override the stamped source_type (defaults to 'url').
+            Registry installs pass 'registry' so the row records where the
+            plugin really came from.
 
     Returns:
         InstalledPlugin instance
@@ -427,12 +430,14 @@ def install_from_url(url, user_id=None, expected_sha256=None, force=False,
         buf.seek(0)
 
     return _install_from_buffer(
-        buf, source_url=url, source_type='url', user_id=user_id, force=force,
+        buf, source_url=url, source_type=source_type or 'url',
+        user_id=user_id, force=force,
         hot_load=hot_load,
     )
 
 
-def install_from_path(path, user_id=None, force=False, hot_load=True):
+def install_from_path(path, user_id=None, force=False, hot_load=True,
+                      source_type=None):
     """Install a plugin from a local directory on the panel host.
 
     Useful during plugin development: point at the working tree, install,
@@ -496,8 +501,8 @@ def install_from_path(path, user_id=None, force=False, hot_load=True):
     buf.seek(0)
 
     return _install_from_buffer(
-        buf, source_url=path, source_type='local', user_id=user_id,
-        force=force, hot_load=hot_load,
+        buf, source_url=path, source_type=source_type or 'local',
+        user_id=user_id, force=force, hot_load=hot_load,
     )
 
 
@@ -937,7 +942,8 @@ def repair_missing_plugins():
 
       - builtin slug        → reinstall from ``builtin-extensions/`` (in-repo,
                               always present in the fresh tree)
-      - source_type 'url'   → re-download from ``source_url`` (no checksum —
+      - source_type 'url' or 'registry'
+                            → re-download from ``source_url`` (no checksum —
                               the original install verified it; best effort)
       - anything else       → mark `error` with a re-upload hint
 
@@ -983,11 +989,13 @@ def repair_missing_plugins():
             if slug in builtin_by_slug:
                 install_from_path(builtin_by_slug[slug]['path'],
                                   user_id=plugin.installed_by,
-                                  force=True, hot_load=False)
+                                  force=True, hot_load=False,
+                                  source_type='builtin')
                 logger.info(f'Plugin {slug}: restored from builtin-extensions/')
-            elif plugin.source_type == 'url' and plugin.source_url:
+            elif plugin.source_type in ('url', 'registry') and plugin.source_url:
                 install_from_url(plugin.source_url, user_id=plugin.installed_by,
-                                 force=True, hot_load=False)
+                                 force=True, hot_load=False,
+                                 source_type=plugin.source_type)
                 logger.info(f'Plugin {slug}: reinstalled from {plugin.source_url}')
             else:
                 plugin.status = InstalledPlugin.STATUS_ERROR
@@ -1391,7 +1399,8 @@ def install_builtin_extension(slug, user_id=None):
 
     for entry in list_builtin_extensions():
         if entry['slug'] == slug:
-            return install_from_path(entry['path'], user_id=user_id)
+            return install_from_path(entry['path'], user_id=user_id,
+                                     source_type='builtin')
 
     raise ValueError(f"No builtin extension with slug '{slug}'")
 
@@ -1542,6 +1551,7 @@ def install_registry_extension(slug, user_id=None):
         raise ValueError(f"Registry entry '{slug}' has no source URL.")
     return install_from_url(
         source, user_id=user_id, expected_sha256=entry.get('sha256'),
+        source_type='registry',
     )
 
 
@@ -1590,6 +1600,13 @@ def update_plugin(plugin_id, user_id=None):
     source = (entry.get('source') or '').strip()
     if not source:
         raise ValueError('Registry entry has no source URL.')
+    # The update itself is registry-driven, so plain url/registry rows get
+    # stamped 'registry'; builtin/local/upload rows keep their identity.
+    if plugin.source_type in (None, '', 'url', 'registry'):
+        stamped = 'registry'
+    else:
+        stamped = plugin.source_type
     return install_from_url(
         source, user_id=user_id, expected_sha256=entry.get('sha256'), force=True,
+        source_type=stamped,
     )

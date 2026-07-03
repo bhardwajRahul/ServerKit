@@ -112,6 +112,7 @@ def test_install_builtin_creates_active_plugin(app, plugin_dirs):
 
     plugin = plugin_service.install_builtin_extension('serverkit-demo')
     assert plugin.status == InstalledPlugin.STATUS_ACTIVE
+    assert plugin.source_type == 'builtin'
     assert plugin.has_frontend is True
     assert plugin.has_backend is False
     # Contributions survive the round-trip through the manifest.
@@ -119,6 +120,30 @@ def test_install_builtin_creates_active_plugin(app, plugin_dirs):
 
     # The pre-bundled frontend was written into the (temp) plugins dir.
     assert (plugin_dirs['frontend'] / 'serverkit-demo' / 'index.jsx').exists()
+
+
+def test_install_from_path_stamps_local(app, plugin_dirs):
+    folder, _ = _write_builtin(plugin_dirs['builtin'], slug='local-demo')
+    plugin = plugin_service.install_from_path(str(folder))
+    assert plugin.status == InstalledPlugin.STATUS_ACTIVE
+    assert plugin.source_type == 'local'
+
+
+def test_install_from_zip_stamps_upload(app, plugin_dirs):
+    import io
+    import zipfile
+    manifest = {
+        'name': 'zip-demo', 'display_name': 'Zip Demo', 'version': '1.0.0',
+        'category': 'utility',
+        'contributions': {'nav': [{'id': 'zip-demo', 'label': 'Z', 'route': '/z'}]},
+    }
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, 'w') as zf:
+        zf.writestr('plugin.json', json.dumps(manifest))
+        zf.writestr('frontend/index.jsx', 'export function P(){return null;}\n')
+    plugin = plugin_service.install_from_zip(buf.getvalue())
+    assert plugin.status == InstalledPlugin.STATUS_ACTIVE
+    assert plugin.source_type == 'upload'
 
 
 def test_reinstall_refreshes_metadata(app, plugin_dirs):

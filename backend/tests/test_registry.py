@@ -118,6 +118,28 @@ def test_checksum_match_installs(app, plugin_dirs, monkeypatch):
     plugin = plugin_service.install_from_url('https://x/y.zip', expected_sha256=digest)
     assert plugin.status == InstalledPlugin.STATUS_ACTIVE
     assert plugin.version == '2.0.0'
+    # A plain URL install keeps the historical stamp.
+    assert plugin.source_type == 'url'
+
+
+def test_registry_install_stamps_registry_source_type(app, plugin_dirs, monkeypatch):
+    """install_registry_extension records where the plugin really came from."""
+    zip_bytes = _make_plugin_zip()
+    digest = hashlib.sha256(zip_bytes).hexdigest()
+    monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(zip_bytes))
+    monkeypatch.setattr(registry_service, '_cache', {
+        'ts': 9e18, 'source': 'test',
+        'entries': [registry_service._normalize({
+            'slug': 'regext', 'display_name': 'Registry Ext', 'version': '2.0.0',
+            'source': 'https://x/regext.zip', 'sha256': digest,
+            'min_panel_version': '0.0.1',
+        })],
+    })
+
+    plugin = plugin_service.install_registry_extension('regext')
+    assert plugin.status == InstalledPlugin.STATUS_ACTIVE
+    assert plugin.source_type == 'registry'
+    assert plugin.source_url == 'https://x/regext.zip'
 
 
 # --------------------------------------------------------------------------- #
@@ -130,6 +152,7 @@ def test_update_flow(app, plugin_dirs, monkeypatch):
     monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(v1))
     plugin = plugin_service.install_from_url('https://x/regext.zip')
     assert plugin.version == '1.0.0'
+    assert plugin.source_type == 'url'
 
     # Registry advertises v2.0.0 for the same slug.
     monkeypatch.setattr(registry_service, '_cache', {
@@ -151,6 +174,65 @@ def test_update_flow(app, plugin_dirs, monkeypatch):
     updated = plugin_service.update_plugin(plugin.id)
     assert updated.version == '2.0.0'
     assert InstalledPlugin.query.filter_by(slug='regext').count() == 1
+    # The update itself came from the registry — the row now says so.
+    assert updated.source_type == 'registry'
+
+
+def test_update_keeps_registry_source_type(app, plugin_dirs, monkeypatch):
+    """A registry-installed plugin stays source_type='registry' after update."""
+    v1 = _make_plugin_zip(slug='regext', version='1.0.0')
+    digest_v1 = hashlib.sha256(v1).hexdigest()
+    monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(v1))
+    monkeypatch.setattr(registry_service, '_cache', {
+        'ts': 9e18, 'source': 'test',
+        'entries': [registry_service._normalize({
+            'slug': 'regext', 'display_name': 'Registry Ext', 'version': '1.0.0',
+            'source': 'https://x/regext.zip', 'sha256': digest_v1,
+            'min_panel_version': '0.0.1',
+        })],
+    })
+    plugin = plugin_service.install_registry_extension('regext')
+    assert plugin.source_type == 'registry'
+
+    # Registry moves to v2; run the update.
+    v2 = _make_plugin_zip(slug='regext', version='2.0.0')
+    monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(v2))
+    monkeypatch.setattr(registry_service, '_cache', {
+        'ts': 9e18, 'source': 'test',
+        'entries': [registry_service._normalize({
+            'slug': 'regext', 'display_name': 'Registry Ext', 'version': '2.0.0',
+            'source': 'https://x/regext.zip',
+            'sha256': hashlib.sha256(v2).hexdigest(),
+            'min_panel_version': '0.0.1',
+        })],
+    })
+    updated = plugin_service.update_plugin(plugin.id)
+    assert updated.version == '2.0.0'
+    assert updated.source_type == 'registry'
+
+
+def test_update_preserves_builtin_source_type(app, plugin_dirs, monkeypatch):
+    """A registry-driven update must not clobber a builtin/local/upload stamp."""
+    v1 = _make_plugin_zip(slug='regext', version='1.0.0')
+    monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(v1))
+    plugin = plugin_service.install_from_url('https://x/regext.zip')
+    plugin.source_type = 'builtin'
+    db.session.commit()
+
+    v2 = _make_plugin_zip(slug='regext', version='2.0.0')
+    monkeypatch.setattr(plugin_service, '_download_zip', lambda url: io.BytesIO(v2))
+    monkeypatch.setattr(registry_service, '_cache', {
+        'ts': 9e18, 'source': 'test',
+        'entries': [registry_service._normalize({
+            'slug': 'regext', 'display_name': 'Registry Ext', 'version': '2.0.0',
+            'source': 'https://x/regext.zip',
+            'sha256': hashlib.sha256(v2).hexdigest(),
+            'min_panel_version': '0.0.1',
+        })],
+    })
+    updated = plugin_service.update_plugin(plugin.id)
+    assert updated.version == '2.0.0'
+    assert updated.source_type == 'builtin'
 
 
 # --------------------------------------------------------------------------- #
