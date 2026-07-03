@@ -1,0 +1,131 @@
+// ============================================
+// DATABASE EXPLORER — PROCESSES PANEL
+// Live processlist / pg_stat_activity view with kill action.
+// ============================================
+
+.dbp {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+
+    .dbp-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: $space-3;
+        padding: $space-2 $space-3;
+        border-bottom: 1px solid $border-color;
+        flex-shrink: 0;
+    }
+
+    .dbp-count {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-2;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+    }
+
+    .dbp-toolbar-right {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-3;
+    }
+
+    .dbp-auto {
+        display: inline-flex;
+        align-items: center;
+        gap: $space-2;
+        color: $text-secondary;
+        font-size: $font-size-sm;
+        cursor: pointer;
+        user-select: none;
+
+        input { accent-color: $primary-color; }
+    }
+
+    .dbp-error {
+        margin: $space-3;
+        padding: $space-2 $space-3;
+        background: $danger-bg;
+        border: 1px solid $danger-border;
+        border-radius: $radius-md;
+        color: $danger;
+        font-size: $font-size-sm;
+    }
+
+    .dbp-empty {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dbp-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+    }
+
+    .dbp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: $font-size-sm;
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: $bg-tertiary;
+            color: $text-secondary;
+            font-weight: $font-weight-medium;
+            text-align: left;
+            padding: $space-2 $space-3;
+            border-bottom: 1px solid $border-color;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: $space-2 $space-3;
+            border-bottom: 1px solid $border-color;
+            color: $text-primary;
+            vertical-align: top;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover td { background: $bg-hover; }
+    }
+
+    .dbp-mono {
+        font-family: $font-family-mono;
+        font-size: $font-size-xs;
+        color: $text-secondary;
+    }
+
+    .dbp-state {
+        display: inline-block;
+        padding: 1px $space-2;
+        background: $bg-tertiary;
+        border-radius: $radius-sm;
+        color: $text-secondary;
+        font-size: $font-size-xs;
+    }
+
+    .dbp-query {
+        max-width: 480px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: $font-family-mono;
+        font-size: $font-size-xs;
+    }
+
+    .dbp-idle {
+        color: $text-muted;
+        font-style: italic;
+    }
+
+    .dbp-actions { text-align: right; }
+}

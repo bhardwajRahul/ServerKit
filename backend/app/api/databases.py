@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import User, Application
 from app.services.database_service import DatabaseService
+from app.services.db_process_service import DbProcessService
 from app.services.managed_database_service import ManagedDatabaseService
 from app.middleware.rbac import admin_required
 from app.services.resource_grant_service import ResourceGrantService
@@ -917,6 +918,77 @@ def protect_managed_database(managed_id):
     data = request.get_json() or {}
     policy = ManagedDatabaseService.protect(managed, fields=data.get('policy'))
     return jsonify({'policy': policy.to_dict()}), 201
+
+
+# ==================== PROCESSES ====================
+# Live SHOW PROCESSLIST / pg_stat_activity per server or container, with an
+# admin-only kill/terminate action. Targets mirror the explorer's connection
+# shapes (host engine vs docker container).
+
+def _process_error_response(result):
+    code = 400 if result['error'] == 'unsupported engine' else 502
+    return jsonify({'error': result['error']}), code
+
+
+@databases_bp.route('/mysql/processes', defaults={'engine': 'mysql'}, methods=['GET'])
+@databases_bp.route('/postgresql/processes', defaults={'engine': 'postgresql'}, methods=['GET'])
+@jwt_required()
+def list_host_db_processes(engine):
+    """List live server processes on a host engine."""
+    target = {'engine': engine, 'password': request.headers.get('X-DB-Password')}
+    result = DbProcessService.list_processes(target)
+    if 'error' in result:
+        return _process_error_response(result)
+    return jsonify(result), 200
+
+
+@databases_bp.route('/mysql/processes/<int:pid>/kill', defaults={'engine': 'mysql'}, methods=['POST'])
+@databases_bp.route('/postgresql/processes/<int:pid>/kill', defaults={'engine': 'postgresql'}, methods=['POST'])
+@jwt_required()
+@admin_required
+def kill_host_db_process(engine, pid):
+    """Kill/terminate a process on a host engine (admin only)."""
+    target = {'engine': engine, 'password': request.headers.get('X-DB-Password')}
+    result = DbProcessService.kill_process(target, pid)
+    if 'error' in result:
+        return _process_error_response(result)
+    return jsonify(result), 200
+
+
+@databases_bp.route('/docker/<container>/processes', methods=['GET'])
+@jwt_required()
+def list_docker_db_processes(container):
+    """List live server processes inside a Docker database container."""
+    target = {
+        'engine': request.args.get('type', 'mysql'),
+        'container': container,
+        'user': request.args.get('user'),
+        'password': request.headers.get('X-DB-Password'),
+        'database': request.args.get('database'),
+    }
+    result = DbProcessService.list_processes(target)
+    if 'error' in result:
+        return _process_error_response(result)
+    return jsonify(result), 200
+
+
+@databases_bp.route('/docker/<container>/processes/<int:pid>/kill', methods=['POST'])
+@jwt_required()
+@admin_required
+def kill_docker_db_process(container, pid):
+    """Kill/terminate a process inside a Docker database container (admin only)."""
+    data = request.get_json(silent=True) or {}
+    target = {
+        'engine': data.get('type') or request.args.get('type', 'mysql'),
+        'container': container,
+        'user': data.get('user'),
+        'password': request.headers.get('X-DB-Password') or data.get('password'),
+        'database': data.get('database'),
+    }
+    result = DbProcessService.kill_process(target, pid)
+    if 'error' in result:
+        return _process_error_response(result)
+    return jsonify(result), 200
 
 
 # ==================== UTILITY ====================
