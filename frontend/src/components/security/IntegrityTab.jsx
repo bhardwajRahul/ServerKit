@@ -1,43 +1,233 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import api from '../../services/api';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+
+// Scoped file-integrity monitoring: baseline-and-diff over the paths
+// ServerKit manages (nginx configs, serverkit-owned systemd units, and
+// app docroots on explicit per-app opt-in).
+
+const SCOPE_META = {
+    nginx: {
+        label: 'Nginx configuration',
+        hint: 'sites-enabled + conf.d',
+    },
+    systemd: {
+        label: 'Systemd units',
+        hint: 'serverkit-* units in /etc/systemd/system',
+    },
+};
+
+function formatAge(iso) {
+    if (!iso) return null;
+    const ms = Date.now() - new Date(iso).getTime();
+    if (Number.isNaN(ms)) return null;
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 48) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+}
+
+function scopeLabel(scope) {
+    if (SCOPE_META[scope.scope]) return SCOPE_META[scope.scope].label;
+    return scope.app_name ? `App: ${scope.app_name}` : `App #${scope.app_id}`;
+}
 
 const IntegrityTab = () => {
-    const [checking, setChecking] = useState(false);
-    const [initializing, setInitializing] = useState(false);
-    const [results, setResults] = useState(null);
+    const [status, setStatus] = useState(null);
+    const [apps, setApps] = useState([]);
+    const [busy, setBusy] = useState(null); // `${scope}:${action}` while a call runs
+    const [savingOptins, setSavingOptins] = useState(false);
     const [message, setMessage] = useState(null);
+    const [expanded, setExpanded] = useState(null); // scope whose changes table is open
 
-    async function handleInitialize() {
-        if (!confirm('This will create a new baseline for file integrity monitoring. Continue?')) return;
-
-        setInitializing(true);
-        setMessage(null);
+    const load = useCallback(async () => {
         try {
-            const result = await api.initializeIntegrityDatabase();
-            setMessage({ type: 'success', text: result.message });
+            const data = await api.request('/security/fim');
+            setStatus(data);
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
-        } finally {
-            setInitializing(false);
         }
-    }
+    }, []);
 
-    async function handleCheck() {
-        setChecking(true);
+    useEffect(() => {
+        load();
+        api.getApps().then(
+            (data) => setApps(data.apps || []),
+            () => {} // apps list is optional chrome; FIM still works without it
+        );
+    }, [load]);
+
+    async function runAction(scope, action) {
+        setBusy(`${scope}:${action}`);
         setMessage(null);
         try {
-            const result = await api.checkFileIntegrity();
-            setResults(result);
-            if (result.total_changes === 0) {
-                setMessage({ type: 'success', text: 'No changes detected' });
+            const result = await api.request(`/security/fim/${scope}/${action}`, { method: 'POST' });
+            if (action === 'check') {
+                setExpanded(result.total_changes > 0 ? scope : null);
+                setMessage(result.total_changes === 0
+                    ? { type: 'success', text: `${scope}: no changes since baseline` }
+                    : { type: 'error', text: `${scope}: ${result.total_changes} change(s) detected` });
+            } else {
+                setExpanded(null);
+                setMessage({
+                    type: 'success',
+                    text: `${scope}: baseline saved (${result.file_count} files)`,
+                });
             }
+            await load();
         } catch (err) {
             setMessage({ type: 'error', text: err.message });
         } finally {
-            setChecking(false);
+            setBusy(null);
         }
     }
+
+    async function toggleApp(appId, enabled) {
+        const current = status?.app_optins || [];
+        const next = enabled
+            ? [...new Set([...current, appId])]
+            : current.filter((id) => id !== appId);
+        setSavingOptins(true);
+        setMessage(null);
+        try {
+            await api.request('/security/fim/apps', { method: 'PUT', body: { app_ids: next } });
+            await load();
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message });
+        } finally {
+            setSavingOptins(false);
+        }
+    }
+
+    const scopes = status?.scopes || [];
+    const optins = status?.app_optins || [];
+
+    function renderChanges(scope) {
+        const check = scope.last_check;
+        if (!check || check.total_changes === 0 || expanded !== scope.scope) return null;
+        const rows = [
+            ...(check.added || []).map((p) => ({ kind: 'added', tone: 'green', path: p, what: null })),
+            ...(check.removed || []).map((p) => ({ kind: 'removed', tone: 'red', path: p, what: null })),
+            ...(check.modified || []).map((m) => ({
+                kind: 'modified', tone: 'amber', path: m.path, what: m.what,
+            })),
+        ];
+        const shown = rows.slice(0, 200);
+        return (
+            <table className="sk-dtable">
+                <thead>
+                    <tr>
+                        <th>Change</th>
+                        <th>Path</th>
+                        <th>What changed</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {shown.map((row, i) => (
+                        <tr key={i}>
+                            <td><span className={`sec-state sec-state--${row.tone}`}>{row.kind}</span></td>
+                            <td className="sk-cell-mono sec-path">{row.path}</td>
+                            <td>
+                                {row.what ? (
+                                    <span className="sec-what">
+                                        {row.what.map((w) => (
+                                            <span key={w} className="sec-state sec-state--gray">{w}</span>
+                                        ))}
+                                    </span>
+                                ) : (
+                                    <span className="sec-dash">—</span>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                    {rows.length > shown.length && (
+                        <tr>
+                            <td colSpan={3} className="sk-cell-mono sec-faint">
+                                … and {rows.length - shown.length} more
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </table>
+        );
+    }
+
+    function renderScopeCard(scope) {
+        const key = scope.scope;
+        const baseline = scope.baseline;
+        const check = scope.last_check;
+        const changed = check && check.total_changes > 0;
+        return (
+            <div className="card sec-flush" key={key}>
+                <div className="card-header">
+                    <h3>
+                        {scopeLabel(scope)}{' '}
+                        <span className="sec-count">
+                            · {SCOPE_META[key]?.hint || (scope.roots[0] || 'no docroot')}
+                        </span>
+                    </h3>
+                    {!scope.available && <span className="sec-state sec-state--gray">not present</span>}
+                    {scope.available && !baseline && <span className="sec-state sec-state--gray">no baseline</span>}
+                    {baseline && !check && <span className="sec-state sec-state--cyan">baselined</span>}
+                    {check && (changed
+                        ? <span className="sec-state sec-state--amber">{check.total_changes} changes</span>
+                        : <span className="sec-state sec-state--green">clean</span>)}
+                </div>
+                <div className="card-body">
+                    <p className="sec-hint--lead sec-hint">
+                        {baseline
+                            ? `Baseline: ${baseline.file_count} files, ${formatAge(baseline.created_at) || 'unknown age'}`
+                            : 'No baseline yet — create one to start tracking changes.'}
+                        {check && ` · Last check ${formatAge(check.checked_at) || ''}`}
+                    </p>
+                    <div className="card-actions">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => runAction(key, 'baseline')}
+                            disabled={!scope.available || busy !== null}
+                        >
+                            {busy === `${key}:baseline` ? 'Baselining…' : 'Baseline'}
+                        </Button>
+                        <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => runAction(key, 'check')}
+                            disabled={!baseline || busy !== null}
+                        >
+                            {busy === `${key}:check` ? 'Checking…' : 'Check now'}
+                        </Button>
+                        {changed && (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => runAction(key, 'accept')}
+                                    disabled={busy !== null}
+                                >
+                                    {busy === `${key}:accept` ? 'Accepting…' : 'Accept changes'}
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setExpanded(expanded === key ? null : key)}
+                                >
+                                    {expanded === key ? 'Hide changes' : 'View changes'}
+                                </Button>
+                            </>
+                        )}
+                    </div>
+                </div>
+                {renderChanges(scope)}
+            </div>
+        );
+    }
+
+    const managedScopes = scopes.filter((s) => !s.scope.startsWith('app:'));
+    const appScopes = scopes.filter((s) => s.scope.startsWith('app:'));
 
     return (
         <div className="integrity-tab">
@@ -47,83 +237,46 @@ const IntegrityTab = () => {
                 </div>
             )}
 
+            <p className="sec-hint sec-hint--lead">
+                Baseline-and-diff monitoring over the paths ServerKit manages. Baseline a
+                scope, then check it (or let the scheduled sweep do it) — any added,
+                removed or modified files are flagged and admins are notified. Accepting
+                changes re-baselines the scope.
+            </p>
+
+            {managedScopes.map(renderScopeCard)}
+            {appScopes.map(renderScopeCard)}
+
             <div className="card">
                 <div className="card-header">
-                    <h3>File Integrity Monitoring</h3>
+                    <h3>Application docroots <span className="sec-count">· opt-in</span></h3>
                 </div>
                 <div className="card-body">
-                    <p className="description">
-                        File integrity monitoring tracks changes to critical system files. Initialize a baseline database,
-                        then periodically check for unauthorized modifications.
+                    <p className="sec-hint sec-hint--lead">
+                        Watching a docroot hashes every file outside upload/cache
+                        directories, so it is opt-in per application.
                     </p>
-
-                    <div className="integrity-actions">
-                        <Button
-                            variant="outline"
-                            onClick={handleInitialize}
-                            disabled={initializing}
-                        >
-                            {initializing ? 'Initializing...' : 'Initialize Baseline'}
-                        </Button>
-                        <Button
-                            variant="default"
-                            onClick={handleCheck}
-                            disabled={checking}
-                        >
-                            {checking ? 'Checking...' : 'Check Integrity'}
-                        </Button>
-                    </div>
+                    {apps.length === 0 ? (
+                        <p className="sec-faint">No applications found.</p>
+                    ) : (
+                        <div className="sec-finding-list">
+                            {apps.map((appItem) => (
+                                <div className="sec-finding" key={appItem.id}>
+                                    <Switch
+                                        checked={optins.includes(appItem.id)}
+                                        disabled={savingOptins}
+                                        onCheckedChange={(checked) => toggleApp(appItem.id, checked)}
+                                    />
+                                    <div className="sec-finding__msg">
+                                        {appItem.name}{' '}
+                                        <span className="sec-mono">{appItem.root_path || 'no docroot'}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
-
-            {results && results.total_changes > 0 && (() => {
-                const changes = results.changes || {};
-                const NEW_LIMIT = 50;
-                const newFiles = changes.new || [];
-                const extraNew = Math.max(0, newFiles.length - NEW_LIMIT);
-                // Flatten every change kind into dense-table rows (kind chip + mono path).
-                const rows = [
-                    ...(changes.modified || []).map((f) => ({ kind: 'modified', tone: 'amber', path: f.path })),
-                    ...(changes.deleted || []).map((f) => ({ kind: 'deleted', tone: 'red', path: f })),
-                    ...newFiles.slice(0, NEW_LIMIT).map((f) => ({ kind: 'new', tone: 'green', path: f })),
-                    ...(changes.permission_changed || []).map((f) => ({
-                        kind: 'permission',
-                        tone: 'cyan',
-                        path: `${f.path} (${f.old_mode} → ${f.new_mode})`,
-                    })),
-                ];
-
-                return (
-                    <div className="card sec-flush">
-                        <div className="card-header">
-                            <h3>Changes Detected</h3>
-                            <span className="sec-state sec-state--amber">{results.total_changes} changes</span>
-                        </div>
-                        <table className="sk-dtable">
-                            <thead>
-                                <tr>
-                                    <th>Change</th>
-                                    <th>Path</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {rows.map((row, i) => (
-                                    <tr key={i}>
-                                        <td><span className={`sec-state sec-state--${row.tone}`}>{row.kind}</span></td>
-                                        <td className="sk-cell-mono sec-path">{row.path}</td>
-                                    </tr>
-                                ))}
-                                {extraNew > 0 && (
-                                    <tr>
-                                        <td><span className="sec-state sec-state--green">new</span></td>
-                                        <td className="sk-cell-mono sec-faint">… and {extraNew} more added</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                );
-            })()}
         </div>
     );
 };
