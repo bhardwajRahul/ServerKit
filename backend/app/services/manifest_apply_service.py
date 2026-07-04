@@ -156,12 +156,14 @@ class ManifestApplyService:
              environment: Optional[Environment] = None) -> Dict[str, Any]:
         """Diff desired manifest vs live state -> ordered action plan."""
         env = environment or cls._default_environment(project)
+        default_server = normalized.get('server')
         steps: List[Dict[str, Any]] = []
         issues: List[Dict[str, Any]] = []
 
         services = normalized.get('services', [])
         for svc in services:
             resolved = cls.resolve_service(svc)
+            resolved['server'] = resolved.get('server') or default_server
             if resolved['kind'] == 'database':
                 steps.extend(cls._plan_db(resolved))
             else:
@@ -221,9 +223,19 @@ class ManifestApplyService:
                        ('app_type', 'port', 'healthcheck_path', 'runtime',
                         'build_command', 'start_command', 'cpu', 'memory')}
             payload['name'] = name
+            # fleet targeting (#21): route the app to a server when declared
+            server_ref = resolved.get('server')
+            if server_ref:
+                server_id = cls._resolve_server_id(server_ref)
+                if server_id:
+                    payload['server_id'] = server_id
+                else:
+                    issues.append({'service': name, 'kind': 'unknown_server',
+                                   'server': server_ref})
+            target = ' @ ' + server_ref if server_ref else ''
             steps.append({
                 'type': 'create_app', 'service': name,
-                'description': f'Create app `{name}` ({resolved["app_type"]})',
+                'description': f'Create app `{name}` ({resolved["app_type"]}){target}',
                 'payload': payload,
             })
         else:
@@ -445,10 +457,11 @@ class ManifestApplyService:
             user_id=user_id,
             project_id=project.id,
             environment_id=env.id if env else None,
+            server_id=payload.get('server_id'),
         )
         db.session.add(app)
         db.session.commit()
-        return {'app_id': app.id}
+        return {'app_id': app.id, 'server_id': app.server_id}
 
     @classmethod
     def _do_update_app(cls, project, env, payload, user_id):
@@ -695,6 +708,19 @@ class ManifestApplyService:
         db.session.add(secret)
         db.session.flush()
         return secret
+
+    @staticmethod
+    def _resolve_server_id(server_ref: str) -> Optional[str]:
+        """Resolve a fleet target name/id to a Server.id (#21). None if unknown."""
+        if not server_ref:
+            return None
+        try:
+            from app.models.server import Server
+        except Exception:
+            return None
+        server = Server.query.filter_by(id=server_ref).first() \
+            or Server.query.filter_by(name=server_ref).first()
+        return server.id if server else None
 
     @staticmethod
     def _find_app(project: Project, name: Optional[str]) -> Optional[Application]:

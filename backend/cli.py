@@ -1000,6 +1000,133 @@ def repair(drift_type, drift_id):
     click.echo(click.style(result.get('message', 'Repair triggered.'), fg='green'))
 
 
+# ── manifest (serverkit.yaml) ────────────────────────────────────────────────
+
+def _manifest_body(project_id, file_path):
+    """Build the request body for the manifest endpoints."""
+    body = {'project_id': project_id}
+    if file_path:
+        body['content'] = Path(file_path).read_text(encoding='utf-8')
+    return body
+
+
+def _echo_plan_steps(steps):
+    for step in steps:
+        click.echo(
+            f"  {step.get('type', '-')}  {step.get('service', '-')}  "
+            f"{step.get('description', '')}".rstrip()
+        )
+
+
+def _echo_plan_issues(issues):
+    for issue in issues or []:
+        text = issue if isinstance(issue, str) else (
+            issue.get('message') or issue.get('detail') or str(issue)
+        )
+        click.secho(f'  ! {text}', fg='yellow')
+
+
+@cli.group()
+def manifest():
+    """Work with a project's declarative serverkit.yaml manifest."""
+
+
+@manifest.command('plan')
+@click.option('--project', 'project_id', type=int, required=True, help='Project id')
+@click.option('--file', 'file_path', type=click.Path(exists=True), default=None,
+              help='Manifest file to plan (defaults to the stored manifest)')
+def manifest_plan(project_id, file_path):
+    """Compute the change plan for a project's manifest (dry run)."""
+    from app.services.cli_api_client import CliApiError
+
+    try:
+        data = _api_client().post('/manifests/plan', _manifest_body(project_id, file_path))
+    except CliApiError as exc:
+        _fail(str(exc))
+
+    plan = data.get('plan') or {}
+    steps = plan.get('steps') or []
+    _echo_plan_steps(steps)
+    _echo_plan_issues(plan.get('issues'))
+    summary = plan.get('summary') or 'Plan computed.'
+    click.echo(f"{summary} ({plan.get('step_count', len(steps))} steps)")
+
+
+@manifest.command('diff')
+@click.option('--project', 'project_id', type=int, required=True, help='Project id')
+@click.option('--file', 'file_path', type=click.Path(exists=True), default=None,
+              help='Manifest file to diff (defaults to the stored manifest)')
+def manifest_diff(project_id, file_path):
+    """Show the human-readable diff between the manifest and live state."""
+    from app.services.cli_api_client import CliApiError
+
+    try:
+        data = _api_client().post('/manifests/plan', _manifest_body(project_id, file_path))
+    except CliApiError as exc:
+        _fail(str(exc))
+
+    plan = data.get('plan') or {}
+    steps = plan.get('steps') or []
+    if plan.get('step_count', len(steps)) == 0:
+        click.echo('No changes — live state matches the manifest.')
+        return
+    click.echo('Planned changes:')
+    _echo_plan_steps(steps)
+    _echo_plan_issues(plan.get('issues'))
+
+
+@manifest.command('apply')
+@click.option('--project', 'project_id', type=int, required=True, help='Project id')
+@click.option('--file', 'file_path', type=click.Path(exists=True), default=None,
+              help='Manifest file to apply (defaults to the stored manifest)')
+@click.option('--yes', is_flag=True, help='Skip the confirmation prompt')
+def manifest_apply(project_id, file_path, yes):
+    """Apply a project's manifest to live state."""
+    from app.services.cli_api_client import CliApiError
+
+    body = _manifest_body(project_id, file_path)
+    client = _api_client()
+
+    if not yes:
+        try:
+            data = client.post('/manifests/plan', body)
+        except CliApiError as exc:
+            _fail(str(exc))
+        plan = data.get('plan') or {}
+        steps = plan.get('steps') or []
+        if plan.get('step_count', len(steps)) == 0:
+            click.echo('No changes — live state matches the manifest.')
+            return
+        click.echo('Planned changes:')
+        _echo_plan_steps(steps)
+        _echo_plan_issues(plan.get('issues'))
+        if not click.confirm('Apply these changes?', default=False):
+            click.echo('Aborted.')
+            return
+
+    try:
+        result = client.post('/manifests/apply', body)
+    except CliApiError as exc:
+        _fail(str(exc))
+
+    results = result.get('results') or []
+    for r in results:
+        ok = str(r.get('status', '')).lower() in ('ok', 'skipped', 'success', 'applied', 'done')
+        mark = click.style('OK', fg='green') if ok else click.style('FAIL', fg='red')
+        detail = r.get('error') or ''
+        click.echo(f"  [{mark}] {r.get('type', '-')}  {r.get('service', '-')} {detail}".rstrip())
+
+    _echo_plan_issues(result.get('issues'))
+
+    click.echo(f"Applied {result.get('applied', len(results))} change(s).")
+
+    if not result.get('success'):
+        failed = next((r for r in results if r.get('error')), None)
+        if failed:
+            _fail(f"Apply failed on {failed.get('service', '?')}: {failed.get('error')}")
+        _fail('Apply did not complete successfully.')
+
+
 @cli.command()
 @click.option('--yes', is_flag=True, help='Skip the confirmation prompt')
 def update(yes):

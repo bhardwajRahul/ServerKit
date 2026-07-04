@@ -329,9 +329,18 @@ class PreviewService:
                 except Exception as exc:
                     logger.info('WP preview provisioning unavailable: %s', exc)
                     return {'ok': False, 'container_ids': []}
-            # Non-WP: the row + rendered domain is the unit of work that always
-            # succeeds; Docker clone is best-effort future work.
-            return {'ok': True, 'container_ids': []}
+            # Non-WP: clone the manifest-resolved config (env + per-preview
+            # overrides + domain) when the app is manifest-managed (#20). The
+            # resolved config is the portable unit; a full Docker clone for
+            # generic apps remains best-effort future work.
+            manifest_preview = None
+            try:
+                from app.services.manifest_preview_service import ManifestPreviewService
+                manifest_preview = ManifestPreviewService.build_preview_config(app, preview)
+            except Exception as exc:
+                logger.info('manifest preview config unavailable: %s', exc)
+            return {'ok': True, 'container_ids': [],
+                    'manifest_preview': manifest_preview}
         except Exception as exc:
             logger.info('preview provisioning unavailable: %s', exc)
             return {'ok': False, 'container_ids': []}
