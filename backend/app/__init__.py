@@ -378,6 +378,13 @@ def create_app(config_name=None):
     # connection stay core (they back /domains); the extension borrows the single
     # core CloudflareClient, never a duplicate.
 
+    # Register blueprints - DNS provider connections. Core (they back the
+    # Settings -> Connections DNS tiles and wildcard TLS), but kept at the
+    # historical /api/v1/email/dns-providers paths from before the email
+    # extraction so existing frontends keep working.
+    from app.api.dns_providers import dns_providers_bp
+    app.register_blueprint(dns_providers_bp, url_prefix='/api/v1/email')
+
     # Register blueprints - Dynamic DNS
     from app.api.ddns import ddns_bp
     app.register_blueprint(ddns_bp, url_prefix='/api/v1/ddns')

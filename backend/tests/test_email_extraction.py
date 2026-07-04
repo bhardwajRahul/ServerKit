@@ -17,9 +17,16 @@ _PKG = f'app.plugins.{SLUG}'
 
 
 def test_core_has_no_email_routes(app):
-    """The mail-server API is gone from core after extraction."""
+    """The mail-server API is gone from core after extraction.
+
+    Exception: /api/v1/email/dns-providers* stayed core (moved back after the
+    extraction broke the Connections DNS tiles on panels without the email
+    extension) — it keeps the historical path but is not mail-server API.
+    """
     rules = [r.rule for r in app.url_map.iter_rules()]
-    assert not any(r.startswith('/api/v1/email') for r in rules)
+    email_rules = [r for r in rules if r.startswith('/api/v1/email')]
+    assert all(r.startswith('/api/v1/email/dns-providers') for r in email_rules)
+    assert email_rules  # the core DNS-provider routes themselves exist
 
 
 @pytest.fixture
