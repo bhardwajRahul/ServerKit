@@ -293,8 +293,8 @@ def test_install_builds_correct_docker_run(monkeypatch, linux):
     result = StalwartService.install('Mail.Example.COM.')
     assert result['success'] is True, result
 
-    # Data dir created, container started.
-    assert ['mkdir', '-p', svc_mod.DATA_DIR] in calls
+    # Config + data dirs created, container started.
+    assert ['mkdir', '-p', svc_mod.HOST_CONFIG_DIR, svc_mod.HOST_DATA_DIR] in calls
     run_cmd = next(c for c in calls if c[:2] == ['docker', 'run'])
 
     # Mail ports published on the host.
@@ -306,18 +306,25 @@ def test_install_builds_correct_docker_run(monkeypatch, linux):
     assert '127.0.0.1:8080:8080' in run_cmd
     assert not any(a == '8080:8080' for a in run_cmd)
 
-    # Official image, restart policy, data volume.
+    # Live-verified image (stalwartlabs/stalwart, NOT the defunct mail-server),
+    # restart policy, and the split config/data bind mounts.
     assert svc_mod.IMAGE in run_cmd
+    assert svc_mod.IMAGE.startswith('stalwartlabs/stalwart')
     assert '--restart' in run_cmd
-    assert f'{svc_mod.DATA_DIR}:{svc_mod.CONTAINER_DATA_DIR}' in run_cmd
+    assert f'{svc_mod.HOST_CONFIG_DIR}:{svc_mod.CONTAINER_CONFIG_DIR}' in run_cmd
+    assert f'{svc_mod.HOST_DATA_DIR}:{svc_mod.CONTAINER_DATA_DIR}' in run_cmd
 
-    # A generated admin password was seeded into the container AND persisted.
-    secret_args = [a for a in run_cmd if a.startswith('FALLBACK_ADMIN_SECRET=')]
-    assert len(secret_args) == 1
-    generated = secret_args[0].split('=', 1)[1]
+    # A generated admin password was pinned via the single recovery-admin env
+    # var (user:secret) AND persisted to the config store.
+    recovery_args = [a for a in run_cmd if a.startswith('STALWART_RECOVERY_ADMIN=')]
+    assert len(recovery_args) == 1
+    user, _, generated = recovery_args[0].split('=', 1)[1].partition(':')
+    assert user == svc_mod.ADMIN_USER
     assert generated  # non-empty generated secret
     assert saved['admin_password'] == generated
     assert saved['hostname'] == 'mail.example.com'  # normalized (lowercased, no dot)
+    # install() tells the caller setup is still required.
+    assert result['needs_setup'] is True and result['setup_url']
 
 
 def test_install_requires_hostname(monkeypatch, linux):
@@ -388,9 +395,43 @@ def test_status_running_reads_version(monkeypatch, linux):
     status = StalwartService.get_status()
     assert status['installed'] is True
     assert status['running'] is True
+    # A 200 from the session probe means setup is complete (ready).
+    assert status['needs_setup'] is False
     assert status['version'] == '0.11.1'
     assert status['engine'] == 'stalwart'
     assert status['admin_api'] == f'{svc_mod.API_HOST}:{svc_mod.API_PORT}'
+
+
+def test_status_bootstrap_reports_needs_setup(monkeypatch, linux):
+    """A fresh Stalwart container is running but in bootstrap mode: every /api/*
+    is a 404 (RFC-7807 problem+json) until the one-time setup completes. This is
+    the exact contract verified against live Stalwart 0.16.11 — the panel must
+    report needs_setup + a setup_url instead of a false 'ready' state."""
+    monkeypatch.setattr(
+        svc_mod, 'run_privileged',
+        lambda cmd, timeout=None, **kw: _proc(returncode=0, stdout='true\n'))
+    monkeypatch.setattr(
+        svc_mod.requests, 'request',
+        lambda method, url, **kw: FakeResponse(
+            404, {'type': 'about:blank', 'status': 404, 'title': 'Not Found',
+                  'detail': 'The requested resource does not exist on this server.'}))
+    status = StalwartService.get_status()
+    assert status['installed'] is True
+    assert status['running'] is True
+    assert status['needs_setup'] is True
+    assert status['setup_url'] and svc_mod.ADMIN_UI in status['setup_url']
+
+
+def test_api_parses_problem_json_detail(monkeypatch, linux):
+    """_api extracts the RFC-7807 `detail` (then `title`) from Stalwart errors."""
+    monkeypatch.setattr(
+        svc_mod.requests, 'request',
+        lambda method, url, **kw: FakeResponse(
+            404, {'status': 404, 'title': 'Not Found', 'detail': 'nope'}))
+    res = StalwartService._api('GET', '/principal')
+    assert res['success'] is False
+    assert res['status_code'] == 404
+    assert 'nope' in res['error']
 
 
 def test_status_not_installed(monkeypatch, linux):

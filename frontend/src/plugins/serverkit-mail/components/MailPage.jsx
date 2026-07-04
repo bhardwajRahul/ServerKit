@@ -711,6 +711,27 @@ const MailPage = () => {
         return (
             <>
                 {renderPreflightBanner()}
+                {status?.needs_setup === true && (
+                    <div className="card mail-preflight mail-preflight--warn">
+                        <div className="mail-preflight__head">
+                            <span className="mail-preflight__title">
+                                <ShieldAlert size={16} /> Finish the one-time Stalwart setup
+                            </span>
+                        </div>
+                        <p className="text-muted">
+                            The container is running in bootstrap mode — its admin API stays
+                            offline until you complete the initial setup wizard, which creates
+                            the permanent administrator. For safety the setup UI is bound to the
+                            server&apos;s loopback only ({status.setup_url || 'http://127.0.0.1:8080/account'});
+                            reach it over an SSH tunnel, then re-check.
+                        </p>
+                        <div className="mail-install-actions">
+                            <Button variant="outline" size="sm" onClick={loadStatus}>
+                                <RefreshCw size={14} /> Re-check
+                            </Button>
+                        </div>
+                    </div>
+                )}
                 <div className="card">
                     <div className="card-header">
                         <h3>Server Status</h3>

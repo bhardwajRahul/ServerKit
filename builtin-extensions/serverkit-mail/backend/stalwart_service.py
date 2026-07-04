@@ -39,12 +39,19 @@ logger = logging.getLogger(__name__)
 
 SLUG = 'serverkit-mail'
 
-# Official Stalwart all-in-one mail server image.
-IMAGE = 'stalwartlabs/mail-server:latest'
+# Official Stalwart all-in-one mail server image. NOTE: the image is
+# ``stalwartlabs/stalwart`` — the older ``stalwartlabs/mail-server`` name no
+# longer resolves on Docker Hub (verified against a live pull, v0.16.11).
+IMAGE = 'stalwartlabs/stalwart:latest'
 CONTAINER_NAME = 'serverkit-mail'
 DATA_DIR = '/var/serverkit/mail'
-# Bind-mount target inside the container (Stalwart's data/config root).
-CONTAINER_DATA_DIR = '/opt/stalwart-mail'
+# Stalwart splits config from data inside the container (its CMD is
+# ``--config /etc/stalwart/config.json``). We bind two host sub-dirs so both
+# survive a container recreate: the local bootstrap config and the data store.
+CONTAINER_CONFIG_DIR = '/etc/stalwart'   # holds config.json (written at setup)
+CONTAINER_DATA_DIR = '/opt/stalwart'     # holds the data/blob/fts store
+HOST_CONFIG_DIR = f'{DATA_DIR}/etc'
+HOST_DATA_DIR = f'{DATA_DIR}/data'
 
 # Admin HTTP API — published on 127.0.0.1 only, never reachable off-host.
 API_HOST = '127.0.0.1'
@@ -53,8 +60,16 @@ API_BASE = f'http://{API_HOST}:{API_PORT}/api'
 API_TIMEOUT = 10
 DOCKER_TIMEOUT = 180
 
-# Default admin account Stalwart provisions on first start.
+# Default admin account Stalwart provisions on first start. The recovery/admin
+# credential is pinned via a single ``STALWART_RECOVERY_ADMIN=user:secret`` env
+# var (verified from the container's first-boot log, v0.16.11).
 ADMIN_USER = 'admin'
+
+# The web setup + admin SPA the recovery listener serves on the API port. On a
+# fresh container Stalwart boots into *bootstrap mode*: only this UI + a recovery
+# listener are up, and the whole ``/api/*`` management surface 404s until the
+# one-time initial setup is completed here.
+ADMIN_UI = '/account'
 
 # Mail ports published on the host (SMTP / submission / IMAP / Sieve).
 MAIL_PORTS = ('25', '465', '587', '993', '143', '4190')
@@ -63,11 +78,13 @@ DOCS_URL = 'https://stalw.art/docs/'
 
 # ── Admin-API endpoint paths (version-sensitive; centralized on purpose) ──
 # Each reconcile method wraps these so a 404 / shape change degrades gracefully.
+# These management paths only exist once initial setup is complete (see
+# ``get_status`` bootstrap detection); before that every ``/api/*`` is a 404.
 EP_PRINCIPAL = '/principal'          # accounts / mailboxes / domains (CRUD)
 EP_DKIM = '/dkim'                    # DKIM signature management
 EP_QUEUE = '/queue/messages'         # outbound queue introspection
 EP_RECONFIG = '/reload'              # ask Stalwart to reload config
-EP_STATUS = '/status'                # health / version probe (read-only)
+EP_SESSION = '/session'              # logged-in principal probe (readiness/bootstrap)
 
 
 class StalwartService:
@@ -158,9 +175,11 @@ class StalwartService:
             return {'success': False,
                     'error': f'Stalwart admin API is unreachable: {e}'}
         if resp.status_code >= 400:
+            # Stalwart returns RFC-7807 problem+json: {type,status,title,detail}.
             try:
                 body = resp.json()
-                detail = body.get('error') or body.get('details') or resp.text
+                detail = (body.get('detail') or body.get('title')
+                          or body.get('error') or resp.text)
             except ValueError:
                 detail = resp.text
             return {'success': False, 'status_code': resp.status_code,
@@ -189,6 +208,8 @@ class StalwartService:
         status = {
             'installed': False,
             'running': False,
+            'needs_setup': None,   # True until Stalwart's one-time setup is done
+            'setup_url': None,
             'version': None,
             'engine': 'stalwart',
             'image': IMAGE,
@@ -207,11 +228,21 @@ class StalwartService:
         status['installed'] = True
         status['running'] = res.get('stdout', '').strip() == 'true'
         if status['running']:
-            info = cls._api('GET', EP_STATUS)
-            # Version is best-effort; a shape/endpoint change must not break
-            # status (never GET the reload endpoint just to read a version).
-            if info.get('success') and isinstance(info.get('data'), dict):
-                status['version'] = info['data'].get('version')
+            # A fresh container boots into bootstrap mode: only the recovery
+            # setup UI is up and every /api/* is a 404 until initial setup is
+            # completed. Detect that so the panel can guide the operator instead
+            # of firing management calls that will all fail.
+            probe = cls._api('GET', EP_SESSION)
+            if probe.get('status_code') == 404:
+                status['needs_setup'] = True
+                status['setup_url'] = f'http://{API_HOST}:{API_PORT}{ADMIN_UI}'
+            elif probe.get('success'):
+                status['needs_setup'] = False
+                data = probe.get('data')
+                if isinstance(data, dict):
+                    status['version'] = data.get('version') or status['version']
+            # Any other error (unreachable, still starting): leave needs_setup
+            # None so the UI shows "checking…" rather than a false ready state.
         return status
 
     @classmethod
@@ -234,7 +265,7 @@ class StalwartService:
             return {'success': False,
                     'error': 'The mail server container already exists. Uninstall it first.'}
 
-        dir_res = run_privileged(['mkdir', '-p', DATA_DIR])
+        dir_res = run_privileged(['mkdir', '-p', HOST_CONFIG_DIR, HOST_DATA_DIR])
         if getattr(dir_res, 'returncode', 1) != 0:
             return {'success': False,
                     'error': f'Could not create data directory {DATA_DIR}: '
@@ -251,11 +282,16 @@ class StalwartService:
             run_args += ['-p', f'{port}:{port}']
         # Admin API bound to loopback on the host — never reachable off-box.
         run_args += ['-p', f'{API_HOST}:{API_PORT}:{API_PORT}']
-        run_args += ['-v', f'{DATA_DIR}:{CONTAINER_DATA_DIR}']
-        # Seed the fallback admin credentials Stalwart reads on first boot.
+        # Config and data on separate host dirs (see the module constants).
         run_args += [
-            '-e', f'FALLBACK_ADMIN_USER={ADMIN_USER}',
-            '-e', f'FALLBACK_ADMIN_SECRET={admin_password}',
+            '-v', f'{HOST_CONFIG_DIR}:{CONTAINER_CONFIG_DIR}',
+            '-v', f'{HOST_DATA_DIR}:{CONTAINER_DATA_DIR}',
+        ]
+        # Pin the recovery/admin credential Stalwart reads on first boot — a
+        # single ``user:secret`` env var. Without this Stalwart prints a random
+        # one-time password to the container log that we could never recover.
+        run_args += [
+            '-e', f'STALWART_RECOVERY_ADMIN={ADMIN_USER}:{admin_password}',
             IMAGE,
         ]
         res = cls._docker(run_args)
@@ -268,9 +304,12 @@ class StalwartService:
             'hostname': hostname,
         })
         result = {'success': True,
-                  'message': 'Stalwart mail server installed',
+                  'message': 'Stalwart mail server installed — complete the one-time '
+                             'setup to activate the admin API',
                   'container': CONTAINER_NAME,
-                  'hostname': hostname}
+                  'hostname': hostname,
+                  'needs_setup': True,
+                  'setup_url': f'http://{API_HOST}:{API_PORT}{ADMIN_UI}'}
         if not persisted:
             result['warning'] = ('Container started but the admin password could not '
                                  'be persisted to the plugin config store.')
