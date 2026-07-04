@@ -1,0 +1,570 @@
+"""The manifest apply engine (plan 17, Phase 2).
+
+resolve → plan → apply. Turns a normalized v1 manifest into an ordered action
+plan and executes it through the existing imperative services, inside a
+DeploymentJob for logging + before/after snapshots. Single-server for now;
+Phase 5 adds fleet targeting.
+
+`plan()` is pure enough to be a dry-run (no writes). `apply()` executes and is
+idempotent — a second plan against a just-applied manifest is empty.
+"""
+
+import uuid
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+from app import db
+from app.models.application import Application
+from app.models.application_manifest import (
+    ApplicationManifest, STATUS_APPLIED, STATUS_ERROR,
+)
+from app.models.domain import Domain
+from app.models.environment import Environment
+from app.models.managed_database import ManagedDatabase
+from app.models.project import Project
+
+
+# manifest backup schedule -> cron
+_SCHEDULE_CRON = {
+    'hourly': '0 * * * *',
+    'daily': '0 2 * * *',
+    'weekly': '0 3 * * 0',
+    'monthly': '0 4 1 * *',
+}
+
+# db engines the managed-database layer can actually record
+_MANAGED_DB_ENGINES = {'postgresql', 'mysql'}
+
+# ordering weight per step type (dbs before consumers; domains last)
+_STEP_ORDER = {
+    'provision_db': 0,
+    'warn': 1,
+    'create_app': 2,
+    'update_app': 3,
+    'set_env': 4,
+    'ensure_volume': 5,
+    'upsert_backup_policy': 6,
+    'attach_domain': 7,
+}
+
+
+class ManifestApplyService:
+
+    # -- resolve (#7) -------------------------------------------------------
+
+    @classmethod
+    def resolve_service(cls, svc: Dict[str, Any]) -> Dict[str, Any]:
+        """Normalized manifest service -> desired-state dict."""
+        literal_env: Dict[str, Any] = {}
+        env_refs: List[Dict[str, Any]] = []
+        for var in svc.get('env_vars', []):
+            if var['source'] == 'value':
+                literal_env[var['key']] = var['value']
+            else:
+                env_refs.append(var)
+        return {
+            'name': svc['name'],
+            'kind': svc['kind'],
+            'app_type': svc.get('app_type'),
+            'db_engine': svc.get('db_engine'),
+            'engine_version': svc.get('engine_version'),
+            'runtime': svc.get('runtime'),
+            'port': svc.get('port'),
+            'healthcheck_path': svc.get('healthcheck_path'),
+            'build_command': svc.get('build_command'),
+            'start_command': svc.get('start_command'),
+            'cpu': cls._stringify(svc.get('cpu')),
+            'memory': cls._stringify(svc.get('memory')),
+            'auto_deploy': svc.get('auto_deploy', False),
+            'env': literal_env,
+            'env_refs': env_refs,
+            'disks': svc.get('disks', []),
+            'server': svc.get('server'),
+        }
+
+    # -- plan (#8) ----------------------------------------------------------
+
+    @classmethod
+    def plan(cls, project: Project, normalized: Dict[str, Any],
+             environment: Optional[Environment] = None) -> Dict[str, Any]:
+        """Diff desired manifest vs live state -> ordered action plan."""
+        env = environment or cls._default_environment(project)
+        steps: List[Dict[str, Any]] = []
+
+        services = normalized.get('services', [])
+        for svc in services:
+            resolved = cls.resolve_service(svc)
+            if resolved['kind'] == 'database':
+                steps.extend(cls._plan_db(resolved))
+            else:
+                steps.extend(cls._plan_app(project, env, resolved))
+
+        steps.extend(cls._plan_domains(project, normalized.get('domains', [])))
+
+        steps.sort(key=lambda s: (_STEP_ORDER.get(s['type'], 99), s.get('service') or ''))
+        return {
+            'project_id': project.id,
+            'environment_id': env.id if env else None,
+            'steps': steps,
+            'step_count': len(steps),
+            'summary': cls._summarize_plan(steps),
+        }
+
+    @classmethod
+    def _plan_db(cls, resolved: Dict[str, Any]) -> List[Dict[str, Any]]:
+        engine = resolved['db_engine']
+        name = resolved['name']
+        if engine not in _MANAGED_DB_ENGINES:
+            return [{
+                'type': 'warn', 'service': name,
+                'description': f'{engine or resolved.get("app_type")} databases are not '
+                               f'managed by ServerKit yet — declared but not provisioned',
+                'payload': {},
+            }]
+        existing = ManagedDatabase.query.filter_by(engine=engine, name=name).first()
+        steps: List[Dict[str, Any]] = []
+        if not existing:
+            steps.append({
+                'type': 'provision_db', 'service': name,
+                'description': f'Provision {engine} database `{name}`',
+                'payload': {'engine': engine, 'name': name,
+                            'version': resolved.get('engine_version')},
+            })
+        # backup declaration on the db's single disk
+        for disk in resolved.get('disks', []):
+            backup = disk.get('backup')
+            if backup and not cls._backup_policy_current(
+                    'database', existing.id if existing else None, backup):
+                steps.append(cls._db_backup_step(name, engine, backup, exists=bool(existing)))
+        return steps
+
+    @classmethod
+    def _plan_app(cls, project: Project, env: Optional[Environment],
+                  resolved: Dict[str, Any]) -> List[Dict[str, Any]]:
+        steps: List[Dict[str, Any]] = []
+        name = resolved['name']
+        app = cls._find_app(project, name)
+
+        if app is None:
+            payload = {k: resolved[k] for k in
+                       ('app_type', 'port', 'healthcheck_path', 'runtime',
+                        'build_command', 'start_command', 'cpu', 'memory')}
+            payload['name'] = name
+            steps.append({
+                'type': 'create_app', 'service': name,
+                'description': f'Create app `{name}` ({resolved["app_type"]})',
+                'payload': payload,
+            })
+        else:
+            changes = cls._app_field_changes(app, resolved)
+            if changes:
+                steps.append({
+                    'type': 'update_app', 'service': name,
+                    'description': f'Update app `{name}`: ' + ', '.join(changes.keys()),
+                    'payload': {'app_id': app.id, 'changes': changes},
+                })
+
+        # env (literal values only; references bind in Phase 3)
+        desired_env = resolved['env']
+        if desired_env:
+            live_env = cls._live_env(app) if app else {}
+            missing = {k: v for k, v in desired_env.items() if str(live_env.get(k)) != str(v)}
+            if missing or app is None:
+                to_set = desired_env if app is None else missing
+                if to_set:
+                    steps.append({
+                        'type': 'set_env', 'service': name,
+                        'description': f'Set {len(to_set)} env var(s) on `{name}`',
+                        'payload': {'app_id': app.id if app else None, 'env': to_set},
+                    })
+
+        # disks
+        for disk in resolved.get('disks', []):
+            mount = disk.get('mount_path')
+            if not mount:
+                continue
+            has_vol = bool(app) and any(v.mount_path == mount for v in (app.volumes or []))
+            if not has_vol:
+                steps.append({
+                    'type': 'ensure_volume', 'service': name,
+                    'description': f'Ensure volume `{disk.get("name") or mount}` on `{name}`',
+                    'payload': {'app_id': app.id if app else None,
+                                'name': disk.get('name') or cls._slug(mount),
+                                'mount_path': mount, 'size': disk.get('size')},
+                })
+            backup = disk.get('backup')
+            if backup and not cls._backup_policy_current(
+                    'files', app.id if app else None, backup):
+                steps.append(cls._files_backup_step(name, app, mount, backup))
+
+        return steps
+
+    @classmethod
+    def _plan_domains(cls, project: Project, domains: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        steps = []
+        for dom in domains:
+            host = dom.get('host')
+            svc_name = dom.get('service')
+            app = cls._find_app(project, svc_name) if svc_name else None
+            already = bool(app) and any(d.name == host for d in (app.domains or []))
+            if already:
+                continue
+            steps.append({
+                'type': 'attach_domain', 'service': svc_name,
+                'description': f'Attach domain `{host}`'
+                               + (f' to `{svc_name}`' if svc_name else ''),
+                'payload': {'host': host, 'service': svc_name, 'ssl': dom.get('ssl', 'auto'),
+                            'app_id': app.id if app else None},
+            })
+        return steps
+
+    @classmethod
+    def _db_backup_step(cls, name, engine, backup, exists):
+        return {
+            'type': 'upsert_backup_policy', 'service': name,
+            'description': f'Backup policy for db `{name}` ({backup["schedule"]})',
+            'payload': {'target': 'database', 'engine': engine, 'db_name': name,
+                        'schedule': backup['schedule'], 'retain': backup['retain']},
+        }
+
+    @classmethod
+    def _files_backup_step(cls, name, app, mount, backup):
+        return {
+            'type': 'upsert_backup_policy', 'service': name,
+            'description': f'Backup policy for disk `{mount}` on `{name}` ({backup["schedule"]})',
+            'payload': {'target': 'files', 'app_id': app.id if app else None,
+                        'mount_path': mount, 'schedule': backup['schedule'],
+                        'retain': backup['retain']},
+        }
+
+    # -- apply (#9) ---------------------------------------------------------
+
+    @classmethod
+    def apply(cls, project: Project, normalized: Dict[str, Any],
+              user_id: Optional[int] = None,
+              environment: Optional[Environment] = None,
+              manifest_row: Optional[ApplicationManifest] = None) -> Dict[str, Any]:
+        """Execute the plan inside a DeploymentJob with before/after snapshots."""
+        env = environment or cls._default_environment(project)
+        plan = cls.plan(project, normalized, env)
+        job = cls._create_job(project, user_id, plan)
+
+        cls._snapshot_existing(project, normalized, tag='before')
+
+        results = []
+        failed = False
+        for idx, step in enumerate(plan['steps']):
+            if failed:
+                results.append({**cls._step_ref(step), 'status': 'skipped'})
+                continue
+            try:
+                outcome = cls._execute_step(project, env, step, user_id)
+                results.append({**cls._step_ref(step), 'status': 'ok', 'result': outcome})
+                cls._log(job, idx, 'info', step['description'], outcome)
+            except Exception as exc:  # stop the plan, report per-step
+                failed = True
+                results.append({**cls._step_ref(step), 'status': 'error', 'error': str(exc)})
+                cls._log(job, idx, 'error', f'{step["description"]}: {exc}')
+
+        cls._snapshot_existing(project, normalized, tag='after')
+
+        cls._finish_job(job, failed, results)
+        if manifest_row is not None:
+            manifest_row.status = STATUS_ERROR if failed else STATUS_APPLIED
+            if not failed:
+                manifest_row.applied_at = datetime.utcnow()
+                manifest_row.last_error = None
+            else:
+                manifest_row.last_error = next(
+                    (r.get('error') for r in results if r.get('status') == 'error'), None)
+            db.session.commit()
+
+        return {
+            'success': not failed,
+            'job_id': job.id,
+            'applied': sum(1 for r in results if r['status'] == 'ok'),
+            'results': results,
+            'plan': plan,
+        }
+
+    @classmethod
+    def _execute_step(cls, project, env, step, user_id) -> Dict[str, Any]:
+        stype = step['type']
+        # thread the step's service name into the payload so handlers can resolve
+        # an app that was created earlier in the same apply (app_id was None at
+        # plan time for brand-new services).
+        payload = dict(step.get('payload', {}))
+        payload.setdefault('service', step.get('service'))
+        handler = getattr(cls, f'_do_{stype}', None)
+        if handler is None:
+            return {'noop': True}
+        return handler(project, env, payload, user_id) or {}
+
+    # -- step handlers ------------------------------------------------------
+
+    @classmethod
+    def _do_warn(cls, project, env, payload, user_id):
+        return {'warned': True}
+
+    @classmethod
+    def _do_provision_db(cls, project, env, payload, user_id):
+        from app.services.managed_database_service import ManagedDatabaseService
+        managed = ManagedDatabaseService.record_provisioned(
+            engine=payload['engine'], name=payload['name'],
+            workspace_id=project.workspace_id,
+        )
+        return {'managed_database_id': managed.id}
+
+    @classmethod
+    def _do_create_app(cls, project, env, payload, user_id):
+        import json
+        overrides = {}
+        if payload.get('build_command'):
+            overrides['build_command'] = payload['build_command']
+        if payload.get('start_command'):
+            overrides['start_command'] = payload['start_command']
+        app = Application(
+            name=payload['name'],
+            app_type=payload.get('app_type') or 'docker',
+            status='stopped',
+            port=payload.get('port'),
+            healthcheck_path=payload.get('healthcheck_path'),
+            cpu_limit=payload.get('cpu'),
+            memory_limit=payload.get('memory'),
+            buildpack_overrides=json.dumps(overrides) if overrides else None,
+            source='manifest',
+            user_id=user_id,
+            project_id=project.id,
+            environment_id=env.id if env else None,
+        )
+        db.session.add(app)
+        db.session.commit()
+        return {'app_id': app.id}
+
+    @classmethod
+    def _do_update_app(cls, project, env, payload, user_id):
+        import json
+        app = Application.query.get(payload['app_id'])
+        if not app:
+            raise RuntimeError('app not found')
+        changes = payload['changes']
+        if 'port' in changes:
+            app.port = changes['port']
+        if 'healthcheck_path' in changes:
+            app.healthcheck_path = changes['healthcheck_path']
+        if 'cpu' in changes:
+            app.cpu_limit = changes['cpu']
+        if 'memory' in changes:
+            app.memory_limit = changes['memory']
+        if 'build_command' in changes or 'start_command' in changes:
+            overrides = {}
+            if app.buildpack_overrides:
+                try:
+                    overrides = json.loads(app.buildpack_overrides) or {}
+                except Exception:
+                    overrides = {}
+            if 'build_command' in changes:
+                overrides['build_command'] = changes['build_command']
+            if 'start_command' in changes:
+                overrides['start_command'] = changes['start_command']
+            app.buildpack_overrides = json.dumps(overrides)
+        db.session.commit()
+        return {'app_id': app.id, 'changed': list(changes.keys())}
+
+    @classmethod
+    def _do_set_env(cls, project, env, payload, user_id):
+        from app.services.env_service import EnvService
+        app_id = payload.get('app_id') or cls._resolve_app_id(project, payload)
+        count, errors = EnvService.bulk_set_env_vars(app_id, payload['env'], user_id)
+        if errors:
+            raise RuntimeError('; '.join(errors))
+        return {'set': count}
+
+    @classmethod
+    def _do_ensure_volume(cls, project, env, payload, user_id):
+        from app.services.volume_service import VolumeService
+        app = Application.query.get(payload.get('app_id') or cls._resolve_app_id(project, payload))
+        if not app:
+            raise RuntimeError('app not found')
+        if any(v.mount_path == payload['mount_path'] for v in (app.volumes or [])):
+            return {'exists': True}
+        vol = VolumeService.create(app, payload['name'], payload['mount_path'])
+        return {'volume_id': getattr(vol, 'id', None)}
+
+    @classmethod
+    def _do_upsert_backup_policy(cls, project, env, payload, user_id):
+        from app.services.backup_policy_service import BackupPolicyService
+        schedule_cron = _SCHEDULE_CRON.get(payload['schedule'], '0 2 * * *')
+        fields = {'enabled': True, 'schedule_cron': schedule_cron,
+                  'retention_count': payload['retain']}
+        if payload['target'] == 'database':
+            from app.services.managed_database_service import ManagedDatabaseService
+            managed = ManagedDatabase.query.filter_by(
+                engine=payload['engine'], name=payload['db_name']).first()
+            if not managed:
+                raise RuntimeError('managed database not found for backup policy')
+            ManagedDatabaseService.protect(managed, fields=fields)
+            return {'policy': 'database', 'db': payload['db_name']}
+        # files
+        app_id = payload.get('app_id') or cls._resolve_app_id(project, payload)
+        policy = BackupPolicyService.get_or_create_policy(
+            target_type='files', target_id=app_id, target_subtype='pathlist',
+            target_meta={'paths': [payload['mount_path']], 'managed_by': 'manifest'})
+        BackupPolicyService.update_policy(policy, fields)
+        return {'policy': 'files', 'policy_id': policy.id}
+
+    @classmethod
+    def _do_attach_domain(cls, project, env, payload, user_id):
+        from app.services.domain_attach_service import DomainAttachService
+        app_id = payload.get('app_id') or (
+            cls._resolve_app_id(project, payload) if payload.get('service') else None)
+        if not app_id:
+            return {'skipped': 'no target service'}
+        app = Application.query.get(app_id)
+        if not app:
+            raise RuntimeError('app not found for domain')
+        result = DomainAttachService.attach(app, payload['host'], ssl=payload.get('ssl', 'auto'))
+        return result
+
+    # -- snapshots + job ----------------------------------------------------
+
+    @classmethod
+    def _snapshot_existing(cls, project, normalized, tag):
+        from app.services.configuration_service import ConfigurationService
+        for svc in normalized.get('services', []):
+            if svc['kind'] != 'app':
+                continue
+            app = cls._find_app(project, svc['name'])
+            if app is None:
+                continue
+            try:
+                ConfigurationService.create_snapshot(app)
+            except Exception:
+                db.session.rollback()
+
+    @classmethod
+    def _create_job(cls, project, user_id, plan):
+        from app.models.deployment_job import DeploymentJob
+        job = DeploymentJob(
+            id=str(uuid.uuid4()), kind='manifest.apply', status='running',
+            requested_by=user_id, trigger='manual', started_at=datetime.utcnow(),
+        )
+        job.set_plan({'steps': plan['steps']})
+        job.total_steps = plan['step_count']
+        db.session.add(job)
+        db.session.commit()
+        return job
+
+    @classmethod
+    def _finish_job(cls, job, failed, results):
+        job.status = 'failed' if failed else 'succeeded'
+        job.completed_at = datetime.utcnow()
+        job.current_step = sum(1 for r in results if r['status'] in ('ok', 'error'))
+        job.set_result({'results': results})
+        db.session.commit()
+
+    @classmethod
+    def _log(cls, job, idx, level, message, data=None):
+        # Best-effort per-step log. Wrapped in a savepoint so a logging failure
+        # (e.g. SQLite BigInteger PK) never poisons the apply transaction. The
+        # authoritative per-step record also lives in job.result.
+        from app.models.deployment_job import DeploymentJobLog
+        import json
+        try:
+            with db.session.begin_nested():
+                db.session.add(DeploymentJobLog(
+                    job_id=job.id, step_index=idx, level=level, message=message,
+                    data=json.dumps(data) if data else None))
+        except Exception:
+            pass
+
+    # -- helpers ------------------------------------------------------------
+
+    @classmethod
+    def _app_field_changes(cls, app: Application, resolved: Dict[str, Any]) -> Dict[str, Any]:
+        import json
+        changes = {}
+        if resolved.get('port') is not None and app.port != resolved['port']:
+            changes['port'] = resolved['port']
+        if resolved.get('healthcheck_path') and app.healthcheck_path != resolved['healthcheck_path']:
+            changes['healthcheck_path'] = resolved['healthcheck_path']
+        if resolved.get('cpu') and app.cpu_limit != resolved['cpu']:
+            changes['cpu'] = resolved['cpu']
+        if resolved.get('memory') and app.memory_limit != resolved['memory']:
+            changes['memory'] = resolved['memory']
+        overrides = {}
+        if app.buildpack_overrides:
+            try:
+                overrides = json.loads(app.buildpack_overrides) or {}
+            except Exception:
+                overrides = {}
+        if resolved.get('build_command') and overrides.get('build_command') != resolved['build_command']:
+            changes['build_command'] = resolved['build_command']
+        if resolved.get('start_command') and overrides.get('start_command') != resolved['start_command']:
+            changes['start_command'] = resolved['start_command']
+        return changes
+
+    @classmethod
+    def _backup_policy_current(cls, target_type: str, target_id: Optional[int],
+                               backup: Dict[str, Any]) -> bool:
+        """True when an enabled policy already matches the declared schedule/retain."""
+        if not target_id:
+            return False
+        from app.models.backup_policy import BackupPolicy
+        pol = BackupPolicy.query.filter_by(
+            target_type=target_type, target_id=target_id, enabled=True).first()
+        if not pol:
+            return False
+        want_cron = _SCHEDULE_CRON.get(backup['schedule'], '0 2 * * *')
+        return pol.schedule_cron == want_cron and pol.retention_count == backup['retain']
+
+    @staticmethod
+    def _find_app(project: Project, name: Optional[str]) -> Optional[Application]:
+        if not name:
+            return None
+        return Application.query.filter_by(project_id=project.id, name=name).first()
+
+    @classmethod
+    def _resolve_app_id(cls, project, payload):
+        app = cls._find_app(project, payload.get('service'))
+        if not app:
+            raise RuntimeError(f'app `{payload.get("service")}` not found')
+        return app.id
+
+    @staticmethod
+    def _live_env(app: Application) -> Dict[str, Any]:
+        from app.services.env_service import EnvService
+        try:
+            return EnvService.get_env_dict(app.id)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _default_environment(project: Project) -> Optional[Environment]:
+        env = Environment.query.filter_by(project_id=project.id, is_default=True).first()
+        if env:
+            return env
+        return Environment.query.filter_by(project_id=project.id).first()
+
+    @staticmethod
+    def _summarize_plan(steps: List[Dict[str, Any]]) -> str:
+        if not steps:
+            return 'no changes — live state matches the manifest'
+        counts: Dict[str, int] = {}
+        for s in steps:
+            counts[s['type']] = counts.get(s['type'], 0) + 1
+        return ', '.join(f'{v} {k.replace("_", " ")}' for k, v in counts.items())
+
+    @staticmethod
+    def _step_ref(step):
+        return {'type': step['type'], 'service': step.get('service'),
+                'description': step['description']}
+
+    @staticmethod
+    def _stringify(value):
+        return None if value is None else str(value)
+
+    @staticmethod
+    def _slug(text):
+        import re
+        return re.sub(r'[^a-z0-9]+', '-', (text or '').lower()).strip('-') or 'vol'
