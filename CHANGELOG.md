@@ -28,6 +28,20 @@ awaiting a stable release:
 
 ### Added
 
+- **Mail Server extension (`serverkit-mail`)** — an opt-in built-in that runs a
+  self-hosted mail server (Stalwart, in a managed Docker container) driven
+  through its HTTP admin API. Manages mail domains, mailboxes, forwarders,
+  autoresponders and catch-all; generates DKIM keys and deploys DKIM/SPF/DMARC/MX/A
+  records through the existing DNS-provider integrations; requests a Let's Encrypt
+  cert for the mail hostname; and shows the outbound queue. A **deliverability
+  preflight** (reverse-DNS/PTR match, port-25 egress, RBL listing, listening
+  ports) runs on a daily schedule and **blocks outbound sending until it passes**
+  (an explicit force override is audit-logged), because self-hosted mail on a VPS
+  is a real commitment — many providers block port 25 and a fresh IP can be
+  pre-burned. Ships brute-force auth jails and registers the mail store for
+  scheduled backups. Not installed by default; enable it from Marketplace. It runs
+  alongside the older Postfix/Dovecot `serverkit-email` extension with entirely
+  separate identifiers.
 - **Configuration drift detection + repair ("doctor")** — a daily read-only
   sweep re-renders the expected nginx vhost and compose override for every
   managed resource from panel state and diffs it against disk; drift raises an
