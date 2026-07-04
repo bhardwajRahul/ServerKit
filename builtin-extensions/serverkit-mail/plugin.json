@@ -13,8 +13,8 @@
   "url_prefix": "/api/v1/mail",
   "models": "models:register",
   "lifecycle": {
-    "on_install": "lifecycle:on_install",
-    "on_uninstall": "lifecycle:on_uninstall"
+    "install": "lifecycle:on_install",
+    "uninstall": "lifecycle:on_uninstall"
   },
   "jobs": [
     { "kind": "mail.preflight.run", "handler": "jobs:run_preflight" },

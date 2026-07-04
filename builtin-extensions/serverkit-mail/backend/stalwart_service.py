@@ -67,6 +67,7 @@ EP_PRINCIPAL = '/principal'          # accounts / mailboxes / domains (CRUD)
 EP_DKIM = '/dkim'                    # DKIM signature management
 EP_QUEUE = '/queue/messages'         # outbound queue introspection
 EP_RECONFIG = '/reload'              # ask Stalwart to reload config
+EP_STATUS = '/status'                # health / version probe (read-only)
 
 
 class StalwartService:
@@ -206,8 +207,9 @@ class StalwartService:
         status['installed'] = True
         status['running'] = res.get('stdout', '').strip() == 'true'
         if status['running']:
-            info = cls._api('GET', EP_RECONFIG)
-            # Version is best-effort; a shape change must not break status.
+            info = cls._api('GET', EP_STATUS)
+            # Version is best-effort; a shape/endpoint change must not break
+            # status (never GET the reload endpoint just to read a version).
             if info.get('success') and isinstance(info.get('data'), dict):
                 status['version'] = info['data'].get('version')
         return status
