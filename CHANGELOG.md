@@ -18,6 +18,20 @@ and the project aims to follow [Semantic Versioning](https://semver.org/spec/v2.
 The `dev` branch is well ahead of the last `main` release. The headline work
 awaiting a stable release:
 
+### Fixed
+
+- **July‑5–7 recovery rebuild** — a scattered subset of the July‑5–7 work
+  (plans 22, 28–34) was lost when a backup was corrupted, leaving the backend
+  unable to boot. Reconstructed the dropped service layer (agent‑fleet survey +
+  fleet doctor/repair, backup restore‑drills + verify, reachable DNS cutover,
+  setup‑health + reconcile, cron‑run history, notification digests + chat
+  webhooks, the 4‑tier authorization model), the `FleetDoctorResult` /
+  `DnsCutoverSnapshot` models, the missing migration chain (056–074), five lost
+  frontend components, and the per‑app route authorization gating — recovered
+  with high fidelity from surviving compiled bytecode, the surviving tests, and
+  the plan docs. Backend boots clean, `flask db upgrade` reaches head on a fresh
+  DB, and the full test suite is green again.
+
 ### Removed
 
 - **Legacy marketplace catalog** — the DB-seeded `Extension`/`ExtensionInstall`
