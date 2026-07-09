@@ -155,6 +155,12 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     &__val {
         font-family: var(--mono); font-size: 27px; font-weight: 600;
         letter-spacing: -0.02em; line-height: 1;
+        // Even columns of digits, and a truncation guard so an un-migrated
+        // 6-digit value degrades to an ellipsis instead of bursting the tile.
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
         small { font-size: 14px; color: var(--text-faint); font-weight: 500; }
     }
     &__label { font-size: 12.5px; color: var(--text-dim); margin-top: 6px; }

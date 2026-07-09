@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { formatCompact, formatFull } from '../../utils/formatNumber';
 
 // KPI / stat tile: icon chip + big value (+ optional unit) + label, with an
 // optional trend delta in the top-right.
@@ -11,6 +12,9 @@ import { cn } from '@/lib/utils';
 // this heals silent API misuse where a page passed a prop the tile dropped.
 // `secondary` is read by KpiBand to force-fold a tile into the compact strip;
 // it is not a visual prop on the tile itself.
+// `compact` opts a numeric tile into space-tight formatting: a value ≥ 1000 is
+// rendered compact (107814 → "107.8K") with the exact grouped number as the
+// hover title. Non-numeric values (or values under 1000) render verbatim.
 export function MetricCard({
     icon,
     tone,
@@ -21,6 +25,7 @@ export function MetricCard({
     trend,
     trendDir = 'flat',
     onClick,
+    compact = false,
     className,
     children,
     secondary: _secondary,   // consumed by KpiBand, kept out of DOM props
@@ -34,6 +39,13 @@ export function MetricCard({
     }
     const resolvedTone = tone || kind || 'accent';
 
+    // Compact tiles fold ≥1000 numeric values to a short form and expose the
+    // exact grouped number as the title so the precise count is one hover away.
+    const numericValue = typeof value === 'number' ? value : Number(value);
+    const useCompact = compact && Number.isFinite(numericValue) && Math.abs(numericValue) >= 1000;
+    const displayValue = useCompact ? formatCompact(numericValue) : value;
+    const valueTitle = useCompact ? String(formatFull(numericValue)) : undefined;
+
     const inner = (
         <>
             <div className="sk-kpi__top">
@@ -42,8 +54,8 @@ export function MetricCard({
                     <span className={cn('sk-kpi__trend', `sk-kpi__trend--${trendDir}`)}>{trend}</span>
                 )}
             </div>
-            <div className="sk-kpi__val">
-                {value}
+            <div className="sk-kpi__val" title={valueTitle}>
+                {displayValue}
                 {unit && <small> {unit}</small>}
             </div>
             {label && <div className="sk-kpi__label">{label}</div>}
