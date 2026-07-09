@@ -178,10 +178,32 @@ disks:
     backup: { schedule: daily, retain: 7 }
 ```
 
-`disks[]` become `AppVolume` rows; a `backup:` block becomes a `BackupPolicy` on
-the `files` target scoped to the mount path. `schedule` is one of
+`disks[]` become `AppVolume` rows; `size` is recorded as the volume's
+`declared_size` cap (not enforced by the local driver). A `backup:` block
+becomes a `BackupPolicy` on the `files` target that resolves the **live host
+mountpoint** of the named docker volume — so the backup captures the real bytes,
+not the empty in-container path. `schedule` is one of
 `hourly` / `daily` / `weekly` / `monthly`; `retain` is the number of backups to
 keep.
+
+## First-boot bootstrap
+
+Some appliances generate a config/certificate tree exactly once. A compose init
+container gets left behind; an entrypoint reruns every deploy. `bootstrap` runs
+the command **once**, via `docker compose run --rm`, after the volumes exist and
+before the first `up`:
+
+```yaml
+services:
+  - name: prosody
+    type: docker
+    bootstrap: { command: "/opt/bootstrap/generate-config.sh", timeoutSeconds: 120 }
+```
+
+Success flips `Application.bootstrap_done`, so it never re-runs; a failure is a
+visible, retryable apply-step error. To deliberately run it again (a fresh
+config generation), `POST /api/v1/manifests/bootstrap/reset` with the app name
+typed in `confirm`.
 
 ## Domains & SSL
 

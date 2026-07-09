@@ -107,6 +107,7 @@ MANIFEST_SCHEMA: Dict[str, Any] = {
                 "startCommand": {"type": "string"},
                 "port": {"type": "integer", "minimum": 1, "maximum": 65535},
                 "ports": {"type": "array", "items": {"$ref": "#/definitions/portDecl"}},
+                "bootstrap": {"$ref": "#/definitions/bootstrap"},
                 "healthCheckPath": {"type": "string"},
                 "autoDeploy": {"type": "boolean"},
                 "version": {"type": ["string", "number"]},
@@ -122,6 +123,15 @@ MANIFEST_SCHEMA: Dict[str, Any] = {
                         {"type": "array", "items": {"$ref": "#/definitions/cron"}},
                     ]
                 },
+            },
+        },
+        "bootstrap": {
+            "type": "object",
+            "required": ["command"],
+            "additionalProperties": True,
+            "properties": {
+                "command": {"type": "string", "minLength": 1},
+                "timeoutSeconds": {"type": "integer", "minimum": 1},
             },
         },
         "portDecl": {
@@ -382,6 +392,7 @@ class ManifestSpecService:
         ]
 
         ports = cls._normalize_ports(svc.get('ports'), prefix, errors)
+        bootstrap = cls._normalize_bootstrap(svc.get('bootstrap'))
 
         return {
             'name': name,
@@ -394,6 +405,7 @@ class ManifestSpecService:
             'start_command': cls._alias(svc, 'startCommand', 'start_command'),
             'port': svc.get('port'),
             'ports': ports,
+            'bootstrap': bootstrap,
             'healthcheck_path': cls._alias(svc, 'healthCheckPath', 'healthcheck_path'),
             'auto_deploy': bool(cls._alias(svc, 'autoDeploy', 'auto_deploy', default=False)),
             'engine_version': cls._stringify(svc.get('version')),
@@ -438,6 +450,20 @@ class ManifestSpecService:
                 'expose': expose,
             })
         return ports
+
+    @classmethod
+    def _normalize_bootstrap(cls, raw: Any) -> Optional[Dict[str, Any]]:
+        """First-boot bootstrap (plan 35): ``{command, timeoutSeconds?}``."""
+        if not isinstance(raw, dict):
+            return None
+        command = raw.get('command')
+        if not command:
+            return None
+        timeout = cls._alias(raw, 'timeoutSeconds', 'timeout_seconds')
+        return {
+            'command': command,
+            'timeout_seconds': int(timeout) if timeout else None,
+        }
 
     @classmethod
     def _normalize_env_var(cls, var: Dict[str, Any], where: str, errors: List[str]) -> Dict[str, Any]:

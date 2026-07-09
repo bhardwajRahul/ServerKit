@@ -125,7 +125,10 @@ class ManifestScaffoldService:
     def _disks(app: Application) -> List[Dict[str, Any]]:
         disks = []
         for vol in getattr(app, 'volumes', []) or []:
-            disks.append({'name': vol.name, 'mountPath': vol.mount_path})
+            entry: Dict[str, Any] = {'name': vol.name, 'mountPath': vol.mount_path}
+            if getattr(vol, 'declared_size', None):
+                entry['size'] = vol.declared_size
+            disks.append(entry)
         return disks
 
     @staticmethod

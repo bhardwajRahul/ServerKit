@@ -252,7 +252,21 @@ class BackupPolicyService:
 
         if policy.target_type == 'files':
             meta = policy.get_target_meta()
-            file_paths = meta.get('paths') or []
+            file_paths = list(meta.get('paths') or [])
+            # Appliance tier (plan 35): a manifest disk backs a named docker
+            # volume, so back up its live HOST mountpoint, not the in-container
+            # path. Falls back to `paths` when the volume isn't resolvable yet.
+            vol_mount = meta.get('volume_mount')
+            if vol_mount and meta.get('app_id'):
+                try:
+                    from app.models.application import Application
+                    from app.services.volume_service import VolumeService
+                    app = Application.query.get(meta['app_id'])
+                    host_path = VolumeService.host_path_for_mount(app, vol_mount)
+                    if host_path:
+                        file_paths = [host_path]
+                except Exception:
+                    pass
             if not file_paths:
                 raise BackupPolicyError('Files target has no paths configured')
             return {

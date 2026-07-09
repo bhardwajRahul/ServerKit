@@ -74,6 +74,7 @@ class ManifestApplyService:
             'runtime': svc.get('runtime'),
             'port': svc.get('port'),
             'ports': svc.get('ports', []),
+            'bootstrap': svc.get('bootstrap'),
             'healthcheck_path': svc.get('healthcheck_path'),
             'build_command': svc.get('build_command'),
             'start_command': svc.get('start_command'),
@@ -328,6 +329,17 @@ class ManifestApplyService:
                     'files', app.id if app else None, backup):
                 steps.append(cls._files_backup_step(name, app, mount, backup))
 
+        # first-boot bootstrap (appliance tier, plan 35) — once per app
+        bootstrap = resolved.get('bootstrap')
+        if bootstrap and (app is None or not getattr(app, 'bootstrap_done', False)):
+            steps.append({
+                'type': 'bootstrap', 'service': name,
+                'description': f'Run first-boot bootstrap on `{name}`',
+                'payload': {'app_id': app.id if app else None,
+                            'command': bootstrap['command'],
+                            'timeout_seconds': bootstrap.get('timeout_seconds')},
+            })
+
         return steps
 
     @classmethod
@@ -364,8 +376,8 @@ class ManifestApplyService:
             'type': 'upsert_backup_policy', 'service': name,
             'description': f'Backup policy for disk `{mount}` on `{name}` ({backup["schedule"]})',
             'payload': {'target': 'files', 'app_id': app.id if app else None,
-                        'mount_path': mount, 'schedule': backup['schedule'],
-                        'retain': backup['retain']},
+                        'mount_path': mount, 'volume_mount': mount,
+                        'schedule': backup['schedule'], 'retain': backup['retain']},
         }
 
     # -- blockers engine (appliance tier, plan 35) --------------------------
@@ -696,7 +708,29 @@ class ManifestApplyService:
         if any(v.mount_path == payload['mount_path'] for v in (app.volumes or [])):
             return {'exists': True}
         vol = VolumeService.create(app, payload['name'], payload['mount_path'])
-        return {'volume_id': getattr(vol, 'id', None)}
+        # persist the manifest-declared size cap (plan 35); measured usage stays
+        # on size_bytes.
+        declared = payload.get('size')
+        if declared is not None and vol is not None:
+            vol.declared_size = str(declared)
+            db.session.commit()
+        return {'volume_id': getattr(vol, 'id', None), 'declared_size': declared}
+
+    @classmethod
+    def _do_bootstrap(cls, project, env, payload, user_id):
+        from app.services.bootstrap_service import BootstrapService
+        app = Application.query.get(payload.get('app_id') or cls._resolve_app_id(project, payload))
+        if not app:
+            raise RuntimeError('app not found')
+        if getattr(app, 'bootstrap_done', False):
+            return {'skipped': 'already bootstrapped'}
+        result = BootstrapService.run_once(
+            app, payload['command'], timeout_seconds=payload.get('timeout_seconds'))
+        if not result.get('success'):
+            raise RuntimeError(result.get('error') or 'bootstrap failed')
+        app.bootstrap_done = True
+        db.session.commit()
+        return {'bootstrapped': True, 'output': result.get('output')}
 
     @classmethod
     def _do_open_port(cls, project, env, payload, user_id):
@@ -724,11 +758,17 @@ class ManifestApplyService:
                 raise RuntimeError('managed database not found for backup policy')
             ManagedDatabaseService.protect(managed, fields=fields)
             return {'policy': 'database', 'db': payload['db_name']}
-        # files
+        # files — for a manifest disk the real bytes live in the named docker
+        # volume, so record the volume mount so backup resolves the live HOST
+        # mountpoint (plan 35). `paths` stays as a graceful fallback.
         app_id = payload.get('app_id') or cls._resolve_app_id(project, payload)
+        meta = {'paths': [payload['mount_path']], 'managed_by': 'manifest'}
+        if payload.get('volume_mount'):
+            meta['volume_mount'] = payload['volume_mount']
+            meta['app_id'] = app_id
         policy = BackupPolicyService.get_or_create_policy(
             target_type='files', target_id=app_id, target_subtype='pathlist',
-            target_meta={'paths': [payload['mount_path']], 'managed_by': 'manifest'})
+            target_meta=meta)
         BackupPolicyService.update_policy(policy, fields)
         return {'policy': 'files', 'policy_id': policy.id}
 

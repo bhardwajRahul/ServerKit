@@ -30,6 +30,14 @@ awaiting a stable release:
   issues — it refuses (nothing executed, no force flag) on a port conflict, a
   remote/observed target, or an undetectable firewall, with a message that says
   what the target can't provide and how to fix it.
+- **Appliance tier — finished volumes + one-shot first-boot bootstrap** — a
+  manifest disk's `size` is now recorded on the volume, its declared mounts are
+  emitted into the generated compose, and its `backup:` block resolves the
+  docker volume's live host mountpoint so backups capture the real data. A new
+  `bootstrap: { command, timeoutSeconds }` runs once (via `docker compose run
+  --rm`) after volumes exist — for appliances that generate a config tree on
+  first boot — and stamps the app so it never re-runs; re-arm it with
+  `POST /manifests/bootstrap/reset` (type the app name to confirm).
 - **New Service wizard clarity** — each source card now shows a short explainer
   strip when selected (what it does, what to have ready, the next steps), and a
   "Docs" link to the matching serverkit.ai guide (hidden under White Label). The

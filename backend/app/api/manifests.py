@@ -176,3 +176,26 @@ def apply_manifest():
 
     status = 200 if result['success'] else 207
     return jsonify(result), status
+
+
+@manifests_bp.route('/bootstrap/reset', methods=['POST'])
+@jwt_required()
+def reset_bootstrap():
+    """POST /api/v1/manifests/bootstrap/reset {app_id, confirm}
+
+    Re-arm a one-shot appliance bootstrap so the next apply runs it again.
+    Destructive-ish (the bootstrap may regenerate config), so it requires
+    typing the app name in `confirm`.
+    """
+    user, err = _require_admin()
+    if err:
+        return err
+    data = request.get_json(silent=True) or {}
+    app = Application.query.get(data.get('app_id')) if data.get('app_id') else None
+    if not app:
+        return jsonify({'error': 'Application not found'}), 404
+    if (data.get('confirm') or '') != app.name:
+        return jsonify({'error': f'Type the app name "{app.name}" to confirm'}), 400
+    app.bootstrap_done = False
+    db.session.commit()
+    return jsonify({'success': True, 'app_id': app.id, 'bootstrap_done': False}), 200

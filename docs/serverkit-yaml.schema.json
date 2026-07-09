@@ -78,6 +78,10 @@
           "type": "array",
           "items": { "$ref": "#/definitions/portDecl" }
         },
+        "bootstrap": {
+          "description": "First-boot bootstrap (appliance tier). Runs once via `docker compose run --rm` after volumes exist and before the first up — for appliances that generate a config tree once.",
+          "$ref": "#/definitions/bootstrap"
+        },
         "healthCheckPath": {
           "description": "HTTP path used for health checks and the zero-downtime restart gate.",
           "type": "string"
@@ -123,6 +127,23 @@
             { "$ref": "#/definitions/cron" },
             { "type": "array", "items": { "$ref": "#/definitions/cron" } }
           ]
+        }
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "required": ["command"],
+      "additionalProperties": true,
+      "properties": {
+        "command": {
+          "description": "Command run once inside a throwaway service container.",
+          "type": "string",
+          "minLength": 1
+        },
+        "timeoutSeconds": {
+          "description": "Max seconds the bootstrap may run before it is killed and the step fails.",
+          "type": "integer",
+          "minimum": 1
         }
       }
     },
