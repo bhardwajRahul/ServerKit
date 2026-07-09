@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Activity,
     CheckCircle2,
@@ -23,9 +24,15 @@ import EmptyState from '../components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+    Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
+import { SegControl } from '@/components/ds';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import ManualInstallModal from '../components/marketplace/ManualInstallModal';
+import {
+    ExtensionBrandMark, hasBrandMark, extensionCoverStyle,
+} from '../components/icons/ExtensionBrands';
 
 const CATEGORIES = ['ai', 'monitoring', 'security', 'deployment', 'integration', 'ui', 'utility'];
 
@@ -79,6 +86,7 @@ const getRegistryCatalogEntry = (entry) => ({
     author: entry.author,
     firstParty: isFirstParty(entry.author, entry),
     icon: entry.icon || null,
+    logo: entry.logo || null,
     screenshots: Array.isArray(entry.screenshots) ? entry.screenshots : [],
     permissions: Array.isArray(entry.permissions) ? entry.permissions : [],
     configSchema: entry.config_schema && typeof entry.config_schema === 'object' ? entry.config_schema : null,
@@ -110,6 +118,7 @@ const getLocalCatalogEntry = (builtin) => {
         author: manifest.author,
         firstParty: isFirstParty(manifest.author, manifest),
         icon: manifest.icon || null,
+        logo: manifest.logo || null,
         screenshots: Array.isArray(manifest.screenshots) ? manifest.screenshots : [],
         permissions: Array.isArray(manifest.permissions) ? manifest.permissions : [],
         configSchema: manifest.config_schema && typeof manifest.config_schema === 'object' ? manifest.config_schema : null,
@@ -145,7 +154,14 @@ const Marketplace = () => {
     const [category, setCategory] = useState('');
     // Ownership filter: '' (all), 'serverkit' (firstParty), 'community'.
     const [ownership, setOwnership] = useState('');
-    const [activeTab, setActiveTab] = useState('browse');
+    const location = useLocation();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    // The active view is driven by the route (/marketplace = browse,
+    // /marketplace/installed = installed). The legacy ?tab=installed deep link
+    // still resolves to the installed view.
+    const installedView = location.pathname.endsWith('/installed')
+        || searchParams.get('tab') === 'installed';
     // Manual install modal (URL / folder / zip); null when closed, otherwise
     // the source sub-tab to preselect.
     const [manualInstallSource, setManualInstallSource] = useState(null);
@@ -216,7 +232,7 @@ const Marketplace = () => {
     const handleManualInstalled = () => {
         setManualInstallSource(null);
         loadExtensions();
-        setActiveTab('installed');
+        navigate('/marketplace/installed');
     };
 
     // Open the data-policy dialog instead of uninstalling immediately, so the
@@ -306,19 +322,8 @@ const Marketplace = () => {
 
     return (
         <div className="sk-tabgroup__inner marketplace-page">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="marketplace-tabs">
-                <TabsList className="marketplace-tabs__list">
-                    <TabsTrigger value="browse">
-                        <LayoutGrid aria-hidden="true" />
-                        Browse
-                    </TabsTrigger>
-                    <TabsTrigger value="installed">
-                        <PackageCheck aria-hidden="true" />
-                        Installed ({plugins.length})
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="browse">
+            {!installedView ? (
+                <>
                     <div className="marketplace-toolbar">
                         <div className="marketplace-search">
                             <Search className="marketplace-search__icon" aria-hidden="true" />
@@ -329,59 +334,40 @@ const Marketplace = () => {
                                 aria-label="Search extensions"
                             />
                         </div>
+                        <Select
+                            value={category || 'all'}
+                            onValueChange={(value) => setCategory(value === 'all' ? '' : value)}
+                        >
+                            <SelectTrigger className="marketplace-toolbar__select" aria-label="Filter by category">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All categories</SelectItem>
+                                {catalogCategories.map((item) => (
+                                    <SelectItem key={item} value={item}>{titleCase(item)}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <SegControl
+                            className="marketplace-toolbar__seg"
+                            aria-label="Filter by publisher"
+                            options={[
+                                { value: '', label: 'All' },
+                                { value: 'serverkit', label: 'By ServerKit' },
+                                { value: 'community', label: 'Community' },
+                            ]}
+                            value={ownership}
+                            onChange={setOwnership}
+                        />
                         {hasFilters && (
                             <Button variant="ghost" size="sm" onClick={resetFilters}>
                                 Reset
                             </Button>
                         )}
-                    </div>
-
-                    <div className="cat-chips" role="group" aria-label="Filter by category">
-                        <button
-                            type="button"
-                            className={`cat-chip ${category === '' ? 'cat-chip--active' : ''}`}
-                            aria-pressed={category === ''}
-                            onClick={() => setCategory('')}
-                        >
-                            All
-                        </button>
-                        {catalogCategories.map((item) => (
-                            <button
-                                key={item}
-                                type="button"
-                                className={`cat-chip ${category === item ? 'cat-chip--active' : ''}`}
-                                aria-pressed={category === item}
-                                onClick={() => setCategory(item)}
-                            >
-                                {titleCase(item)}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="cat-chips cat-chips--ownership" role="group" aria-label="Filter by publisher">
-                        {[
-                            { id: '', label: 'All publishers' },
-                            { id: 'serverkit', label: 'By ServerKit' },
-                            { id: 'community', label: 'Community' },
-                        ].map((option) => (
-                            <button
-                                key={option.id || 'all'}
-                                type="button"
-                                className={`cat-chip ${ownership === option.id ? 'cat-chip--active' : ''}`}
-                                aria-pressed={ownership === option.id}
-                                onClick={() => setOwnership(option.id)}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
+                        <span className="marketplace-toolbar__count">{catalogEntries.length} results</span>
                     </div>
 
                     <section className="marketplace-section">
-                        <SectionHeader
-                            kicker="Catalog"
-                            title="Extension catalog"
-                            meta={`${catalogEntries.length} results`}
-                        />
                         {catalogEntries.length > 0 ? (
                             <div className="extensions-grid">
                                 {catalogEntries.map((entry) => (
@@ -407,41 +393,39 @@ const Marketplace = () => {
                             />
                         )}
                     </section>
-                </TabsContent>
-
-                <TabsContent value="installed">
-                    <section className="marketplace-section">
-                        <SectionHeader
-                            kicker="Installed"
-                            title="Installed extensions"
-                            meta={`${plugins.length} installed`}
+                </>
+            ) : (
+                <section className="marketplace-section">
+                    <SectionHeader
+                        kicker="Installed"
+                        title="Installed extensions"
+                        meta={`${plugins.length} installed`}
+                    />
+                    {plugins.length > 0 ? (
+                        <div className="installed-list">
+                            {plugins.map((plugin) => (
+                                <PluginRow
+                                    key={plugin.id}
+                                    plugin={plugin}
+                                    update={updatesByKey.get(String(plugin.id))}
+                                    installing={installing}
+                                    onToggle={handlePluginToggle}
+                                    onUpdate={handlePluginUpdate}
+                                    onUninstall={requestPluginUninstall}
+                                    onConfigure={setConfigTarget}
+                                    statusVariant={pluginStatusVariant}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            icon={PackageCheck}
+                            title="No extensions installed"
+                            description="Install one from Marketplace or use Install manually."
                         />
-                        {plugins.length > 0 ? (
-                            <div className="installed-list">
-                                {plugins.map((plugin) => (
-                                    <PluginRow
-                                        key={plugin.id}
-                                        plugin={plugin}
-                                        update={updatesByKey.get(String(plugin.id))}
-                                        installing={installing}
-                                        onToggle={handlePluginToggle}
-                                        onUpdate={handlePluginUpdate}
-                                        onUninstall={requestPluginUninstall}
-                                        onConfigure={setConfigTarget}
-                                        statusVariant={pluginStatusVariant}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <EmptyState
-                                icon={PackageCheck}
-                                title="No extensions installed"
-                                description="Install one from Browse or use Install manually."
-                            />
-                        )}
-                    </section>
-                </TabsContent>
-            </Tabs>
+                    )}
+                </section>
+            )}
 
             {manualInstallSource && (
                 <ManualInstallModal
@@ -492,9 +476,53 @@ const SectionHeader = ({ kicker, title, meta }) => (
     </div>
 );
 
+// Cover artwork with a deterministic fallback chain:
+// registry logo image -> bundled brand mark -> manifest icon SVG -> category
+// lucide glyph. Kept as its own component so both the card and the detail modal
+// share the exact same resolution order.
+const ExtensionCover = ({ entry, category, brandSize = 34 }) => {
+    const [logoFailed, setLogoFailed] = useState(false);
+    const Icon = getCategoryIcon(category);
+    const iconSvg = entry.icon ? sanitizeSvgInner(entry.icon) : '';
+
+    if (entry.logo && !logoFailed) {
+        return (
+            <img
+                src={entry.logo}
+                loading="lazy"
+                alt=""
+                className="extension-card__logo"
+                onError={() => setLogoFailed(true)}
+            />
+        );
+    }
+    if (hasBrandMark(entry.installKey)) {
+        return (
+            <ExtensionBrandMark
+                slug={entry.installKey}
+                size={brandSize}
+                className="extension-card__brand"
+            />
+        );
+    }
+    if (iconSvg) {
+        return (
+            <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                aria-hidden="true"
+                focusable="false"
+                className="extension-card__glyph"
+                dangerouslySetInnerHTML={{ __html: iconSvg }}
+            />
+        );
+    }
+    return <Icon aria-hidden="true" className="extension-card__glyph" />;
+};
+
 const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, statusVariant }) => {
     const category = entry.category || 'utility';
-    const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
     const installedLabel = entry.status && entry.status !== 'active'
         ? titleCase(entry.status)
@@ -516,34 +544,24 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
             onClick={openDetail}
             onKeyDown={handleKeyDown}
         >
-            <div className="extension-card__topline">
-                <div className={`extension-card__icon extension-card__icon--${category}`}>
-                    <Icon aria-hidden="true" />
-                </div>
-                <div className="extension-card__badges">
-                    {entry.firstParty && (
-                        <Badge variant="secondary" className="extension-firstparty">by ServerKit</Badge>
-                    )}
-                    <Badge variant={sourceBadgeVariant(entry.source)}>{entry.sourceLabel}</Badge>
-                    <Badge variant="outline">{titleCase(category)}</Badge>
-                </div>
+            <div className="extension-card__cover" style={extensionCoverStyle(entry.installKey, category)}>
+                <ExtensionCover entry={entry} category={category} brandSize={34} />
+            </div>
+            <div className="extension-card__badges">
+                <Badge variant={sourceBadgeVariant(entry.source)}>{entry.sourceLabel}</Badge>
+                <Badge variant="outline">{titleCase(category)}</Badge>
             </div>
             <div className="extension-card__body">
                 <h3>{entry.displayName}</h3>
                 <p className="extension-card__desc">{entry.description}</p>
             </div>
-            <div className="extension-card__signals">
-                <span>{entry.sourceDetail}</span>
-                <span>{entry.installed ? installedLabel : 'Ready to install'}</span>
-            </div>
             <div className="extension-card__footer">
                 <div className="extension-card__info">
                     <span>v{entry.version}</span>
-                    {entry.author && <span>by {entry.author}</span>}
-                    {entry.extensionType && (
-                        <Badge variant="secondary">
-                            {isLocal ? 'built-in' : entry.extensionType}
-                        </Badge>
+                    {entry.firstParty ? (
+                        <Badge variant="secondary" className="extension-firstparty">by ServerKit</Badge>
+                    ) : (
+                        entry.author && <span>by {entry.author}</span>
                     )}
                 </div>
                 <div className="extension-card__actions">
@@ -573,9 +591,7 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
 
 const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onInstall }) => {
     const category = entry.category || 'utility';
-    const Icon = getCategoryIcon(category);
     const isLocal = entry.source === 'local';
-    const iconSvg = entry.icon ? sanitizeSvgInner(entry.icon) : '';
     const screenshots = entry.screenshots || [];
     const permissions = Array.isArray(entry.permissions) ? entry.permissions : [];
     const configKeys = entry.configSchema && typeof entry.configSchema === 'object'
@@ -588,21 +604,10 @@ const ExtensionDetailModal = ({ entry, installing, statusVariant, onClose, onIns
     return (
         <Modal open onClose={onClose} title={entry.displayName} size="lg">
             <div className="extension-detail">
+                <div className="extension-detail__cover" style={extensionCoverStyle(entry.installKey, category)}>
+                    <ExtensionCover entry={entry} category={category} brandSize={46} />
+                </div>
                 <div className="extension-detail__header">
-                    <div className={`extension-detail__icon extension-detail__icon--${category}`}>
-                        {iconSvg ? (
-                            <svg
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                aria-hidden="true"
-                                focusable="false"
-                                dangerouslySetInnerHTML={{ __html: iconSvg }}
-                            />
-                        ) : (
-                            <Icon aria-hidden="true" />
-                        )}
-                    </div>
                     <div className="extension-detail__heading">
                         <div className="extension-detail__badges">
                             {entry.firstParty && (

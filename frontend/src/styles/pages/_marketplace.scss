@@ -72,21 +72,39 @@
     }
 
     .marketplace-toolbar {
-        display: grid;
-        grid-template-columns: minmax(260px, 1fr) auto;
+        display: flex;
+        flex-wrap: wrap;
         gap: $space-3;
         align-items: center;
-        margin-bottom: $space-6;
+        margin-bottom: $space-5;
     }
 
     .marketplace-search {
         position: relative;
-        min-width: 0;
+        flex: 1 1 260px;
+        min-width: 200px;
 
         .ui-input {
             padding-left: 42px;
             background: $bg-card;
         }
+    }
+
+    .marketplace-toolbar__select.ui-select-trigger {
+        flex: 0 0 auto;
+        min-width: 160px;
+        background: $bg-card;
+    }
+
+    .marketplace-toolbar__seg {
+        flex: 0 0 auto;
+    }
+
+    .marketplace-toolbar__count {
+        margin-left: auto;
+        color: $text-tertiary;
+        font-size: $font-size-sm;
+        white-space: nowrap;
     }
 
     .marketplace-search__icon {
@@ -99,41 +117,6 @@
         color: $text-tertiary;
         transform: translateY(-50%);
         pointer-events: none;
-    }
-
-    .cat-chips {
-        display: flex;
-        flex-wrap: wrap;
-        gap: $space-2;
-        margin-bottom: $space-5;
-    }
-
-    .cat-chip {
-        padding: $space-1 $space-3;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-md;
-        background: $bg-elevated;
-        color: $text-tertiary;
-        font-family: inherit;
-        font-size: $font-size-sm + 0.5;
-        font-weight: $font-weight-medium;
-        text-transform: capitalize;
-        cursor: pointer;
-        transition:
-            color $transition-base,
-            background $transition-base,
-            border-color $transition-base;
-
-        &:hover {
-            border-color: $border-active;
-            color: $text-primary;
-        }
-
-        &--active {
-            border-color: var(--accent-dim);
-            background: var(--accent-bg);
-            color: var(--accent-bright);
-        }
     }
 
     .marketplace-section {
@@ -168,16 +151,15 @@
 
     .extensions-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: $space-4;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: $space-3;
     }
 
     .extension-card {
         display: flex;
         flex-direction: column;
-        gap: $space-4;
-        min-height: 284px;
-        padding: $space-5;
+        gap: $space-3;
+        padding: $space-4;
         background: $bg-card;
         transition:
             transform $transition-base,
@@ -200,16 +182,39 @@
         }
     }
 
-    .extension-card__topline,
+    // Data-derived gradient banner (per-slug hue set inline via
+    // extensionCoverStyle). Holds the brand mark / manifest icon / category glyph.
+    .extension-card__cover {
+        display: grid;
+        place-items: center;
+        height: 72px;
+        border-radius: $radius-md;
+        overflow: hidden;
+    }
+
+    .extension-card__brand,
+    .extension-card__glyph {
+        color: rgba(255, 255, 255, 0.92);
+    }
+
+    .extension-card__glyph {
+        width: 34px;
+        height: 34px;
+    }
+
+    .extension-card__logo {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+    }
+
     .extension-card__footer,
     .extension-card__info,
-    .extension-card__actions,
-    .extension-card__signals {
+    .extension-card__actions {
         display: flex;
         align-items: center;
     }
 
-    .extension-card__topline,
     .extension-card__footer {
         justify-content: space-between;
         gap: $space-3;
@@ -217,53 +222,10 @@
 
     .extension-card__badges {
         display: flex;
-        justify-content: flex-end;
         align-items: center;
         gap: $space-2;
         flex-wrap: wrap;
         min-width: 0;
-    }
-
-    .extension-card__icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 42px;
-        height: 42px;
-        flex: 0 0 42px;
-        border-radius: $radius-lg;
-        color: $accent-primary;
-        background: fade($accent-primary-raw, 12%);
-
-        svg {
-            width: 21px;
-            height: 21px;
-        }
-    }
-
-    .extension-card__icon--monitoring {
-        color: $info;
-        background: fade($info, 12%);
-    }
-
-    .extension-card__icon--security {
-        color: $success;
-        background: fade($success, 12%);
-    }
-
-    .extension-card__icon--deployment {
-        color: $warning;
-        background: fade($warning, 12%);
-    }
-
-    .extension-card__icon--integration {
-        color: $color-docker;
-        background: fade($color-docker, 12%);
-    }
-
-    .extension-card__icon--ui {
-        color: #ec4899;
-        background: rgba(236, 72, 153, 0.12);
     }
 
     .extension-card__body {
@@ -280,54 +242,19 @@
 
     .extension-card__desc {
         display: -webkit-box;
-        min-height: 64px;
+        min-height: 40px;
         margin: 0;
         overflow: hidden;
         color: $text-secondary;
         font-size: $font-size-base;
         line-height: $line-height-normal;
         -webkit-box-orient: vertical;
-        -webkit-line-clamp: 3;
-    }
-
-    .extension-card__signals {
-        justify-content: space-between;
-        gap: $space-3;
-        margin-top: auto;
-        color: $text-tertiary;
-        font-size: $font-size-sm;
-
-        > span {
-            display: inline-flex;
-            align-items: center;
-            gap: $space-2;
-            min-width: 0;
-        }
-    }
-
-    .extension-card__stars {
-        display: inline-flex;
-        align-items: center;
-        gap: 2px;
-        color: $text-tertiary;
-
-        svg {
-            width: 13px;
-            height: 13px;
-        }
-
-        .is-filled {
-            color: $warning;
-            fill: currentColor;
-        }
-    }
-
-    .extension-card__signal-text {
-        color: $text-tertiary;
+        -webkit-line-clamp: 2;
     }
 
     .extension-card__footer {
-        padding-top: $space-4;
+        margin-top: auto;
+        padding-top: $space-3;
         border-top: 1px solid $border-subtle;
     }
 
@@ -349,8 +276,8 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: $space-4;
-        padding: $space-4;
+        gap: $space-3;
+        padding: $space-3;
     }
 
     .installed-item__main {
@@ -365,14 +292,14 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 38px;
-        height: 38px;
-        flex: 0 0 38px;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
         border-radius: $radius-lg;
 
         svg {
-            width: 19px;
-            height: 19px;
+            width: 17px;
+            height: 17px;
         }
     }
 
@@ -489,9 +416,7 @@
             flex-direction: column;
         }
 
-        .extension-card__topline,
-        .extension-card__footer,
-        .extension-card__signals {
+        .extension-card__footer {
             align-items: flex-start;
             flex-direction: column;
         }
@@ -527,20 +452,29 @@
         gap: $space-4;
     }
 
-    &__icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 52px;
-        height: 52px;
-        flex: 0 0 52px;
-        border-radius: $radius-lg;
-        color: $accent-primary;
-        background: fade($accent-primary-raw, 12%);
+    // Data-derived gradient banner in the detail modal (hue set inline via
+    // extensionCoverStyle). Wider than the card cover to read as a header.
+    &__cover {
+        display: grid;
+        place-items: center;
+        height: 108px;
+        border-radius: $radius-md;
+        overflow: hidden;
 
-        svg {
-            width: 26px;
-            height: 26px;
+        .extension-card__brand,
+        .extension-card__glyph {
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .extension-card__glyph {
+            width: 46px;
+            height: 46px;
+        }
+
+        .extension-card__logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
         }
     }
 

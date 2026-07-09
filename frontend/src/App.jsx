@@ -373,6 +373,7 @@ function AppRoutes() {
                 <Route path="workspaces/:id/:tab/:section" element={<WorkspaceDetail />} />
                 <Route element={<TabGroupLayout tabs={MARKET_TABS} />}>
                     <Route path="marketplace" element={<Marketplace />} />
+                    <Route path="marketplace/installed" element={<Marketplace />} />
                     <Route path="downloads" element={<Downloads />} />
                 </Route>
                 <Route path="style-guide" element={<StyleGuide />} />
