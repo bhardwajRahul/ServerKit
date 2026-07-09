@@ -2,7 +2,7 @@
   "name": "serverkit-gpu",
   "display_name": "GPU Monitor",
   "version": "1.0.0",
-  "description": "Live NVIDIA GPU metrics — utilization, memory, temperature, power and fan — for servers with a GPU.",
+  "description": "Live NVIDIA GPU metrics covering utilization, memory, temperature, power and fan, for servers with a GPU.",
   "author": "ServerKit",
   "license": "MIT",
   "category": "monitoring",
