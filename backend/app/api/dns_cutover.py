@@ -16,6 +16,15 @@ from app.services.dns_cutover_service import DnsCutoverService, DnsCutoverError
 dns_cutover_bp = Blueprint('dns_cutover', __name__)
 
 
+def _cutover_error(exc):
+    """Render a DnsCutoverError, naming the provider when it carries one so a
+    ``NO_PROVIDER`` tells the operator which provider is unsupported."""
+    body = {'error': exc.message, 'code': exc.code}
+    if getattr(exc, 'provider', None):
+        body['provider'] = exc.provider
+    return jsonify(body), exc.status_code
+
+
 def _current_user():
     from app.models.user import User
     return User.query.get(get_jwt_identity())
@@ -50,7 +59,7 @@ def create_snapshot():
             names=data.get('names'))
         return jsonify(snapshot.to_dict()), 201
     except DnsCutoverError as exc:
-        return jsonify({'error': exc.message, 'code': exc.code}), exc.status_code
+        return _cutover_error(exc)
 
 
 @dns_cutover_bp.route('/snapshots', methods=['GET'])
@@ -91,7 +100,7 @@ def cutover():
             dry_run=bool(data.get('dry_run')))
         return jsonify(result)
     except DnsCutoverError as exc:
-        return jsonify({'error': exc.message, 'code': exc.code}), exc.status_code
+        return _cutover_error(exc)
 
 
 @dns_cutover_bp.route('/verify', methods=['POST'])
@@ -106,7 +115,7 @@ def verify():
             snapshot_id=data.get('snapshot_id'))
         return jsonify(result)
     except DnsCutoverError as exc:
-        return jsonify({'error': exc.message, 'code': exc.code}), exc.status_code
+        return _cutover_error(exc)
 
 
 @dns_cutover_bp.route('/snapshots/<int:snapshot_id>/revert', methods=['POST'])
@@ -122,4 +131,4 @@ def revert(snapshot_id):
         result = DnsCutoverService.revert(snapshot)
         return jsonify(result)
     except DnsCutoverError as exc:
-        return jsonify({'error': exc.message, 'code': exc.code}), exc.status_code
+        return _cutover_error(exc)

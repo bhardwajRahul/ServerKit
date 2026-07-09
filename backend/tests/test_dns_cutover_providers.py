@@ -18,20 +18,16 @@ from app.models.email import DNSProviderConfig
 from app.api import dns_cutover as cutover_api  # noqa: F401 (ensure bp import)
 from app.services.dns_cutover_service import DnsCutoverService
 
-# plan 42 finding D7: the provider-registry cutover path is only partially intact
-# after the recovery rebuild, so this file is skipped until it is completed:
+# plan 42 finding D7 — RESTORED by plan 42 Phase 5:
 #   * ``DnsCutoverService.snapshot(domain, records, provider=, provider_zone_id=)``
-#     — the explicit-records staging classmethod these tests use — is MISSING
-#     (only the server-sourced ``create_snapshot`` survives, and it needs a live
-#     provider client, so it cannot stage a snapshot for the guard tests);
-#   * the 501 ``NO_PROVIDER`` response body does not carry a ``provider`` field
-#     naming the unsupported provider (``_resolve_dns_client`` raises the code but
-#     the API never surfaces the name);
-#   * the successful cutover response is not wrapped under a ``cutover`` key.
-pytestmark = pytest.mark.skip(
-    reason="plan 42 finding D7: hollow feature — DnsCutoverService.snapshot() "
-           "staging classmethod missing; cutover 501 body omits 'provider'; "
-           "success payload not wrapped under 'cutover'")
+#     (the explicit-records staging classmethod, sibling of the server-sourced
+#     ``create_snapshot``) was re-added;
+#   * the 501 ``NO_PROVIDER`` body now carries a ``provider`` field naming the
+#     unsupported provider (``DnsCutoverError.provider`` surfaced by the API).
+# Contract drift kept: the rebuilt ``/cutover`` returns the result UNWRAPPED
+# (``body['success']``/``body['ops']`` — proven by the surviving
+# ``test_dns_cutover_api.py``), NOT under a pre-loss ``cutover`` key, so the
+# success assertion below reads ``body['success']`` to match the live contract.
 
 
 @pytest.fixture
@@ -90,7 +86,7 @@ def test_stubbed_second_provider_flows_through(app, client, admin_headers, monke
     resp = client.post('/api/v1/dns-cutover/cutover', headers=admin_headers,
                        json={'snapshot_id': snap.id, 'target': '5.6.7.8'})
     assert resp.status_code == 200, resp.get_data(as_text=True)
-    assert resp.get_json()['cutover']['success'] is True
+    assert resp.get_json()['success'] is True
     assert ('A', 'example.com', '5.6.7.8') in fake.upserted
 
 

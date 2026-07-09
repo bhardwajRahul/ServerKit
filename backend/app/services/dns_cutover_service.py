@@ -40,11 +40,14 @@ class DnsCutoverError(Exception):
     generic 500.
     """
 
-    def __init__(self, message, status_code=400, code=None):
+    def __init__(self, message, status_code=400, code=None, provider=None):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.code = code
+        # The provider this error is about (surfaced in the API body so a
+        # ``NO_PROVIDER`` names the unsupported provider, not just the code).
+        self.provider = provider
 
 
 class DnsCutoverService:
@@ -71,14 +74,14 @@ class DnsCutoverService:
             named = f' for provider {provider!r}' if provider else ''
             raise DnsCutoverError(
                 f'No connected DNS provider{named} to perform this cutover.',
-                status_code=501, code='NO_PROVIDER')
+                status_code=501, code='NO_PROVIDER', provider=provider)
         try:
             client = get_client(DnsCredential.from_provider_config(config))
         except ValueError:
             raise DnsCutoverError(
                 f'DNS cutover is not supported for provider {config.provider!r} '
                 'yet — connect Cloudflare or perform this change manually.',
-                status_code=501, code='NO_PROVIDER')
+                status_code=501, code='NO_PROVIDER', provider=config.provider)
         return client, config
 
     # ── TTL guidance ─────────────────────────────────────────────────────────
@@ -161,6 +164,34 @@ class DnsCutoverService:
         db.session.add(snapshot)
         db.session.commit()
         logger.info('Captured DNS cutover snapshot %s for %s (%d record(s))',
+                    snapshot.id, domain, len(records))
+        return snapshot
+
+    @classmethod
+    def snapshot(cls, domain, records, provider=None, provider_zone_id=None):
+        """Stage a cutover snapshot from EXPLICIT, caller-supplied records.
+
+        Unlike :meth:`create_snapshot` (server-sourced — reads the live records
+        via the provider client), this stages a snapshot from records the caller
+        already holds, so it needs NO connected provider client at snapshot time:
+        the provider guard fires later, at :meth:`cutover`, through
+        ``_resolve_dns_client`` (so an unsupported provider still stages cleanly
+        and only fails — by name — when the cutover is actually attempted). The
+        provider/zone are remembered on the row so the later cutover can resolve
+        them. Returns the persisted snapshot.
+        """
+        domain = (domain or '').strip().lower().rstrip('.')
+        if not domain:
+            raise DnsCutoverError('A domain is required to snapshot.')
+        records = list(records or [])
+        snapshot = DnsCutoverSnapshot(
+            domain=domain, provider=provider,
+            provider_zone_id=provider_zone_id, status='captured')
+        snapshot.set_records(records)
+        snapshot.set_created_records([])
+        db.session.add(snapshot)
+        db.session.commit()
+        logger.info('Staged DNS cutover snapshot %s for %s (%d record(s))',
                     snapshot.id, domain, len(records))
         return snapshot
 
