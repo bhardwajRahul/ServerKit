@@ -63,6 +63,12 @@ awaiting a stable release:
   now attach to a shared external `serverkit` docker network (created
   idempotently), so a `fromService` host reference resolves cross-app by
   container name at runtime. Static egress IPs remain out of scope (documented).
+- **Appliance tier — reference appliance + adoption hardening** — a runnable
+  4-container real-time-media reference manifest ships at
+  `docs/examples/reference-appliance-media.yaml` and applies end-to-end.
+  `serverkit.yaml` scaffolding now round-trips typed `ports`, a BYO `image`, and
+  disk `size` from a live app, and drift detection tracks raw ports and image
+  alongside the existing surface.
 - **New Service wizard clarity** — each source card now shows a short explainer
   strip when selected (what it does, what to have ready, the next steps), and a
   "Docs" link to the matching serverkit.ai guide (hidden under White Label). The

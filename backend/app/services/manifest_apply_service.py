@@ -193,6 +193,19 @@ class ManifestApplyService:
             expected['healthcheck_path'] = resolved['healthcheck_path']
             observed['healthcheck_path'] = app.healthcheck_path
 
+        # Appliance tier (plan 35): track raw ports + BYO image.
+        declared_ports = resolved.get('ports') or []
+        if declared_ports:
+            from app.services.app_port_service import AppPortService
+            def _pkey(p):
+                return (f'{p.get("host_port")}:{p.get("container_port")}'
+                        f'/{p.get("protocol") or "tcp"}/{p.get("expose") or "public"}')
+            expected['ports'] = sorted(_pkey(p) for p in declared_ports)
+            observed['ports'] = sorted(_pkey(p) for p in AppPortService.get_ports(app))
+        if resolved.get('image'):
+            expected['image'] = resolved['image']
+            observed['image'] = app.docker_image
+
         declared_env = sorted(list(resolved.get('env', {}).keys())
                               + [r['key'] for r in resolved.get('env_refs', [])])
         if declared_env:
