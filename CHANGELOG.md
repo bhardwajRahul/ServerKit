@@ -127,6 +127,25 @@ awaiting a stable release:
   with high fidelity from surviving compiled bytecode, the surviving tests, and
   the plan docs. Backend boots clean, `flask db upgrade` reaches head on a fresh
   DB, and the full test suite is green again.
+- **Recovery parity audit** — a follow-up audit found the recovery rebuild had
+  silently dropped more than the above: because code and its proving tests died
+  *together*, the suite stayed green while whole slices vanished. Restored the
+  Cloudflare Round 2 engine (DNSSEC status, Origin CA issue/install/revoke,
+  redirect & transform rules, the per-zone operations activity ledger, and the
+  per-product token-scope probe), the email-bounce webhook + auto-mute slice,
+  the DNS-cutover explicit-records staging path (a `NO_PROVIDER` now names the
+  provider), the Server **Survey** tab and its (previously 404-ing) API routes,
+  the cron run-history styling, and 18 lost backend test suites. Where a restored
+  test proved its feature still hollow, it is skipped with a reason naming the
+  exact missing symbol so the gap stays visible.
+- **Survey API routes returned 404** — `app/api/survey.py` was defined but never
+  registered after the rebuild; the server-detail Survey tab and management-mode
+  endpoints are reachable again.
+- **Test-count ratchet** — Backend CI now fails if the collected-test count drops
+  below a checked-in floor (`backend/tests/BASELINE_COUNT`). Lowering the floor
+  requires editing that file in the same commit, so a silent test loss (the exact
+  failure mode that hid the recovery gaps above) surfaces as a red X instead of a
+  still-green suite.
 
 ### Removed
 
