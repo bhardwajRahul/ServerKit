@@ -20,6 +20,22 @@ awaiting a stable release:
 
 ### Added
 
+- **New Service is a real three-step wizard, and Templates is one catalog** —
+  `/services/new` was a form-wall that rendered everything at once (a "Ready to
+  Import" rail of placeholder rows, a decorative Connect→Detect→Deploy strip,
+  two boilerplate note boxes). It is now a slim stepper — **Source → Connect →
+  Review** — in one centered column; nothing renders until it has real data, and
+  the `?template=`/`?source=` deep links land preloaded on Connect. Deploy
+  templates are no longer a hardcoded frontend constant: they live in the backend
+  catalog as `kind: repo` YAML entries (starting with AgentSite) that blend into
+  the one Templates grid alongside the 105 one-click templates, each badged
+  **Git repo** vs **One-click**. The Templates page adopts the Marketplace
+  treatment — topbar search + a filter drawer (category, type, sort) with a row
+  of quick category chips — replacing the stacked "Deploy templates" section and
+  the "More +95" chip wall. A new `GET /api/v1/templates/<id>/manifest` inspects
+  a repo template's **public** repository (no clone, no OAuth) for deploy
+  manifests and falls back to the template's declared hints, clearly labeled.
+  The old `#deploy-templates` anchor redirects to the repo-filtered grid.
 - **`serverkit.yaml` — build services from a Dockerfile (`dockerfilePath`)** —
   a manifest service can now declare `dockerfilePath: services/api/Dockerfile`
   as a third image source next to buildpacks and BYO `image:`. This is the

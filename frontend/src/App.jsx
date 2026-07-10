@@ -25,7 +25,7 @@ import FileManager from './pages/FileManager';
 import CronJobs from './pages/CronJobs';
 import Security from './pages/Security';
 import Services from './pages/Services';
-import NewService from './pages/NewService';
+import NewService from './pages/new-service/NewService';
 import ImportWizard from './pages/ImportWizard';
 import Coexistence from './pages/Coexistence';
 import ServiceDetail from './pages/ServiceDetail';
