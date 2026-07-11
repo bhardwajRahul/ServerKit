@@ -561,5 +561,100 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# T17 — migrate-db must forward to the Click verb `db-migrate`. The old code
+# forwarded the wrapper's own name (`migrate-db`), which cli.py never defined,
+# so `serverkit migrate-db` died with "No such command" on every real box.
+# --------------------------------------------------------------------------
+out="$(
+    set -Eeuo pipefail
+    check_installed() { :; }
+    run_cli() { printf 'CLI:%s' "$*"; }
+    cmd_migrate_db 2>&1
+)"
+rc=$?
+if [ "$rc" -eq 0 ] && [ "$out" = "CLI:db-migrate" ]; then
+    ok "migrate-db forwards to the Click verb 'db-migrate'"
+else
+    bad "migrate-db forwarding wrong: rc=$rc out=[$out]"
+fi
+
+# --------------------------------------------------------------------------
+# T18 — panel-CLI forwarding: every Click-only verb must be dispatched (reach
+# run_cli / fail on the missing venv), never rejected as "Unknown command".
+# `completion` is pure output and must succeed anywhere.
+# --------------------------------------------------------------------------
+t="$WORK/t18"; mkdir -p "$t/install"
+unknown=""
+for c in manifest services apps repair login-url support-bundle \
+         db-migrate db-status db-history panel-status panel-doctor; do
+    out="$(SERVERKIT_DIR="$t/install" bash "$CLI" "$c" 2>&1)" || true
+    if printf '%s' "$out" | grep -q 'Unknown command'; then
+        unknown="$unknown $c"
+    fi
+done
+out_comp="$(SERVERKIT_DIR="$t/install" bash "$CLI" completion 2>&1)"
+rc_comp=$?
+if [ -z "$unknown" ] && [ "$rc_comp" -eq 0 ] \
+   && printf '%s' "$out_comp" | grep -q 'complete -F _serverkit serverkit'; then
+    ok "panel-CLI verbs are all dispatched; completion prints a complete(1) script"
+else
+    bad "forwarding gaps:[$unknown] completion rc=$rc_comp"
+fi
+
+# --------------------------------------------------------------------------
+# T19 — parity guards (the drift that hid the migrate-db bug for months):
+#  (a) every top-level Click verb in backend/cli.py is reachable from the
+#      wrapper — as itself, as panel-<verb>, or via a documented exception;
+#  (b) every wrapper dispatch label is offered by `serverkit completion`.
+# --------------------------------------------------------------------------
+cli_cmds="$(awk '
+    /^@cli\.(command|group)\(/ {
+        if (match($0, /\047[a-z0-9-]+\047/)) {
+            print substr($0, RSTART + 1, RLENGTH - 2)
+        } else {
+            pending = 1
+        }
+        next
+    }
+    pending && /^def / {
+        name = $2
+        sub(/\(.*/, "", name)
+        gsub(/_/, "-", name)
+        print name
+        pending = 0
+    }
+' "$SCRIPT_DIR/../../backend/cli.py")"
+dispatch_labels="$(sed -n '/^case "\${1:-help}" in/,/^esac$/p' "$CLI" \
+    | sed -n 's/^[[:space:]]*\([a-z][a-z0-9|-]*\))$/\1/p' | tr '|' '\n')"
+missing=""
+for c in $cli_cmds; do
+    case "$c" in
+        drop-db) continue ;;   # deliberately unexposed (factory-reset is the supported flow)
+    esac
+    if ! printf '%s\n' "$dispatch_labels" | grep -qx "$c" \
+       && ! printf '%s\n' "$dispatch_labels" | grep -qx "panel-$c"; then
+        missing="$missing $c"
+    fi
+done
+if [ -n "$cli_cmds" ] && [ -z "$missing" ]; then
+    ok "every backend/cli.py verb is reachable through the wrapper dispatch"
+else
+    bad "cli.py verbs missing from the wrapper dispatch:[$missing]"
+fi
+comp_words="$(cmd_completion | sed -n 's/^ *commands="\(.*\)"$/\1/p')"
+not_completed=""
+for label in $dispatch_labels; do
+    case "$label" in -*) continue ;; esac
+    if ! printf ' %s ' "$comp_words" | grep -qF " $label "; then
+        not_completed="$not_completed $label"
+    fi
+done
+if [ -n "$comp_words" ] && [ -z "$not_completed" ]; then
+    ok "every dispatch label is offered by 'serverkit completion'"
+else
+    bad "dispatch labels missing from completion:[$not_completed]"
+fi
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]
