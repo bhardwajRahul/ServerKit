@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ShieldAlert } from 'lucide-react';
 import api from '../../../services/api';
+import useSettingFocus from '../../../hooks/useSettingFocus';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useToast } from '../../../contexts/ToastContext';
 import {
@@ -20,7 +21,23 @@ import {
 import ProviderCard from './ProviderCard';
 import ConnectProviderModal from './ConnectProviderModal';
 
+// The settings-index deep-link id each category section is landable from. The
+// cards are rendered by ProviderCard (presentational, no ref), so the flash
+// lands on the section container. The source section carries `connections-github`
+// (its headline); `connections-gitlab` still deep-links to the tab correctly.
+// The `chat` category has no settings-index entry, so it is left unregistered.
+const CATEGORY_FOCUS_ID = {
+    source: 'connections-github',
+    infra: 'connections-cloud-provider',
+    registry: 'connections-container-registry',
+    dns: 'connections-dns-provider',
+    registrar: 'connections-registrar',
+    email: 'connections-email-relay',
+    storage: 'connections-storage',
+};
+
 export default function ConnectionsHub() {
+    const register = useSettingFocus();
     const { isAdmin } = useAuth();
     const toast = useToast();
 
@@ -470,8 +487,14 @@ export default function ConnectionsHub() {
                 CONNECTION_CATEGORIES.map((cat) => {
                     const providers = CONNECTION_PROVIDERS.filter((p) => p.category === cat.key);
                     if (!providers.length) return null;
+                    const focusId = CATEGORY_FOCUS_ID[cat.key];
                     return (
-                        <section key={cat.key} className="connections-hub__category">
+                        <section
+                            key={cat.key}
+                            {...(focusId
+                                ? register(focusId, 'connections-hub__category')
+                                : { className: 'connections-hub__category' })}
+                        >
                             <header className="connections-hub__category-head">
                                 <h3>{cat.label}</h3>
                                 <p>{cat.blurb}</p>
