@@ -639,7 +639,7 @@ cmd_unlock_user() {
 
 cmd_list_users() {
     check_installed
-    run_cli list-users
+    run_cli list-users "$@"
 }
 
 cmd_make_admin() {
@@ -827,7 +827,7 @@ cmd_deploy_template() {
 
 cmd_list_servers() {
     check_installed
-    run_cli list-servers
+    run_cli list-servers "$@"
 }
 
 cmd_deployment_status() {
@@ -838,12 +838,13 @@ cmd_deployment_status() {
 
 cmd_list_apps() {
     check_installed
-    # Pass --all flag if provided
-    if [ "$1" = "--all" ] || [ "$1" = "-a" ]; then
-        run_cli list-apps --all
-    else
-        run_cli list-apps
-    fi
+    # Forward flags verbatim (--all, --json, …); -a stays as the legacy alias.
+    local arg args=()
+    for arg in "$@"; do
+        [ "$arg" = "-a" ] && arg="--all"
+        args+=("$arg")
+    done
+    run_cli list-apps "${args[@]}"
 }
 
 cmd_start_app() {
@@ -1445,7 +1446,8 @@ case "${1:-help}" in
         cmd_unlock_user
         ;;
     list-users)
-        cmd_list_users
+        shift
+        cmd_list_users "$@"
         ;;
     make-admin)
         cmd_make_admin
@@ -1505,13 +1507,15 @@ case "${1:-help}" in
         cmd_deploy_template "$@"
         ;;
     list-servers)
-        cmd_list_servers
+        shift
+        cmd_list_servers "$@"
         ;;
     deployment-status)
         cmd_deployment_status "$@"
         ;;
     list-apps)
-        cmd_list_apps "$2"
+        shift
+        cmd_list_apps "$@"
         ;;
     start-app)
         cmd_start_app "$2"

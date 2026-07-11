@@ -656,5 +656,45 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# T20 — end-to-end flag passthrough: flags typed after a wrapper command must
+# reach cli.py verbatim (the DO-box live test caught `list-apps --json`
+# silently dropping --json in cmd_list_apps' hand-rolled flag mapping).
+# A fake venv with a recording `python` stub captures exactly what run_cli
+# would execute, through the real executed-mode dispatch.
+# --------------------------------------------------------------------------
+t="$WORK/t20"; mkdir -p "$t/install/backend" "$t/venv/bin"
+printf 'export PATH="%s:$PATH"\n' "$t/venv/bin" > "$t/venv/bin/activate"
+cat > "$t/venv/bin/python" <<'EOF'
+#!/usr/bin/env bash
+printf 'ARGS:%s\n' "$*"
+EOF
+chmod +x "$t/venv/bin/python"
+run_wrapped() {
+    SERVERKIT_DIR="$t/install" SERVERKIT_VENV_DIR="$t/venv" bash "$CLI" "$@" 2>&1
+}
+t20_fail=""
+check_args() {
+    local expected="$1"; shift
+    local out
+    out="$(run_wrapped "$@")" || true
+    printf '%s' "$out" | grep -qF "ARGS:cli.py $expected" \
+        || t20_fail="$t20_fail [$*→$out]"
+}
+check_args 'list-apps --json'                      list-apps --json
+check_args 'list-apps --all'                       list-apps -a
+check_args 'list-users --json'                     list-users --json
+check_args 'list-servers --json'                   list-servers --json
+check_args 'db-migrate'                            migrate-db
+check_args 'manifest plan --project 1 --json'      manifest plan --project 1 --json
+check_args 'services list --json'                  services list --json
+check_args 'status --json'                         panel-status --json
+check_args 'doctor --repair --yes'                 panel-doctor --repair --yes
+if [ -z "$t20_fail" ]; then
+    ok "executed-mode flag passthrough: wrapper commands reach cli.py verbatim"
+else
+    bad "flags lost between wrapper and cli.py:$t20_fail"
+fi
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]
