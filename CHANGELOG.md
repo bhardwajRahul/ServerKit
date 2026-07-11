@@ -20,6 +20,18 @@ awaiting a stable release:
 
 ### Added
 
+- **One-click GitHub setup (GitHub App manifest flow)** — connecting GitHub no
+  longer means hand-registering an OAuth app and pasting a client id + secret.
+  An admin clicks **Set up in one click** in Settings → Connections; ServerKit
+  hands GitHub an app *manifest*, the admin confirms once on github.com, and
+  GitHub returns freshly-minted credentials that are stored **locally on the
+  server** (client id/secret in settings, private key encrypted) — nothing
+  secret ships in the open-source build. Setup then chains straight into the
+  app's install screen, which grants repo access and authorizes in one hop. The
+  connect flow routes through the app install URL, and repositories are listed
+  per-installation (GitHub Apps don't use `/user/repos`). Bringing your own
+  OAuth app still works, tucked under an "Advanced" disclosure. New endpoints:
+  `GET/POST /api/v1/source-connections/admin/github/app-manifest[/complete]`.
 - **New Service is a real three-step wizard, and Templates is one catalog** —
   `/services/new` was a form-wall that rendered everything at once (a "Ready to
   Import" rail of placeholder rows, a decorative Connect→Detect→Deploy strip,

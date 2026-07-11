@@ -104,6 +104,30 @@ export default function ConnectionsHub() {
         }
     }, [toast, loadData]);
 
+    // One-click GitHub App setup: fetch the manifest, then POST it to github.com
+    // via an auto-submitted form (GitHub only accepts the manifest as a form
+    // field). GitHub redirects back to the callback which finishes the setup.
+    const onSetupGithubApp = useCallback(async () => {
+        try {
+            const baseUrl = window.location.origin;
+            const redirectUri = `${baseUrl}/connections/github-app/callback`;
+            const { manifest, state, post_url } = await api.getGithubAppManifest(baseUrl, redirectUri);
+            sessionStorage.setItem('sourceConnectionReturnTo', '/settings/connections');
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `${post_url}?state=${encodeURIComponent(state)}`;
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'manifest';
+            input.value = JSON.stringify(manifest);
+            form.appendChild(input);
+            document.body.appendChild(form);
+            form.submit();
+        } catch (err) {
+            toast.error(err.message || 'Failed to start GitHub App setup');
+        }
+    }, [toast]);
+
     const onSaveSourceConfig = useCallback(async (provider, config) => {
         try {
             if (provider.provider === 'gitlab') await api.updateGitlabSourceConfig(config);
@@ -482,6 +506,7 @@ export default function ConnectionsHub() {
                 onConnectSource={onConnectSource}
                 onDisconnectSource={onDisconnectSource}
                 onSaveSourceConfig={onSaveSourceConfig}
+                onSetupGithubApp={onSetupGithubApp}
                 onAddDns={onAddDns}
                 onRemoveDns={onRemoveDns}
                 onTestDns={onTestDns}
