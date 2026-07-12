@@ -1,0 +1,363 @@
+/* Automations (tramo) extension — layout-only styles. Colours, typography,
+   spacing and controls all inherit from the host design system (card,
+   sk-dtable, sk-info-row, Pill, empty-state, form controls). Plugin SCSS is
+   compiled in isolation, so we lean on CSS custom properties (var(--…)) and
+   neutral rgba tints — never SCSS $variables, which aren't in scope here.
+   We never restyle tramo's own .tr-* classes; the editor owns those. */
+
+.tramo-page {
+    .tramo-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .tramo-row-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: flex-end;
+    }
+
+    .tramo-truncate {
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* Pending-approval strip */
+    .tramo-approvals {
+        margin-bottom: 16px;
+    }
+
+    .tramo-approval {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.16);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        &__info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+    }
+
+    /* Unsupported / Docker-required note */
+    .tramo-note {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: var(--radius, 8px);
+        border: 1px solid rgba(234, 179, 8, 0.35);
+        background: rgba(234, 179, 8, 0.08);
+        font-size: 13px;
+        line-height: 1.5;
+
+        &__detail {
+            margin-top: 8px;
+            font-family: var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+            font-size: 12px;
+            opacity: 0.75;
+            word-break: break-word;
+        }
+    }
+
+    /* Engine host actions */
+    .tramo-host-actions {
+        display: flex;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .tramo-install {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+
+        .form-group {
+            margin: 0;
+            min-width: 180px;
+        }
+    }
+
+    /* Settings fields */
+    .tramo-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .tramo-field {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.14);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        &__label {
+            min-width: 0;
+
+            p {
+                margin: 2px 0 0;
+            }
+        }
+
+        &__control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            input {
+                width: 140px;
+            }
+        }
+    }
+
+    /* Pack secrets */
+    .tramo-secret-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 12px 0;
+    }
+
+    .tramo-secret {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm, 6px);
+        background: rgba(128, 128, 128, 0.06);
+    }
+
+    .tramo-secret-add {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid rgba(128, 128, 128, 0.14);
+
+        .form-group {
+            margin: 0;
+            min-width: 200px;
+            flex: 1;
+        }
+    }
+
+    /* Enable toggle (also used in the settings events-bridge field) */
+    .tramo-toggle {
+        --tramo-toggle-w: 38px;
+        --tramo-toggle-h: 22px;
+        position: relative;
+        width: var(--tramo-toggle-w);
+        height: var(--tramo-toggle-h);
+        border-radius: 999px;
+        border: 0;
+        cursor: pointer;
+        padding: 0;
+        background: rgba(128, 128, 128, 0.35);
+        transition: background 0.15s ease;
+
+        &__knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: calc(var(--tramo-toggle-h) - 4px);
+            height: calc(var(--tramo-toggle-h) - 4px);
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.15s ease;
+        }
+
+        &--on {
+            background: var(--accent-bright, #3b82f6);
+
+            .tramo-toggle__knob {
+                transform: translateX(calc(var(--tramo-toggle-w) - var(--tramo-toggle-h)));
+            }
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    /* Template picker (inside the modal) */
+    .tramo-template-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .tramo-template {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        text-align: left;
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: var(--radius, 8px);
+        border: 1px solid var(--border, rgba(128, 128, 128, 0.3));
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        transition: border-color 0.15s ease, background 0.15s ease;
+
+        &:hover {
+            border-color: var(--accent-bright, #3b82f6);
+            background: rgba(128, 128, 128, 0.06);
+        }
+
+        &:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        &__name {
+            font-weight: 600;
+        }
+
+        &__desc {
+            font-size: 12.5px;
+            opacity: 0.7;
+        }
+    }
+}
+
+/* ── Full-bleed editor page (route automations/edit/:slug, layout "full") ── */
+.tramo-editor-page {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-body, transparent);
+
+    &__bar {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+        background: var(--bg-card, transparent);
+    }
+
+    &__left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    &__name {
+        font-weight: 600;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 320px;
+    }
+
+    &__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    &__body {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+    }
+}
+
+/* Save-state indicator in the editor top strip */
+.tramo-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12.5px;
+
+    &--busy { color: var(--text-dim, #9aa0a6); }
+    &--ok { color: var(--green, #22c55e); }
+    &--err { color: var(--red, #ef4444); }
+    &--idle { color: var(--text-dim, #9aa0a6); opacity: 0.7; }
+}
+
+.tramo-spin {
+    animation: tramo-spin 0.9s linear infinite;
+}
+
+@keyframes tramo-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tramo-spin { animation: none; }
+}
+
+/* ── Editor composition: canvas fills, inspector rail is fixed-width ── */
+.tramo-editor {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    min-height: 0;
+
+    &__canvas {
+        position: relative;
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    &__rail {
+        flex-shrink: 0;
+        width: 340px;
+        min-height: 0;
+        overflow-y: auto;
+        border-left: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+        background: var(--bg-card, transparent);
+    }
+
+    &__loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    @media (max-width: 768px) {
+        &__rail { width: 260px; }
+    }
+}

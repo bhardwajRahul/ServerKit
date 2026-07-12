@@ -41,6 +41,10 @@ class TramoWorkflow(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     # Stamped when this workflow was last materialized + deployed to the engine.
     deployed_at = db.Column(db.DateTime, nullable=True)
+    # doc_version captured at the last deploy. Dirty detection compares this to
+    # the live doc_version -- a version counter, not a timestamp, so the deploy
+    # commit's own updated_at bump can't make a just-deployed row look dirty.
+    deployed_version = db.Column(db.Integer, nullable=True)
 
     def get_doc(self):
         """Return the parsed WorkflowDoc (empty dict if unset/invalid)."""
@@ -61,12 +65,17 @@ class TramoWorkflow(db.Model):
             self.doc = json.dumps(doc)
 
     def is_dirty(self):
-        """True when the doc changed since the last deploy (needs redeploy)."""
-        if not self.deployed_at:
-            return self.enabled
-        if not self.updated_at:
+        """True when an enabled workflow needs a (re)deploy.
+
+        Dirty when it has never been deployed or its doc changed since the last
+        deploy (``doc_version`` moved past ``deployed_version``). Disabled
+        workflows are never dirty -- they materialize to nothing.
+        """
+        if not self.enabled:
             return False
-        return self.updated_at > self.deployed_at
+        if not self.deployed_at:
+            return True
+        return (self.doc_version or 1) > (self.deployed_version or 0)
 
     def to_dict(self, include_doc=False):
         out = {

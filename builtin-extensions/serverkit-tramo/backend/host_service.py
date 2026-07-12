@@ -121,6 +121,13 @@ class TramoHostService:
         return decrypt_secret_safe(value)
 
     @classmethod
+    def _is_windows(cls):
+        """Windows (dev) has no Docker engine for us. Single testable seam so
+        tests can force either platform without touching the global ``os.name``
+        (which would break ``pathlib``)."""
+        return os.name == 'nt'
+
+    @classmethod
     def host_port(cls):
         """Loopback host port the container's API is published on."""
         try:
@@ -169,7 +176,7 @@ class TramoHostService:
     @classmethod
     def _docker(cls, args, timeout=DOCKER_TIMEOUT):
         """Run ``docker <args>`` and return a normalized result dict. Never raises."""
-        if os.name == 'nt':
+        if cls._is_windows():
             return {'success': False,
                     'error': 'The Automations extension is not supported on Windows.'}
         if not is_command_available('docker'):
@@ -201,7 +208,7 @@ class TramoHostService:
         Returns ``{'success': True, 'data': <json-or-None>, 'status_code': int}``
         or an error dict. Auth is Bearer with the generated API key. Never raises.
         """
-        if os.name == 'nt':
+        if cls._is_windows():
             return {'success': False,
                     'error': 'The Automations extension is not supported on Windows.'}
         key = cls.api_key()
@@ -241,7 +248,7 @@ class TramoHostService:
     @classmethod
     def is_installed(cls):
         """True when the managed container exists (running or not)."""
-        if os.name == 'nt':
+        if cls._is_windows():
             return False
         res = cls._docker(['inspect', '--format', '{{.State.Running}}',
                            CONTAINER_NAME], timeout=20)
@@ -268,7 +275,7 @@ class TramoHostService:
             'api': f'{API_HOST}:{cls.host_port()}',
             'docs_url': DOCS_URL,
         }
-        if os.name == 'nt':
+        if cls._is_windows():
             status['error'] = 'The Automations extension is not supported on Windows.'
             return status
         res = cls._docker(['inspect', '--format', '{{.State.Running}}',
@@ -311,7 +318,7 @@ class TramoHostService:
         * Pack credentials + the scoped panel call-back key (SERVERKIT_URL /
           SERVERKIT_API_KEY) injected as container env.
         """
-        if os.name == 'nt':
+        if cls._is_windows():
             return {'success': False,
                     'error': 'The Automations extension is not supported on Windows.'}
         if cls.is_installed():
@@ -383,7 +390,7 @@ class TramoHostService:
     @classmethod
     def uninstall(cls, keep_data=True):
         """Remove the container; optionally delete the data directory."""
-        if os.name == 'nt':
+        if cls._is_windows():
             return {'success': False,
                     'error': 'The Automations extension is not supported on Windows.'}
         res = cls._docker(['rm', '-f', CONTAINER_NAME])

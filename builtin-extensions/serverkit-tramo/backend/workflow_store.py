@@ -200,5 +200,6 @@ class WorkflowStore:
         now = datetime.utcnow()
         for wf in TramoWorkflow.query.filter_by(enabled=True).all():
             wf.deployed_at = now
+            wf.deployed_version = wf.doc_version
         db.session.commit()
         return {'success': True, 'message': 'Automations deployed', 'materialized': summary}
