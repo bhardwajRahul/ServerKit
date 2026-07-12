@@ -563,9 +563,13 @@ const K8sPage = () => {
     // ── Page shell ──
     if (loading) {
         return (
-            <div className="page-container k8s-page">
+            <div className="page-container page-container--full-bleed sk-tabgroup k8s-page">
                 <PageTopbar icon={<ShipWheel size={18} />} title="Kubernetes" />
-                <EmptyState loading title="Loading Kubernetes..." />
+                <div className="sk-tabgroup__content">
+                    <div className="sk-tabgroup__inner">
+                        <EmptyState loading title="Loading Kubernetes..." />
+                    </div>
+                </div>
             </div>
         );
     }
@@ -574,11 +578,10 @@ const K8sPage = () => {
     const needsCluster = activeTab !== 'clusters' && clusters.length === 0;
 
     return (
-        <div className="page-container k8s-page">
+        <div className="page-container page-container--full-bleed sk-tabgroup k8s-page">
             <PageTopbar
                 icon={<ShipWheel size={18} />}
                 title="Kubernetes"
-                meta={<>kubectl · clusters · workloads</>}
                 tabs={topbarTabs}
                 actions={
                     <div className="k8s-topbar-actions">
@@ -594,39 +597,43 @@ const K8sPage = () => {
                 }
             />
 
-            {!kubectlAvailable && (
-                <div className="card k8s-warn">
-                    <div className="card-body">
-                        <strong>kubectl is not installed on the panel host.</strong> You can still add and
-                        store cluster connections, but live cluster data and actions are unavailable until
-                        <code> kubectl</code> is on the panel host PATH.
-                    </div>
-                </div>
-            )}
-
-            {needsCluster ? (
-                <div className="card">
-                    <div className="card-body">
-                        <EmptyState icon={ShipWheel} title="No clusters connected"
-                            description="Add a cluster on the Clusters tab by pasting its kubeconfig." />
-                        <div className="k8s-center">
-                            <Button variant="default" size="sm" onClick={() => navigate('/k8s/clusters')}>
-                                <Plus size={14} /> Go to Clusters
-                            </Button>
+            <div className="sk-tabgroup__content">
+                <div className="sk-tabgroup__inner">
+                    {!kubectlAvailable && (
+                        <div className="card k8s-warn">
+                            <div className="card-body">
+                                <strong>kubectl is not installed on the panel host.</strong> You can still add and
+                                store cluster connections, but live cluster data and actions are unavailable until
+                                <code> kubectl</code> is on the panel host PATH.
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {needsCluster ? (
+                        <div className="card">
+                            <div className="card-body">
+                                <EmptyState icon={ShipWheel} title="No clusters connected"
+                                    description="Add a cluster on the Clusters tab by pasting its kubeconfig." />
+                                <div className="k8s-center">
+                                    <Button variant="default" size="sm" onClick={() => navigate('/k8s/clusters')}>
+                                        <Plus size={14} /> Go to Clusters
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {activeTab === 'overview' && renderOverview()}
+                            {activeTab === 'workloads' && renderWorkloads()}
+                            {activeTab === 'pods' && renderPods()}
+                            {activeTab === 'services' && renderServices()}
+                            {activeTab === 'nodes' && renderNodes()}
+                            {activeTab === 'apply' && renderApply()}
+                            {activeTab === 'clusters' && renderClusters()}
+                        </>
+                    )}
                 </div>
-            ) : (
-                <>
-                    {activeTab === 'overview' && renderOverview()}
-                    {activeTab === 'workloads' && renderWorkloads()}
-                    {activeTab === 'pods' && renderPods()}
-                    {activeTab === 'services' && renderServices()}
-                    {activeTab === 'nodes' && renderNodes()}
-                    {activeTab === 'apply' && renderApply()}
-                    {activeTab === 'clusters' && renderClusters()}
-                </>
-            )}
+            </div>
 
             {/* Add cluster modal */}
             <Modal open={addClusterOpen} onClose={() => setAddClusterOpen(false)} title="Add Kubernetes cluster">
