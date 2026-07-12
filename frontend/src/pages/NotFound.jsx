@@ -1,0 +1,57 @@
+import { useLocation, useNavigate } from 'react-router-dom';
+import { FileQuestion, LayoutDashboard, Blocks } from 'lucide-react';
+import { PageTopbar } from '@/components/ds';
+import { Button } from '@/components/ui/button';
+import EmptyState from '@/components/EmptyState';
+import { useContributions } from '@/plugins/contributions';
+
+// Catch-all route (App.jsx `path="*"`). Reached for a genuinely unknown URL and,
+// importantly, for an extension route whose extension isn't installed/active
+// (that route is never registered, so React Router falls through to here instead
+// of rendering a blank page).
+//
+// Contributed routes load asynchronously from /api/v1/plugins/contributions, so
+// on a hard refresh straight onto an *installed* extension route this component
+// can mount for a beat before the route registers. We key off the contributions
+// `__ready` flag to show a loading skeleton until then, and only show the real
+// 404 once we know the route set is complete — no "Not found" flash.
+export default function NotFound() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { __ready } = useContributions();
+
+    if (!__ready) {
+        return (
+            <div className="page-container">
+                <EmptyState loading title="Loading" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="page-container">
+            <PageTopbar title="Page not found" />
+            <EmptyState
+                icon={FileQuestion}
+                title="Page not found"
+                description={
+                    `We couldn't find ${location.pathname}. It may have moved, or it `
+                    + `belongs to an extension that isn't installed. Check the `
+                    + `Marketplace to install it.`
+                }
+                action={(
+                    <div className="not-found__actions">
+                        <Button onClick={() => navigate('/')}>
+                            <LayoutDashboard size={16} />
+                            Go to dashboard
+                        </Button>
+                        <Button variant="outline" onClick={() => navigate('/marketplace')}>
+                            <Blocks size={16} />
+                            Browse Marketplace
+                        </Button>
+                    </div>
+                )}
+            />
+        </div>
+    );
+}

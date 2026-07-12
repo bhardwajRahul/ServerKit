@@ -205,6 +205,9 @@ export function refreshContributions() {
             // built against an incompatible SDK before fetching it (plan 32 #1).
             await loadRuntimeFrontends(
                 merged.frontends, merged.panel_sdk_version || merged.sdk_version);
+            // Mark the envelope as loaded so consumers (e.g. the NotFound page)
+            // can tell "contributions still loading" from "genuinely no route".
+            merged.__ready = true;
             notify(merged);
             return merged;
         })
@@ -214,6 +217,7 @@ export function refreshContributions() {
             // manifest baked into this frontend build instead of leaving
             // contributed routes blank.
             const fallback = normalizeContributions(getBuildTimeContributions());
+            fallback.__ready = true;
             notify(fallback);
             return fallback;
         });

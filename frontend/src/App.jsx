@@ -63,6 +63,7 @@ import Marketplace from './pages/Marketplace';
 import Vaults from './pages/Vaults';
 import Webhooks from './pages/Webhooks';
 import StyleGuide from './pages/StyleGuide';
+import NotFound from './pages/NotFound';
 import AppMap from './pages/AppMap';
 import Documentation from './pages/Documentation';
 import Deployments from './pages/Deployments';
@@ -449,6 +450,10 @@ function AppRoutes() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/:tab" element={<Settings />} />
                 {dashboardRoutes}
+                {/* Catch-all: an unknown URL, or an extension route whose
+                    extension isn't installed (never registered above). Renders
+                    inside the dashboard chrome instead of a blank page. */}
+                <Route path="*" element={<NotFound />} />
             </Route>
         </Routes>
     );
