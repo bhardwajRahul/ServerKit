@@ -15,6 +15,28 @@
       "version": "1.0.0",
       "frontend_entry": "",
       "path": "serverkit-cloudflare-ops"
+    },
+    {
+      "name": "serverkit-tramo",
+      "slug": "serverkit-tramo",
+      "display_name": "Automations",
+      "version": "1.0.0",
+      "frontend_entry": "",
+      "path": "serverkit-tramo",
+      "styles": [
+        "plugins/serverkit-tramo/styles/tramo-automations.scss"
+      ]
+    },
+    {
+      "name": "serverkit-k8s",
+      "slug": "serverkit-k8s",
+      "display_name": "Kubernetes",
+      "version": "1.0.0",
+      "frontend_entry": "",
+      "path": "serverkit-k8s",
+      "styles": [
+        "plugins/serverkit-k8s/styles/k8s.scss"
+      ]
     }
   ]
 }
