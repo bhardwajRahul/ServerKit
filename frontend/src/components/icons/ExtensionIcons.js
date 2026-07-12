@@ -39,8 +39,12 @@ const KEYWORD_RULES = [
     { keys: ['gitea', 'forgejo', 'git'], icon: git },
     { keys: ['gpu', 'nvidia', 'cuda'], icon: gpu },
     { keys: ['wireguard', 'vpn', 'tunnel', 'remote'], icon: vpn },
-    { keys: ['mailserver', 'mail-relay', 'relay'], icon: mailserver },
-    { keys: ['mail', 'email', 'smtp', 'imap'], icon: mail },
+    // Keep the two mail stacks visually distinct: the Postfix/Dovecot
+    // "Email Server" gets the envelope, the Stalwart "Mail Server" gets the
+    // server rack. 'email' must be matched before the bare 'mail' rule (the
+    // string 'email' contains 'mail').
+    { keys: ['email', 'smtp', 'imap', 'postfix', 'dovecot'], icon: mail },
+    { keys: ['mailserver', 'mail-relay', 'relay', 'stalwart', 'mail'], icon: mailserver },
     { keys: ['backup', 'restore', 'snapshot', 'sync', 'import', 'migrate'], icon: backup },
     { keys: ['crowdsec', 'fail2ban', 'security', 'firewall', 'waf', 'cve'], icon: security },
     { keys: ['dns', 'domain', 'network'], icon: network },
