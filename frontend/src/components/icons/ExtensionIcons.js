@@ -13,6 +13,8 @@ import extensions from '../../assets/extension-icons/extensions.png';
 import git from '../../assets/extension-icons/git.png';
 import gpu from '../../assets/extension-icons/gpu.png';
 import hosting from '../../assets/extension-icons/hosting.png';
+import k8s from '../../assets/extension-icons/k8s.png';
+import wordpress from '../../assets/extension-icons/wordpress.png';
 import mail from '../../assets/extension-icons/mail.png';
 import mailserver from '../../assets/extension-icons/mailserver.png';
 import monitor from '../../assets/extension-icons/monitor.png';
@@ -35,6 +37,8 @@ const KEYWORD_RULES = [
     // Faro ships its own illustrated lighthouse cover; keep it ahead of the
     // generic 'remote' rule so 'serverkit-faro' resolves here.
     { keys: ['faro'], icon: faro },
+    { keys: ['k8s', 'kubernetes', 'kubectl', 'kube'], icon: k8s },
+    { keys: ['wordpress', 'wp'], icon: wordpress },
     { keys: ['cloudflare'], icon: cloudflare },
     { keys: ['gitea', 'forgejo', 'git'], icon: git },
     { keys: ['gpu', 'nvidia', 'cuda'], icon: gpu },
