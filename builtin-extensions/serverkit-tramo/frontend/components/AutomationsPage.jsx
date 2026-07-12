@@ -133,6 +133,7 @@ const AutomationsPage = () => {
     const [host, setHost] = useState(null);
     const [settings, setSettings] = useState(null);
     const [settingsLoading, setSettingsLoading] = useState(false);
+    const [settingsSection, setSettingsSection] = useState('engine');
     const [installPort, setInstallPort] = useState('');
     const [newSecret, setNewSecret] = useState({ name: '', value: '' });
     const [hostPortDraft, setHostPortDraft] = useState('');
@@ -671,20 +672,21 @@ const AutomationsPage = () => {
         </>
     );
 
+    const SETTINGS_SECTIONS = [
+        { id: 'engine', label: 'Engine', Icon: Server },
+        { id: 'general', label: 'Events & port', Icon: Zap },
+        { id: 'secrets', label: 'Pack secrets', Icon: KeyRound },
+    ];
+
     const renderSettings = () => {
         const state = host?.state || 'not_installed';
         const installed = !!host?.installed;
         const notSupported = !installed && !!host?.error;
-        return (
-            <>
+
+        const engineCard = (
                 <div className="card">
                     <div className="card-header">
                         <h3><Server size={16} /> Automation engine</h3>
-                        <div className="card-actions">
-                            <Button variant="outline" size="sm" onClick={loadSettings} disabled={settingsLoading}>
-                                <RefreshCw size={14} /> Refresh
-                            </Button>
-                        </div>
                     </div>
                     <div className="card-body">
                         {settingsLoading && !host ? <EmptyState loading title="Loading engine status..." /> : (
@@ -766,84 +768,109 @@ const AutomationsPage = () => {
                         )}
                     </div>
                 </div>
+        );
 
-                <div className="card">
-                    <div className="card-header"><h3>Engine settings</h3></div>
-                    <div className="card-body tramo-settings">
-                        <div className="tramo-field">
-                            <div className="tramo-field__label">
-                                <Label>Events bridge</Label>
-                                <p className="text-muted">Forward panel events to tramo so workflows can react to them.</p>
-                            </div>
-                            <button
-                                type="button"
-                                className={`tramo-toggle${settings?.events_bridge_enabled ? ' tramo-toggle--on' : ''}`}
-                                onClick={handleToggleBridge}
-                                disabled={busy}
-                                aria-pressed={!!settings?.events_bridge_enabled}
-                            >
-                                <span className="tramo-toggle__knob" />
-                            </button>
+        const generalCard = (
+            <div className="card">
+                <div className="card-header"><h3><Zap size={16} /> Events &amp; port</h3></div>
+                <div className="card-body tramo-settings">
+                    <div className="tramo-field">
+                        <div className="tramo-field__label">
+                            <Label>Events bridge</Label>
+                            <p className="text-muted">Forward panel events to tramo so workflows can react to them.</p>
                         </div>
-                        <div className="tramo-field tramo-field--inline">
-                            <div className="tramo-field__label">
-                                <Label>Host port</Label>
-                                <p className="text-muted">Port the tramo container is published on.</p>
-                            </div>
-                            <div className="tramo-field__control">
-                                <Input type="number" value={hostPortDraft} onChange={(e) => setHostPortDraft(e.target.value)} />
-                                <Button variant="secondary" size="sm" onClick={handleSaveHostPort} disabled={busy}>Save</Button>
-                            </div>
+                        <button
+                            type="button"
+                            className={`tramo-toggle${settings?.events_bridge_enabled ? ' tramo-toggle--on' : ''}`}
+                            onClick={handleToggleBridge}
+                            disabled={busy}
+                            aria-pressed={!!settings?.events_bridge_enabled}
+                        >
+                            <span className="tramo-toggle__knob" />
+                        </button>
+                    </div>
+                    <div className="tramo-field tramo-field--inline">
+                        <div className="tramo-field__label">
+                            <Label>Host port</Label>
+                            <p className="text-muted">Port the tramo container is published on.</p>
+                        </div>
+                        <div className="tramo-field__control">
+                            <Input type="number" value={hostPortDraft} onChange={(e) => setHostPortDraft(e.target.value)} />
+                            <Button variant="secondary" size="sm" onClick={handleSaveHostPort} disabled={busy}>Save</Button>
                         </div>
                     </div>
                 </div>
+            </div>
+        );
 
-                <div className="card sec-flush">
-                    <div className="card-header">
-                        <h3><KeyRound size={16} /> Pack secrets</h3>
-                    </div>
-                    <div className="card-body">
-                        <p className="text-muted">
-                            Credentials integration packs need (API keys, tokens). Values are write-only — they are
-                            stored encrypted and never shown again after saving.
-                        </p>
-                        {(settings?.pack_secret_names?.length ?? 0) === 0 ? (
-                            <p className="text-muted">No pack secrets set yet.</p>
-                        ) : (
-                            <div className="tramo-secret-list">
-                                {settings.pack_secret_names.map((name) => (
-                                    <div className="tramo-secret" key={name}>
-                                        <span className="sk-cell-mono">{name}</span>
-                                        <Pill kind="green">set</Pill>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="tramo-secret-add">
-                            <div className="form-group">
-                                <Label>Name</Label>
-                                <Input
-                                    type="text"
-                                    value={newSecret.name}
-                                    placeholder="TELEGRAM_BOT_TOKEN"
-                                    onChange={(e) => setNewSecret((s) => ({ ...s, name: e.target.value }))}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <Label>Value</Label>
-                                <Input
-                                    type="password"
-                                    value={newSecret.value}
-                                    onChange={(e) => setNewSecret((s) => ({ ...s, value: e.target.value }))}
-                                />
-                            </div>
-                            <Button variant="default" size="sm" onClick={handleAddSecret} disabled={busy}>
-                                <Plus size={14} /> Add secret
-                            </Button>
+        const secretsCard = (
+            <div className="card sec-flush">
+                <div className="card-header">
+                    <h3><KeyRound size={16} /> Pack secrets</h3>
+                </div>
+                <div className="card-body">
+                    <p className="text-muted">
+                        Credentials integration packs need (API keys, tokens). Values are write-only — they are
+                        stored encrypted and never shown again after saving.
+                    </p>
+                    {(settings?.pack_secret_names?.length ?? 0) === 0 ? (
+                        <p className="text-muted">No pack secrets set yet.</p>
+                    ) : (
+                        <div className="tramo-secret-list">
+                            {settings.pack_secret_names.map((name) => (
+                                <div className="tramo-secret" key={name}>
+                                    <span className="sk-cell-mono">{name}</span>
+                                    <Pill kind="green">set</Pill>
+                                </div>
+                            ))}
                         </div>
+                    )}
+                    <div className="tramo-secret-add">
+                        <div className="form-group">
+                            <Label>Name</Label>
+                            <Input
+                                type="text"
+                                value={newSecret.name}
+                                placeholder="TELEGRAM_BOT_TOKEN"
+                                onChange={(e) => setNewSecret((s) => ({ ...s, name: e.target.value }))}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <Label>Value</Label>
+                            <Input
+                                type="password"
+                                value={newSecret.value}
+                                onChange={(e) => setNewSecret((s) => ({ ...s, value: e.target.value }))}
+                            />
+                        </div>
+                        <Button variant="default" size="sm" onClick={handleAddSecret} disabled={busy}>
+                            <Plus size={14} /> Add secret
+                        </Button>
                     </div>
                 </div>
-            </>
+            </div>
+        );
+
+        return (
+            <div className="settings-layout tramo-settings-layout">
+                <nav className="settings-nav">
+                    {SETTINGS_SECTIONS.map(({ id, label, Icon }) => (
+                        <Button
+                            key={id}
+                            variant="ghost"
+                            className={`settings-nav-item ${settingsSection === id ? 'active' : ''}`}
+                            onClick={() => setSettingsSection(id)}
+                        >
+                            <Icon size={18} /> {label}
+                        </Button>
+                    ))}
+                </nav>
+                <div className="settings-content">
+                    {settingsSection === 'engine' && engineCard}
+                    {settingsSection === 'general' && generalCard}
+                    {settingsSection === 'secrets' && secretsCard}
+                </div>
+            </div>
         );
     };
 
