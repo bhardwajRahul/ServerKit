@@ -9,6 +9,8 @@
   "homepage": "https://github.com/jhd3197/ServerKit",
   "permissions": ["shell"],
   "min_panel_version": "1.7.0",
+  "featured": true,
+  "feature_score": 60,
   "sdk_version": "^1.0.0",
   "entry_point": "gpu:gpu_bp",
   "url_prefix": "/api/v1/gpu",

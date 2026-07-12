@@ -1,0 +1,8 @@
+// NotFound (catch-all) page — the EmptyState centers everything; we only need
+// the two action buttons to sit in a row with a gap and wrap on narrow screens.
+.not-found__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm, 0.5rem);
+    justify-content: center;
+}

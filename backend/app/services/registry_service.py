@@ -81,6 +81,8 @@ _FIELDS = {
     'homepage': '',
     'icon': None,
     'screenshots': [],
+    'featured': False,
+    'feature_score': 0,
 }
 
 

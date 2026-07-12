@@ -63,6 +63,7 @@ import Marketplace from './pages/Marketplace';
 import Vaults from './pages/Vaults';
 import Webhooks from './pages/Webhooks';
 import StyleGuide from './pages/StyleGuide';
+import NotFound from './pages/NotFound';
 import AppMap from './pages/AppMap';
 import Documentation from './pages/Documentation';
 import Deployments from './pages/Deployments';
@@ -111,7 +112,7 @@ const PAGE_TITLES = {
     '/migrate': 'Database Migration',
     '/fleet': 'Agent Fleet',
     '/fleet-monitor': 'Fleet Monitor',
-    '/agent-plugins': 'Marketplace',
+    '/agent-plugins': 'Extensions',
     '/server-templates': 'Server Templates',
     '/workspaces': 'Workspaces',
     '/workspaces/:id': 'Workspace',
@@ -124,7 +125,8 @@ const PAGE_TITLES = {
     '/workspaces/:id/settings/general': 'Workspace Settings',
     '/workspaces/:id/settings/navigation': 'Workspace Navigation Permissions',
     '/dns': 'DNS Zones',
-    '/marketplace': 'Marketplace',
+    '/extensions': 'Extensions',
+    '/extensions/installed': 'Installed Extensions',
     '/vaults': 'Vaults',
     '/webhooks': 'Webhooks',
     '/style-guide': 'Style Guide',
@@ -331,8 +333,10 @@ function AppRoutes() {
                     via its manifest and self-renders the whole sub-router (tab
                     group + full-bleed detail + legacy /projects redirects), so all
                     the WordPress routing now lives in the extension. */}
-                {/* /workflow is now the serverkit-workflows builtin extension
-                    (contributes the route via its manifest, full layout). */}
+                {/* The React-Flow Workflow Builder (serverkit-workflows) was
+                    retired in plan 45; the Automations extension (tramo) replaces
+                    it. Keep the old /workflow path working by redirecting. */}
+                <Route path="workflow" element={<Navigate to="/automations" replace />} />
                 <Route element={<TabGroupLayout tabs={DOMAIN_TABS} />}>
                     <Route path="domains" element={<Domains />} />
                     <Route path="ssl" element={<SSLCertificates />} />
@@ -364,7 +368,7 @@ function AppRoutes() {
                 </Route>
                 <Route path="servers/:id" element={<ServerDetail />} />
                 <Route path="servers/:id/:tab" element={<ServerDetail />} />
-                <Route path="agent-plugins" element={<Navigate to="/marketplace" replace />} />
+                <Route path="agent-plugins" element={<Navigate to="/extensions" replace />} />
                 {/* Organization tab group — Projects / Shared Variables /
                     Workspaces share one PageTopbar + tabs (ORG_TABS) instead of
                     a collapsible sidebar sub-menu. Detail routes stay outside. */}
@@ -380,10 +384,13 @@ function AppRoutes() {
                 <Route path="workspaces/:id/:tab" element={<WorkspaceDetail />} />
                 <Route path="workspaces/:id/:tab/:section" element={<WorkspaceDetail />} />
                 <Route element={<TabGroupLayout tabs={MARKET_TABS} />}>
-                    <Route path="marketplace" element={<Marketplace />} />
-                    <Route path="marketplace/installed" element={<Marketplace />} />
+                    <Route path="extensions" element={<Marketplace />} />
+                    <Route path="extensions/installed" element={<Marketplace />} />
                     <Route path="downloads" element={<Downloads />} />
                 </Route>
+                {/* Old /marketplace paths redirect to /extensions (renamed for clarity). */}
+                <Route path="marketplace" element={<Navigate to="/extensions" replace />} />
+                <Route path="marketplace/installed" element={<Navigate to="/extensions/installed" replace />} />
                 <Route path="style-guide" element={<StyleGuide />} />
                 <Route path="style-guide/:tab" element={<StyleGuide />} />
                 <Route path="app-map" element={<AppMap />} />
@@ -447,6 +454,10 @@ function AppRoutes() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="settings/:tab" element={<Settings />} />
                 {dashboardRoutes}
+                {/* Catch-all: an unknown URL, or an extension route whose
+                    extension isn't installed (never registered above). Renders
+                    inside the dashboard chrome instead of a blank page. */}
+                <Route path="*" element={<NotFound />} />
             </Route>
         </Routes>
     );

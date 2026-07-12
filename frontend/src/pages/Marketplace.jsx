@@ -13,6 +13,7 @@ import {
     ServerCog,
     ShieldCheck,
     Sparkles,
+    Star,
     UploadCloud,
 } from 'lucide-react';
 import api from '../services/api';
@@ -93,6 +94,8 @@ const getRegistryCatalogEntry = (entry) => ({
     extensionType: 'registry',
     installed: Boolean(entry.installed),
     status: entry.status,
+    featured: Boolean(entry.featured),
+    featureScore: Number(entry.feature_score) || 0,
 });
 
 // Source badge tint: built-in is 'warning', registry is 'info'.
@@ -125,6 +128,8 @@ const getLocalCatalogEntry = (builtin) => {
         extensionType: 'built-in',
         installed: Boolean(builtin.installed),
         status: builtin.status,
+        featured: Boolean(manifest.featured),
+        featureScore: Number(manifest.feature_score) || 0,
     };
 };
 
@@ -170,6 +175,10 @@ const Marketplace = () => {
     const [detailEntry, setDetailEntry] = useState(null);
     // Plugin pending uninstall — drives the keep-vs-purge data-policy dialog.
     const [uninstallTarget, setUninstallTarget] = useState(null);
+    // Id of the installed plugin whose row action (uninstall/toggle/update) is
+    // in flight. Drives per-row button disabling + live status copy so an
+    // operation can't be double-fired and the operator always sees progress.
+    const [busyPlugin, setBusyPlugin] = useState(null); // { id, action }
     // Plugin whose config is being edited (#49) — drives the config dialog.
     const [configTarget, setConfigTarget] = useState(null);
 
@@ -233,7 +242,7 @@ const Marketplace = () => {
     const handleManualInstalled = () => {
         setManualInstallSource(null);
         loadExtensions();
-        navigate('/marketplace/installed');
+        navigate('/extensions/installed');
     };
 
     // Open the data-policy dialog instead of uninstalling immediately, so the
@@ -243,28 +252,36 @@ const Marketplace = () => {
     const confirmPluginUninstall = async (purge) => {
         const plugin = uninstallTarget;
         setUninstallTarget(null);
-        if (!plugin) return;
+        if (!plugin || busyPlugin) return;
+        setBusyPlugin({ id: plugin.id, action: 'uninstall' });
         try {
             await api.uninstallPlugin(plugin.id, purge);
             toast.success(purge ? 'Extension uninstalled; data purged' : 'Extension uninstalled; data kept');
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
+            await loadExtensions();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setBusyPlugin(null);
+        }
     };
 
     const handlePluginUpdate = async (pluginId) => {
-        setInstalling(true);
+        if (busyPlugin) return;
+        setBusyPlugin({ id: pluginId, action: 'update' });
         try {
             const result = await api.updatePlugin(pluginId);
             toast.success(`Extension "${result.display_name}" updated to v${result.version}.`);
-            loadExtensions();
+            await loadExtensions();
         } catch (err) {
             toast.error(err.message || 'Extension update failed');
         } finally {
-            setInstalling(false);
+            setBusyPlugin(null);
         }
     };
 
     const handlePluginToggle = async (plugin) => {
+        if (busyPlugin) return;
+        setBusyPlugin({ id: plugin.id, action: plugin.status === 'active' ? 'disable' : 'enable' });
         try {
             if (plugin.status === 'active') {
                 await api.disablePlugin(plugin.id);
@@ -273,8 +290,12 @@ const Marketplace = () => {
                 await api.enablePlugin(plugin.id);
                 toast.success('Extension enabled');
             }
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
+            await loadExtensions();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setBusyPlugin(null);
+        }
     };
 
     const resetFilters = () => {
@@ -326,7 +347,21 @@ const Marketplace = () => {
         if (update.plugin_id != null) updatesByKey.set(String(update.plugin_id), update);
         if (update.slug) updatesByKey.set(update.slug, update);
     });
-    const mergedCatalogEntries = [...localCatalogEntries, ...registryCatalogEntries];
+    // Featured entries float to the top of the catalog, ordered by their
+    // feature score (higher = more prominent). The score itself is not shown —
+    // it only drives ordering; featured cards just get a "Featured" badge.
+    const mergedCatalogEntries = [...localCatalogEntries, ...registryCatalogEntries]
+        .map((entry, index) => ({ entry, index }))
+        .sort((a, b) => {
+            const fa = a.entry.featured ? 1 : 0;
+            const fb = b.entry.featured ? 1 : 0;
+            if (fa !== fb) return fb - fa;
+            if (fa && a.entry.featureScore !== b.entry.featureScore) {
+                return b.entry.featureScore - a.entry.featureScore;
+            }
+            return a.index - b.index; // stable: preserve original order otherwise
+        })
+        .map(({ entry }) => entry);
     const catalogCategories = deriveCatalogCategories(mergedCatalogEntries);
     const filterGroups = [
         {
@@ -412,7 +447,7 @@ const Marketplace = () => {
                                     key={plugin.id}
                                     plugin={plugin}
                                     update={updatesByKey.get(String(plugin.id))}
-                                    installing={installing}
+                                    busy={busyPlugin?.id === plugin.id ? busyPlugin.action : null}
                                     onToggle={handlePluginToggle}
                                     onUpdate={handlePluginUpdate}
                                     onUninstall={requestPluginUninstall}
@@ -425,7 +460,7 @@ const Marketplace = () => {
                         <EmptyState
                             icon={PackageCheck}
                             title="No extensions installed"
-                            description="Install one from Marketplace or use Install manually."
+                            description="Install one from Extensions or use Install manually."
                         />
                     )}
                 </section>
@@ -575,7 +610,7 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
 
     return (
         <article
-            className={`extension-card extension-card--${entry.source} extension-card--${category} extension-card--clickable card`}
+            className={`extension-card extension-card--${entry.source} extension-card--${category} extension-card--clickable card${entry.featured ? ' extension-card--featured' : ''}`}
             role="button"
             tabIndex={0}
             onClick={openDetail}
@@ -583,6 +618,11 @@ const CatalogExtensionCard = ({ entry, installing, onInstall, onOpenDetail, stat
         >
             <div {...coverProps('extension-card__cover', entry, category)}>
                 <ExtensionCover entry={entry} category={category} brandSize={34} />
+                {entry.featured && (
+                    <span className="extension-featured-badge">
+                        <Star aria-hidden="true" /> Featured
+                    </span>
+                )}
             </div>
             <div className="extension-card__badges">
                 <Badge variant={sourceBadgeVariant(entry.source)}>{entry.sourceLabel}</Badge>
@@ -735,9 +775,12 @@ const PLUGIN_SOURCE_BADGES = {
     registry: { label: 'Registry', variant: 'info' },
 };
 
-const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall, onConfigure, statusVariant }) => {
+const PluginRow = ({ plugin, update, busy, onToggle, onUpdate, onUninstall, onConfigure, statusVariant }) => {
     const updateAvailable = Boolean(update?.update_available);
     const compatible = update?.compatible !== false;
+    // A row action is in flight — disable every action on this row so it can't
+    // be double-fired, and surface which one via the button copy.
+    const isBusy = Boolean(busy);
     const configurable = plugin.config_schema
         && typeof plugin.config_schema === 'object'
         && Object.keys(plugin.config_schema).length > 0;
@@ -772,28 +815,31 @@ const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall
                 {updateAvailable && (
                     <Button
                         size="sm"
-                        disabled={!compatible || installing}
+                        disabled={!compatible || isBusy}
                         title={compatible ? undefined : 'Panel version is too old for this update'}
                         onClick={() => onUpdate(plugin.id)}
                     >
                         <DownloadCloud aria-hidden="true" />
-                        Update
+                        {busy === 'update' ? 'Updating…' : 'Update'}
                     </Button>
                 )}
                 {configurable && (
-                    <Button size="sm" variant="outline" onClick={() => onConfigure(plugin)}>
+                    <Button size="sm" variant="outline" disabled={isBusy} onClick={() => onConfigure(plugin)}>
                         Configure
                     </Button>
                 )}
                 <Button
                     size="sm"
                     variant={plugin.status === 'active' ? 'outline' : 'default'}
+                    disabled={isBusy}
                     onClick={() => onToggle(plugin)}
                 >
-                    {plugin.status === 'active' ? 'Disable' : 'Enable'}
+                    {busy === 'enable' ? 'Enabling…'
+                        : busy === 'disable' ? 'Disabling…'
+                        : plugin.status === 'active' ? 'Disable' : 'Enable'}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => onUninstall(plugin)}>
-                    Uninstall
+                <Button size="sm" variant="destructive" disabled={isBusy} onClick={() => onUninstall(plugin)}>
+                    {busy === 'uninstall' ? 'Uninstalling…' : 'Uninstall'}
                 </Button>
             </div>
         </article>

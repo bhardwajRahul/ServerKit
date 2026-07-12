@@ -5,12 +5,16 @@
 // the caller falls back to the brand mark, manifest SVG, or category glyph.
 //
 // PNGs are bundled + hashed by Vite via these URL imports.
+import automations from '../../assets/extension-icons/automations.png';
 import backup from '../../assets/extension-icons/backup.png';
+import faro from '../../assets/extension-icons/faro.png';
 import cloudflare from '../../assets/extension-icons/cloudflare.png';
 import extensions from '../../assets/extension-icons/extensions.png';
 import git from '../../assets/extension-icons/git.png';
 import gpu from '../../assets/extension-icons/gpu.png';
 import hosting from '../../assets/extension-icons/hosting.png';
+import k8s from '../../assets/extension-icons/k8s.png';
+import wordpress from '../../assets/extension-icons/wordpress.png';
 import mail from '../../assets/extension-icons/mail.png';
 import mailserver from '../../assets/extension-icons/mailserver.png';
 import monitor from '../../assets/extension-icons/monitor.png';
@@ -27,12 +31,24 @@ const normalizeSlug = (slug) => String(slug || '').toLowerCase().replace(/^serve
 
 // Ordered keyword rules — first match wins. Keep the most specific keys first.
 const KEYWORD_RULES = [
+    // tramo/Automations ships its own illustrated cover; keep it ahead of the
+    // generic workflow rule so 'serverkit-tramo' resolves to it.
+    { keys: ['tramo', 'automation'], icon: automations },
+    // Faro ships its own illustrated lighthouse cover; keep it ahead of the
+    // generic 'remote' rule so 'serverkit-faro' resolves here.
+    { keys: ['faro'], icon: faro },
+    { keys: ['k8s', 'kubernetes', 'kubectl', 'kube'], icon: k8s },
+    { keys: ['wordpress', 'wp'], icon: wordpress },
     { keys: ['cloudflare'], icon: cloudflare },
     { keys: ['gitea', 'forgejo', 'git'], icon: git },
     { keys: ['gpu', 'nvidia', 'cuda'], icon: gpu },
     { keys: ['wireguard', 'vpn', 'tunnel', 'remote'], icon: vpn },
-    { keys: ['mailserver', 'mail-relay', 'relay'], icon: mailserver },
-    { keys: ['mail', 'email', 'smtp', 'imap'], icon: mail },
+    // Keep the two mail stacks visually distinct: the Postfix/Dovecot
+    // "Email Server" gets the envelope, the Stalwart "Mail Server" gets the
+    // server rack. 'email' must be matched before the bare 'mail' rule (the
+    // string 'email' contains 'mail').
+    { keys: ['email', 'smtp', 'imap', 'postfix', 'dovecot'], icon: mail },
+    { keys: ['mailserver', 'mail-relay', 'relay', 'stalwart', 'mail'], icon: mailserver },
     { keys: ['backup', 'restore', 'snapshot', 'sync', 'import', 'migrate'], icon: backup },
     { keys: ['crowdsec', 'fail2ban', 'security', 'firewall', 'waf', 'cve'], icon: security },
     { keys: ['dns', 'domain', 'network'], icon: network },

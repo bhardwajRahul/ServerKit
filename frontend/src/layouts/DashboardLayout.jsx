@@ -16,7 +16,7 @@ import api from '../services/api';
 import SystemNotices from '../components/SystemNotices';
 import StagingBanner from '../components/StagingBanner';
 
-// /workflow is contributed by the serverkit-workflows extension with
+// The Automations extension (tramo) contributes /automations/edit/:slug with
 // layout:'full', so it's picked up dynamically via fullPagePaths below.
 const FULL_PAGE_ROUTES = ['/files', '/docker'];
 
