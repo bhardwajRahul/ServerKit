@@ -696,6 +696,26 @@
     display: flex;
     min-height: 0;
 
+    /* Theme bridge — tramo's editor ships only a light `:root` palette
+       (--tr-*). We don't restyle its .tr-* classes; we feed its documented
+       colour variables from the host design tokens instead. Because custom
+       properties inherit down the DOM, defining them here (an ancestor of the
+       whole editor subtree) overrides tramo's :root values without any
+       specificity battle — and since the host tokens flip with data-theme,
+       the canvas + inspector track dark/light automatically. */
+    --tr-bg: var(--bg-body);
+    --tr-surface: var(--bg-card);
+    --tr-surface-alt: var(--bg-hover);
+    --tr-border: var(--border-default);
+    --tr-border-strong: var(--border-strong);
+    --tr-text: var(--text-primary);
+    --tr-text-muted: var(--text-secondary);
+    --tr-edge: var(--border-strong);
+    --tr-plus: var(--text-tertiary);
+    --tr-accent: var(--accent);
+    --tr-accent-soft: var(--accent-bg);
+    --tr-shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.22);
+
     &__canvas {
         position: relative;
         flex: 1;

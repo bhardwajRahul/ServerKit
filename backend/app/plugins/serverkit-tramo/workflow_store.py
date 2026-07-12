@@ -111,12 +111,19 @@ class WorkflowStore:
 
     @staticmethod
     def _empty_doc(slug, name):
-        """A minimal valid tramo WorkflowDoc so a new workflow opens cleanly."""
+        """A minimal valid tramo WorkflowDoc so a new workflow opens cleanly.
+
+        Mirrors tramo's own ``emptyDoc()`` — ``version`` and ``meta`` must be
+        present, since the editor's Canvas reads ``doc.meta.mcpServers``
+        unconditionally and crashes on a doc without ``meta``.
+        """
         return {
+            'version': 1,
             'id': slug,
             'name': name,
             'nodes': [],
             'edges': [],
+            'meta': {},
         }
 
     # ---------- engine materialization ----------

@@ -20,7 +20,12 @@ const TramoEditor = ({ slug, onSaveStateChange }) => {
         key: slug,
         loadDoc: async () => {
             const data = await api.request(`/tramo/workflows/${slug}`);
-            return data.doc || { name: slug, nodes: [], edges: [] };
+            const doc = data.doc || { version: 1, id: slug, name: slug, nodes: [], edges: [], meta: {} };
+            // The editor's Canvas reads `doc.meta.mcpServers` unconditionally, so a
+            // doc without `meta` crashes it. Guarantee `meta` for brand-new
+            // workflows and any doc persisted by an older version.
+            if (!doc.meta) doc.meta = {};
+            return doc;
         },
         saveDoc: async (doc) => {
             await api.request(`/tramo/workflows/${slug}`, { method: 'PUT', body: { doc } });

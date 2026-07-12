@@ -187,6 +187,14 @@ def test_create_slugifies_and_uniquifies(app):
     assert a.get_doc().get('nodes') == []
 
 
+def test_create_doc_has_meta_and_version(app):
+    """A brand-new workflow doc must carry `meta` (and `version`): the editor's
+    Canvas reads `doc.meta.mcpServers` unconditionally and crashes without it."""
+    doc = WorkflowStore.create('needs-meta').get_doc()
+    assert doc.get('meta') == {}
+    assert doc.get('version') == 1
+
+
 def test_create_rejects_blank_name(app):
     with pytest.raises(ValueError):
         WorkflowStore.create('   ')

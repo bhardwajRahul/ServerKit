@@ -175,6 +175,10 @@ const Marketplace = () => {
     const [detailEntry, setDetailEntry] = useState(null);
     // Plugin pending uninstall — drives the keep-vs-purge data-policy dialog.
     const [uninstallTarget, setUninstallTarget] = useState(null);
+    // Id of the installed plugin whose row action (uninstall/toggle/update) is
+    // in flight. Drives per-row button disabling + live status copy so an
+    // operation can't be double-fired and the operator always sees progress.
+    const [busyPlugin, setBusyPlugin] = useState(null); // { id, action }
     // Plugin whose config is being edited (#49) — drives the config dialog.
     const [configTarget, setConfigTarget] = useState(null);
 
@@ -248,28 +252,36 @@ const Marketplace = () => {
     const confirmPluginUninstall = async (purge) => {
         const plugin = uninstallTarget;
         setUninstallTarget(null);
-        if (!plugin) return;
+        if (!plugin || busyPlugin) return;
+        setBusyPlugin({ id: plugin.id, action: 'uninstall' });
         try {
             await api.uninstallPlugin(plugin.id, purge);
             toast.success(purge ? 'Extension uninstalled; data purged' : 'Extension uninstalled; data kept');
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
+            await loadExtensions();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setBusyPlugin(null);
+        }
     };
 
     const handlePluginUpdate = async (pluginId) => {
-        setInstalling(true);
+        if (busyPlugin) return;
+        setBusyPlugin({ id: pluginId, action: 'update' });
         try {
             const result = await api.updatePlugin(pluginId);
             toast.success(`Extension "${result.display_name}" updated to v${result.version}.`);
-            loadExtensions();
+            await loadExtensions();
         } catch (err) {
             toast.error(err.message || 'Extension update failed');
         } finally {
-            setInstalling(false);
+            setBusyPlugin(null);
         }
     };
 
     const handlePluginToggle = async (plugin) => {
+        if (busyPlugin) return;
+        setBusyPlugin({ id: plugin.id, action: plugin.status === 'active' ? 'disable' : 'enable' });
         try {
             if (plugin.status === 'active') {
                 await api.disablePlugin(plugin.id);
@@ -278,8 +290,12 @@ const Marketplace = () => {
                 await api.enablePlugin(plugin.id);
                 toast.success('Extension enabled');
             }
-            loadExtensions();
-        } catch (err) { toast.error(err.message); }
+            await loadExtensions();
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setBusyPlugin(null);
+        }
     };
 
     const resetFilters = () => {
@@ -431,7 +447,7 @@ const Marketplace = () => {
                                     key={plugin.id}
                                     plugin={plugin}
                                     update={updatesByKey.get(String(plugin.id))}
-                                    installing={installing}
+                                    busy={busyPlugin?.id === plugin.id ? busyPlugin.action : null}
                                     onToggle={handlePluginToggle}
                                     onUpdate={handlePluginUpdate}
                                     onUninstall={requestPluginUninstall}
@@ -759,9 +775,12 @@ const PLUGIN_SOURCE_BADGES = {
     registry: { label: 'Registry', variant: 'info' },
 };
 
-const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall, onConfigure, statusVariant }) => {
+const PluginRow = ({ plugin, update, busy, onToggle, onUpdate, onUninstall, onConfigure, statusVariant }) => {
     const updateAvailable = Boolean(update?.update_available);
     const compatible = update?.compatible !== false;
+    // A row action is in flight — disable every action on this row so it can't
+    // be double-fired, and surface which one via the button copy.
+    const isBusy = Boolean(busy);
     const configurable = plugin.config_schema
         && typeof plugin.config_schema === 'object'
         && Object.keys(plugin.config_schema).length > 0;
@@ -796,28 +815,31 @@ const PluginRow = ({ plugin, update, installing, onToggle, onUpdate, onUninstall
                 {updateAvailable && (
                     <Button
                         size="sm"
-                        disabled={!compatible || installing}
+                        disabled={!compatible || isBusy}
                         title={compatible ? undefined : 'Panel version is too old for this update'}
                         onClick={() => onUpdate(plugin.id)}
                     >
                         <DownloadCloud aria-hidden="true" />
-                        Update
+                        {busy === 'update' ? 'Updating…' : 'Update'}
                     </Button>
                 )}
                 {configurable && (
-                    <Button size="sm" variant="outline" onClick={() => onConfigure(plugin)}>
+                    <Button size="sm" variant="outline" disabled={isBusy} onClick={() => onConfigure(plugin)}>
                         Configure
                     </Button>
                 )}
                 <Button
                     size="sm"
                     variant={plugin.status === 'active' ? 'outline' : 'default'}
+                    disabled={isBusy}
                     onClick={() => onToggle(plugin)}
                 >
-                    {plugin.status === 'active' ? 'Disable' : 'Enable'}
+                    {busy === 'enable' ? 'Enabling…'
+                        : busy === 'disable' ? 'Disabling…'
+                        : plugin.status === 'active' ? 'Disable' : 'Enable'}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => onUninstall(plugin)}>
-                    Uninstall
+                <Button size="sm" variant="destructive" disabled={isBusy} onClick={() => onUninstall(plugin)}>
+                    {busy === 'uninstall' ? 'Uninstalling…' : 'Uninstall'}
                 </Button>
             </div>
         </article>
