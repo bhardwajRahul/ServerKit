@@ -355,21 +355,7 @@ const AutomationsPage = () => {
 
     // ── Renderers ──
     const renderWorkflows = () => (
-        <div className="card sec-flush">
-            <div className="card-header">
-                <h3>Workflows {workflows.length > 0 && <span className="sec-count">· {workflows.length}</span>}</h3>
-                <div className="card-actions tramo-toolbar">
-                    <Button variant="outline" size="sm" onClick={handleDeploy} disabled={busy}>
-                        <Rocket size={14} /> Deploy
-                    </Button>
-                    <Button variant="secondary" size="sm" onClick={openTemplateModal}>
-                        <LayoutTemplate size={14} /> New from template
-                    </Button>
-                    <Button variant="default" size="sm" onClick={() => { setNewName(''); setNewModal(true); }}>
-                        <Plus size={14} /> New workflow
-                    </Button>
-                </div>
-            </div>
+        <div className="card">
             <div className="card-body">
                 {wfLoading ? <EmptyState loading title="Loading workflows..." />
                     : workflows.length === 0 ? (
@@ -448,15 +434,7 @@ const AutomationsPage = () => {
                     </div>
                 </div>
             )}
-            <div className="card sec-flush">
-                <div className="card-header">
-                    <h3>Runs {runs.length > 0 && <span className="sec-count">· {runs.length}</span>}</h3>
-                    <div className="card-actions">
-                        <Button variant="outline" size="sm" onClick={loadRuns} disabled={runsLoading}>
-                            <RefreshCw size={14} /> Refresh
-                        </Button>
-                    </div>
-                </div>
+            <div className="card">
                 <div className="card-body">
                     {runsLoading ? <EmptyState loading title="Loading runs..." />
                         : runs.length === 0 ? (
@@ -669,18 +647,44 @@ const AutomationsPage = () => {
 
     const topbarTabs = TABS.map(({ to, label, end }) => ({ to, label, end }));
 
+    // Actions live in the topbar (like Domains / WordPress) and are contextual
+    // to the active tab, so the content area carries no second header row.
+    let topbarActions = null;
+    if (activeTab === 'workflows') {
+        topbarActions = (
+            <>
+                <Button variant="outline" size="sm" onClick={handleDeploy} disabled={busy}>
+                    <Rocket size={14} /> Deploy
+                </Button>
+                <Button variant="secondary" size="sm" onClick={openTemplateModal}>
+                    <LayoutTemplate size={14} /> New from template
+                </Button>
+                <Button variant="default" size="sm" onClick={() => { setNewName(''); setNewModal(true); }}>
+                    <Plus size={14} /> New workflow
+                </Button>
+            </>
+        );
+    } else if (activeTab === 'runs') {
+        topbarActions = (
+            <Button variant="outline" size="sm" onClick={loadRuns} disabled={runsLoading}>
+                <RefreshCw size={14} /> Refresh
+            </Button>
+        );
+    } else if (activeTab === 'settings') {
+        topbarActions = (
+            <Button variant="outline" size="sm" onClick={loadSettings} disabled={settingsLoading}>
+                <RefreshCw size={14} /> Refresh
+            </Button>
+        );
+    }
+
     return (
         <div className="page-container tramo-page">
             <PageTopbar
                 icon={<Workflow size={18} />}
                 title="Automations"
-                meta={<>tramo · workflows · triggers · integrations</>}
                 tabs={topbarTabs}
-                actions={
-                    <Button variant="default" size="sm" onClick={() => { setNewName(''); setNewModal(true); }}>
-                        <Plus size={14} /> New workflow
-                    </Button>
-                }
+                actions={topbarActions}
             />
 
             {activeTab === 'workflows' && renderWorkflows()}
