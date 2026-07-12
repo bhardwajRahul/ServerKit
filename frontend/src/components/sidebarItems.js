@@ -89,8 +89,8 @@ export const SIDEBAR_ITEMS = [
     // WordPress is now the serverkit-wordpress builtin extension (Phase 5 #38);
     // its sidebar item is contributed by the extension manifest (nav), so it
     // disappears cleanly when the extension is uninstalled.
-    // Workflow Builder is now the serverkit-workflows builtin extension; its
-    // sidebar item is contributed by the extension manifest.
+    // Automations (tramo) is a builtin extension (serverkit-tramo) that replaced
+    // the old Workflow Builder; its sidebar item comes from the extension manifest.
     {
         id: 'databases',
         label: 'Databases',

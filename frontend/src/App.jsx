@@ -331,8 +331,10 @@ function AppRoutes() {
                     via its manifest and self-renders the whole sub-router (tab
                     group + full-bleed detail + legacy /projects redirects), so all
                     the WordPress routing now lives in the extension. */}
-                {/* /workflow is now the serverkit-workflows builtin extension
-                    (contributes the route via its manifest, full layout). */}
+                {/* The React-Flow Workflow Builder (serverkit-workflows) was
+                    retired in plan 45; the Automations extension (tramo) replaces
+                    it. Keep the old /workflow path working by redirecting. */}
+                <Route path="workflow" element={<Navigate to="/automations" replace />} />
                 <Route element={<TabGroupLayout tabs={DOMAIN_TABS} />}>
                     <Route path="domains" element={<Domains />} />
                     <Route path="ssl" element={<SSLCertificates />} />
