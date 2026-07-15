@@ -27,7 +27,12 @@ class SettingsService:
         'panel_title': {
             'value': 'ServerKit',
             'type': 'string',
-            'description': 'Display name shown in the browser tab and on the auth pages'
+            'description': 'Display name shown in the browser tab once signed in'
+        },
+        'public_title': {
+            'value': 'Control Panel',
+            'type': 'string',
+            'description': 'Generic name shown on the public sign-in/register pages (kept brand-neutral on purpose)'
         },
         'login_layout': {
             'value': 'centered',

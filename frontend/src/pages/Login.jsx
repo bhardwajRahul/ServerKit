@@ -27,7 +27,7 @@ const Login = () => {
     const [useBackupCode, setUseBackupCode] = useState(false);
     const [backupCode, setBackupCode] = useState('');
 
-    const { login, setUser, setTokens, registrationEnabled, ssoProviders, passwordLoginEnabled, panelTitle } = useAuth();
+    const { login, setUser, setTokens, registrationEnabled, ssoProviders, passwordLoginEnabled, publicTitle } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [ssoLoading, setSsoLoading] = useState(null);
@@ -289,7 +289,7 @@ const Login = () => {
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
                         </div>
-                        <h1>{panelTitle}</h1>
+                        <h1>{publicTitle}</h1>
                         <p>Signing you in…</p>
                     </div>
             </AuthLayout>
@@ -304,7 +304,7 @@ const Login = () => {
                     <div className="brand-logo">
                         <ServerKitLogo width={40} height={40} />
                     </div>
-                    <h1>{panelTitle}</h1>
+                    <h1>{publicTitle}</h1>
                     <p>Sign in to your account</p>
                 </div>
 

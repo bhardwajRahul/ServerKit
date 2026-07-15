@@ -44,6 +44,7 @@ def get_setup_status():
         'password_login_enabled': password_login_enabled,
         # Pre-auth branding (read by the login page before any authed call).
         'panel_title': SettingsService.get('panel_title', 'ServerKit'),
+        'public_title': SettingsService.get('public_title', 'Control Panel'),
         'login_layout': SettingsService.get('login_layout', 'centered'),
         'needs_migration': migration_status['needs_migration'],
         'migration_info': {

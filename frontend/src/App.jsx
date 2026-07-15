@@ -152,7 +152,7 @@ function LegacyAppRedirect() {
 function PageTitleUpdater() {
     const location = useLocation();
     const { page_titles: pluginTitles } = useContributions();
-    const { panelTitle } = useAuth();
+    const { panelTitle, publicTitle } = useAuth();
 
     useEffect(() => {
         const path = location.pathname;
@@ -187,9 +187,11 @@ function PageTitleUpdater() {
             }
         }
 
-        const brand = panelTitle || 'ServerKit';
+        // Public (pre-auth) routes stay brand-neutral; the app interior uses the panel brand.
+        const isPublicRoute = ['/login', '/register', '/setup', '/forgot'].some(p => path.startsWith(p));
+        const brand = isPublicRoute ? (publicTitle || 'Control Panel') : (panelTitle || 'ServerKit');
         document.title = title ? `${title} | ${brand}` : brand;
-    }, [location, pluginTitles, panelTitle]);
+    }, [location, pluginTitles, panelTitle, publicTitle]);
 
     return null;
 }

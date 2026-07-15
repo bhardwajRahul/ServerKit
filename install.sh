@@ -1105,11 +1105,28 @@ EOF
 # ---------------------------------------------------------------------------
 # Frontend build (skipped on release installs)
 # ---------------------------------------------------------------------------
+# Give each install a unique favicon tile color (same mark, different color) so
+# a favicon-hash comparison across ServerKit installs differs — a light-touch,
+# Cloudflare-lava-lamp-style deterrent, NOT a security control. The favicon is a
+# plain-text SVG, so this is a pure string replace: no image tooling needed, and
+# if it can't run (or the marker is absent) the shipped default color just stays.
+randomize_favicon() {
+    local fav="$INSTALL_DIR/frontend/dist/favicon.svg"
+    [ -f "$fav" ] || return 0
+    # Curated, legible tile colors (no washed-out / low-contrast picks).
+    local colors=(6d7cff 5a67e8 4f46e5 4338ca 0ea5e9 0891b2 0d9488 059669 7c3aed db2777 e11d48 ea580c)
+    local pick="${colors[$RANDOM % ${#colors[@]}]}"
+    if sed -i -E "s|(<rect width=\"32\" height=\"32\" rx=\"7\" fill=\")#[0-9a-fA-F]{3,8}(\")|\1#${pick}\2|" "$fav" 2>/dev/null; then
+        good "Favicon tint set to #${pick}"
+    fi
+}
+
 build_frontend() {
     phase "Frontend Build"
 
     if [ "$INSTALL_FROM_RELEASE" = "1" ]; then
         good "Using the pre-built frontend from the release."
+        randomize_favicon
         return
     fi
 
@@ -1120,6 +1137,7 @@ build_frontend() {
     step "Compiling the frontend bundle..."
     NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -5
     good "Frontend built."
+    randomize_favicon
 }
 
 # ---------------------------------------------------------------------------

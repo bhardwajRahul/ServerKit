@@ -12,6 +12,7 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
     const register = useSettingFocus();
     const { refreshSetupStatus } = useAuth();
     const [panelTitle, setPanelTitle] = useState('ServerKit');
+    const [publicTitle, setPublicTitle] = useState('Control Panel');
     const [loginLayout, setLoginLayout] = useState('centered');
     const [savingBrand, setSavingBrand] = useState(false);
     const [settings, setSettings] = useState({
@@ -48,6 +49,7 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
             });
             setBasePort(String(data.managed_app_base_port ?? 0));
             setPanelTitle(data.panel_title ?? 'ServerKit');
+            setPublicTitle(data.public_title ?? 'Control Panel');
             setLoginLayout(data.login_layout ?? 'centered');
             await loadHttps();
         } catch (err) {
@@ -251,6 +253,7 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
         setMessage(null);
         try {
             await api.updateSystemSetting('panel_title', panelTitle.trim() || 'ServerKit');
+            await api.updateSystemSetting('public_title', publicTitle.trim() || 'Control Panel');
             await api.updateSystemSetting('login_layout', loginLayout);
             await refreshSetupStatus();   // running SPA picks up the new title live
             setMessage({ type: 'success', text: 'Panel appearance saved' });
@@ -295,12 +298,31 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
 
             <div {...register('site-appearance', 'settings-card')}>
                 <h3>Panel Appearance</h3>
-                <p>The name shown in the browser tab and on the sign-in page, plus the sign-in page layout.</p>
+                <p>Names shown in the browser tab and on the sign-in page, plus the sign-in page layout.</p>
 
                 <div className="form-group">
                     <div className="settings-row">
                         <div className="settings-label">
-                            <Label htmlFor="panel-title">Panel title</Label>
+                            <Label htmlFor="public-title">Public sign-in title</Label>
+                        </div>
+                        <div className="settings-control">
+                            <Input
+                                id="public-title"
+                                type="text"
+                                value={publicTitle}
+                                onChange={(e) => setPublicTitle(e.target.value)}
+                                placeholder="Control Panel"
+                                className="w-56"
+                            />
+                        </div>
+                    </div>
+                    <span className="form-help">Shown on the public sign-in / register pages and the browser tab before login. Kept brand-neutral by default so the panel isn&apos;t trivially identifiable.</span>
+                </div>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label htmlFor="panel-title">Panel title (signed in)</Label>
                         </div>
                         <div className="settings-control">
                             <Input
@@ -313,7 +335,7 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                             />
                         </div>
                     </div>
-                    <span className="form-help">Shown in the browser tab and as the heading on the sign-in / setup pages.</span>
+                    <span className="form-help">Shown in the browser tab once signed in (the interior of the app).</span>
                 </div>
 
                 <div className="form-group">
