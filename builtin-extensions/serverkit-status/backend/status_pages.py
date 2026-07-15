@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required
-from app.services.status_page_service import StatusPageService
+from .status_page_service import StatusPageService
 
 status_pages_bp = Blueprint('status_pages', __name__)
 

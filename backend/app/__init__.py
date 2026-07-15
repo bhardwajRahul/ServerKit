@@ -420,9 +420,11 @@ def create_app(config_name=None):
     from app.api.nginx_advanced import nginx_advanced_bp
     app.register_blueprint(nginx_advanced_bp, url_prefix='/api/v1/nginx/advanced')
 
-    # Register blueprints - Status Pages
-    from app.api.status_pages import status_pages_bp
-    app.register_blueprint(status_pages_bp, url_prefix='/api/v1/status')
+    # Status Pages is an opt-in builtin extension (serverkit-status, plan 47) —
+    # its blueprint (public + management routes) loads from builtin-extensions/
+    # when installed, not from core. The StatusPage/StatusComponent models stay
+    # core (G2); the WordPress health-check job reaches the extension's sync
+    # helper via get_installed_extension_attr only when installed.
 
     # Cloud Provisioning is an opt-in builtin extension (serverkit-cloud-provision,
     # plan 47) — its blueprint loads from builtin-extensions/ when installed, not
@@ -481,7 +483,9 @@ def create_app(config_name=None):
     app.register_blueprint(telemetry_bp, url_prefix='/api/v1/observability/events', name='obs_events')
     app.register_blueprint(uptime_bp, url_prefix='/api/v1/observability/uptime', name='obs_uptime')
     app.register_blueprint(fleet_monitor_bp, url_prefix='/api/v1/observability/fleet', name='obs_fleet')
-    app.register_blueprint(status_pages_bp, url_prefix='/api/v1/observability/status-pages', name='obs_status_pages')
+    # status-pages observability alias dropped with the serverkit-status
+    # extraction (plan 47) — it was unused by the frontend; status pages mount at
+    # /api/v1/status from the extension when installed.
 
     # Register blueprints - Agent Pairing (RustDesk-style short-code flow)
     from app.api.pairing import pairing_bp

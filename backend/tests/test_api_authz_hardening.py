@@ -248,29 +248,9 @@ def test_env_secret_masking_preserved(app, client, env_rbac):
 # Phase 4 — status pages (mutations admin-only, reads open) + raw docker-DB.
 # --------------------------------------------------------------------------- #
 
-def test_status_page_mutations_admin_only(app, client):
-    """Reads stay open to any authed user; every mutation is admin-only via the
-    @admin_required decorator (plan 18 Decision 6). A non-admin is 403."""
-    from app import db
-    dev = _mk_user(db, 'sp_dev', role='developer')
-    admin = _mk_user(db, 'sp_admin', role='admin')
-
-    # Reads are open to a plain developer.
-    assert client.get('/api/v1/status/', headers=_token(dev.id)).status_code == 200
-
-    # Admin can create a page.
-    r = client.post('/api/v1/status/', json={'name': 'Ops', 'slug': 'ops'}, headers=_token(admin.id))
-    assert r.status_code == 201
-    page_id = r.get_json()['id']
-
-    # A developer is denied every mutation.
-    assert client.post('/api/v1/status/', json={'name': 'X', 'slug': 'x'}, headers=_token(dev.id)).status_code == 403
-    assert client.put(f'/api/v1/status/{page_id}', json={'name': 'Y'}, headers=_token(dev.id)).status_code == 403
-    assert client.delete(f'/api/v1/status/{page_id}', headers=_token(dev.id)).status_code == 403
-    assert client.post(f'/api/v1/status/{page_id}/components', json={'name': 'c', 'check_type': 'http'},
-                       headers=_token(dev.id)).status_code == 403
-    assert client.post(f'/api/v1/status/{page_id}/incidents', json={'title': 't'},
-                       headers=_token(dev.id)).status_code == 403
+# Status-page mutation authz moved to tests/test_status_extraction.py (plan 47) —
+# the status blueprint now lives in the serverkit-status extension, so the test
+# installs it before exercising the admin-only mutations.
 
 
 def test_raw_docker_db_routes_admin_only(app, client):
@@ -375,11 +355,5 @@ def test_wordpress_standalone_host_ops_admin_only(app, client, scoping_rbac, per
         assert call(url, json={}, headers=scoping_rbac.admin).status_code != 403, f'admin denied {url}'
 
 
-@pytest.mark.parametrize('persona', ['viewer', 'member', 'foreign'])
-def test_status_component_check_admin_only(app, client, scoping_rbac, persona):
-    """#4 — `POST /status/components/<id>/check` triggers a live check + persists a
-    result (write-ish), so it joins its 9 admin-only mutation siblings. A non-admin
-    is 403; admin passes the gate (the check itself may 404 on a missing id)."""
-    url = '/api/v1/status/components/999999/check'
-    assert client.post(url, headers=getattr(scoping_rbac, persona)).status_code == 403, persona
-    assert client.post(url, headers=scoping_rbac.admin).status_code != 403
+# test_status_component_check_admin_only moved to tests/test_status_extraction.py
+# (plan 47) — the status blueprint is now in the serverkit-status extension.
