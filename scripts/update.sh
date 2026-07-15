@@ -866,6 +866,35 @@ build_frontend_bundle() {
       NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -5 )
 }
 
+# Re-apply this install's PERSISTENT favicon tint to the staged dist. The color
+# is assigned once (on first install/update) and stored in /etc/serverkit so the
+# mark keeps the same per-install color across updates instead of repainting —
+# and an install that predates the feature picks one up on its first update.
+# Mirror of install.sh randomize_favicon (kept standalone; the two installers
+# already keep separate build fns). Also serves it at /favicon.ico so a blind
+# favicon-hash fetch varies too.
+apply_favicon_tint() {
+    local root="$1"
+    local fav="$root/frontend/dist/favicon.svg"
+    [ -f "$fav" ] || return 0
+    local color_file="/etc/serverkit/favicon-color"
+    local hsl=""
+    [ -s "$color_file" ] && hsl="$(cat "$color_file" 2>/dev/null)"
+    if [ -z "$hsl" ]; then
+        local hues=(210 225 235 250 265 285 320 345 12 25 160 175 190)
+        local base="${hues[$RANDOM % ${#hues[@]}]}"
+        local jitter=$(( RANDOM % 21 - 10 ))
+        local h=$(( (base + jitter + 360) % 360 ))
+        local s=$(( 48 + RANDOM % 28 ))
+        local l=$(( 32 + RANDOM % 15 ))
+        hsl="hsl(${h}, ${s}%, ${l}%)"
+        mkdir -p /etc/serverkit 2>/dev/null || true
+        printf '%s\n' "$hsl" > "$color_file" 2>/dev/null || true
+    fi
+    sed -i -E "s|(<rect width=\"32\" height=\"32\" rx=\"7\" fill=\")[^\"]+(\")|\1${hsl}\2|" "$fav" 2>/dev/null || true
+    cp "$fav" "$root/frontend/dist/favicon.ico" 2>/dev/null || true
+}
+
 # A plugin carried forward from the old install can be incompatible with the
 # new tree (imports that no longer resolve) and sink the whole bundle build.
 # Rather than blocking the update, move the carried frontends aside so the
@@ -1680,6 +1709,10 @@ if [ ! -d "$NEXT_DIR/frontend/dist" ]; then
         info "[dry-run] would npm ci + npm run build in $NEXT_DIR/frontend"
     fi
 fi
+
+# Re-apply the persistent per-install favicon tint to the staged dist (whether
+# just rebuilt above or shipped prebuilt), so the color carries across updates.
+[ "$DRY_RUN" = "0" ] && apply_favicon_tint "$NEXT_DIR"
 
 # Refresh nginx/systemd configs in the active tree before switch.
 refresh_config "$NEXT_DIR"

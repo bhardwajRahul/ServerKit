@@ -1105,11 +1105,53 @@ EOF
 # ---------------------------------------------------------------------------
 # Frontend build (skipped on release installs)
 # ---------------------------------------------------------------------------
+# Give each install a unique favicon tile color so a favicon-hash comparison
+# across ServerKit installs differs — a light-touch, Cloudflare-lava-lamp-style
+# deterrent, NOT a security control.
+#
+# "Car-paint" model: pick a curated base HUE (tasteful families, no muddy
+# yellows), then jitter the hue a few degrees and randomize the shade
+# (saturation + lightness, kept rich and mid-dark — never light/washed-out,
+# since a white glyph sits on top). So two installs that land on the same
+# family still get visibly different paint, and the overall space is large
+# enough that an identical color across installs is rare. The favicon is a
+# plain-text SVG, so this is a pure string replace (fill → an hsl() value): no
+# image tooling, and if it can't run the shipped default color just stays.
+randomize_favicon() {
+    local fav="$INSTALL_DIR/frontend/dist/favicon.svg"
+    [ -f "$fav" ] || return 0
+    # Assign the color ONCE and persist it in $CONFIG_DIR (survives updates), so
+    # `serverkit update` re-applies the SAME color instead of repainting the box
+    # on every update — a car keeps its paint. Existing installs get a color on
+    # their first update. See scripts/update.sh for the matching re-apply.
+    local color_file="$CONFIG_DIR/favicon-color"
+    local hsl=""
+    [ -s "$color_file" ] && hsl="$(cat "$color_file" 2>/dev/null)"
+    if [ -z "$hsl" ]; then
+        local hues=(210 225 235 250 265 285 320 345 12 25 160 175 190)
+        local base="${hues[$RANDOM % ${#hues[@]}]}"
+        local jitter=$(( RANDOM % 21 - 10 ))          # -10..+10 degrees
+        local h=$(( (base + jitter + 360) % 360 ))
+        local s=$(( 48 + RANDOM % 28 ))               # 48-75% saturation
+        local l=$(( 32 + RANDOM % 15 ))               # 32-46% lightness (dark enough for the glyph)
+        hsl="hsl(${h}, ${s}%, ${l}%)"
+        mkdir -p "$CONFIG_DIR" 2>/dev/null || true
+        printf '%s\n' "$hsl" > "$color_file" 2>/dev/null || true
+        good "Favicon tint assigned: ${hsl}"
+    fi
+    sed -i -E "s|(<rect width=\"32\" height=\"32\" rx=\"7\" fill=\")[^\"]+(\")|\1${hsl}\2|" "$fav" 2>/dev/null || true
+    # Serve the same tinted mark at /favicon.ico so a blind favicon-hash fetch
+    # there varies per install too (SVG bytes under an .ico name — browsers use
+    # the linked SVG; this only affects what a scanner hashes at that URL).
+    cp "$fav" "$INSTALL_DIR/frontend/dist/favicon.ico" 2>/dev/null || true
+}
+
 build_frontend() {
     phase "Frontend Build"
 
     if [ "$INSTALL_FROM_RELEASE" = "1" ]; then
         good "Using the pre-built frontend from the release."
+        randomize_favicon
         return
     fi
 
@@ -1120,6 +1162,7 @@ build_frontend() {
     step "Compiling the frontend bundle..."
     NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -5
     good "Frontend built."
+    randomize_favicon
 }
 
 # ---------------------------------------------------------------------------
@@ -1442,10 +1485,15 @@ EOF
 render_service_unit() {
     local out="$1"
     local template="$INSTALL_DIR/templates/serverkit-backend.service.in"
+    # Bind the API to loopback by default — host nginx fronts it on :80/:443, so
+    # the raw gunicorn port must not be world-reachable. Operators who front it
+    # differently can override with SERVERKIT_BIND_HOST=0.0.0.0.
+    local bind_host="${SERVERKIT_BIND_HOST:-127.0.0.1}"
     if [ -f "$template" ]; then
         sed -e "s|@SERVERKIT_DIR@|$INSTALL_DIR|g" \
             -e "s|@SERVERKIT_VENV_DIR@|$VENV_DIR|g" \
             -e "s|@PORT@|5000|g" \
+            -e "s|@BIND_HOST@|$bind_host|g" \
             -e "s|@USER@|root|g" \
             -e "s|@LOG_DIR@|$LOG_DIR|g" \
             "$template" > "$out"

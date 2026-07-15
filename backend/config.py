@@ -12,6 +12,26 @@ INSECURE_SECRET_KEYS = [
 ]
 
 
+def is_insecure_secret(value):
+    """True when a key is an obvious dev/placeholder value unfit for production.
+
+    Matches the known defaults *plus* any value carrying a dev marker, so a
+    variant the exact list doesn't enumerate (e.g. 'dev-jwt-...') can't slip
+    through. A real random/hex secret has none of these markers.
+    """
+    if not value:
+        return True
+    if value in INSECURE_SECRET_KEYS:
+        return True
+    lowered = value.lower()
+    return (
+        lowered.startswith('dev-')
+        or lowered.startswith('jwt-secret-key')
+        or 'change-in-production' in lowered
+        or 'change-this' in lowered
+    )
+
+
 def _resolve_ssl_mode():
     """Whether this deployment terminates real end-to-end HTTPS.
 
@@ -135,24 +155,23 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SAMESITE = 'Lax'
 
     def __init__(self):
-        # Validate that secret keys are not default values in production
-        if self.SECRET_KEY in INSECURE_SECRET_KEYS:
-            print("FATAL: SECRET_KEY is set to a default insecure value in production mode!", file=sys.stderr)
+        # Validate that secret keys are not default/dev values in production
+        if is_insecure_secret(self.SECRET_KEY):
+            print("FATAL: SECRET_KEY is set to an insecure/default value in production mode!", file=sys.stderr)
             print("Generate a secure key with: python -c \"import secrets; print(secrets.token_hex(32))\"", file=sys.stderr)
             sys.exit(1)
 
-        if self.JWT_SECRET_KEY in INSECURE_SECRET_KEYS:
-            print("FATAL: JWT_SECRET_KEY is set to a default insecure value in production mode!", file=sys.stderr)
+        if is_insecure_secret(self.JWT_SECRET_KEY):
+            print("FATAL: JWT_SECRET_KEY is set to an insecure/default value in production mode!", file=sys.stderr)
             print("Generate a secure key with: python -c \"import secrets; print(secrets.token_hex(32))\"", file=sys.stderr)
             sys.exit(1)
 
     @classmethod
     def init_app(cls, app):
         """Validate production configuration."""
-        insecure_keys = ['dev-secret-key-change-in-production', 'jwt-secret-key-change-in-production']
-        if app.config['SECRET_KEY'] in insecure_keys:
+        if is_insecure_secret(app.config['SECRET_KEY']):
             raise ValueError('CRITICAL: SECRET_KEY must be changed for production deployment')
-        if app.config['JWT_SECRET_KEY'] in insecure_keys:
+        if is_insecure_secret(app.config['JWT_SECRET_KEY']):
             raise ValueError('CRITICAL: JWT_SECRET_KEY must be changed for production deployment')
         # Validate CORS origins
         cors_raw = os.environ.get('CORS_ORIGINS', '')

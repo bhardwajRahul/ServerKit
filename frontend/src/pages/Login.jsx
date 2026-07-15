@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 import SSOProviderIcon from '../components/SSOProviderIcon';
 import ServerKitLogo from '../components/ServerKitLogo';
+import AuthLayout from './auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,7 +27,7 @@ const Login = () => {
     const [useBackupCode, setUseBackupCode] = useState(false);
     const [backupCode, setBackupCode] = useState('');
 
-    const { login, setUser, setTokens, registrationEnabled, ssoProviders, passwordLoginEnabled } = useAuth();
+    const { login, setUser, setTokens, registrationEnabled, ssoProviders, passwordLoginEnabled, publicTitle } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [ssoLoading, setSsoLoading] = useState(null);
@@ -211,8 +212,7 @@ const Login = () => {
     // Render 2FA verification form
     if (requires2FA) {
         return (
-            <div className="auth-container">
-                <div className="auth-card">
+            <AuthLayout>
                     <div className="auth-header">
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
@@ -277,37 +277,33 @@ const Login = () => {
                             Back to login
                         </Button>
                     </div>
-                </div>
-            </div>
+            </AuthLayout>
         );
     }
 
     // A one-time login link is being redeemed — show a minimal waiting card
     if (redeemingLink) {
         return (
-            <div className="auth-container">
-                <div className="auth-card">
+            <AuthLayout>
                     <div className="auth-header">
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
                         </div>
-                        <h1>ServerKit</h1>
+                        <h1>{publicTitle}</h1>
                         <p>Signing you in…</p>
                     </div>
-                </div>
-            </div>
+            </AuthLayout>
         );
     }
 
     // Render normal login form
     return (
-        <div className="auth-container">
-            <div className="auth-card">
+        <AuthLayout>
                 <div className="auth-header">
                     <div className="brand-logo">
                         <ServerKitLogo width={40} height={40} />
                     </div>
-                    <h1>ServerKit</h1>
+                    <h1>{publicTitle}</h1>
                     <p>Sign in to your account</p>
                 </div>
 
@@ -385,8 +381,7 @@ const Login = () => {
                         Don&apos;t have an account? <Link to="/register">Create one</Link>
                     </p>
                 )}
-            </div>
-        </div>
+        </AuthLayout>
     );
 };
 

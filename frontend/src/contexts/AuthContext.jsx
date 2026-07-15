@@ -12,6 +12,11 @@ export function AuthProvider({ children }) {
         registrationEnabled: false,
         ssoProviders: [],
         passwordLoginEnabled: true,
+        // Build-time default until the pre-auth fetch resolves (avoids a title flash
+        // for forks that brand at build time via VITE_PANEL_TITLE).
+        panelTitle: import.meta.env.VITE_PANEL_TITLE || 'ServerKit',
+        publicTitle: 'Control Panel',
+        loginLayout: 'centered',
         needsMigration: false,
         migrationInfo: null,
         checked: false
@@ -35,6 +40,9 @@ export function AuthProvider({ children }) {
                 registrationEnabled: status.registration_enabled,
                 ssoProviders: status.sso_providers || [],
                 passwordLoginEnabled: status.password_login_enabled !== false,
+                panelTitle: status.panel_title || import.meta.env.VITE_PANEL_TITLE || 'ServerKit',
+                publicTitle: status.public_title || 'Control Panel',
+                loginLayout: status.login_layout || 'centered',
                 needsMigration: status.needs_migration || false,
                 migrationInfo: status.migration_info || null,
                 checked: true
@@ -84,6 +92,9 @@ export function AuthProvider({ children }) {
                 registrationEnabled: status.registration_enabled,
                 ssoProviders: status.sso_providers || [],
                 passwordLoginEnabled: status.password_login_enabled !== false,
+                panelTitle: status.panel_title || import.meta.env.VITE_PANEL_TITLE || 'ServerKit',
+                publicTitle: status.public_title || 'Control Panel',
+                loginLayout: status.login_layout || 'centered',
                 needsMigration: status.needs_migration || false,
                 migrationInfo: status.migration_info || null,
                 checked: true
@@ -173,6 +184,9 @@ export function AuthProvider({ children }) {
         registrationEnabled: setupStatus.registrationEnabled,
         ssoProviders: setupStatus.ssoProviders,
         passwordLoginEnabled: setupStatus.passwordLoginEnabled,
+        panelTitle: setupStatus.panelTitle,
+        publicTitle: setupStatus.publicTitle,
+        loginLayout: setupStatus.loginLayout,
     };
 
     return (

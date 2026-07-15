@@ -53,6 +53,51 @@
     }
 }
 
+// Login layout variants (the `login_layout` setting selects one).
+// `centered` is the default .auth-card above; these two are the alternates.
+.auth-minimal {
+    .auth-minimal__inner {
+        width: 100%;
+        max-width: 400px;
+    }
+}
+
+.auth-split {
+    padding: 0;
+    align-items: stretch;
+
+    .auth-split__hero {
+        display: none;
+        flex: 1;
+        background: linear-gradient(135deg, var(--accent-primary, #6d7cff), var(--accent-hover, #5a67e8));
+        color: #fff;
+    }
+
+    .auth-split__brand {
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $space-4;
+    }
+
+    .auth-split__name {
+        font-size: $font-size-2xl;
+        font-weight: $font-weight-bold;
+    }
+
+    .auth-split__card {
+        flex: 1;
+        max-width: 480px;
+        margin: auto;
+        border: none;
+    }
+
+    @media (min-width: 900px) {
+        .auth-split__hero { display: flex; }
+    }
+}
+
 // SSO login buttons
 .sso-providers {
     display: flex;

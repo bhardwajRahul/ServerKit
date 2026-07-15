@@ -58,6 +58,7 @@ export const SETTINGS_INDEX = [
     { id: 'activity-audit-log', label: 'Audit log', description: 'View a detailed audit trail of all system actions and user activities', keywords: 'audit log history actions', tab: 'activity', adminOnly: true },
 
     { id: 'site-registration', label: 'Public user registration', description: 'Allow or disable new user registration on the login page', keywords: 'registration public signup', tab: 'site', adminOnly: true },
+    { id: 'site-appearance', label: 'Panel title & login layout', description: 'Set the panel name shown in the browser tab and on the sign-in page, and pick the login page layout', keywords: 'title brand name login layout appearance tab centered split minimal', tab: 'site', adminOnly: true },
     { id: 'site-app-ports', label: 'Managed app ports', description: 'Control the base port assigned to new applications', keywords: 'ports app wordpress container', tab: 'site', adminOnly: true },
     { id: 'site-base-domains', label: 'Base domains', description: 'Register and manage domains for publishing managed sites', keywords: 'base domain sites registry subdomain', tab: 'site', adminOnly: true },
     { id: 'site-server-ip', label: 'Server public IP', description: 'Configure the public IP address for DNS A records', keywords: 'server public ip dns', tab: 'site', adminOnly: true },

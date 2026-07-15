@@ -18,7 +18,7 @@ EnvironmentFile=@SERVERKIT_DIR@/.env
 # on the raw socket — a gevent-websocket worker ALSO answers the upgrade,
 # producing a double 101 handshake the browser reports as
 # "Invalid frame header" (WS then silently degrades to polling).
-ExecStart=@SERVERKIT_VENV_DIR@/bin/gunicorn -w 1 --threads 100 -b 0.0.0.0:@PORT@ --timeout 120 --access-logfile @LOG_DIR@/access.log --error-logfile @LOG_DIR@/error.log run:app
+ExecStart=@SERVERKIT_VENV_DIR@/bin/gunicorn -w 1 --threads 100 -b @BIND_HOST@:@PORT@ --timeout 120 --access-logfile @LOG_DIR@/access.log --error-logfile @LOG_DIR@/error.log run:app
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
 RestartSec=5

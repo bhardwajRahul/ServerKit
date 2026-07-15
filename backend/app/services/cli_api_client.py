@@ -80,7 +80,10 @@ def _mint_in_context():
     if user is None:
         raise CliApiError('No active admin user found — create one with "serverkit create-admin".')
 
-    token = create_access_token(identity=user.id, expires_delta=BREAKGLASS_TTL)
+    # Identity must be a string — flask-jwt-extended rejects a non-string
+    # `sub` at decode time with a 422, which otherwise breaks every CLI call
+    # that hits the panel API with a break-glass token.
+    token = create_access_token(identity=str(user.id), expires_delta=BREAKGLASS_TTL)
 
     try:
         from app.services.audit_service import AuditService
