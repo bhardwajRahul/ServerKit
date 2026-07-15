@@ -248,9 +248,9 @@ def create_app(config_name=None):
     from app.api.files import files_bp
     app.register_blueprint(files_bp, url_prefix='/api/v1/files')
 
-    # Register blueprints - FTP Server
-    from app.api.ftp import ftp_bp
-    app.register_blueprint(ftp_bp, url_prefix='/api/v1/ftp')
+    # FTP Server is an opt-in builtin extension (serverkit-ftp, plan 47) — its
+    # blueprint loads from builtin-extensions/serverkit-ftp/ when installed, not
+    # from core. A fresh panel that never touches FTP loads none of it.
 
     # Register blueprints - Firewall
     from app.api.firewall import firewall_bp

@@ -2,8 +2,8 @@
 
 from flask import Blueprint, request, jsonify
 
-from ..middleware.rbac import admin_required, viewer_required
-from ..services.ftp_service import FTPService
+from app.middleware.rbac import admin_required, viewer_required
+from .ftp_service import FTPService
 
 ftp_bp = Blueprint('ftp', __name__)
 
