@@ -367,6 +367,8 @@ English | [Español](docs/README.es.md) | [中文版](docs/README.zh-CN.md) | [P
 
 ### 🎨 Customization
 
+**Lean by default** — The guided setup wizard installs only the extensions matched to the use cases you pick (WordPress, web apps, self-hosting, DevOps) and nothing else. Uncheck anything you don't want; add more anytime from Extensions. WordPress is offered at setup rather than force-installed.
+
 **Sidebar Presets** — Switch between Full, Web Hosting, Email Admin, DevOps, and Minimal views with one click
 
 **Collapsible Navigation** — Sidebar groups auto-expand on navigation and collapse when switching sections

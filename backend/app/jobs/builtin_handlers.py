@@ -90,9 +90,15 @@ def run_health_checks():
     from app.models.wordpress_site import WordPressSite
     from app.models.status_page import StatusComponent
     from app.services.environment_health_service import EnvironmentHealthService
-    from app.services.status_page_service import StatusPageService
+    from app.services.plugin_service import get_installed_extension_attr
 
     _prune_old_health_checks()
+
+    # Status-page component sync lives in the serverkit-status extension (plan 47);
+    # reach it only when installed. StatusComponent rows can't exist without it,
+    # so a lean panel simply runs the health checks without the sync.
+    StatusPageService = get_installed_extension_attr(
+        'serverkit-status', 'status_page_service', 'StatusPageService')
 
     sites = WordPressSite.query.filter_by(is_production=True).all()
     for site in sites:
@@ -105,9 +111,10 @@ def run_health_checks():
             overall = result.get('overall_status')
             if not overall:
                 continue
-            components = StatusComponent.query.filter_by(wordpress_site_id=site.id).all()
-            for comp in components:
-                StatusPageService.sync_component_from_health(comp, overall)
+            if StatusPageService is not None:
+                components = StatusComponent.query.filter_by(wordpress_site_id=site.id).all()
+                for comp in components:
+                    StatusPageService.sync_component_from_health(comp, overall)
         except Exception as e:
             logger.error(f'Health check failed for site {site.id}: {e}')
             try:
