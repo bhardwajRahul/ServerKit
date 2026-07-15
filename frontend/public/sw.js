@@ -1,6 +1,6 @@
-// ServerKit Service Worker for PWA / Offline support
+// Service Worker for PWA / Offline support
 
-const CACHE_NAME = 'serverkit-v1';
+const CACHE_NAME = 'app-cache-v1';
 const OFFLINE_URL = '/';
 
 // Assets to cache on install
@@ -48,7 +48,7 @@ self.addEventListener('fetch', (event) => {
 // Push notification handler
 self.addEventListener('push', (event) => {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || 'ServerKit';
+    const title = data.title || 'Control Panel';
     const options = {
         body: data.body || 'New notification',
         icon: '/favicon.svg',
