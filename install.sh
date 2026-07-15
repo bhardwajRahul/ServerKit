@@ -1129,6 +1129,11 @@ randomize_favicon() {
     if sed -i -E "s|(<rect width=\"32\" height=\"32\" rx=\"7\" fill=\")[^\"]+(\")|\1hsl(${h}, ${s}%, ${l}%)\2|" "$fav" 2>/dev/null; then
         good "Favicon tint set to hsl(${h}, ${s}%, ${l}%)"
     fi
+    # Also serve the tinted mark at /favicon.ico so a blind favicon-hash fetch
+    # there varies per install too, instead of a fixed cross-install icon. It's
+    # SVG bytes under an .ico name — browsers use the linked SVG anyway; this is
+    # only about what a scanner hashes at that URL.
+    cp "$fav" "$INSTALL_DIR/frontend/dist/favicon.ico" 2>/dev/null || true
 }
 
 build_frontend() {
