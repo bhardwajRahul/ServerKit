@@ -19,7 +19,7 @@ const STEP_TITLES = [
 ];
 
 const Setup = () => {
-    const { isAuthenticated, completeOnboarding } = useAuth();
+    const { isAuthenticated, completeOnboarding, panelTitle } = useAuth();
     const navigate = useNavigate();
 
     const [currentStep, setCurrentStep] = useState(1);
@@ -118,7 +118,7 @@ const Setup = () => {
             <div className="wizard-card">
                 <div className="wizard-header">
                     <ServerKitLogo className="wizard-logo" width={48} height={48} />
-                    <h1>Welcome to ServerKit</h1>
+                    <h1>Welcome to {panelTitle}</h1>
                     <p>Let&apos;s get your server ready</p>
                 </div>
 

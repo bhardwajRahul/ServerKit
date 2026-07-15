@@ -6,9 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ds';
 import useSettingFocus from '../../hooks/useSettingFocus';
+import { useAuth } from '../../contexts/AuthContext';
 
 const SiteSettingsTab = ({ onDevModeChange }) => {
     const register = useSettingFocus();
+    const { refreshSetupStatus } = useAuth();
+    const [panelTitle, setPanelTitle] = useState('ServerKit');
+    const [loginLayout, setLoginLayout] = useState('centered');
+    const [savingBrand, setSavingBrand] = useState(false);
     const [settings, setSettings] = useState({
         registration_enabled: false,
         dev_mode: false
@@ -42,6 +47,8 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                 dev_mode: data.dev_mode || false
             });
             setBasePort(String(data.managed_app_base_port ?? 0));
+            setPanelTitle(data.panel_title ?? 'ServerKit');
+            setLoginLayout(data.login_layout ?? 'centered');
             await loadHttps();
         } catch (err) {
             console.error('Failed to load settings:', err);
@@ -239,6 +246,21 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
         }
     }
 
+    async function handleSaveBrand() {
+        setSavingBrand(true);
+        setMessage(null);
+        try {
+            await api.updateSystemSetting('panel_title', panelTitle.trim() || 'ServerKit');
+            await api.updateSystemSetting('login_layout', loginLayout);
+            await refreshSetupStatus();   // running SPA picks up the new title live
+            setMessage({ type: 'success', text: 'Panel appearance saved' });
+        } catch (err) {
+            setMessage({ type: 'error', text: err.message || 'Failed to save appearance' });
+        } finally {
+            setSavingBrand(false);
+        }
+    }
+
     async function handleToggleSetting(key, label) {
         setSaving(true);
         setMessage(null);
@@ -270,6 +292,54 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
             {message && (
                 <div className={`message ${message.type}`}>{message.text}</div>
             )}
+
+            <div {...register('site-appearance', 'settings-card')}>
+                <h3>Panel Appearance</h3>
+                <p>The name shown in the browser tab and on the sign-in page, plus the sign-in page layout.</p>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label htmlFor="panel-title">Panel title</Label>
+                        </div>
+                        <div className="settings-control">
+                            <Input
+                                id="panel-title"
+                                type="text"
+                                value={panelTitle}
+                                onChange={(e) => setPanelTitle(e.target.value)}
+                                placeholder="ServerKit"
+                                className="w-56"
+                            />
+                        </div>
+                    </div>
+                    <span className="form-help">Shown in the browser tab and as the heading on the sign-in / setup pages.</span>
+                </div>
+
+                <div className="form-group">
+                    <div className="settings-row">
+                        <div className="settings-label">
+                            <Label htmlFor="login-layout">Login layout</Label>
+                        </div>
+                        <div className="settings-control">
+                            <select
+                                id="login-layout"
+                                className="settings-select"
+                                value={loginLayout}
+                                onChange={(e) => setLoginLayout(e.target.value)}
+                            >
+                                <option value="centered">Centered card</option>
+                                <option value="split">Split hero</option>
+                                <option value="minimal">Minimal</option>
+                            </select>
+                            <Button onClick={handleSaveBrand} disabled={savingBrand}>
+                                {savingBrand ? 'Saving…' : 'Save'}
+                            </Button>
+                        </div>
+                    </div>
+                    <span className="form-help">Rearranges the sign-in page. Applies on the next load of the login page.</span>
+                </div>
+            </div>
 
             <div {...register('site-registration', 'settings-card')}>
                 <h3>User Registration</h3>

@@ -42,6 +42,9 @@ def get_setup_status():
         'registration_enabled': registration_enabled,
         'sso_providers': sso_providers,
         'password_login_enabled': password_login_enabled,
+        # Pre-auth branding (read by the login page before any authed call).
+        'panel_title': SettingsService.get('panel_title', 'ServerKit'),
+        'login_layout': SettingsService.get('login_layout', 'centered'),
         'needs_migration': migration_status['needs_migration'],
         'migration_info': {
             'pending_count': migration_status['pending_count'],

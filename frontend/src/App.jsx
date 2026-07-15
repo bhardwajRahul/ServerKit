@@ -152,6 +152,7 @@ function LegacyAppRedirect() {
 function PageTitleUpdater() {
     const location = useLocation();
     const { page_titles: pluginTitles } = useContributions();
+    const { panelTitle } = useAuth();
 
     useEffect(() => {
         const path = location.pathname;
@@ -182,12 +183,13 @@ function PageTitleUpdater() {
                 else if (path.startsWith('/servers/')) title = 'Server Details';
                 else if (path.startsWith('/wordpress/pipelines/') || path.startsWith('/wordpress/projects/')) title = 'WordPress Pipeline';
                 else if (path.startsWith('/wordpress/')) title = 'WordPress Site';
-                else title = 'ServerKit';
+                else title = '';
             }
         }
 
-        document.title = title ? `${title} | ServerKit` : 'ServerKit';
-    }, [location, pluginTitles]);
+        const brand = panelTitle || 'ServerKit';
+        document.title = title ? `${title} | ${brand}` : brand;
+    }, [location, pluginTitles, panelTitle]);
 
     return null;
 }

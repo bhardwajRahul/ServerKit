@@ -17,7 +17,7 @@ const Register = () => {
     const [inviteInfo, setInviteInfo] = useState(null);
     const [inviteLoading, setInviteLoading] = useState(false);
     const [inviteInvalid, setInviteInvalid] = useState(false);
-    const { register, registrationEnabled } = useAuth();
+    const { register, registrationEnabled, panelTitle } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const inviteToken = searchParams.get('invite');
@@ -46,7 +46,7 @@ const Register = () => {
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
                         </div>
-                        <h1>ServerKit</h1>
+                        <h1>{panelTitle}</h1>
                         <p>Registration is currently disabled</p>
                     </div>
                     <p className="auth-footer">
@@ -65,7 +65,7 @@ const Register = () => {
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
                         </div>
-                        <h1>ServerKit</h1>
+                        <h1>{panelTitle}</h1>
                         <p>Validating invitation...</p>
                     </div>
                 </div>
@@ -81,7 +81,7 @@ const Register = () => {
                         <div className="brand-logo">
                             <ServerKitLogo width={40} height={40} />
                         </div>
-                        <h1>ServerKit</h1>
+                        <h1>{panelTitle}</h1>
                         <p>This invitation is invalid or has expired</p>
                     </div>
                     <p className="auth-footer">
@@ -125,7 +125,7 @@ const Register = () => {
                     <div className="brand-logo">
                         <ServerKitLogo width={40} height={40} />
                     </div>
-                    <h1>ServerKit</h1>
+                    <h1>{panelTitle}</h1>
                     <p>{inviteInfo ? `You've been invited as ${inviteInfo.role}` : 'Create your account'}</p>
                 </div>
 

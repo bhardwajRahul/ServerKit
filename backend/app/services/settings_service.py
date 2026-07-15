@@ -24,6 +24,16 @@ class SettingsService:
             'type': 'string',
             'description': 'Name of this ServerKit instance'
         },
+        'panel_title': {
+            'value': 'ServerKit',
+            'type': 'string',
+            'description': 'Display name shown in the browser tab and on the auth pages'
+        },
+        'login_layout': {
+            'value': 'centered',
+            'type': 'string',
+            'description': 'Login page layout variant: centered | split | minimal'
+        },
         'audit_log_retention_days': {
             'value': 90,
             'type': 'integer',
