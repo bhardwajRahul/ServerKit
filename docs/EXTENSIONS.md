@@ -448,3 +448,30 @@ Proven with `serverkit-git`; automated by the one-shot upgrade auto-install
 
 Existing panels auto-install converted builtins once on upgrade (a marker in
 settings) so nothing disappears; fresh installs see them in the Marketplace.
+
+### Second speed — moving the backend out too (plan 47)
+
+Once a converted page has settled as a frontend-only extension, its backend
+blueprint + service can leave core:
+
+1. `git mv backend/app/api/<feature>.py builtin-extensions/<slug>/backend/<module>.py`
+   and the same for its service(s). Rewrite imports: **core** imports stay
+   absolute (`from app.middleware.rbac import …`), **sibling** extension modules
+   become relative (`from .<sibling> import …`).
+2. Add `backend/__init__.py` exposing the blueprint, and set the manifest's
+   `entry_point` (`"<module>:<bp>"`) + `url_prefix` (**unchanged** so frontend
+   API clients don't move).
+3. Deregister it from `backend/app/__init__.py` (drop the import + `register_blueprint`).
+4. Keep any **model** used by the extension in `backend/app/models/` (extensions
+   can't run migrations — G2). The extension imports it.
+5. If a **core** code path calls into the now-extracted service (a job handler,
+   the agent gateway), reach it through
+   `plugin_service.get_installed_extension_attr(slug, module, attr)` so it
+   no-ops cleanly when the extension is absent.
+6. Ensure the slug is in `extension_migration.CONVERTED_BUILTIN_SLUGS`. On an
+   upgraded panel that installed the extension **frontend-only** (its API used
+   to come from core), `run_backend_acquisition()` force-reinstalls once to
+   re-acquire the now-extracted backend — otherwise the API would vanish.
+
+Landed this way: `serverkit-ftp`, `serverkit-cloud-provision`,
+`serverkit-remote-access`, `serverkit-status`.

@@ -677,10 +677,20 @@ ensure_compose_plugin() {
 # it, so we install the distro package first and only pipe NodeSource into bash
 # when the distro can't deliver a new-enough Node + npm.
 node_major()  { node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/'; }
+# Vite 8 / rolldown (the frontend bundler) require Node ^20.19.0 || >=22.12.0.
+# On anything older, npm silently skips rolldown's native binary and
+# `npm run build` dies with a cryptic MODULE_NOT_FOUND — so gate on the real floor.
 node_ready()  {
     command -v node &>/dev/null && command -v npm &>/dev/null || return 1
-    local m; m="$(node_major)"
-    [ -n "$m" ] && [ "$m" -ge 18 ] 2>/dev/null
+    local v M m
+    v="$(node --version 2>/dev/null | sed -E 's/^v//')"
+    M="${v%%.*}"; m="${v#*.}"; m="${m%%.*}"
+    case "$M" in ''|*[!0-9]*) return 1;; esac
+    case "$m" in ''|*[!0-9]*) return 1;; esac
+    if [ "$M" -eq 20 ] && [ "$m" -ge 19 ]; then return 0; fi
+    if [ "$M" -eq 22 ] && [ "$m" -ge 12 ]; then return 0; fi
+    if [ "$M" -ge 23 ]; then return 0; fi
+    return 1
 }
 
 provision_node() {
@@ -702,18 +712,18 @@ provision_node() {
     command -v npm &>/dev/null || pkg_add npm 2>/dev/null || true
 
     if ! node_ready; then
-        warn "Distro Node.js is missing or older than 18 — falling back to NodeSource 20."
+        warn "Distro Node.js is missing or too old to build the frontend (need 20.19+ or 22.12+) — falling back to NodeSource 22 LTS."
         if [ "$OS_FAMILY" = "debian" ]; then
-            curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null 2>&1 || true
+            curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null 2>&1 || true
         else
-            curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - >/dev/null 2>&1 || true
+            curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - >/dev/null 2>&1 || true
         fi
         pkg_add nodejs || true
     fi
 
     node_ready || \
-        halt "Node.js 18+ (with npm) is required but could not be installed. Install Node 20 LTS and re-run."
-    good "Node.js $(node --version) installed."
+        halt "Node.js 20.19+ or 22.12+ (with npm) is required to build the frontend but could not be installed. Install Node 22 LTS and re-run."
+    good "Node.js $(node --version) ready."
 }
 
 # ---------------------------------------------------------------------------

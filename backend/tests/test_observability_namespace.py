@@ -15,7 +15,9 @@ def test_observability_aliases_registered():
     assert any(r.startswith('/api/v1/observability/events') for r in rules)
     assert any(r.startswith('/api/v1/observability/uptime') for r in rules)
     assert any(r.startswith('/api/v1/observability/fleet') for r in rules)
-    assert any(r.startswith('/api/v1/observability/status-pages') for r in rules)
+    # The status-pages observability alias was dropped when status pages moved to
+    # the serverkit-status extension (plan 47); the public status route now ships
+    # with that extension rather than core.
 
 
 def test_original_prefixes_still_present():
@@ -25,8 +27,6 @@ def test_original_prefixes_still_present():
     assert any(r.startswith('/api/v1/monitoring') for r in rules)
     assert any(r.startswith('/api/v1/telemetry') for r in rules)
     assert any(r.startswith('/api/v1/fleet-monitor') for r in rules)
-    # Public status page route untouched.
-    assert '/api/v1/status/public/<slug>' in rules
 
 
 def test_events_alias_matches_telemetry(app, client, auth_headers):

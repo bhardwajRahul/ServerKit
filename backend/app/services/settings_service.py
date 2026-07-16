@@ -54,6 +54,11 @@ class SettingsService:
             'type': 'json',
             'description': 'Use cases selected during onboarding wizard'
         },
+        'onboarding_installed_extensions': {
+            'value': [],
+            'type': 'json',
+            'description': 'Extension slugs installed by the setup wizard'
+        },
         'dev_mode': {
             'value': False,
             'type': 'boolean',

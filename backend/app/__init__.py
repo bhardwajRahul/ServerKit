@@ -117,7 +117,6 @@ def create_app(config_name=None):
     # Register blueprints - Core
     from app.api.apps import apps_bp
     from app.api.domains import domains_bp
-    from app.api.tunnels import tunnels_bp
     from app.api.private_urls import private_urls_bp
     app.register_blueprint(apps_bp, url_prefix='/api/v1/apps')
     # "Services" is the user-facing term for Applications (§1 unification).
@@ -248,9 +247,9 @@ def create_app(config_name=None):
     from app.api.files import files_bp
     app.register_blueprint(files_bp, url_prefix='/api/v1/files')
 
-    # Register blueprints - FTP Server
-    from app.api.ftp import ftp_bp
-    app.register_blueprint(ftp_bp, url_prefix='/api/v1/ftp')
+    # FTP Server is an opt-in builtin extension (serverkit-ftp, plan 47) — its
+    # blueprint loads from builtin-extensions/serverkit-ftp/ when installed, not
+    # from core. A fresh panel that never touches FTP loads none of it.
 
     # Register blueprints - Firewall
     from app.api.firewall import firewall_bp
@@ -421,16 +420,21 @@ def create_app(config_name=None):
     from app.api.nginx_advanced import nginx_advanced_bp
     app.register_blueprint(nginx_advanced_bp, url_prefix='/api/v1/nginx/advanced')
 
-    # Register blueprints - Status Pages
-    from app.api.status_pages import status_pages_bp
-    app.register_blueprint(status_pages_bp, url_prefix='/api/v1/status')
+    # Status Pages is an opt-in builtin extension (serverkit-status, plan 47) —
+    # its blueprint (public + management routes) loads from builtin-extensions/
+    # when installed, not from core. The StatusPage/StatusComponent models stay
+    # core (G2); the WordPress health-check job reaches the extension's sync
+    # helper via get_installed_extension_attr only when installed.
 
-    # Register blueprints - Cloud Provisioning
-    from app.api.cloud_provisioning import cloud_provisioning_bp
-    app.register_blueprint(cloud_provisioning_bp, url_prefix='/api/v1/cloud')
+    # Cloud Provisioning is an opt-in builtin extension (serverkit-cloud-provision,
+    # plan 47) — its blueprint loads from builtin-extensions/ when installed, not
+    # from core. The CloudProvider/CloudServer models stay core (G2).
 
-    # Register blueprints - Remote Access (WireGuard tunnels; imported above)
-    app.register_blueprint(tunnels_bp, url_prefix='/api/v1/tunnels')
+    # Remote Access (WireGuard tunnels) is an opt-in builtin extension
+    # (serverkit-remote-access, plan 47) — its blueprint loads from
+    # builtin-extensions/ when installed, not from core. The Tunnel/ExposedService
+    # models stay core (G2); the agent gateway reaches its reconcile helper via
+    # get_installed_extension_attr only when the extension is present.
 
     # Register blueprints - Performance
     from app.api.performance import performance_bp
@@ -479,7 +483,9 @@ def create_app(config_name=None):
     app.register_blueprint(telemetry_bp, url_prefix='/api/v1/observability/events', name='obs_events')
     app.register_blueprint(uptime_bp, url_prefix='/api/v1/observability/uptime', name='obs_uptime')
     app.register_blueprint(fleet_monitor_bp, url_prefix='/api/v1/observability/fleet', name='obs_fleet')
-    app.register_blueprint(status_pages_bp, url_prefix='/api/v1/observability/status-pages', name='obs_status_pages')
+    # status-pages observability alias dropped with the serverkit-status
+    # extraction (plan 47) — it was unused by the frontend; status pages mount at
+    # /api/v1/status from the extension when installed.
 
     # Register blueprints - Agent Pairing (RustDesk-style short-code flow)
     from app.api.pairing import pairing_bp
@@ -529,10 +535,14 @@ def create_app(config_name=None):
         try:
             from app.services.dns_provider_service import DNSProviderService
             from app.services.storage_provider_service import StorageProviderService
-            from app.services.cloud_provisioning_service import CloudProvisioningService
             n_dns = DNSProviderService.encrypt_legacy_secrets()
             n_store = StorageProviderService.encrypt_legacy_secrets()
-            n_cloud = CloudProvisioningService.encrypt_legacy_secrets()
+            # Cloud-provider legacy-secret encryption moved out with the
+            # serverkit-cloud-provision extension (plan 47). It was a one-time
+            # migration of pre-encryption rows; any panel reaching this version
+            # already ran it in an earlier boot (idempotent), and the extension
+            # encrypts on write, so there's nothing left for core to do here.
+            n_cloud = 0
             n_settings = SettingsService.migrate_legacy_secrets()
             # Migrate DNS zones with an inline Cloudflare token onto the canonical
             # connection store (idempotent), so every zone resolves creds the same way.
@@ -597,6 +607,16 @@ def create_app(config_name=None):
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f'Extension auto-install: {e}')
+
+        # One-shot: re-acquire the now-extracted backend for converted builtins
+        # that first shipped frontend-only (plan 47 Phase 2), so an upgraded panel
+        # that installed them frontend-only doesn't lose the API. Best-effort.
+        try:
+            from app.services.extension_migration import run_backend_acquisition
+            run_backend_acquisition()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Extension backend acquisition: {e}')
 
         # Start metrics history collection in background
         from app.services.metrics_history_service import MetricsHistoryService

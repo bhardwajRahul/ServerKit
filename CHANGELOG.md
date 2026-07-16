@@ -20,6 +20,24 @@ awaiting a stable release:
 
 ### Added
 
+- **The setup wizard now installs what it recommends (lean by default).** The
+  onboarding "Recommended for you" step is no longer decorative — it renders
+  real extensions matched to the use cases you pick (e.g. WordPress → WordPress
+  flagship; DevOps → Kubernetes, Automations, Git) as checkboxes that install on
+  Finish. Uncheck everything for a lean install; failed installs never block
+  finishing setup and can be retried from Extensions. Fresh installs no longer
+  force-install WordPress — it's offered in the wizard when the WordPress use
+  case is selected. Existing installs keep WordPress untouched.
+
+- **FTP, Cloud Provisioning, Remote Access, and Status Pages are now opt-in
+  extensions** — their backends moved out of core into
+  `serverkit-ftp`, `serverkit-cloud-provision`, `serverkit-remote-access`, and
+  `serverkit-status`, so a fresh panel that never uses them loads none of their
+  code or API surface. **Upgraders lose nothing:** a one-shot boot migration
+  re-acquires each extension's backend on panels that had installed it, and the
+  underlying data models stay in core. Uninstalling an extension now removes its
+  API surface too, not just its page.
+
 - **Automations (tramo) replaces the Workflow Builder** — the drag-and-drop
   React-Flow Workflow Builder is retired in favour of **Automations**
   (`/automations`), an opt-in builtin extension that embeds
@@ -168,6 +186,16 @@ awaiting a stable release:
   returns the complete set).
 
 ### Changed
+
+- **`update.sh` now defaults to pre-built releases (Node-free updates).** The
+  frontend is compiled once in CI and shipped, so a normal `update.sh` no longer
+  rebuilds the SPA on the server — it fetches the pre-built release tarball,
+  meaning the server needs no Node/npm at all. This keeps updates working
+  uniformly on old distros, ARM/Raspberry Pi and tiny boxes. Opt into an on-box
+  source rebuild with `--source`, `--branch <name>`, or `BUILD_FROM_SOURCE=1`
+  (that path now requires Node 20.19+/22.12+ for the vite 8 toolchain; the
+  installer provisions Node 22 LTS and both scripts fail with a clear "upgrade
+  Node" message instead of a cryptic bundler error).
 
 - **UI consistency round (Jobs, Queue Bus, Email, Marketplace)** — brought four
   drifted pages back onto the shared host idiom. The **Jobs** page was rebuilt
