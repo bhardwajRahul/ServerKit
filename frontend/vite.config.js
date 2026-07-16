@@ -117,12 +117,21 @@ export default defineConfig(({ mode }) => {
             sourcemap: false,
             rollupOptions: {
                 output: {
-                    manualChunks: {
-                        'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-                        'vendor-charts': ['recharts'],
-                        'vendor-flow': ['@xyflow/react'],
-                        'vendor-xterm': ['@xterm/xterm', '@xterm/addon-fit', '@xterm/addon-web-links'],
-                        'vendor-icons': ['lucide-react'],
+                    // Vite 8 bundles with rolldown, which only accepts the
+                    // FUNCTION form of manualChunks (the object form that
+                    // Rollup allowed throws "manualChunks is not a function").
+                    // Match on node_modules path so each listed package — plus
+                    // its private deps — lands in one cohesive vendor chunk.
+                    // Anything unmatched falls through to Vite's default
+                    // chunking, so shared deps (e.g. d3 used by both charts and
+                    // flow) get their own common chunk instead of duplicating.
+                    manualChunks(id) {
+                        if (!id.includes('node_modules')) return
+                        if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|@remix-run[\\/]router|scheduler)[\\/]/.test(id)) return 'vendor-react'
+                        if (/[\\/]node_modules[\\/]recharts[\\/]/.test(id)) return 'vendor-charts'
+                        if (/[\\/]node_modules[\\/]@xyflow[\\/]/.test(id)) return 'vendor-flow'
+                        if (/[\\/]node_modules[\\/]@xterm[\\/]/.test(id)) return 'vendor-xterm'
+                        if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
                     },
                 },
             },
