@@ -98,20 +98,26 @@ else
 fi
 
 # --------------------------------------------------------------------------
-# T3 — node_ready requires node>=18 AND npm present.
+# T3 — node_ready gates on vite 8's Node floor (^20.19.0 || >=22.12.0) AND npm
+# present. The frontend bundler (rolldown) can't build on older Node — npm
+# silently drops its native binary — so a source install must fail fast rather
+# than mid-build; 21.x and 22.11 are also rejected (outside the range).
 # --------------------------------------------------------------------------
-printf '#!/usr/bin/env bash\necho v18.19.0\n' > "$STUB_BIN/node"; chmod +x "$STUB_BIN/node"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$STUB_BIN/npm"; chmod +x "$STUB_BIN/npm"
-if ( set -Eeuo pipefail; node_ready ); then
-    ok "node_ready true for node v18 with npm present"
+_mk_node_stub() { printf '#!/usr/bin/env bash\necho v%s\n' "$1" > "$STUB_BIN/node"; chmod +x "$STUB_BIN/node"; }
+node_gate_ok=1
+for v in 20.19.0 20.19.5 22.12.0 22.13.1 24.2.0; do
+    _mk_node_stub "$v"
+    ( set -Eeuo pipefail; node_ready ) || node_gate_ok=0
+done
+for v in 16.20.0 18.19.0 20.17.0 20.18.9 21.7.0 22.11.0; do
+    _mk_node_stub "$v"
+    ( set -Eeuo pipefail; node_ready ) && node_gate_ok=0
+done
+if [ "$node_gate_ok" = 1 ]; then
+    ok "node_ready accepts 20.19+/22.12+ (with npm) and rejects older (incl. v18, 21.x, 22.11)"
 else
-    bad "node_ready should be true for node v18 + npm"
-fi
-printf '#!/usr/bin/env bash\necho v16.20.0\n' > "$STUB_BIN/node"; chmod +x "$STUB_BIN/node"
-if ( set -Eeuo pipefail; node_ready ); then
-    bad "node_ready should be false for node v16"
-else
-    ok "node_ready false for node v16 (below the 18 floor)"
+    bad "node_ready mis-gated a Node version against the vite 8 floor"
 fi
 rm -f "$STUB_BIN/node" "$STUB_BIN/npm"
 
