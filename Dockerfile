@@ -16,7 +16,7 @@
 # --platform=$BUILDPLATFORM: dist/ is static JS/CSS (arch-independent), so this
 # stage always runs natively on the build machine — never under QEMU, where an
 # emulated `npm ci` takes 20-40 min (or hangs) during multi-arch release builds.
-FROM --platform=$BUILDPLATFORM node:20-alpine AS frontend-builder
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 

@@ -987,5 +987,70 @@ else
 fi
 
 # --------------------------------------------------------------------------
+# T32 — _node_build_ok gates on vite 8's Node floor (^20.19.0 || >=22.12.0) so a
+# source-mode update on an old-Node box fails fast with an actionable message
+# instead of a cryptic rolldown MODULE_NOT_FOUND mid-build (plan 47 / vite 8).
+# --------------------------------------------------------------------------
+t="$WORK/t32"; mkdir -p "$t/bin"
+_mk_node_stub() { printf '#!/usr/bin/env bash\n[ "$1" = "--version" ] && echo "v%s"\nexit 0\n' "$1" > "$t/bin/node"; chmod +x "$t/bin/node"; }
+node_gate_ok=1
+for v in 20.19.0 22.12.0 24.1.0; do
+    _mk_node_stub "$v"
+    ( set -Eeuo pipefail; PATH="$t/bin:$PATH"; _node_build_ok ) || node_gate_ok=0
+done
+for v in 18.20.0 20.17.0 20.18.9 21.7.0 22.11.0; do
+    _mk_node_stub "$v"
+    ( set -Eeuo pipefail; PATH="$t/bin:$PATH"; _node_build_ok ) && node_gate_ok=0
+done
+if [ "$node_gate_ok" = 1 ]; then
+    ok "_node_build_ok accepts 20.19+/22.12+ and rejects older (incl. 21.x, 22.11)"
+else
+    bad "_node_build_ok mis-gated a Node version against the vite 8 floor"
+fi
+
+# --------------------------------------------------------------------------
+# T33 — build_frontend_bundle refuses (returns 1, never touches npm) on a
+# too-old Node, so the caller rolls back instead of a half-built bundle.
+# --------------------------------------------------------------------------
+t="$WORK/t33"; mkdir -p "$t/bin" "$t/tree/frontend"
+printf '#!/usr/bin/env bash\n[ "$1" = "--version" ] && echo "v20.17.0"\nexit 0\n' > "$t/bin/node"; chmod +x "$t/bin/node"
+printf '#!/usr/bin/env bash\necho ran >> "%s/npmlog"\nexit 0\n' "$t" > "$t/bin/npm"; chmod +x "$t/bin/npm"
+if (
+    set -Eeuo pipefail
+    PATH="$t/bin:$PATH"
+    ! build_frontend_bundle "$t/tree"
+) >/dev/null 2>&1 && [ ! -e "$t/npmlog" ]; then
+    ok "build_frontend_bundle refuses on too-old Node without touching npm"
+else
+    bad "build_frontend_bundle ran npm (or returned 0) on a too-old Node"
+fi
+
+# --------------------------------------------------------------------------
+# T34 — refresh_config renders the systemd unit with @BIND_HOST@ substituted
+# (loopback), not left as a literal placeholder that would break gunicorn's bind
+# after an update (parity with install.sh; the gap the operator caught).
+# --------------------------------------------------------------------------
+t="$WORK/t34"
+mkdir -p "$t/nginx/sites-available" "$t/nginx/sites-enabled" \
+         "$t/target/nginx/sites-available" "$t/target/templates" "$t/sysd"
+printf 'http {\n}\n' > "$t/nginx/nginx.conf"
+printf 'server { listen 80; }\n' > "$t/target/nginx/sites-available/serverkit-insecure.conf"
+printf 'ExecStart=gunicorn -b @BIND_HOST@:@PORT@ run:app\n' \
+    > "$t/target/templates/serverkit-backend.service.in"
+(
+    set -Eeuo pipefail
+    NGINX_DIR="$t/nginx"; LETSENCRYPT_DIR="$t/le"; SYSTEMD_DIR="$t/sysd"; CONFIG_DIR="$t/cfg"
+    INSTALL_DIR="$t/opt"; VENV_DIR="$t/venv"; LOG_DIR="$t/log"; DRY_RUN=0
+    refresh_config "$t/target"
+) >/dev/null 2>&1
+if [ -f "$t/sysd/serverkit.service" ] \
+   && ! grep -q '@BIND_HOST@' "$t/sysd/serverkit.service" \
+   && grep -q '127.0.0.1:' "$t/sysd/serverkit.service"; then
+    ok "refresh_config substitutes @BIND_HOST@ in the systemd unit (loopback bind)"
+else
+    bad "refresh_config left a literal @BIND_HOST@ (gunicorn would fail to bind after update)"
+fi
+
+# --------------------------------------------------------------------------
 printf '\n%d passed, %d failed, %d skipped\n\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ]

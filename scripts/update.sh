@@ -857,10 +857,31 @@ preserve_installed_plugins() {
     return 0
 }
 
+# Vite 8 / rolldown (the frontend bundler) require Node ^20.19.0 || >=22.12.0.
+# Returns 1 (no output) on an absent/too-old Node so callers can warn+rollback or
+# halt with an actionable message, instead of npm silently skipping rolldown's
+# native binary and `npm run build` dying with a cryptic MODULE_NOT_FOUND.
+_node_build_ok() {
+    command -v node >/dev/null 2>&1 || return 1
+    local v M m
+    v="$(node --version 2>/dev/null | sed -E 's/^v//')"
+    M="${v%%.*}"; m="${v#*.}"; m="${m%%.*}"
+    case "$M" in ''|*[!0-9]*) return 1;; esac
+    case "$m" in ''|*[!0-9]*) return 1;; esac
+    if [ "$M" -eq 20 ] && [ "$m" -ge 19 ]; then return 0; fi
+    if [ "$M" -eq 22 ] && [ "$m" -ge 12 ]; then return 0; fi
+    if [ "$M" -ge 23 ]; then return 0; fi
+    return 1
+}
+
 # Build the SPA bundle in a target tree. Pass "reuse" as $2 to skip npm ci
 # (node_modules already intact from a just-failed build). Subshell so the cd
 # cannot leak into the main shell.
 build_frontend_bundle() {
+    if ! _node_build_ok; then
+        warn "Node.js $(node --version 2>/dev/null || echo 'not found') is too old to build the frontend — vite 8 needs 20.19+ or 22.12+. Upgrade Node (e.g. NodeSource 22 LTS) and re-run the update."
+        return 1
+    fi
     ( cd "$1/frontend" && \
       { [ "${2:-}" = "reuse" ] || npm ci --prefer-offline 2>&1 | tail -3; } && \
       NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -5 )
@@ -1109,10 +1130,16 @@ EOF
     # so blue/green switches need no re-render). Fall back to a plain unit if an
     # older tree still ships one.
     local svc_template="$target/templates/serverkit-backend.service.in"
+    # Bind the API to loopback by default — host nginx fronts it on :80/:443, so
+    # the raw gunicorn port must not be world-reachable. Mirror install.sh so an
+    # update re-renders @BIND_HOST@ instead of leaving the literal placeholder
+    # (which would make gunicorn fail to bind). Override with SERVERKIT_BIND_HOST.
+    local bind_host="${SERVERKIT_BIND_HOST:-127.0.0.1}"
     if [ -f "$svc_template" ]; then
         sed -e "s|@SERVERKIT_DIR@|$INSTALL_DIR|g" \
             -e "s|@SERVERKIT_VENV_DIR@|$VENV_DIR|g" \
             -e "s|@PORT@|5000|g" \
+            -e "s|@BIND_HOST@|$bind_host|g" \
             -e "s|@USER@|root|g" \
             -e "s|@LOG_DIR@|$LOG_DIR|g" \
             "$svc_template" > "$SYSTEMD_DIR/serverkit.service"
@@ -1538,6 +1565,7 @@ update_docker_compose() {
         if [ "$DRY_RUN" = "1" ]; then
             info "[dry-run] would npm ci + npm run build in frontend/"
         elif command -v npm &>/dev/null; then
+            _node_build_ok || halt "Node.js $(node --version 2>/dev/null || echo 'not found') is too old to build the frontend — vite 8 needs 20.19+ or 22.12+. Upgrade Node (e.g. NodeSource 22 LTS) and re-run."
             ( cd "$INSTALL_DIR/frontend" && npm ci 2>&1 | tail -n3 && \
               NODE_OPTIONS="--max-old-space-size=1024" npm run build 2>&1 | tail -n5 ) \
               || halt "Frontend build failed"
