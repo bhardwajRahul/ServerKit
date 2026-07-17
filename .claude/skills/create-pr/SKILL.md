@@ -77,11 +77,13 @@ Omit the Highlights section entirely for internal-only PRs — don't force it.
 ### Style Rules
 
 #### Title
-- **Follow the repo's conventional-commit style:** `type(scope): summary` — e.g. `feat(agent): ...`, `fix(deps): ...`, `ci: ...`, `refactor(api): ...`, `test: ...`. Match the types and scopes already in `git log`; don't invent a new convention.
-- Pick the `type` that covers the **dominant** change across the whole PR, not just one commit. Mixed PRs lean on the most user-significant change (a feature wins over the chores that came with it).
-- Lowercase summary, imperative mood, no trailing period. Keep it under ~70 chars.
-- The CI version-bump keys off commit/title prefixes, so the `type` is functional, not cosmetic — `feat`/`fix` carry release weight; `ci`/`docs`/`test`/`chore` do not.
+- **Write a normal, human title — NOT a conventional-commit prefix.** Name the PR the way you'd describe it to a teammate. **No `type(scope):`, no `feat:` / `fix:` / `chore:` lead-in, no square-bracket tags** in the title.
+  - Good: `Add the Cloudflare DNS provisioning extension` · `Harden the subprocess audit against injection`
+  - Bad: `feat(dns): add cloudflare provisioning` · `fix: subprocess injection` · `chore(deps): bump`
+- Capitalize the first word like a sentence; imperative or plain-descriptive are both fine; no trailing period. Keep it under ~70 chars.
+- Leading with the subsystem and a colon in plain words is fine when it aids scanning: `Backend: …`, `Extensions: …`.
 - The `# <Title>` line at the top of the generated file **is** the PR title — when the PR is eventually opened, that same string is the `gh pr create --title` value. Don't write a second, different headline.
+- **Where the release weight actually lives (so you can safely keep it out of the title):** `version-bump.yml` reads the *commit message* pushed to `dev` (`github.event.head_commit.message`), **not this title.** A `feat:`/`feature:`/`minor:` prefix or a `[minor]` tag in the commit → minor bump; `BREAKING:`/`major:` or `[major]` → major; anything else → patch. Put any bump intent in your **commits**; leave the PR title human.
 
 #### Summary
 - **4-6 sentences.** This is the part people actually read — give it room to breathe.
