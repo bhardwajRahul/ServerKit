@@ -258,6 +258,37 @@ def rotate_key(site_id):
     return jsonify(site.to_dict()), 200
 
 
+def _panel_base_url():
+    """Best public base URL for the tracker script, preferring a configured
+    public URL over the request host so a copied snippet works off-panel."""
+    from flask import current_app as _app
+    configured = (_app.config.get('SERVERKIT_PUBLIC_URL')
+                  or _app.config.get('PUBLIC_URL') or '').strip()
+    if configured:
+        return configured.rstrip('/')
+    return (request.host_url or '').rstrip('/')
+
+
+@analytics_bp.route('/sites/<int:site_id>/snippet', methods=['GET'])
+@viewer_required
+def site_snippet(site_id):
+    """Return the ready-to-paste tracker snippet for a site."""
+    site, err = _site_or_404(site_id)
+    if err:
+        return err
+    tracker_url = f'{_panel_base_url()}/api/v1/analytics/tracker.js'
+    outlinks = str(request.args.get('outlinks', '')).lower() in ('1', 'true', 'yes')
+    attrs = f' src="{tracker_url}" data-site-key="{site.site_key}"'
+    if outlinks:
+        attrs += ' data-outlinks="true"'
+    snippet = f'<script defer{attrs}></script>'
+    return jsonify({
+        'snippet': snippet,
+        'tracker_url': tracker_url,
+        'site_key': site.site_key,
+    }), 200
+
+
 # --------------------------------------------------------------------------- #
 # report queries (JWT: viewer)
 # --------------------------------------------------------------------------- #

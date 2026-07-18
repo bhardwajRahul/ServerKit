@@ -689,3 +689,51 @@ def test_rollup_job_handler_never_raises(app):
     _mk_plugin_row()
     out = jobs_mod.rollup(job=None)
     assert 'rows' in out or 'error' in out or 'sites_dates' in out
+
+
+# --------------------------------------------------------------------------- #
+# Phase 3: tracker JS artifact + snippet
+# --------------------------------------------------------------------------- #
+def test_tracker_min_artifact_exists_and_bounded():
+    path = os.path.join(EXT_DIR, 'backend', 'tracker', 'sk.min.js')
+    assert os.path.exists(path), 'run scripts/build-analytics-tracker.mjs'
+    body = open(path, encoding='utf-8').read()
+    assert len(body.encode('utf-8')) < 4096  # <4 KB budget
+    assert '/*' not in body and '*/' not in body  # comments stripped
+    assert 'sendBeacon' in body and 'data-site-key' in body
+
+
+def test_tracker_js_serves_real_build(app, analytics_client):
+    bp_mod._TRACKER_CACHE['js'] = None  # bypass any placeholder cached earlier
+    resp = analytics_client.get('/api/v1/analytics/tracker.js')
+    assert resp.status_code == 200
+    body = resp.get_data(as_text=True)
+    assert 'placeholder' not in body
+    assert 'sendBeacon' in body
+
+
+def test_snippet_endpoint(app, analytics_client):
+    viewer = _auth(_mk_viewer())
+    site = _mk_site()
+    r = analytics_client.get(f'/api/v1/analytics/sites/{site.id}/snippet',
+                             headers=viewer)
+    assert r.status_code == 200
+    body = r.get_json()
+    assert body['site_key'] == site.site_key
+    assert '/api/v1/analytics/tracker.js' in body['tracker_url']
+    assert f'data-site-key="{site.site_key}"' in body['snippet']
+    assert body['snippet'].startswith('<script defer')
+
+
+def test_snippet_outlinks_flag(app, analytics_client):
+    viewer = _auth(_mk_viewer())
+    site = _mk_site()
+    r = analytics_client.get(
+        f'/api/v1/analytics/sites/{site.id}/snippet?outlinks=true', headers=viewer)
+    assert 'data-outlinks="true"' in r.get_json()['snippet']
+
+
+def test_snippet_missing_site_404(app, analytics_client):
+    viewer = _auth(_mk_viewer())
+    r = analytics_client.get('/api/v1/analytics/sites/9999/snippet', headers=viewer)
+    assert r.status_code == 404
