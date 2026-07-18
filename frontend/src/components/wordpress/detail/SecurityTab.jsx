@@ -3,6 +3,7 @@ import wordpressApi from '../../../services/wordpress';
 import { useToast } from '../../../contexts/ToastContext';
 import { Pill, ScoreGauge } from '../../ds';
 import { Button } from '@/components/ui/button';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton } from './wpDetailShared';
 
 // Security Tab — per-site security depth (#30): file-integrity verification,
@@ -93,7 +94,7 @@ const SecurityTab = ({ siteId }) => {
         finally { setBusy(false); }
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const intRunning = integrity?.status === 'running';
     const issues = integrity?.issues || [];

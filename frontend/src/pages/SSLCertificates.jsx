@@ -15,7 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/Skeleton';
+import SkeletonBoundary from '@/components/SkeletonBoundary';
 
 const SSLCertificates = () => {
     const toast = useToast();
@@ -253,37 +254,43 @@ const SSLCertificates = () => {
         [actionLoading, certbotInstalled, certificates.length],
     );
 
-    if (loading) {
-        return (
-            <div className="sk-tabgroup__inner ssl-page">
-                <div className="ssl-status-bar">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="ssl-status-item">
-                            <Skeleton className="w-12 h-12 rounded-xl" />
-                            <div>
-                                <Skeleton className="w-20 h-3.5 mb-1.5" />
-                                <Skeleton className="w-12 h-3" />
-                            </div>
+    const sslSkeleton = (
+        <>
+            <div className="ssl-status-bar">
+                {[1, 2, 3].map(i => (
+                    <div key={i} className="ssl-status-item">
+                        <Skeleton variant="avatar" />
+                        <div className="skeleton-stack">
+                            <Skeleton variant="title" width="55%" />
+                            <Skeleton variant="line" width="35%" />
                         </div>
-                    ))}
-                </div>
-                <div className="ssl-cert-list">
-                    {[1, 2].map(i => (
-                        <div key={i} className="ssl-cert-item">
-                            <Skeleton className="w-10 h-10 rounded-xl" />
-                            <div className="flex-1">
-                                <Skeleton className="w-48 h-3.5 mb-2" />
-                                <Skeleton className="w-72 h-3" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                    </div>
+                ))}
             </div>
-        );
-    }
+            <div className="ssl-cert-list">
+                {[1, 2].map(i => (
+                    <div key={i} className="ssl-cert-item">
+                        <div className="ssl-cert-item-info">
+                            <Skeleton variant="avatar" />
+                            <div className="skeleton-stack">
+                                <Skeleton variant="title" width={200} />
+                                <Skeleton variant="line" width={280} />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
 
     return (
-        <div className="sk-tabgroup__inner ssl-page">
+        <>
+        <SkeletonBoundary
+            className="sk-tabgroup__inner ssl-page"
+            loading={loading}
+            skeleton={sslSkeleton}
+        >
+            {(!loading || status) && (<>
             {/* Status Cards */}
             <div className="ssl-status-bar">
                 <div className="ssl-status-item">
@@ -422,6 +429,8 @@ const SSLCertificates = () => {
                     </Button>
                 </div>
             )}
+            </>)}
+        </SkeletonBoundary>
 
             {/* Obtain Certificate Modal */}
             <Modal open={showObtainModal} onClose={() => setShowObtainModal(false)} title="Obtain SSL Certificate">
@@ -619,7 +628,7 @@ const SSLCertificates = () => {
                     </div>
                 </form>
             </Modal>
-        </div>
+        </>
     );
 };
 

@@ -6,6 +6,7 @@ import wordpressApi from '../../../services/wordpress';
 import api from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { MetricCard, SegControl } from '../../ds';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton, ANALYTICS_PERIODS } from './wpDetailShared';
 
 // Analytics Tab — per-site traffic + error analytics (#25), parsed on-demand from
@@ -48,7 +49,7 @@ const AnalyticsTab = ({ siteId }) => {
 
     useEffect(() => { load(); }, [load]);
 
-    if (loading) return <OverviewGridSkeleton panels={3} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={3} />} />;
 
     const fmtHour = (iso) => {
         const d = new Date(iso);

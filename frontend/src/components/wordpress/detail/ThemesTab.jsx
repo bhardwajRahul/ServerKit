@@ -7,6 +7,7 @@ import EmptyState from '../../EmptyState';
 import { Pill } from '../../ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { ListItemSkeleton } from './wpDetailShared';
 
 // Themes Tab
@@ -92,17 +93,19 @@ const ThemesTab = ({ siteId }) => {
 
     if (loading) {
         return (
-            <div className="themes-tab">
-                <div className="section-header">
-                    <div className="skeleton" style={{ width: 80, height: 24 }} />
+            <SkeletonBoundary loading skeleton={(
+                <div className="themes-tab">
+                    <div className="section-header">
+                        <div className="skeleton" style={{ width: 80, height: 24 }} />
+                    </div>
+                    <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 16 }} />
+                    <div className="themes-list">
+                        <ListItemSkeleton />
+                        <ListItemSkeleton />
+                        <ListItemSkeleton />
+                    </div>
                 </div>
-                <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 16 }} />
-                <div className="themes-list">
-                    <ListItemSkeleton />
-                    <ListItemSkeleton />
-                    <ListItemSkeleton />
-                </div>
-            </div>
+            )} />
         );
     }
 

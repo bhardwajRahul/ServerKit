@@ -11,6 +11,7 @@ import { Pill, EnvTag, PageTopbar } from '../components/ds';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import EmptyState from '../components/EmptyState';
 import PluginSlot from '../components/PluginSlot';
+import SkeletonBoundary from '../components/SkeletonBoundary';
 import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,7 +131,7 @@ const WordPressDetail = () => {
     }
 
     if (loading) {
-        return <DetailPageSkeleton />;
+        return <SkeletonBoundary loading skeleton={<DetailPageSkeleton />} />;
     }
 
     if (!site) {

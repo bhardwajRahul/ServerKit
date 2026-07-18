@@ -67,6 +67,17 @@
     }
 }
 
+// Vertical stack for composed skeleton lines (e.g. a title over a subline) that
+// sit next to an avatar/icon in a flex row. Fills the remaining row width so
+// percentage widths on the child <Skeleton>s read against the real column.
+.skeleton-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
+}
+
 // Generic panel skeleton used by EmptyState's loading branch: a header row
 // (avatar + two lines), a row of stat cards, and a few content lines.
 .skeleton-panel {
@@ -118,8 +129,56 @@
     margin-inline: auto;
 }
 
+// ============================================
+// SKELETON BOUNDARY
+// Overlays the loading skeleton on the real content box instead of swapping the
+// tree — the overlay inherits the content's dimensions, so nothing jumps when
+// data arrives. See components/SkeletonBoundary.jsx.
+// ============================================
+.skeleton-boundary {
+    position: relative;
+
+    // While loading, hide the real (in-flow) children so the overlay reads
+    // through — but never the skeleton overlay itself.
+    &[data-loading='true'] > :not(.skeleton-boundary__skeleton) {
+        visibility: hidden;
+    }
+
+    &__skeleton {
+        // Flow mode (no in-flow children yet): the skeleton occupies its
+        // intrinsic space — same footprint as a plain skeleton swap.
+
+        // Overlay mode: cover the hidden real content exactly.
+        &--overlay {
+            position: absolute;
+            inset: 0;
+        }
+
+        &--fade {
+            transition: opacity 200ms ease-out;
+        }
+
+        &--leaving {
+            opacity: 0;
+        }
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .skeleton::after {
+        animation: none;
+    }
+
+    .skeleton-boundary__skeleton--fade {
+        transition: none;
+    }
+
+    // The legacy `@mixin skeleton()` (pages/_wordpress) and the wp-*-skeleton
+    // families animate the element itself (not a ::after), so disable those too.
+    // The trailing [class] bumps specificity above the plain `.skeleton` /
+    // `.wp-*-skeleton` rules so this wins regardless of import order.
+    .skeleton[class],
+    [class*='-skeleton'][class] {
         animation: none;
     }
 }

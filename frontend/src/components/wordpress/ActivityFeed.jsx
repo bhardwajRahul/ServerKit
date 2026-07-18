@@ -4,7 +4,8 @@ import wordpressApi from '../../services/wordpress';
 import { formatRelativeTime } from '@/utils/time';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/Skeleton';
+import SkeletonBoundary from '@/components/SkeletonBoundary';
 
 const ACTION_ICONS = {
     create: Play,
@@ -60,23 +61,21 @@ const ActivityFeed = ({ projectId, envId, limit = 20, compact = false }) => {
         }
     }
 
-    if (loading) {
-        return (
-            <div className="activity-feed">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="activity-item-skeleton">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <div style={{ flex: 1 }}>
-                            <Skeleton className="h-3.5 w-3/5 mb-1.5" />
-                            <Skeleton className="h-3 w-2/5" />
-                        </div>
+    const feedSkeleton = (
+        <>
+            {[1, 2, 3].map(i => (
+                <div key={i} className="activity-item-skeleton">
+                    <Skeleton variant="circle" width={32} height={32} />
+                    <div className="skeleton-stack">
+                        <Skeleton variant="line" width="60%" />
+                        <Skeleton variant="line" width="40%" />
                     </div>
-                ))}
-            </div>
-        );
-    }
+                </div>
+            ))}
+        </>
+    );
 
-    if (activities.length === 0) {
+    if (!loading && activities.length === 0) {
         return (
             <div className="activity-feed-empty">
                 <p>No activity recorded yet.</p>
@@ -85,8 +84,12 @@ const ActivityFeed = ({ projectId, envId, limit = 20, compact = false }) => {
     }
 
     return (
-        <div className={`activity-feed ${compact ? 'compact' : ''}`}>
-            {activities.map(activity => {
+        <SkeletonBoundary
+            className={`activity-feed ${compact ? 'compact' : ''}`.trim()}
+            loading={loading}
+            skeleton={feedSkeleton}
+        >
+            {activities.length > 0 && activities.map(activity => {
                 const Icon = ACTION_ICONS[activity.action] || AlertCircle;
                 const colorClass = ACTION_BADGE_VARIANTS[activity.action] || 'secondary';
 
@@ -120,7 +123,7 @@ const ActivityFeed = ({ projectId, envId, limit = 20, compact = false }) => {
                     Load more
                 </Button>
             )}
-        </div>
+        </SkeletonBoundary>
     );
 };
 

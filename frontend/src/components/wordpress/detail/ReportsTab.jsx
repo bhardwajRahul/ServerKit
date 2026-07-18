@@ -6,6 +6,7 @@ import { useToast } from '../../../contexts/ToastContext';
 import { useConfirm } from '../../../hooks/useConfirm';
 import { Pill } from '../../ds';
 import { Button } from '@/components/ui/button';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton } from './wpDetailShared';
 
 // Reports Tab — monthly client reports (#33 agency slice). Aggregates the
@@ -118,7 +119,7 @@ const ReportsTab = ({ siteId }) => {
         window.print();
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const selected = reports.find(r => r.id === selectedId) || null;
 

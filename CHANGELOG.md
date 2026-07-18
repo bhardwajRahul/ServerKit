@@ -204,6 +204,22 @@ awaiting a stable release:
 
 ### Changed
 
+- **Skeleton loading overhaul — one primitive, overlay-on-content, no layout
+  shift.** Loading placeholders no longer swap in a disconnected tree that jumps
+  when data arrives. A new `SkeletonBoundary` keeps the real content in flow and,
+  while loading, hides it and paints the skeleton *over* its exact box — so the
+  placeholder inherits the real dimensions at every breakpoint (zero guessed
+  widths, zero cumulative layout shift on refresh). The two competing skeleton
+  primitives were consolidated to the single SCSS-based `Skeleton` (the Tailwind
+  `ui/skeleton` shim and its raw sizing classes are gone), and the worst
+  hand-guessed loaders — SSL certificates, the WordPress list and detail tabs,
+  and the WordPress activity feed — now render through the boundary. All skeleton
+  shimmer honors `prefers-reduced-motion`, and loading regions expose `aria-busy`
+  for assistive tech. A dev-only tool (`npm run capture:skeletons`) can measure a
+  logged-in page's real layout into baked bone assets for pixel-accurate
+  placeholders, replayed via the boundary's optional `bones` prop — no browser or
+  extra dependency ships in the product.
+
 - **`update.sh` now defaults to pre-built releases (Node-free updates).** The
   frontend is compiled once in CI and shipped, so a normal `update.sh` no longer
   rebuilds the SPA on the server — it fetches the pre-built release tarball,

@@ -8,6 +8,7 @@ import { ServiceTile } from '../../ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { ListItemSkeleton } from './wpDetailShared';
 
 // Plugins Tab
@@ -131,17 +132,19 @@ const PluginsTab = ({ siteId }) => {
 
     if (loading) {
         return (
-            <div className="plugins-tab">
-                <div className="section-header">
-                    <div className="skeleton" style={{ width: 80, height: 24 }} />
+            <SkeletonBoundary loading skeleton={(
+                <div className="plugins-tab">
+                    <div className="section-header">
+                        <div className="skeleton" style={{ width: 80, height: 24 }} />
+                    </div>
+                    <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 16 }} />
+                    <div className="plugins-list">
+                        <ListItemSkeleton />
+                        <ListItemSkeleton />
+                        <ListItemSkeleton />
+                    </div>
                 </div>
-                <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 16 }} />
-                <div className="plugins-list">
-                    <ListItemSkeleton />
-                    <ListItemSkeleton />
-                    <ListItemSkeleton />
-                </div>
-            </div>
+            )} />
         );
     }
 

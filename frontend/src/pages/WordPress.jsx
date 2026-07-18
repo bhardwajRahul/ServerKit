@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import SkeletonBoundary from '@/components/SkeletonBoundary';
 
 // Mirror the backend slug rule (a-z, 0-9, single dashes) so the create modal can
 // preview the exact <slug>.<base> host the site will be published at.
@@ -194,34 +195,40 @@ function WordPress() {
         []
     );
 
+    const wpListSkeleton = (
+        <div className="wp-sites-grid">
+            {[1, 2, 3].map(i => (
+                <div key={i} className="wp-site-card-skeleton">
+                    <div className="wp-site-card-skeleton-header">
+                        <div className="wp-site-card-skeleton-icon" />
+                        <div className="wp-site-card-skeleton-info">
+                            <div className="wp-site-card-skeleton-name" />
+                            <div className="wp-site-card-skeleton-url" />
+                        </div>
+                        <div className="wp-site-card-skeleton-status" />
+                    </div>
+                    <div className="wp-site-card-skeleton-body">
+                        <div className="wp-site-card-skeleton-meta">
+                            <div className="wp-site-card-skeleton-label" />
+                            <div className="wp-site-card-skeleton-value" />
+                        </div>
+                        <div className="wp-site-card-skeleton-meta">
+                            <div className="wp-site-card-skeleton-label" />
+                            <div className="wp-site-card-skeleton-value" />
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+
     if (loading) {
         return (
-            <div className="sk-tabgroup__inner wordpress-page">
-                <div className="wp-sites-grid">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="wp-site-card-skeleton">
-                            <div className="wp-site-card-skeleton-header">
-                                <div className="wp-site-card-skeleton-icon" />
-                                <div className="wp-site-card-skeleton-info">
-                                    <div className="wp-site-card-skeleton-name" />
-                                    <div className="wp-site-card-skeleton-url" />
-                                </div>
-                                <div className="wp-site-card-skeleton-status" />
-                            </div>
-                            <div className="wp-site-card-skeleton-body">
-                                <div className="wp-site-card-skeleton-meta">
-                                    <div className="wp-site-card-skeleton-label" />
-                                    <div className="wp-site-card-skeleton-value" />
-                                </div>
-                                <div className="wp-site-card-skeleton-meta">
-                                    <div className="wp-site-card-skeleton-label" />
-                                    <div className="wp-site-card-skeleton-value" />
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+            <SkeletonBoundary
+                className="sk-tabgroup__inner wordpress-page"
+                loading
+                skeleton={wpListSkeleton}
+            />
         );
     }
 
