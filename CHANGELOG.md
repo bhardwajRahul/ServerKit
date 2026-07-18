@@ -577,6 +577,15 @@ awaiting a stable release:
 
 ### Security
 
+- **Login brute-force is now throttled per client IP.** On top of the existing
+  per-user account lockout, ServerKit now blocks a *client IP* after repeated
+  failed logins (default 10 failures / 15 min → 15-minute block, returned as
+  `429` with `Retry-After`), checked before the password is verified. This stops
+  password-spraying across many usernames from one source and closes a gap where
+  one attacker could drain the shared login rate-limit for everyone. It also
+  guards the one-time login-link redeem and 2FA-code verification endpoints.
+  Tunable via `AUTH_IP_MAX_ATTEMPTS` / `AUTH_IP_WINDOW_MINUTES` /
+  `AUTH_IP_BLOCK_MINUTES`.
 - **Client IP is no longer spoofable behind the proxy.** Rate-limit buckets,
   login lockout and audit-log source IPs previously trusted the *leftmost*
   `X-Forwarded-For` token — a value the client fully controls, so an attacker

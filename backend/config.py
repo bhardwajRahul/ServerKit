@@ -141,6 +141,17 @@ class Config:
     # Raise it only if you add another proxy (e.g. Cloudflare in front of nginx).
     TRUSTED_PROXY_HOPS = _env_int('TRUSTED_PROXY_HOPS', 1)
 
+    # ── Per-IP login brute-force throttle ───────────────────────────────
+    # In-memory (single-worker), complements the per-user account lockout: it
+    # stops password-spraying across many accounts from one IP and prevents a
+    # single attacker draining the shared login rate-limit bucket. After
+    # AUTH_IP_MAX_ATTEMPTS failed auths from one client IP within
+    # AUTH_IP_WINDOW_MINUTES, that IP is blocked (429 + Retry-After) for
+    # AUTH_IP_BLOCK_MINUTES. See app/services/auth_throttle_service.py.
+    AUTH_IP_MAX_ATTEMPTS = _env_int('AUTH_IP_MAX_ATTEMPTS', 10)
+    AUTH_IP_WINDOW_MINUTES = _env_int('AUTH_IP_WINDOW_MINUTES', 15)
+    AUTH_IP_BLOCK_MINUTES = _env_int('AUTH_IP_BLOCK_MINUTES', 15)
+
     # ── Build packs ─────────────────────────────────────────────────────
     # Path to the optional nixpacks binary (used by build_service's opaque
     # nixpacks path). The transparent build-pack layer (buildpack_service)

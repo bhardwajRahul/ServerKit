@@ -10,6 +10,8 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import limiter
 from app.models import User
 from app.services.totp_service import TOTPService, TwoFactorSetup
+from app.services import auth_throttle_service
+from app.utils.client_ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +174,15 @@ def verify_2fa_code():
     from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
     from app import db
 
+    # Per-IP brute-force throttle — 2FA codes are a small keyspace, so guessing
+    # from one IP is throttled up front, before any code check.
+    client_ip = get_client_ip()
+    blocked, retry_after = auth_throttle_service.is_blocked(client_ip)
+    if blocked:
+        return jsonify({
+            'error': 'Too many failed attempts. Try again later.'
+        }), 429, {'Retry-After': str(retry_after)}
+
     data = request.get_json()
     if not data:
         return jsonify({'error': 'No data provided'}), 400
@@ -204,6 +215,7 @@ def verify_2fa_code():
     # Try TOTP code first
     if TOTPService.verify_code(user.totp_secret, code):
         # Success - issue real tokens
+        auth_throttle_service.reset(client_ip)
         user.reset_failed_login()
         db.session.commit()
 
@@ -222,6 +234,7 @@ def verify_2fa_code():
 
     if matched_hash:
         # Valid backup code - remove it (one-time use)
+        auth_throttle_service.reset(client_ip)
         user.use_backup_code(matched_hash)
         user.reset_failed_login()
         db.session.commit()
@@ -242,6 +255,7 @@ def verify_2fa_code():
         }), 200
 
     # Invalid code
+    auth_throttle_service.register_failure(client_ip)
     user.record_failed_login()
     db.session.commit()
 

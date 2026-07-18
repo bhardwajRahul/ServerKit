@@ -16,6 +16,8 @@ from app.middleware.rbac import admin_required, get_current_user as get_request_
 from app.services.settings_service import SettingsService
 from app.services.audit_service import AuditService
 from app.services import login_link_service
+from app.services import auth_throttle_service
+from app.utils.client_ip import get_client_ip
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +222,15 @@ def login():
     if not sso_service.is_password_login_allowed():
         return jsonify({'error': 'Password login is disabled. Please use SSO.'}), 403
 
+    # Per-IP brute-force throttle — checked up front, before any password work,
+    # so spraying wrong passwords across many usernames from one IP is blocked.
+    client_ip = get_client_ip()
+    blocked, retry_after = auth_throttle_service.is_blocked(client_ip)
+    if blocked:
+        return jsonify({
+            'error': 'Too many failed login attempts. Try again later.'
+        }), 429, {'Retry-After': str(retry_after)}
+
     data = request.get_json()
 
     if not data:
@@ -244,12 +255,18 @@ def login():
         }), 429
 
     if not user or not user.check_password(password):
-        # Record failed login attempt
+        # Record the failure against BOTH throttles: per-user (targeted guessing)
+        # and per-IP (spraying across accounts). Per-IP counts even bad usernames.
+        auth_throttle_service.register_failure(client_ip)
         if user:
             user.record_failed_login()
             AuditService.log_login(user.id, success=False, details={'reason': 'invalid_password'})
             db.session.commit()
         return jsonify({'error': 'Invalid username/email or password'}), 401
+
+    # Correct password — clear this IP's failure count (covers the 2FA-pending
+    # and no-2FA paths below).
+    auth_throttle_service.reset(client_ip)
 
     if not user.is_active:
         AuditService.log_login(user.id, success=False, details={'reason': 'account_deactivated'})
@@ -368,14 +385,23 @@ def revoke_login_link(link_id):
 @limiter.limit("30 per minute")
 def redeem_login_link():
     """Redeem a one-time login link and issue normal JWT tokens."""
+    client_ip = get_client_ip()
+    blocked, retry_after = auth_throttle_service.is_blocked(client_ip)
+    if blocked:
+        return jsonify({
+            'error': 'Too many failed attempts. Try again later.'
+        }), 429, {'Retry-After': str(retry_after)}
+
     data = request.get_json() or {}
     token = data.get('token')
 
-    user, reason = login_link_service.redeem(token, request.remote_addr)
+    user, reason = login_link_service.redeem(token, client_ip)
     if not user:
-        logger.info(f"Login link redeem failed ({reason}) from {request.remote_addr}")
+        auth_throttle_service.register_failure(client_ip)
+        logger.info(f"Login link redeem failed ({reason}) from {client_ip}")
         return jsonify({'error': 'Invalid or expired link'}), 401
 
+    auth_throttle_service.reset(client_ip)
     user.reset_failed_login()
     user.last_login_at = datetime.utcnow()
     db.session.commit()
