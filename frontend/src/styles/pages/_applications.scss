@@ -544,14 +544,16 @@
 
 // Tabs navigation (WordPress pages render these classes; ApplicationDetail
 // uses shadcn Tabs — see the scoped `.tabs` block below)
+// A real containing bar so the tab nav has presence, instead of a transparent
+// underline strip that blends into the page background. Tabs are pills inside
+// it; the active pill is filled so the current section is unmistakable.
 .app-detail-tabs {
     display: flex;
-    gap: 2px;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--border-soft);
-    border-radius: 0;
-    padding: 0;
+    gap: 3px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
     overflow-x: auto;
 
     &::-webkit-scrollbar {
@@ -563,38 +565,36 @@
     display: flex;
     align-items: center;
     gap: 7px;
-    padding: 11px 14px;
+    padding: 8px 13px;
     background: transparent;
     border: none;
-    border-radius: 0;
-    border-bottom: 2px solid transparent;
-    color: var(--text-faint);
+    border-radius: 7px;
+    color: var(--text-dim);
     font-size: 13px;
-    font-weight: $font-weight-normal;
+    font-weight: $font-weight-medium;
     cursor: pointer;
     white-space: nowrap;
-    transition: color 0.14s;
+    transition: color 0.14s, background 0.14s;
 
     svg {
-        color: var(--text-ghost);
+        color: var(--text-faint);
         transition: color 0.14s;
         flex-shrink: 0;
     }
 
     &:hover {
-        background: none;
-        color: var(--text-dim);
+        background: var(--surface-2);
+        color: var(--text);
 
         svg {
-            color: var(--text-faint);
+            color: var(--text-dim);
         }
     }
 
     &.active {
-        background: none;
-        color: var(--text);
-        border-bottom-color: var(--accent);
-        font-weight: $font-weight-medium;
+        background: var(--accent-bg);
+        color: var(--accent-bright);
+        font-weight: $font-weight-semibold;
 
         svg {
             color: var(--accent-bright);
