@@ -387,26 +387,43 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     &__spacer { flex: 1; }
     &__actions { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-    // Routed sub-nav (the ex-sidebar sub-items). Grows to fill the bar so the
-    // overflow measurement in PageTopbar has a bounded width to fit against;
-    // overflow:hidden suppresses any flash before the first measurement.
+    // Routed sub-nav (the ex-sidebar sub-items). The nav is the flex-fill
+    // measurement region for PageTopbar's overflow logic; it is right-aligned so
+    // the changing page title on the left can grow/shrink WITHOUT shoving the
+    // tabs sideways (the old jump). overflow:hidden suppresses any pre-measure
+    // flash.
     &__tabs {
         display: flex;
         align-items: center;
-        gap: 2px;
+        justify-content: flex-end;
         margin-left: 6px;
         flex: 1 1 auto;
         min-width: 0;
         overflow: hidden;
+    }
+    // The visible segmented bar that actually holds the tabs — gives the sub-nav
+    // real presence against the page background, matching the detail-page tab
+    // bar instead of floating as bare text.
+    &__tabs-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        max-width: 100%;
+        padding: 3px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
     }
     &__tab {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         padding: 6px 11px;
-        border-radius: 8px;
+        border-radius: 7px;
         font-size: 13px;
-        font-weight: 450;
+        // Uniform weight across states so activating a tab never re-flows its
+        // neighbours; the active tab is set apart by fill + colour, not weight.
+        font-weight: 500;
         color: var(--text-dim);
         text-decoration: none;
         white-space: nowrap;
@@ -414,13 +431,12 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
 
         svg { width: 15px; height: 15px; }
         &:hover { background: var(--surface-hover); color: var(--text); }
-        &.is-active { background: var(--accent-bg); color: var(--accent-bright); font-weight: 500; }
+        &.is-active { background: var(--accent-bg); color: var(--accent-bright); }
     }
     // Overflow ("More") trigger — a tab-styled button that never collapses.
     &__more {
         flex-shrink: 0;
         border: none;
-        background: transparent;
         font: inherit;
         cursor: pointer;
         &[data-state="open"] { background: var(--surface-hover); color: var(--text); }
@@ -428,7 +444,7 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
 
     @media (max-width: 768px) {
         flex-wrap: wrap;
-        &__tabs { order: 3; width: 100%; margin-left: 0; }
+        &__tabs { order: 3; width: 100%; margin-left: 0; justify-content: flex-start; }
     }
 }
 

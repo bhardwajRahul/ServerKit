@@ -190,9 +190,11 @@ const baseDir = asBuiltin
     ? path.join(ROOT, 'builtin-extensions', slug)
     : path.join(ROOT, slug);
 
+const displayName = slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
 const manifest = {
     name: slug,
-    display_name: slug.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    display_name: displayName,
     version: '0.1.0',
     description: 'A ServerKit extension.',
     author: '',
@@ -208,8 +210,13 @@ const manifest = {
             category: 'system',
             icon: '<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
         }],
-        routes: [{ path: slug, component: componentName }],
-        page_titles: { [`/${slug}`]: slug },
+        routes: [
+            { path: slug, component: componentName },
+            // Forwards every sub-path to the same component, so adding a tab
+            // is just appending to TABS in frontend/index.jsx — no manifest edit.
+            { path: `${slug}/:tab`, component: componentName },
+        ],
+        page_titles: { [`/${slug}`]: displayName },
         command_palette: [{ label: slug, path: `/${slug}`, category: 'Pages', keywords: slug }],
     },
 };
@@ -222,11 +229,35 @@ if (withBackend) {
 
 const frontendIndex = `// ${manifest.display_name} — extension UI entry.
 // Exports named components referenced by contributions.routes[].component.
+//
+// Layout: the same shell the core tab-group pages use (/services, /domains, …).
+// The page renders the full-bleed .sk-tabgroup shell itself — a PageTopbar with
+// a routed tab strip pinned to the top and centered content inside
+// .sk-tabgroup__inner. Add a section by appending to TABS (the ${slug}/:tab
+// route in plugin.json already forwards every sub-path here) and switching the
+// rendered content on useParams().tab. Publish header buttons via PageTopbar's
+// \`actions\` prop; use the @/components/ds primitives (DataTable, SegControl,
+// MetricCard, …) for the body.
+import { Puzzle } from 'lucide-react';
+import { PageTopbar } from '@/components/ds';
+
+const TABS = [
+    { to: '/${slug}', label: 'Overview', end: true, icon: <Puzzle size={15} /> },
+];
+
 export function ${componentName}() {
     return (
-        <div className="sk-tabgroup__inner">
-            <h1>${manifest.display_name}</h1>
-            <p>Replace this with your extension UI.</p>
+        <div className="page-container page-container--full-bleed sk-tabgroup">
+            <PageTopbar
+                icon={<Puzzle size={18} />}
+                title="${manifest.display_name}"
+                tabs={TABS}
+            />
+            <div className="sk-tabgroup__content">
+                <div className="sk-tabgroup__inner">
+                    <p>Replace this with your extension UI.</p>
+                </div>
+            </div>
         </div>
     );
 }

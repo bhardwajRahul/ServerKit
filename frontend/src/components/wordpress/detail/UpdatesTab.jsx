@@ -5,6 +5,7 @@ import { Pill } from '../../ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton, UPDATE_SCHEDULES } from './wpDetailShared';
 
 // Updates Tab — safe update manager (#29): snapshot -> update -> health-check ->
@@ -59,7 +60,7 @@ const UpdatesTab = ({ siteId }) => {
         finally { setBusy(false); }
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const runs = data?.runs || [];
     const running = data?.running;

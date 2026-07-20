@@ -40,6 +40,17 @@ def create_app(config_name=None):
     )
     app.config.from_object(config[config_name])
 
+    # Trust the reverse proxy's forwarding headers to derive the real client IP
+    # (config-gated; default off). ProxyFix rewrites request.remote_addr from the
+    # rightmost TRUSTED_PROXY_HOPS entries of X-Forwarded-For — the hops our own
+    # proxies appended — so a client-forged leftmost value is ignored. Applied
+    # before the limiter and request handlers so every remote_addr consumer
+    # (flask-limiter's get_remote_address, get_client_ip(), audit logs) benefits.
+    if app.config.get('TRUST_PROXY_HEADERS'):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        hops = app.config.get('TRUSTED_PROXY_HOPS', 1)
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=hops, x_proto=1, x_host=0, x_port=0)
+
     # Initialize extensions
     db.init_app(app)
     migrate.init_app(app, db)
@@ -411,10 +422,9 @@ def create_app(config_name=None):
     from app.api.waf import waf_bp
     app.register_blueprint(waf_bp, url_prefix='/api/v1/waf')
 
-    # GPU monitoring moved to the serverkit-gpu builtin extension (plan 32 #7,
-    # first CORE_SLIM slice). Its blueprint now mounts at /api/v1/gpu via the
-    # builtin-extensions loader; the core app.api.gpu / app.services.gpu_service
-    # modules were removed.
+    # GPU monitoring lives in the standalone serverkit-gpu extension (own repo,
+    # installed from the registry). Its blueprint mounts at /api/v1/gpu when
+    # installed; the core app.api.gpu / app.services.gpu_service modules are gone.
 
     # Register blueprints - Nginx Advanced
     from app.api.nginx_advanced import nginx_advanced_bp

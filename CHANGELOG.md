@@ -20,6 +20,23 @@ awaiting a stable release:
 
 ### Added
 
+- **Web Analytics — a native, privacy-first analytics extension
+  (`serverkit-analytics`).** Self-hosted, first-party website analytics for the
+  sites this panel manages, built on the extension platform. A cookieless
+  JavaScript tracker under 4 KB (`navigator.sendBeacon`, no cookies, no
+  localStorage, honors Do Not Track) and optional apache/nginx access-log
+  ingestion feed a persistent time series stored on your own server — nothing
+  leaves the box. Visitor identity is a daily-rotating salted hash of IP + user
+  agent (raw IPs are never stored). A dashboard at `/analytics` shows visitors,
+  pageviews, top pages, referrers, devices, and a live realtime counter, with
+  per-site tracking snippets you can one-click inject into managed WordPress
+  sites (a mu-plugin) or nginx-proxied apps (a validated `sub_filter`). The
+  public collector is protected by a per-site key, a token-bucket rate limit, an
+  8 KB body cap, per-site CORS, and bot filtering. Off by default; install it
+  from the Marketplace. See [docs/ANALYTICS.md](docs/ANALYTICS.md). The existing
+  Umami/Plausible/PostHog deploy templates remain for users who want a full
+  third-party stack.
+
 - **The setup wizard now installs what it recommends (lean by default).** The
   onboarding "Recommended for you" step is no longer decorative — it renders
   real extensions matched to the use cases you pick (e.g. WordPress → WordPress
@@ -186,6 +203,22 @@ awaiting a stable release:
   returns the complete set).
 
 ### Changed
+
+- **Skeleton loading overhaul — one primitive, overlay-on-content, no layout
+  shift.** Loading placeholders no longer swap in a disconnected tree that jumps
+  when data arrives. A new `SkeletonBoundary` keeps the real content in flow and,
+  while loading, hides it and paints the skeleton *over* its exact box — so the
+  placeholder inherits the real dimensions at every breakpoint (zero guessed
+  widths, zero cumulative layout shift on refresh). The two competing skeleton
+  primitives were consolidated to the single SCSS-based `Skeleton` (the Tailwind
+  `ui/skeleton` shim and its raw sizing classes are gone), and the worst
+  hand-guessed loaders — SSL certificates, the WordPress list and detail tabs,
+  and the WordPress activity feed — now render through the boundary. All skeleton
+  shimmer honors `prefers-reduced-motion`, and loading regions expose `aria-busy`
+  for assistive tech. A dev-only tool (`npm run capture:skeletons`) can measure a
+  logged-in page's real layout into baked bone assets for pixel-accurate
+  placeholders, replayed via the boundary's optional `bones` prop — no browser or
+  extra dependency ships in the product.
 
 - **`update.sh` now defaults to pre-built releases (Node-free updates).** The
   frontend is compiled once in CI and shipped, so a normal `update.sh` no longer
@@ -577,6 +610,25 @@ awaiting a stable release:
 
 ### Security
 
+- **Login brute-force is now throttled per client IP.** On top of the existing
+  per-user account lockout, ServerKit now blocks a *client IP* after repeated
+  failed logins (default 10 failures / 15 min → 15-minute block, returned as
+  `429` with `Retry-After`), checked before the password is verified. This stops
+  password-spraying across many usernames from one source and closes a gap where
+  one attacker could drain the shared login rate-limit for everyone. It also
+  guards the one-time login-link redeem and 2FA-code verification endpoints.
+  Tunable via `AUTH_IP_MAX_ATTEMPTS` / `AUTH_IP_WINDOW_MINUTES` /
+  `AUTH_IP_BLOCK_MINUTES`.
+- **Client IP is no longer spoofable behind the proxy.** Rate-limit buckets,
+  login lockout and audit-log source IPs previously trusted the *leftmost*
+  `X-Forwarded-For` token — a value the client fully controls, so an attacker
+  could rotate it to dodge per-IP limits or forge audit trails. ServerKit now
+  derives the client IP from one trusted seam (Werkzeug `ProxyFix`, gated by the
+  new `TRUST_PROXY_HEADERS` / `TRUSTED_PROXY_HOPS` settings), taking the
+  rightmost proxy-appended hop; a forged prefix is discarded. Enabled by default
+  in the shipped proxied deploy; off for a directly-exposed dev server. **Note:**
+  audit-log source IPs now record the real client instead of nginx's address —
+  update any dashboards/alerts built on the old values.
 - **Container CVE scanning & SBOM** — per-image vulnerability scans with grype
   and software bill-of-materials generation with syft.
 - **Optional, hardened TLS** — best-effort HTTPS that never blocks an install

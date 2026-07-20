@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { BarChart3, Globe, HardDrive, AlertTriangle, Activity, FileText } from 'lucide-react';
+import { BarChart3, Globe, HardDrive, AlertTriangle, Activity, FileText, LineChart, ExternalLink } from 'lucide-react';
 import wordpressApi from '../../../services/wordpress';
+import api from '../../../services/api';
 import { useToast } from '../../../contexts/ToastContext';
 import { MetricCard, SegControl } from '../../ds';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton, ANALYTICS_PERIODS } from './wpDetailShared';
 
 // Analytics Tab — per-site traffic + error analytics (#25), parsed on-demand from
@@ -14,6 +17,23 @@ const AnalyticsTab = ({ siteId }) => {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [hours, setHours] = useState(24);
+    // Feature-detect the serverkit-analytics extension so we can point users at
+    // the persistent, privacy-first dashboard when it's installed. The on-demand
+    // access-log view below stays as a complementary, always-available source.
+    const [analyticsExt, setAnalyticsExt] = useState(false);
+
+    useEffect(() => {
+        let alive = true;
+        api.getInstalledPlugins('active')
+            .then((res) => {
+                if (!alive) return;
+                const on = (res?.plugins || []).some(
+                    (p) => p.slug === 'serverkit-analytics' && p.status === 'active');
+                setAnalyticsExt(on);
+            })
+            .catch(() => { /* extension absent — silently keep the log view */ });
+        return () => { alive = false; };
+    }, []);
 
     const load = React.useCallback(async () => {
         setLoading(true);
@@ -29,7 +49,7 @@ const AnalyticsTab = ({ siteId }) => {
 
     useEffect(() => { load(); }, [load]);
 
-    if (loading) return <OverviewGridSkeleton panels={3} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={3} />} />;
 
     const fmtHour = (iso) => {
         const d = new Date(iso);
@@ -45,6 +65,18 @@ const AnalyticsTab = ({ siteId }) => {
     return (
         <div className="app-overview-grid">
             <div className="app-overview-left">
+                {analyticsExt && (
+                    <div className="wp-analytics-banner">
+                        <LineChart size={16} />
+                        <div className="wp-analytics-banner__text">
+                            <strong>Analytics is installed.</strong>
+                            <span> Add this site there for persistent, cookieless visitor tracking with a full dashboard. The view below is parsed on demand from access logs.</span>
+                        </div>
+                        <Link to="/analytics/sites" className="wp-analytics-banner__link">
+                            Open Analytics <ExternalLink size={13} />
+                        </Link>
+                    </div>
+                )}
                 <div className="wp-analytics-head">
                     <h3 className="wp-eyebrow">Traffic · {hours <= 24 ? 'last 24 hours' : 'last 7 days'}</h3>
                     <SegControl

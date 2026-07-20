@@ -1085,12 +1085,25 @@ h3.svc-eyebrow {
 // OVERVIEW TAB
 // ============================================
 .overview-tab {
-    // KPI strip (ds MetricCard)
+    // Stack the KPI band, the info/metrics grid and the full-width panels with
+    // one consistent rhythm, so the KPI strip is never glued to the section
+    // directly below it (the old "no padding under the KPIs" gap).
+    display: flex;
+    flex-direction: column;
+    gap: $space-5;
+
+    // Lift the KPI tiles so they read as deliberate stat cards rather than flat
+    // boxes that dissolve into the page (dark --surface ≈ --bg-body).
+    .sk-kpi {
+        border-color: var(--border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    // KPI strip (ds MetricCard) — legacy grid, kept for any non-KpiBand use
     &__kpis {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: $space-4;
-        margin-bottom: $space-4;
 
         @media (max-width: $breakpoint-lg) { grid-template-columns: repeat(2, 1fr); }
         @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
@@ -1101,7 +1114,6 @@ h3.svc-eyebrow {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: $space-4;
-        margin-bottom: $space-4;
 
         @media (max-width: $breakpoint-md) {
             grid-template-columns: 1fr;
@@ -1110,8 +1122,9 @@ h3.svc-eyebrow {
 
     &__card {
         background: var(--surface);
-        border: 1px solid var(--border-soft);
+        border: 1px solid var(--border);
         border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
         padding: $space-4 $space-5;
 
         &--full {

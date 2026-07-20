@@ -61,59 +61,64 @@ function TopbarTabs({ tabs, label }) {
     });
 
     return (
+        // The nav is the flex-fill measurement region (kept right-aligned so a
+        // changing page title never shoves the tabs sideways); the inner bar is
+        // the visible segmented control that actually holds the tabs.
         <nav ref={containerRef} className="sk-topbar__tabs" aria-label={`${label} sections`}>
-            {tabs.map((t, i) => {
-                const isHidden = hiddenSet.has(i);
-                return (
-                    <NavLink
-                        key={t.to}
-                        to={t.to}
-                        end={t.end}
-                        ref={(el) => { itemRefs.current[i] = el; }}
-                        className={({ isActive }) => cn('sk-topbar__tab', isActive && 'is-active')}
-                        style={{ display: isHidden ? 'none' : undefined }}
-                        data-overflow={isHidden ? 'hidden' : undefined}
-                    >
-                        {t.icon}
-                        {t.label}
-                    </NavLink>
-                );
-            })}
-            {hiddenIndices.length > 0 && (
-                <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                    <PopoverTrigger asChild>
-                        <button
-                            ref={moreBtnRef}
-                            type="button"
-                            className="sk-topbar__tab sk-topbar__more"
-                            aria-label="More sections"
+            <div className="sk-topbar__tabs-inner">
+                {tabs.map((t, i) => {
+                    const isHidden = hiddenSet.has(i);
+                    return (
+                        <NavLink
+                            key={t.to}
+                            to={t.to}
+                            end={t.end}
+                            ref={(el) => { itemRefs.current[i] = el; }}
+                            className={({ isActive }) => cn('sk-topbar__tab', isActive && 'is-active')}
+                            style={{ display: isHidden ? 'none' : undefined }}
+                            data-overflow={isHidden ? 'hidden' : undefined}
                         >
-                            <MoreHorizontal size={16} />
-                            More
-                        </button>
-                    </PopoverTrigger>
-                    <PopoverContent align="end" sideOffset={6} className="ui-popover-content">
-                        <div className="tabs-overflow-list">
-                            {hiddenIndices.map((idx) => {
-                                const t = tabs[idx];
-                                return (
-                                    <NavLink
-                                        key={t.to}
-                                        to={t.to}
-                                        end={t.end}
-                                        className="tabs-overflow-item"
-                                        data-state={idx === activeIndex ? 'active' : 'inactive'}
-                                        onClick={() => setPopoverOpen(false)}
-                                    >
-                                        {t.icon}
-                                        {t.label}
-                                    </NavLink>
-                                );
-                            })}
-                        </div>
-                    </PopoverContent>
-                </Popover>
-            )}
+                            {t.icon}
+                            {t.label}
+                        </NavLink>
+                    );
+                })}
+                {hiddenIndices.length > 0 && (
+                    <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                ref={moreBtnRef}
+                                type="button"
+                                className="sk-topbar__tab sk-topbar__more"
+                                aria-label="More sections"
+                            >
+                                <MoreHorizontal size={16} />
+                                More
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent align="end" sideOffset={6} className="ui-popover-content">
+                            <div className="tabs-overflow-list">
+                                {hiddenIndices.map((idx) => {
+                                    const t = tabs[idx];
+                                    return (
+                                        <NavLink
+                                            key={t.to}
+                                            to={t.to}
+                                            end={t.end}
+                                            className="tabs-overflow-item"
+                                            data-state={idx === activeIndex ? 'active' : 'inactive'}
+                                            onClick={() => setPopoverOpen(false)}
+                                        >
+                                            {t.icon}
+                                            {t.label}
+                                        </NavLink>
+                                    );
+                                })}
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                )}
+            </div>
         </nav>
     );
 }

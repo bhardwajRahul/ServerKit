@@ -6,6 +6,7 @@ import { HealthDot } from '../HealthStatusPanel';
 import { MetricCard } from '../../ds';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton } from './wpDetailShared';
 
 // Uptime Tab — per-site health + uptime % via a bound status-page component (#26).
@@ -59,7 +60,7 @@ const UptimeTab = ({ siteId }) => {
         } finally { setBusy(false); }
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const comp = data?.component;
     const pages = data?.pages || [];

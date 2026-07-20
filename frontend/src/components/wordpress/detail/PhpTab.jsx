@@ -4,6 +4,7 @@ import { useToast } from '../../../contexts/ToastContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton, PHP_LIMIT_LABELS } from './wpDetailShared';
 
 // PHP Tab — live PHP version + ini limits for the Docker (apache/mod_php) site.
@@ -76,7 +77,7 @@ const PhpTab = ({ siteId }) => {
         }
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const limits = php?.limits || {};
     const current = php?.php_version || 'Unknown';

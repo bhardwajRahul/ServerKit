@@ -8,6 +8,7 @@ import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { EnvironmentCardSkeleton } from './wpDetailShared';
 
 // Environments Tab
@@ -72,16 +73,18 @@ const EnvironmentsTab = ({ siteId, site, onUpdate }) => {
 
     if (loading) {
         return (
-            <div className="environments-tab">
-                <div className="section-header">
-                    <div className="skeleton" style={{ width: 120, height: 24 }} />
-                    <div className="skeleton" style={{ width: 160, height: 36, borderRadius: 6 }} />
+            <SkeletonBoundary loading skeleton={(
+                <div className="environments-tab">
+                    <div className="section-header">
+                        <div className="skeleton" style={{ width: 120, height: 24 }} />
+                        <div className="skeleton" style={{ width: 160, height: 36, borderRadius: 6 }} />
+                    </div>
+                    <div className="environments-grid">
+                        <EnvironmentCardSkeleton />
+                        <EnvironmentCardSkeleton />
+                    </div>
                 </div>
-                <div className="environments-grid">
-                    <EnvironmentCardSkeleton />
-                    <EnvironmentCardSkeleton />
-                </div>
-            </div>
+            )} />
         );
     }
 

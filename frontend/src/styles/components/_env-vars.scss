@@ -20,109 +20,72 @@
     }
 
     .hint {
-        color: $text-tertiary;
+        color: $text-secondary;
         font-size: $font-size-sm;
-        margin-bottom: $space-6;
+        margin-bottom: $space-5;
     }
 }
 
-// Add new variable form
-.env-add-form {
-    background: $bg-card;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-md;
-    padding: $space-4;
-    margin-bottom: $space-6;
+// ── Panels ──────────────────────────────────────────────────────────────
+// Each logical group (Add / Variables) is a bordered surface that lifts off
+// the page body, so sections read as sections instead of dissolving into the
+// background. Uses --border (not --border-soft) + a soft shadow because on the
+// dark theme --surface sits only a hair above --bg-body.
+.env-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: $space-4;
 
-    .env-form-row {
-        display: flex;
-        gap: $space-2;
-        margin-bottom: $space-2;
-    }
-
-    .env-key-input {
-        width: 200px;
-        flex-shrink: 0;
-        font-family: $font-mono;
-        text-transform: uppercase;
-    }
-
-    .env-value-input {
-        flex: 1;
-    }
-
-    .env-secret-toggle {
+    &__head {
         display: flex;
         align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        background: $bg-hover;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-sm;
-        cursor: pointer;
-        color: $text-tertiary;
-        transition: all 0.2s;
-
-        input {
-            display: none;
-        }
-
-        &:hover {
-            border-color: $accent-primary;
-            color: $accent-primary;
-        }
-
-        &:has(input:checked) {
-            background: fade($accent-primary-raw, 20%);
-            border-color: $accent-primary;
-            color: $accent-primary;
-        }
+        gap: $space-3;
+        padding: 11px $space-4;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border-soft);
     }
 
-    .env-description-input {
-        flex: 1;
-        font-size: $font-size-sm;
-        color: $text-secondary;
+    &__title {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
     }
 
-    // Second form row: description + optional compose-service target
-    .env-form-meta-row {
-        display: flex;
-        gap: $space-2;
-        align-items: stretch;
+    // Count chip beside the "Variables" title
+    &__count {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0;
+        color: var(--accent-bright);
+        background: var(--accent-bg);
+        padding: 1px 7px;
+        border-radius: $radius-full;
+    }
+
+    &__body {
+        padding: $space-4;
     }
 }
 
-// "Applies to" selector — compose-service targeting (add form)
-.env-target-select {
-    display: flex;
-    align-items: center;
-    gap: $space-2;
-    flex-shrink: 0;
-    color: $text-tertiary;
-    font-size: $font-size-sm;
-
-    &__label {
-        white-space: nowrap;
-    }
-
-    select,
-    &__control {
-        padding: $space-2 $space-3;
-        background: $bg-body;
-        border: 1px solid $border-subtle;
-        border-radius: $radius-sm;
-        color: $text-primary;
-        font-size: $font-size-sm;
-
-        &:hover {
-            border-color: $border-active;
-        }
-    }
+// Key input — mono, uppercase (used inside the Add Variable modal)
+.env-key-input {
+    width: 100%;
+    font-family: $font-mono;
+    text-transform: uppercase;
 }
 
-// Standalone select control used in the inline edit row
+// "Applies to" compose-service select — used in the Add modal and the inline
+// edit row. Full-width inside a modal .form-group; intrinsic in the edit row.
 .env-target-select__control {
     padding: $space-2 $space-3;
     background: $bg-body;
@@ -137,19 +100,36 @@
     }
 }
 
-// Filter
-.env-filter {
+.form-group .env-target-select__control {
+    width: 100%;
+}
+
+// Small "(optional)" tag + reassurance hint inside the Add Variable modal
+.env-optional {
+    color: $text-tertiary;
+    font-weight: $font-weight-normal;
+}
+
+.env-modal-hint {
+    margin: $space-1 0 $space-4;
+}
+
+// Filter — compact search sitting in the Variables panel head, right-aligned
+.env-panel__filter {
     position: relative;
-    margin-bottom: $space-4;
+    margin-left: auto;
 
     input {
-        width: 100%;
-        padding-right: 36px;
+        width: 220px;
+        max-width: 46vw;
+        height: 32px;
+        padding-right: 30px;
+        font-size: $font-size-sm;
     }
 
     .filter-clear {
         position: absolute;
-        right: 8px;
+        right: 6px;
         top: 50%;
         transform: translateY(-50%);
         background: none;
@@ -157,7 +137,8 @@
         color: $text-tertiary;
         cursor: pointer;
         font-size: 18px;
-        padding: 4px 8px;
+        line-height: 1;
+        padding: 2px 6px;
 
         &:hover {
             color: $text-primary;
@@ -173,18 +154,17 @@
 }
 
 .env-item {
-    background: $bg-card;
-    border: 1px solid $border-subtle;
+    // One tier brighter than the panel surface it sits on, so rows have depth
+    // (body < panel --surface < row --surface-2) instead of blending together.
+    background: var(--surface-2);
+    border: 1px solid var(--border-soft);
     border-radius: $radius-md;
-    padding: $space-4;
-    transition: border-color 0.2s;
+    padding: $space-3 $space-4;
+    transition: border-color 0.15s, background 0.15s;
 
     &:hover {
-        border-color: $border-active;
-    }
-
-    &.is-secret {
-        border-left: 3px solid $warning;
+        border-color: var(--border-strong);
+        background: var(--surface-3);
     }
 
     .env-item-header {
@@ -201,10 +181,6 @@
         display: flex;
         align-items: center;
         gap: $space-1;
-
-        .secret-badge {
-            color: $warning;
-        }
     }
 
     .env-item-actions {
@@ -288,28 +264,38 @@
     }
 }
 
-// Empty state
+// Empty state — centered inside .env-panel__body, with a primary Add action
 .env-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-4;
+    padding: $space-10 $space-6;
     text-align: center;
-    padding: $space-8;
-    color: $text-tertiary;
-    background: $bg-card;
-    border: 1px dashed $border-subtle;
-    border-radius: $radius-md;
+    color: var(--text-faint);
+    font-size: $font-size-sm;
+
+    p { margin: 0; }
 }
 
-// Footer
+// Footer — Clear-all lives here, right-aligned under the list
 .env-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-    margin-top: $space-6;
+    margin-top: $space-4;
     padding-top: $space-4;
-    border-top: 1px solid $border-subtle;
+    border-top: 1px solid var(--border-soft);
+}
 
-    .env-count {
-        color: $text-tertiary;
-        font-size: $font-size-sm;
+// Clear-all: quiet by default, danger only on hover (no alarming red slab)
+.env-clear-btn.ui-button {
+    color: var(--text-dim);
+
+    &:hover {
+        color: var(--red);
+        border-color: rgba(251, 111, 111, 0.4);
+        background: var(--red-bg);
     }
 }
 

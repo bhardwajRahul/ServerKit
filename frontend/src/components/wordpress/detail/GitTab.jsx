@@ -5,6 +5,7 @@ import { useToast } from '../../../contexts/ToastContext';
 import { GitConnectForm, CommitList } from '../index';
 import { ErrorState } from '../../ErrorBoundary';
 import { Button } from '@/components/ui/button';
+import SkeletonBoundary from '../../SkeletonBoundary';
 
 // Git Tab
 const GitTab = ({ siteId, site, onUpdate }) => {
@@ -73,14 +74,16 @@ const GitTab = ({ siteId, site, onUpdate }) => {
 
     if (loading) {
         return (
-            <div className="git-tab">
-                <div className="git-connect git-connect--card">
-                    <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 16 }} />
-                    <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
-                    <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
-                    <div className="skeleton" style={{ width: 140, height: 36, borderRadius: 6 }} />
+            <SkeletonBoundary loading skeleton={(
+                <div className="git-tab">
+                    <div className="git-connect git-connect--card">
+                        <div className="skeleton" style={{ width: 200, height: 24, marginBottom: 16 }} />
+                        <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
+                        <div className="skeleton" style={{ height: 44, borderRadius: 6, marginBottom: 12 }} />
+                        <div className="skeleton" style={{ width: 140, height: 36, borderRadius: 6 }} />
+                    </div>
                 </div>
-            </div>
+            )} />
         );
     }
 

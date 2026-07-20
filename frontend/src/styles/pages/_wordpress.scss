@@ -876,14 +876,15 @@
         }
     }
 
-    // ---- Tab strip (14 flat tabs — accent underline, ids untouched) ----
+    // ---- Tab strip (segmented bar — pills in a bordered surface, matching the
+    // shared .app-detail-tabs treatment in _applications.scss so every detail
+    // page's nav reads the same) ----
     .app-detail-tabs {
-        gap: 2px;
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--border-soft);
-        border-radius: 0;
-        padding: 0;
+        gap: 3px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 4px;
         overflow-x: auto;
 
         &::-webkit-scrollbar {
@@ -895,35 +896,33 @@
         display: flex;
         align-items: center;
         gap: 7px;
-        padding: 11px 14px;
-        border-radius: 0;
-        border-bottom: 2px solid transparent;
-        color: var(--text-faint);
+        padding: 8px 13px;
+        border-radius: 7px;
+        color: var(--text-dim);
         font-size: 13px;
-        font-weight: $font-weight-normal;
+        font-weight: $font-weight-medium;
         white-space: nowrap;
-        transition: color 0.14s;
+        transition: color 0.14s, background 0.14s;
 
         svg {
-            color: var(--text-ghost);
+            color: var(--text-faint);
             transition: color 0.14s;
             flex-shrink: 0;
         }
 
         &:hover {
-            background: none;
-            color: var(--text-dim);
+            background: var(--surface-2);
+            color: var(--text);
 
             svg {
-                color: var(--text-faint);
+                color: var(--text-dim);
             }
         }
 
         &.active {
-            background: none;
-            color: var(--text);
-            border-bottom-color: var(--accent);
-            font-weight: $font-weight-medium;
+            background: var(--accent-bg);
+            color: var(--accent-bright);
+            font-weight: $font-weight-semibold;
 
             svg {
                 color: var(--accent-bright);
@@ -1469,6 +1468,34 @@
     }
 
     // ---- Analytics head (eyebrow + SegControl) ----
+    .wp-analytics-banner {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        margin-bottom: $space-4;
+        padding: $space-3 $space-4;
+        border: 1px solid rgba(129, 140, 248, 0.28);
+        border-radius: var(--radius, 8px);
+        background: rgba(129, 140, 248, 0.08);
+        color: var(--text-primary);
+        flex-wrap: wrap;
+
+        svg { color: var(--accent-bright, #818cf8); flex-shrink: 0; }
+
+        &__text { flex: 1 1 240px; font-size: 13px; line-height: 1.4; }
+        &__text span { color: var(--text-secondary); }
+
+        &__link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-size: 13px;
+            font-weight: $font-weight-semibold;
+            color: var(--accent-bright, #818cf8);
+        }
+    }
+
     .wp-analytics-head {
         display: flex;
         justify-content: space-between;
@@ -2634,10 +2661,8 @@
 
     .app-detail-tab-skeleton {
         width: 80px;
-        height: 38px;
-        border-radius: 0;
-        background: transparent;
-        border-bottom: 2px solid transparent;
+        height: 32px;
+        border-radius: 7px;
         @include skeleton();
     }
 

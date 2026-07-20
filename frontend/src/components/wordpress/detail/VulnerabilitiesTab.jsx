@@ -4,6 +4,7 @@ import wordpressApi from '../../../services/wordpress';
 import { useToast } from '../../../contexts/ToastContext';
 import { KpiBand, MetricCard } from '../../ds';
 import { Button } from '@/components/ui/button';
+import SkeletonBoundary from '../../SkeletonBoundary';
 import { OverviewGridSkeleton } from './wpDetailShared';
 
 // Vulnerabilities Tab — cross-references plugin/theme/core versions against the
@@ -45,7 +46,7 @@ const VulnerabilitiesTab = ({ siteId }) => {
         }
     }
 
-    if (loading) return <OverviewGridSkeleton panels={2} />;
+    if (loading) return <SkeletonBoundary loading skeleton={<OverviewGridSkeleton panels={2} />} />;
 
     const running = data?.scan_status === 'running';
     const summary = data?.summary || {};

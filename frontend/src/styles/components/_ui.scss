@@ -856,15 +856,6 @@
 }
 
 // --------------------------------------------
-// SKELETON
-// --------------------------------------------
-.ui-skeleton {
-    border-radius: $radius-md;
-    background: $bg-secondary;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-// --------------------------------------------
 // MODAL (components/Modal.jsx — built on the Dialog primitive)
 // --------------------------------------------
 .sk-modal {

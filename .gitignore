@@ -123,6 +123,13 @@ SECURITY_AND_CODE_AUDIT.md
 !/docs/screenshots/
 !/docs/screenshots/*.png
 
+# …and the hand-authored documentation diagrams (architecture) plus the locally
+# generated donation QR codes (funding). Both are referenced directly from
+# committed Markdown, so leaving them ignored publishes docs with broken images.
+!/docs/images/
+!/docs/images/architecture/*.png
+!/docs/images/funding/*.png
+
 # …and the bundled marketplace extension cover icons — real source assets
 # imported/hashed by Vite, so they must be committed.
 !/frontend/src/assets/extension-icons/
@@ -165,3 +172,23 @@ docs/SERVICES_ROADMAP.md
 # Vite dependency pre-bundle cache (regenerated on every dev run; never commit)
 .vite/
 **/.vite/
+
+# Install artifacts of extensions that now live in their own repos.
+# The panel writes these when the extension is installed from the registry
+# (see PluginService._install_from_buffer). They must never be committed back
+# here — the source of truth is the extension's own repo, and vendoring a copy
+# guarantees the two drift apart.
+backend/app/plugins/serverkit-analytics/
+backend/app/plugins/serverkit-crowdsec/
+backend/app/plugins/serverkit-dns-server/
+backend/app/plugins/serverkit-gpu/
+backend/app/plugins/serverkit-k8s/
+backend/app/plugins/serverkit-mail/
+backend/app/plugins/serverkit-tramo/
+frontend/src/plugins/serverkit-analytics/
+frontend/src/plugins/serverkit-crowdsec/
+frontend/src/plugins/serverkit-dns-server/
+frontend/src/plugins/serverkit-gpu/
+frontend/src/plugins/serverkit-k8s/
+frontend/src/plugins/serverkit-mail/
+frontend/src/plugins/serverkit-tramo/
