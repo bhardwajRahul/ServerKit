@@ -1,0 +1,30 @@
+# Code owners for ServerKit.
+#
+# GitHub automatically requests a review from the listed owner on any PR that
+# touches a matching path. Enable "Require review from Code Owners" in branch
+# protection to make that review mandatory.
+
+# ---------------------------------------------------------------------------
+# Funding and donation addresses — SECURITY SENSITIVE
+# ---------------------------------------------------------------------------
+# A swapped crypto address is a well-known open-source supply-chain attack:
+# a drive-by PR edits one character in a donation address, it reads as a
+# harmless docs tweak, and every subsequent donation goes to the attacker.
+# These paths must never be merged without the maintainer reading the diff
+# character by character against the wallet.
+/.github/FUNDING.yml            @jhd3197
+/scripts/generate-funding-qr.mjs @jhd3197
+/docs/images/funding/           @jhd3197
+
+# The donation addresses live in the Support section of every README, so any
+# change to these files needs the same scrutiny.
+/README.md                      @jhd3197
+/docs/README.es.md              @jhd3197
+/docs/README.pt.md              @jhd3197
+/docs/README.zh-CN.md           @jhd3197
+
+# ---------------------------------------------------------------------------
+# Security policy and licensing
+# ---------------------------------------------------------------------------
+/SECURITY.md                    @jhd3197
+/LICENSE                        @jhd3197

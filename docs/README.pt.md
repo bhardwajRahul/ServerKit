@@ -349,6 +349,21 @@ O ServerKit é gratuito e de código aberto. Se ele economiza o seu tempo, você
 - 💖 [GitHub Sponsors](https://github.com/sponsors/jhd3197)
 - ☕ [Buy Me a Coffee](https://buymeacoffee.com/jhd3197)
 
+### 💎 Criptomoedas
+
+| | Ativo | Rede | Endereço |
+|:---:|---|---|---|
+| <img src="images/funding/usdt-trc20.png" width="110" alt="Código QR do endereço de doação USDT TRC-20" /> | **USDT** | **TRC-20** · Tron | `TTiCtqLauF1iSW2YGB3b78KmRxRqoLCgeL` |
+| <img src="images/funding/usdt-erc20.png" width="110" alt="Código QR do endereço de doação USDT e ETH ERC-20" /> | **USDT / ETH** | **ERC-20** · Ethereum | `0xD13D5355Fa214e8317fea2ff192a065BaeC13527` |
+| <img src="images/funding/btc.png" width="110" alt="Código QR do endereço de doação de Bitcoin" /> | **BTC** | **Bitcoin** | `bc1qatx67n3qxdvuv3arc9j8aytk34f22g02k9c7vr` |
+| <img src="images/funding/sol.png" width="110" alt="Código QR do endereço de doação de Solana" /> | **SOL** | **Solana** | `AWXzqtBEgUfteHPQtDegsZ6D5y57M3GGdKPD8rR7h6xu` |
+
+A TRC-20 tem as taxas mais baixas — normalmente menos de um dólar — e por isso é a
+opção mais prática para uma doação pequena. O gas da ERC-20 pode custar mais do que
+a própria doação.
+
+<sub>Os códigos QR são gerados localmente por [`scripts/generate-funding-qr.mjs`](../scripts/generate-funding-qr.mjs), que valida o checksum de cada endereço antes de codificá-lo.</sub>
+
 ---
 
 ## 🔭 Projetos Relacionados

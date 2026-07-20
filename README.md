@@ -349,6 +349,20 @@ ServerKit is free and open source. If it saves you time, you can help keep it go
 - 💖 [GitHub Sponsors](https://github.com/sponsors/jhd3197)
 - ☕ [Buy Me a Coffee](https://buymeacoffee.com/jhd3197)
 
+### 💎 Crypto
+
+| | Asset | Network | Address |
+|:---:|---|---|---|
+| <img src="docs/images/funding/usdt-trc20.png" width="110" alt="QR code for the USDT TRC-20 donation address" /> | **USDT** | **TRC-20** · Tron | `TTiCtqLauF1iSW2YGB3b78KmRxRqoLCgeL` |
+| <img src="docs/images/funding/usdt-erc20.png" width="110" alt="QR code for the USDT and ETH ERC-20 donation address" /> | **USDT / ETH** | **ERC-20** · Ethereum | `0xD13D5355Fa214e8317fea2ff192a065BaeC13527` |
+| <img src="docs/images/funding/btc.png" width="110" alt="QR code for the Bitcoin donation address" /> | **BTC** | **Bitcoin** | `bc1qatx67n3qxdvuv3arc9j8aytk34f22g02k9c7vr` |
+| <img src="docs/images/funding/sol.png" width="110" alt="QR code for the Solana donation address" /> | **SOL** | **Solana** | `AWXzqtBEgUfteHPQtDegsZ6D5y57M3GGdKPD8rR7h6xu` |
+
+TRC-20 has the lowest fees — usually under a dollar — so it's the friendliest
+option for a small donation. ERC-20 gas can cost more than the donation itself.
+
+<sub>QR codes are generated locally by [`scripts/generate-funding-qr.mjs`](scripts/generate-funding-qr.mjs), which checksum-validates every address before encoding.</sub>
+
 ---
 
 ## 🔭 Related Projects
