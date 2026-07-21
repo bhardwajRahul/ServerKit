@@ -1,7 +1,7 @@
 {
   "name": "serverkit-localkit",
   "display_name": "LocalKit Bridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "API surface for the LocalKit desktop app: pair with an API key, list/create WordPress sites (API-key friendly), and push/pull wp-content code and database dumps between local and server sites.",
   "author": "ServerKit",
   "license": "MIT",

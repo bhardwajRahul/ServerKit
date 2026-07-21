@@ -73,6 +73,7 @@ import Notifications from './pages/Notifications';
 import DeliveryLog from './pages/DeliveryLog';
 import Telemetry from './pages/Telemetry';
 import Jobs from './pages/Jobs';
+import TestSandbox from './pages/TestSandbox';
 import useExtensionRoutes from './plugins/ExtensionRoutes';
 import { useContributions } from './plugins/contributions';
 
@@ -138,6 +139,7 @@ const PAGE_TITLES = {
     '/admin/notifications': 'Notification Delivery Log',
     '/telemetry': 'Telemetry',
     '/jobs': 'Jobs',
+    '/test-sandbox': 'Test Sandbox',
 };
 
 // /apps/* is the legacy URL space for what is now "Services" (§1 unification).
@@ -453,6 +455,7 @@ function AppRoutes() {
                 <Route path="secrets" element={<Navigate to="/vaults" replace />} />
                 <Route path="secrets/:tab" element={<Navigate to="/vaults" replace />} />
                 <Route path="queue" element={<QueueOperations />} />
+                <Route path="test-sandbox" element={<TestSandbox />} />
                 <Route path="queue/:groupSlug/:queueSlug" element={<QueueDetail />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="admin/notifications" element={<DeliveryLog />} />

@@ -43,11 +43,15 @@ HTML report.
 ### Options
 
 ```powershell
-# Full default suite: ubuntu22, ubuntu24, debian12, fedora, rocky9
+# Full default suite: ubuntu22, ubuntu24, debian12, rocky9
 .\scripts\test\full-stack-test.ps1
 
 # Subset
 .\scripts\test\full-stack-test.ps1 -Only "ubuntu24,debian12"
+
+# Opt-in extras (fedora40 box is community-pinned; alma9/debian11/opensuse15
+# widen homelab coverage)
+.\scripts\test\full-stack-test.ps1 -Only "fedora,alma9,debian11,opensuse15"
 
 # Keep VMs running so you can shell in and poke around
 .\scripts\test\full-stack-test.ps1 -Keep
@@ -61,13 +65,16 @@ HTML report.
 
 ### Distro coverage
 
-| Distro | Backend | Box / Image |
-|---|---|---|
-| Ubuntu 22.04 | Multipass | `22.04` |
-| Ubuntu 24.04 | Multipass | `24.04` |
-| Debian 12    | Vagrant   | `generic/debian12` |
-| Fedora 40    | Vagrant   | `generic/fedora40` |
-| Rocky 9      | Vagrant   | `generic/rocky9` |
+| Distro | Backend | Box / Image | In default suite? |
+|---|---|---|---|
+| Ubuntu 22.04 | Multipass | `22.04` | ✅ |
+| Ubuntu 24.04 | Multipass | `24.04` | ✅ |
+| Debian 12    | Vagrant   | `generic/debian12` | ✅ |
+| Rocky 9      | Vagrant   | `generic/rocky9` | ✅ |
+| Fedora 40    | Vagrant   | `generic/fedora40` | opt-in (`-Only fedora`) |
+| AlmaLinux 9  | Vagrant   | `generic/alma9` | opt-in |
+| Debian 11    | Vagrant   | `generic/debian11` | opt-in (legacy homelab) |
+| openSUSE Leap 15 | Vagrant | `generic/opensuse15` | opt-in |
 
 ### Agent pairing test (optional)
 
@@ -166,8 +173,14 @@ Currently covered:
 - Agent ARM64 MSI installer isn't exercised (no ARM hardware).
 - UI smoke (Playwright) is not wired up yet — easy to add as a follow-up if
   the API surface stops catching everything.
-- Fedora/Rocky not in the default distro list because Multipass focuses on
-  Ubuntu; add via Vagrant + libvirt if you need those.
+- Fedora isn't in the default distro list (the generic/fedora40 Hyper-V box
+  is community-pinned); opt in with `-Only fedora`. alma9 / debian11 /
+  opensuse15 are also opt-in extras.
+- ARM (Raspberry Pi etc.) can't be virtualized here — Hyper-V on Windows is
+  x86_64 only. ARM64 coverage comes from the CI container matrix on the
+  `ubuntu-24.04-arm` runner (see `.github/workflows/scripts-ci.yml`), which
+  approximates 64-bit Raspberry Pi OS / Ubuntu ARM homelabs; real-hardware
+  validation still needs a physical Pi.
 
 ## Troubleshooting
 

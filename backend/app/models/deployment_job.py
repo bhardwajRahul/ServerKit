@@ -96,13 +96,17 @@ class DeploymentJob(db.Model):
             return 0
         return min(100, int((self.current_step / self.total_steps) * 100))
 
+    @property
+    def target_server_name(self):
+        return self.target_server.name if self.target_server else 'Local server'
+
     def to_dict(self, include_plan=False, include_logs=False):
         data = {
             'id': self.id,
             'kind': self.kind,
             'status': self.status,
             'target_server_id': self.target_server_id,
-            'target_server_name': self.target_server.name if self.target_server else 'Local server',
+            'target_server_name': self.target_server_name,
             'app_id': self.app_id,
             'app_name': self.app.name if self.app else None,
             'requested_by': self.requested_by,

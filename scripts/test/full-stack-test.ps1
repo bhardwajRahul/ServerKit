@@ -31,7 +31,8 @@ param(
     # via Vagrant + Hyper-V. Fedora is *not* in the default — Vagrant
     # Cloud's generic/fedora boxes stop at fedora39 (EOL Nov 2024) and no
     # newer pre-built Hyper-V box exists. Use `-Only fedora` to opt in
-    # once you've pinned a box you trust.
+    # once you've pinned a box you trust. Extra opt-in homelab targets
+    # (not in the default either): alma9, debian11, opensuse15.
     [string[]] $Distros = @('ubuntu22','ubuntu24','debian12','rocky9'),
     [string]   $Only,
     [switch]   $Keep,
@@ -52,17 +53,23 @@ $ProgressPreference = 'SilentlyContinue'
 # the Hyper-V provider with generic/* boxes. The login user differs by
 # backend (ubuntu vs vagrant), which matters for chown on the harness dir.
 $DistroMap = @{
-    'ubuntu22' = @{ backend = 'multipass'; image = '22.04';              user = 'ubuntu'  }
-    'ubuntu24' = @{ backend = 'multipass'; image = '24.04';              user = 'ubuntu'  }
-    'debian12' = @{ backend = 'vagrant';   image = 'generic/debian12';   user = 'vagrant' }
+    'ubuntu22'   = @{ backend = 'multipass'; image = '22.04';              user = 'ubuntu'  }
+    'ubuntu24'   = @{ backend = 'multipass'; image = '24.04';              user = 'ubuntu'  }
+    'debian12'   = @{ backend = 'vagrant';   image = 'generic/debian12';   user = 'vagrant' }
     # fedora39 went EOL Nov 2024; use fedora40 which is supported.
-    'fedora'   = @{ backend = 'vagrant';   image = 'generic/fedora40';   user = 'vagrant' }
-    'rocky9'   = @{ backend = 'vagrant';   image = 'generic/rocky9';     user = 'vagrant' }
+    'fedora'     = @{ backend = 'vagrant';   image = 'generic/fedora40';   user = 'vagrant' }
+    'rocky9'     = @{ backend = 'vagrant';   image = 'generic/rocky9';     user = 'vagrant' }
+    # Opt-in extras (homelab-ish coverage; all have generic/* Hyper-V boxes):
+    'alma9'      = @{ backend = 'vagrant';   image = 'generic/alma9';      user = 'vagrant' }
+    'debian11'   = @{ backend = 'vagrant';   image = 'generic/debian11';   user = 'vagrant' }
+    'opensuse15' = @{ backend = 'vagrant';   image = 'generic/opensuse15'; user = 'vagrant' }
 }
 
 if ($Only) {
+    # Select from the full DistroMap (not just the default suite) so opt-in
+    # distros like fedora/alma9 work, in the order the user listed them.
     $requested = $Only -split ','
-    $Distros = $Distros | Where-Object { $_ -in $requested }
+    $Distros = @($requested | Where-Object { $DistroMap.ContainsKey($_) })
 }
 
 $RepoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
@@ -308,11 +315,17 @@ function Remove-VagrantVm {
 }
 
 # --- pack source --------------------------------------------------------
+# Pin to Windows' bsdtar when present: if this script is launched from a
+# Git Bash session, /usr/bin (GNU tar) shadows System32 on PATH, and GNU
+# tar reads "C:\..." as a remote host:path and fails with
+# "Cannot connect to C: resolve failed".
+$TarExe = "$env:SystemRoot\System32\tar.exe"
+if (-not (Test-Path $TarExe)) { $TarExe = 'tar' }
 $Tarball = Join-Path $OutDir 'serverkit-src.tar.gz'
 Write-Host "`n[1/4] Packing local working tree -> $Tarball" -ForegroundColor Yellow
 Push-Location $RepoRoot
 try {
-    & tar --exclude='.git' `
+    & $TarExe --exclude='.git' `
           --exclude='venv' `
           --exclude='.venv' `
           --exclude='.venv-wsl' `

@@ -82,11 +82,19 @@ if [ ! -d "$INSTALL_DIR" ]; then
 fi
 
 log "Step 2/4: overlaying local working tree onto $INSTALL_DIR"
-# Preserve .env / instance / nginx ssl from the install
-rsync -a \
+# --delete: the install base (release tarball or origin/main clone) can
+# contain files our local tree doesn't have — e.g. release v1.7.40 shipped
+# frontend/src/plugins/serverkit-tramo, which survived a plain overlay and
+# broke `vite build` with an unresolvable "tramo/react" import. Mirror the
+# tree exactly instead. Excluded paths are protected from deletion by rsync,
+# so .env / instance / ssl / node_modules and the install-time root venv
+# ($INSTALL_DIR/venv — NOT backend/venv) survive.
+rsync -a --delete \
   --exclude='.env' \
   --exclude='backend/instance/' \
   --exclude='nginx/ssl/' \
+  --exclude='venv/' \
+  --exclude='logs/' \
   --exclude='backend/venv/' \
   --exclude='backend/.venv/' \
   --exclude='backend/.venv-wsl/' \
@@ -106,6 +114,25 @@ fi
 
 # Reinstall + rebuild frontend (package.json may have changed in the overlay)
 cd "$INSTALL_DIR/frontend" || fail "cd frontend"
+
+# The release install path skips Node.js entirely ("release ships a pre-built
+# frontend"), but the overlay rebuild below needs npm. Bootstrap Node 22 the
+# same way install.sh does when it's missing.
+if ! command -v npm >/dev/null 2>&1; then
+  log "npm not found (release install skips Node.js) — installing Node 22 for the overlay rebuild"
+  if command -v apt-get >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >> "$LOG" 2>&1 || true
+    apt-get install -y nodejs >> "$LOG" 2>&1 || true
+  elif command -v dnf >/dev/null 2>&1; then
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash - >> "$LOG" 2>&1 || true
+    dnf install -y nodejs >> "$LOG" 2>&1 || true
+  elif command -v zypper >/dev/null 2>&1; then
+    zypper --non-interactive install nodejs22 npm22 >> "$LOG" 2>&1 || \
+      zypper --non-interactive install nodejs npm >> "$LOG" 2>&1 || true
+  fi
+fi
+command -v npm >/dev/null 2>&1 || fail "npm unavailable and Node.js bootstrap failed"
+
 npm ci --prefer-offline >> "$LOG" 2>&1 || fail "npm ci failed"
 NODE_OPTIONS="--max-old-space-size=1024" npm run build >> "$LOG" 2>&1 \
   || fail "frontend build failed"

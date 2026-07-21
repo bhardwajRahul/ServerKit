@@ -313,6 +313,21 @@ refresh_pkg_index() {
     return 0
 }
 
+# Minimal images (Docker base layers, LXC templates, geerlingguy systemd
+# containers) can lack curl AND ship with empty package indexes — every later
+# phase (release fetch, NodeSource setup, git/venv installs) then fails in
+# confusing, hard-to-read ways. Refresh the index once and bootstrap curl up
+# front; both are best-effort, and later phases re-probe what they need.
+ensure_bootstrap_tools() {
+    refresh_pkg_index
+    if ! command -v curl &>/dev/null; then
+        step "Installing curl (needed for release downloads and repo setup)..."
+        pkg_add curl ca-certificates
+        command -v curl &>/dev/null || \
+            warn "curl could not be installed — release downloads and NodeSource setup will fail; source-build paths remain."
+    fi
+}
+
 # Warn-and-continue package install. Output is captured so a failure can be
 # reported with the manager's last lines — and that capture carries an
 # `|| rc=$?` guard because a bare `out=$(apt-get ...)` assignment is itself
@@ -440,8 +455,13 @@ ver_in_range() {
 # minimal images split the venv module (ensurepip) into pythonX.Y-venv, so an
 # otherwise-valid interpreter still dies much later at `python -m venv` with
 # "ensurepip is not available" — probe up front instead. (I8)
+# NB: `-m venv --help` alone is NOT enough — Debian's python answers --help
+# happily without ensurepip installed, and only fails at creation time. The
+# ensurepip import is the real check. (Found via the Test Sandbox full mode
+# on the geerlingguy debian12 image.)
 py_venv_ok() {
-    "$1" -m venv --help >/dev/null 2>&1
+    "$1" -m venv --help >/dev/null 2>&1 && \
+        "$1" -c 'import ensurepip' >/dev/null 2>&1
 }
 
 locate_python() {
@@ -903,6 +923,11 @@ sync_source() {
     # if that fails too (a source install cannot proceed without git). (I7)
     if ! command -v git &>/dev/null; then
         step "Installing git..."
+        # Cleaned-down images (Docker base layers, geerlingguy systemd
+        # containers) ship with EMPTY apt indexes — without a refresh,
+        # `apt-get install git` finds no candidate. refresh_pkg_index is
+        # best-effort and a no-op-costly-but-harmless on populated images.
+        refresh_pkg_index
         pkg_add git
         command -v git &>/dev/null || \
             halt "git is required for a source install but could not be installed."
@@ -981,8 +1006,16 @@ make_directories() {
 build_virtualenv() {
     phase "Python Environment"
 
-    # If the release shipped a pre-built venv at the expected path, use it.
+    # If the release shipped a pre-built venv at the expected path, use it —
+    # but only if its interpreter actually runs on this host. The release
+    # tarball is built on Ubuntu 24.04, so its venv python hard-requires
+    # GLIBC_2.38 and dies on Ubuntu 22.04 / Debian 11 / older. In that case
+    # discard it and fall through to a locally-built venv.
     if [ "$INSTALL_FROM_RELEASE" = "1" ] && [ -f "$FIRST_SLOT/venv/bin/activate" ] && [ -x "$FIRST_SLOT/venv/bin/python" ]; then
+        if ! "$FIRST_SLOT/venv/bin/python" -c '' >/dev/null 2>&1; then
+            warn "Release venv's python does not run on this host (too-new glibc build) — building a fresh venv instead."
+            rm -rf "$FIRST_SLOT/venv"
+        else
         step "Using pre-built virtual environment from release..."
         # In the default layout $INSTALL_DIR is a symlink to $FIRST_SLOT, so
         # $VENV_DIR *is* $FIRST_SLOT/venv — the rm -rf below would delete the
@@ -1000,6 +1033,7 @@ build_virtualenv() {
         cp -a "$FIRST_SLOT/venv" "$VENV_DIR"
         good "Virtual environment installed from release."
         return
+        fi
     fi
 
     step "Creating the virtual environment..."
@@ -1764,6 +1798,7 @@ main() {
     # writes the apt lock-wait drop-in to /etc. (I11)
     preflight
     choose_pkg_manager
+    ensure_bootstrap_tools
     gauge_memory
     ensure_swap
     prompt_for_domain
@@ -1779,6 +1814,15 @@ main() {
 
     if [ "$INSTALL_FROM_RELEASE" = "1" ]; then
         fetch_release || warn "Falling back to a source build."
+    fi
+
+    # When the release fetch failed, provision_node above already skipped
+    # Node.js ("the release ships a pre-built frontend") — but the source
+    # build below compiles the frontend and needs npm. provision_node is
+    # idempotent (node_ready early-return), so just run it again. (Found via
+    # Test Sandbox full mode on a GitHub-API-rate-limited host.)
+    if [ "$INSTALL_FROM_RELEASE" != "1" ]; then
+        provision_node
     fi
 
     if [ "$INSTALL_FROM_RELEASE" != "1" ]; then

@@ -529,6 +529,10 @@ def create_app(config_name=None):
     from app.api.htaccess_tools import htaccess_tools_bp
     app.register_blueprint(htaccess_tools_bp, url_prefix='/api/v1/apps')
 
+    # Register blueprints - Test Sandbox (distro test matrix in Docker)
+    from app.api.test_sandbox import test_sandbox_bp
+    app.register_blueprint(test_sandbox_bp, url_prefix='/api/v1/test-sandbox')
+
     # Handle database migrations (Alembic) — must run before plugin loader
     # since the loader queries the installed_plugins table.
     with app.app_context():

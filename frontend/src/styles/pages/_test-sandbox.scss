@@ -1,0 +1,273 @@
+// ============================================
+// TEST SANDBOX PAGE (infra console look)
+// ============================================
+
+.test-sandbox-page {
+
+    .ts-intro {
+        margin: 0 0 $space-5;
+        max-width: 72ch;
+        font-size: 13px;
+        line-height: $line-height-relaxed;
+        color: var(--text-dim);
+    }
+
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        margin-bottom: $space-4;
+
+        svg { flex-shrink: 0; }
+    }
+
+    // ── new-run setup panel ───────────────────────────────
+    .ts-setup {
+        margin-bottom: $space-5;
+
+        .ts-setup__head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: $space-3;
+        }
+
+        .ts-setup__picker-actions {
+            display: flex;
+            gap: $space-2;
+        }
+    }
+
+    // ── mode selector ─────────────────────────────────────
+    .ts-modes {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: $space-3;
+        margin-bottom: $space-4;
+
+        @media (max-width: $breakpoint-sm) { grid-template-columns: 1fr; }
+    }
+
+    .ts-mode {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: $space-1;
+        height: auto;
+        padding: $space-3 $space-4;
+        text-align: left;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        @include transition(border-color);
+
+        &:hover { border-color: var(--border); }
+
+        &.is-on {
+            background: var(--accent-bg);
+            border-color: var(--accent);
+        }
+
+        .ts-mode__title {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            font-size: 13px;
+            font-weight: $font-weight-semibold;
+            color: var(--text);
+
+            svg { color: var(--accent); }
+        }
+
+        .ts-mode__desc {
+            font-size: 12px;
+            font-weight: $font-weight-normal;
+            color: var(--text-dim);
+        }
+
+        .ts-mode__eta {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--text-faint);
+        }
+    }
+
+    // ── distro picker grid ────────────────────────────────
+    .ts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: $space-2;
+        margin-bottom: $space-4;
+    }
+
+    .ts-distro {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: $space-2;
+        height: auto;
+        padding: $space-3;
+        text-align: left;
+        background: var(--surface-2);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        @include transition(border-color);
+
+        &:hover:not(:disabled) { border-color: var(--border); }
+
+        &.is-selected {
+            background: var(--accent-bg);
+            border-color: var(--accent);
+        }
+
+        &.is-disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .ts-distro__label {
+            font-size: 13px;
+            font-weight: $font-weight-medium;
+            color: var(--text);
+        }
+
+        .ts-distro__meta {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+        }
+
+        .ts-distro__hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--text-faint);
+        }
+    }
+
+    // ── launch row ────────────────────────────────────────
+    .ts-launch {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+
+        .ts-launch__note {
+            font-size: 12px;
+            color: var(--text-faint);
+        }
+    }
+
+    // ── active run panel ──────────────────────────────────
+    .ts-active {
+        margin-bottom: $space-5;
+
+        .ts-active__head {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+        }
+    }
+
+    // ── per-distro results ────────────────────────────────
+    .ts-results {
+        display: flex;
+        flex-direction: column;
+        gap: $space-1;
+    }
+
+    .ts-result {
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+        overflow: hidden;
+
+        .ts-result__head {
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            width: 100%;
+            height: auto;
+            padding: $space-2 $space-3;
+            border-radius: 0;
+            text-align: left;
+
+            svg { color: var(--text-faint); flex-shrink: 0; }
+        }
+
+        .ts-result__name {
+            font-size: 13px;
+            font-weight: $font-weight-medium;
+            color: var(--text);
+        }
+
+        .ts-result__spacer { flex: 1; }
+
+        .ts-result__duration {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+
+        .ts-result__detail {
+            padding: 0 $space-3 $space-2;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+    }
+
+    // dark terminal-ish log panel
+    .ts-logwrap {
+        border-top: 1px solid var(--border-soft);
+        background: var(--bg-body);
+    }
+
+    .ts-log {
+        margin: 0;
+        padding: $space-3 $space-4;
+        max-height: 360px;
+        overflow: auto;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        line-height: $line-height-normal;
+        white-space: pre-wrap;
+        word-break: break-word;
+        color: var(--text-dim);
+
+        &--muted { color: var(--text-faint); }
+        &--error { color: var(--red); }
+    }
+
+    // ── history ───────────────────────────────────────────
+    .ts-history { margin-bottom: $space-6; }
+
+    .ts-section-title {
+        margin: 0 0 $space-3;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
+
+    .ts-history-card {
+        background: var(--surface);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        overflow: hidden;
+    }
+
+    .ts-summary {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        font-size: 12px;
+
+        .ts-summary__pass { color: var(--green); }
+        .ts-summary__fail { color: var(--red); }
+    }
+
+    .ts-detail-row > td {
+        padding: $space-3 $space-4;
+        background: var(--surface-2);
+    }
+}

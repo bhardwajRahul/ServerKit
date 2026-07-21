@@ -136,6 +136,32 @@ jobs:
             bash scripts/test/test_stage.sh
           '
 
+  cross-arch-arm64:
+    name: unit (arm64 / raspberry-pi proxy)
+    runs-on: ubuntu-24.04-arm
+    # Raspberry Pi / ARM homelab proxy: the E2E VM harness can't virtualize
+    # ARM (Hyper-V on Windows is x86_64 only), so this hosted ARM64 runner is
+    # the closest CI approximation of 64-bit Raspberry Pi OS / Ubuntu ARM.
+    # Runs the same unit suites natively (no QEMU) so an arch-sensitive
+    # regression (symlink resolution, arch detection, asset/package naming)
+    # fails here instead of on someone's Pi. Real-hardware validation (GPIO,
+    # SD-card I/O, 32-bit ARM) still needs a physical device.
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n + unit suites on arm64
+        run: |
+          set -e
+          for f in serverkit install.sh uninstall.sh scripts/*.sh scripts/lib/*.sh scripts/test/*.sh; do
+            [ -f "$f" ] || continue
+            bash -n "$f" && echo "ok   $f"
+          done
+          bash scripts/test/test_update.sh
+          bash scripts/test/test_install.sh
+          bash scripts/test/test_lib.sh
+          bash scripts/test/test_cli.sh
+          bash scripts/test/test_agent_install.sh
+          bash scripts/test/test_stage.sh
+
   update-e2e:
     name: e2e real install + update
     # The unit suites source the scripts and test functions in isolation — the

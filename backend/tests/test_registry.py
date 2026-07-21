@@ -240,11 +240,12 @@ def test_update_preserves_builtin_source_type(app, plugin_dirs, monkeypatch):
 # --------------------------------------------------------------------------- #
 
 def test_registry_url_defaults_to_public_index(monkeypatch):
-    """Unset env → the curated serverkit-extensions raw index (the go-live
-    default). conftest pins it EMPTY suite-wide, so simulate unset here."""
+    """Unset env → the curated index via serverkit.ai (the go-live default;
+    it proxies the raw serverkit-extensions index with caching + logo URL
+    rewriting). conftest pins it EMPTY suite-wide, so simulate unset here."""
     monkeypatch.delenv('SERVERKIT_REGISTRY_URL', raising=False)
     assert registry_service._registry_url() == registry_service.DEFAULT_REGISTRY_URL
-    assert 'serverkit-extensions' in registry_service.DEFAULT_REGISTRY_URL
+    assert registry_service.DEFAULT_REGISTRY_URL == 'https://serverkit.ai/ext/index.json'
 
 
 def test_registry_url_empty_disables_remote(monkeypatch):
@@ -279,13 +280,20 @@ def test_v2_entry_normalizes_logo_and_repo():
 
 def test_relative_logo_resolved_against_index_base():
     """A repo-relative logo becomes absolute against the index URL it came
-    from (raw-GitHub index → raw asset URL)."""
-    base = registry_service.DEFAULT_REGISTRY_URL  # .../main/index.json
-    e = registry_service._normalize({
+    from (serverkit.ai index → /ext/assets URL; raw-GitHub index → raw asset
+    URL when used as a manual fallback)."""
+    entry = {
         'slug': 'gui', 'display_name': 'GUI', 'version': '1.0.0',
         'source': 'https://x/gui.zip',
         'logo': 'assets/gui/logo.svg',
-    }, base_url=base)
+    }
+    e = registry_service._normalize(
+        entry, base_url=registry_service.DEFAULT_REGISTRY_URL)
+    assert e['logo'] == 'https://serverkit.ai/ext/assets/gui/logo.svg'
+
+    e = registry_service._normalize(
+        entry,
+        base_url='https://raw.githubusercontent.com/jhd3197/serverkit-extensions/main/index.json')
     assert e['logo'] == (
         'https://raw.githubusercontent.com/jhd3197/serverkit-extensions/'
         'main/assets/gui/logo.svg'

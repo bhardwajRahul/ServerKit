@@ -12,9 +12,10 @@ This document is the format spec (task #16) and the publisher guide (task #21).
 ## How a panel consumes the registry
 
 - The panel fetches the index from `SERVERKIT_REGISTRY_URL` (env var). When unset
-  it defaults to the curated public registry
-  (`https://raw.githubusercontent.com/jhd3197/serverkit-extensions/main/index.json`);
-  set it **empty** to disable remote fetching entirely (air-gapped panels). When
+  it defaults to the curated public registry via serverkit.ai
+  (`https://serverkit.ai/ext/index.json`, which proxies and caches the raw
+  `serverkit-extensions` index and serves its logo art); set it **empty** to
+  disable remote fetching entirely (air-gapped panels). When
   the fetch fails (offline), it falls back to the **last good cache**, then to a
   **bundled copy** shipped at `backend/app/data/registry_index.json`. The
   Marketplace never blanks.
