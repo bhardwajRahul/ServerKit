@@ -889,6 +889,11 @@ def _install_from_buffer(buf, source_url, source_type, user_id=None, force=False
         plugin.entry_point = entry_point
         plugin.url_prefix = url_prefix
         plugin.frontend_entry = manifest.get('frontend_entry', '')
+        # Runtime-frontend integrity (plan 25 #6, core-slim #39): pin the sha256
+        # of the prebuilt ESM bundle so the client loader can verify the bytes it
+        # blob-imports match what was installed. No-op for baked .jsx builtins.
+        if has_frontend:
+            _record_frontend_hashes(plugin, manifest, frontend_dest)
         plugin.status = InstalledPlugin.STATUS_ACTIVE
         db.session.commit()
 
@@ -1525,6 +1530,62 @@ def get_plugin(plugin_id):
 def get_plugin_by_slug(slug):
     """Get a plugin by its slug."""
     return InstalledPlugin.query.filter_by(slug=slug).first()
+
+
+# Plugin-config keys the panel owns — never user-editable, preserved across a
+# config PUT. The runtime-frontend loader's per-bundle sha256 hashes live here.
+RESERVED_PLUGIN_CONFIG_KEYS = ('_frontend_hashes',)
+
+
+def _record_frontend_hashes(plugin, manifest, frontend_dest):
+    """Pin the sha256 of a runtime-frontend ESM bundle at install time.
+
+    Stored on the plugin's config under the panel-managed ``_frontend_hashes``
+    key (a reserved namespace preserved across config edits). Only ESM bundles
+    (manifest ``frontend_entry`` ending ``.mjs``) are hashed — baked ``.jsx``
+    builtins load via the build-time glob and need no integrity pin. Best
+    effort: a missing bundle file just records nothing (the loader then refuses
+    to import an extension with no recorded hash).
+    """
+    entry = (manifest.get('frontend_entry') or '').strip()
+    if not entry.endswith('.mjs'):
+        return
+    bundle_path = os.path.join(frontend_dest, entry)
+    if not os.path.isfile(bundle_path):
+        return
+    import hashlib
+    with open(bundle_path, 'rb') as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    cfg = dict(plugin.config or {})
+    hashes = dict(cfg.get('_frontend_hashes') or {})
+    hashes[entry] = digest
+    cfg['_frontend_hashes'] = hashes
+    plugin.config = cfg
+
+
+def update_plugin_config(slug, config):
+    """Save a plugin's user config, preserving panel-managed reserved keys.
+
+    A config PUT from the Marketplace replaces the user-visible values but must
+    never drop (or let the caller forge) the panel-managed ``_frontend_hashes``
+    integrity pins. Reserved keys are stripped from the incoming payload and the
+    existing values are re-applied on top.
+    """
+    plugin = get_plugin_by_slug(slug)
+    if not plugin:
+        raise ValueError('Plugin not found')
+
+    existing = plugin.config or {}
+    new_cfg = {
+        k: v for k, v in (config or {}).items()
+        if k not in RESERVED_PLUGIN_CONFIG_KEYS
+    }
+    for key in RESERVED_PLUGIN_CONFIG_KEYS:
+        if key in existing:
+            new_cfg[key] = existing[key]
+    plugin.config = new_cfg
+    db.session.commit()
+    return plugin
 
 
 def list_builtin_extensions():

@@ -531,12 +531,18 @@ def get_plugin_config(plugin_id):
     if not user or not user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
 
-    from app.services.plugin_service import get_plugin
+    from app.services.plugin_service import get_plugin, RESERVED_PLUGIN_CONFIG_KEYS
     plugin = get_plugin(plugin_id)
     if not plugin:
         return jsonify({'error': 'Plugin not found'}), 404
+    # Hide panel-managed reserved keys (e.g. _frontend_hashes) — they're not
+    # user config and must not be echoed back for editing.
+    user_config = {
+        k: v for k, v in (plugin.config or {}).items()
+        if k not in RESERVED_PLUGIN_CONFIG_KEYS
+    }
     return jsonify({
-        'config': plugin.config,
+        'config': user_config,
         'config_schema': (plugin.manifest or {}).get('config_schema') or {},
     })
 
@@ -554,8 +560,10 @@ def update_plugin_config(plugin_id):
     if not user or not user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
 
-    from app import db
-    from app.services.plugin_service import get_plugin
+    from app.services.plugin_service import (
+        get_plugin, update_plugin_config as svc_update_plugin_config,
+        RESERVED_PLUGIN_CONFIG_KEYS,
+    )
     plugin = get_plugin(plugin_id)
     if not plugin:
         return jsonify({'error': 'Plugin not found'}), 404
@@ -565,8 +573,9 @@ def update_plugin_config(plugin_id):
     if not isinstance(config, dict):
         return jsonify({'error': 'config must be an object'}), 400
 
-    plugin.config = config
-    db.session.commit()
+    # The service strips/re-applies panel-managed reserved keys (e.g. the
+    # runtime-frontend integrity pins), so a config PUT can't drop or forge them.
+    plugin = svc_update_plugin_config(plugin.slug, config)
     AuditService.log(
         action=AuditLog.ACTION_RESOURCE_UPDATE,
         user_id=user.id,
@@ -574,7 +583,11 @@ def update_plugin_config(plugin_id):
         target_id=str(plugin.id),
         details={'event': 'config_update', 'keys': sorted(config.keys())},
     )
-    return jsonify({'config': plugin.config})
+    user_config = {
+        k: v for k, v in (plugin.config or {}).items()
+        if k not in RESERVED_PLUGIN_CONFIG_KEYS
+    }
+    return jsonify({'config': user_config})
 
 
 @plugins_bp.route('/updates', methods=['GET'])

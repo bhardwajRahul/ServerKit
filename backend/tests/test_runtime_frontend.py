@@ -35,19 +35,18 @@ from app.models.plugin import InstalledPlugin
 from app.services import contribution_service, plugin_service, registry_service
 from app.services.settings_service import SettingsService
 
-pytestmark = pytest.mark.skip(
-    reason="plan 42: hollow feature - the runtime-frontend backend contract "
-           "(frontends descriptor map, _frontend_hashes install-time ESM sha256, "
-           "extensions.runtime_frontend kill switch) was lost in the data loss")
-
 _BUNDLE = 'export function Page(){return null;}'
 _ICON = '<circle cx="12" cy="12" r="8"/>'
 
 
 @pytest.fixture
-def plugin_dirs(tmp_path, monkeypatch):
+def plugin_dirs(app, tmp_path, monkeypatch):
     """Redirect plugin install roots at throwaway tmp dirs so installs never
-    touch the real backend/frontend/builtin plugin trees."""
+    touch the real backend/frontend/builtin plugin trees.
+
+    Depends on ``app`` so the test body runs inside an application context (the
+    ``app`` fixture yields while its context is active) — the assertions query
+    the DB and call services directly."""
     backend = tmp_path / 'backend_plugins'
     frontend = tmp_path / 'frontend_plugins'
     builtin = tmp_path / 'builtin_extensions'
@@ -72,8 +71,8 @@ def _runtime_zip(slug='serverkit-runtime', bundle=_BUNDLE, **kw):
         'sdk_version': '^1.0.0',
         'frontend_entry': 'dist/index.mjs',
         'contributions': {
-            'nav': [{'label': 'Runtime Demo', 'route': 'runtime-demo',
-                     'category': 'system', 'icon': _ICON}],
+            'nav': [{'id': 'runtime-demo', 'label': 'Runtime Demo',
+                     'route': 'runtime-demo', 'category': 'system', 'icon': _ICON}],
             'routes': [{'path': 'runtime-demo', 'component': 'Page'}],
         },
     }
@@ -137,6 +136,7 @@ def test_baked_and_runtime_coexist(plugin_dirs):
     # A baked builtin contributes via a .jsx component, not a runtime bundle, so
     # it must NOT appear in the runtime `frontends` map.
     baked = InstalledPlugin(slug='serverkit-baked', name='Baked',
+                            display_name='Baked', version='1.0.0',
                             status=InstalledPlugin.STATUS_ACTIVE,
                             manifest={'frontend_entry': 'components/Baked.jsx'})
     db.session.add(baked)

@@ -177,11 +177,58 @@ must design around:
 1. **Builtin (in-repo) extensions work in production** because their frontend
    halves are checked into `frontend/src/plugins/<slug>/` and compiled into every
    shipped bundle. "Install" just flips the runtime contribution envelope on.
-2. **A third-party extension that ships a frontend does *not* render on a
-   production panel** (the panel serves a pre-built bundle; `plugin_service` copies
-   files but nothing rebuilds Vite). Its **backend half loads fine.** Until the
-   Phase 3 frontend-delivery mechanism lands, third-party extensions should be
-   backend-only, or use a `bare`/custom layout escape hatch.
+2. **A third-party extension can now render on a production panel without a
+   rebuild** — if it ships a prebuilt **ESM bundle** (see below). The panel serves
+   a pre-built bundle and nothing rebuilds Vite, so a checked-in `.jsx` frontend
+   still won't appear; but a `dist/index.mjs` bundle is fetched, integrity-checked,
+   and blob-imported at runtime by the client loader. Its **backend half loads
+   fine** either way.
+
+### Runtime frontend delivery (prebuilt ESM bundle)
+
+An installed extension whose manifest declares a `.mjs` `frontend_entry` is
+delivered to the running panel **without a rebuild** (core-slim #39):
+
+```jsonc
+// plugin.json
+{
+  "frontend_entry": "dist/index.mjs",   // an ESM bundle (NOT a .jsx source file)
+  "sdk_version": "^1.0.0"                // semver range the panel SDK must satisfy
+}
+```
+
+How it works: at install time `plugin_service` records the bundle's sha256 (stored
+under the panel-managed `_frontend_hashes` config key). The
+`/api/v1/plugins/contributions` envelope then advertises a `frontends` descriptor
+map — `{ slug: { entry, hashes, sdk_version } }` — plus the panel's `sdk_version`.
+The client loader (`frontend/src/plugins/runtime/loader.js`) fetches the bundle
+through the JWT-authed assets route, verifies the sha256, refuses it if its
+`sdk_version` range doesn't cover the panel, then blob-imports it — resolving the
+externalized bare specifiers through the host import map. Failures render a fail-soft
+card on the extension's routes, never a white screen.
+
+**Build convention** — externalize exactly the specifiers the host import map
+resolves (`react`, `react-dom`, `react/jsx-runtime`, `react-router-dom`,
+`serverkit-sdk`) so the extension shares the panel's singleton instances:
+
+```js
+// vite.config.js (extension repo)
+import { defineConfig } from 'vite';
+export default defineConfig({
+  build: {
+    lib: { entry: 'src/index.jsx', formats: ['es'], fileName: () => 'index.mjs' },
+    outDir: 'dist',
+    rollupOptions: {
+      external: ['react', 'react-dom', 'react/jsx-runtime',
+                 'react-router-dom', 'serverkit-sdk'],
+    },
+  },
+});
+```
+
+Operators can disable runtime delivery panel-wide with the
+`extensions.runtime_frontend` system setting (kill switch, default on); baked
+builtins keep rendering via the build-time glob regardless.
 
 ### D5 — builtin frontends are pre-bundled (single source of truth)
 

@@ -12,7 +12,7 @@ This document outlines the development roadmap for ServerKit. Features are organ
 
 - **Deploy Console & Live Run Logs** - Every install and deploy lands on one full-page live console: streaming build output, a step timeline with per-step durations and a live elapsed timer, and failure cards showing the real error tail with plain-language hints and one-click retry. Backed by a unified batched run-log layer (database persistence + WebSocket push with a polling fallback).
 - **New Service Wizard & Template Catalog** - Three-step service creation (Source / Connect / Review) backed by a server-side template catalog with one-click compose templates and Git-repo templates.
-- **Extensions Platform Maturation** - Marketplace registry backed by standalone extension repos (Kubernetes, Automations, Analytics, Mail, GPU, CrowdSec, DNS server, and more), with built-in features progressively extracted to keep the default panel lean.
+- **Extensions Platform Maturation** - Marketplace registry backed by standalone extension repos (Kubernetes, Automations, Analytics, Mail, GPU, CrowdSec, DNS server, and more), with built-in features progressively extracted to keep the default panel lean. Installed extensions that ship a prebuilt bundle now render their UI on a production panel with no rebuild.
 - **Privacy-First Web Analytics** - Cookieless, self-hosted analytics extension with WordPress and nginx integration and optional geo lookup.
 - **Agent Fleet & Peering** - ServerKit-to-ServerKit peering (embedded agent mode), fleet doctor tooling, and agent capability upgrades.
 - **Auth & Proxy Hardening** - Trusted reverse-proxy client-IP handling and per-IP login brute-force throttling.
@@ -605,7 +605,7 @@ happen live, and debug failures entirely from the UI.
 
 ## Extension Platform
 
-- [ ] Runtime frontend loading — installed extensions render without rebuilding the panel
+- [x] Runtime frontend loading — installed extensions render without rebuilding the panel
 - [ ] Signed extension releases, with explicit install consent for unsigned or third-party code
 - [ ] Remaining built-ins extracted to standalone repos (including the WordPress flagship)
 - [ ] Security suite (Fail2ban, ClamAV, Lynis, auto-updates, image scanning) as installable extensions for a leaner default panel

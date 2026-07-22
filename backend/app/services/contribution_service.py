@@ -37,6 +37,45 @@ Only plugins with status == 'active' contribute. A plugin without a
 contributions block is silently skipped.
 """
 from app.models.plugin import InstalledPlugin
+from app.utils.sdk import SDK_VERSION
+
+
+# Panel-managed plugin-config key holding the per-bundle sha256 hashes recorded
+# for a runtime-frontend extension at install time (see plugin_service).
+RUNTIME_FRONTEND_HASH_KEY = '_frontend_hashes'
+
+
+def _runtime_frontends(plugins):
+    """Descriptor map for extensions delivered as a prebuilt ESM bundle.
+
+    Shape: ``{ slug: { entry, hashes: {entry: sha256}, sdk_version } }``. The
+    client runtime loader (frontend/src/plugins/runtime/loader.js) fetches each
+    bundle through the JWT-authed assets route, verifies its sha256 against the
+    hash recorded here at install time, then blob-imports it — resolving the
+    externalized react/router/sdk specifiers through the host import map.
+
+    Only extensions whose manifest ``frontend_entry`` is an ESM bundle (``.mjs``)
+    appear here; baked ``.jsx`` builtins render via the build-time glob, not the
+    runtime loader. Gated by the ``extensions.runtime_frontend`` kill switch
+    (Decision 4) — off means an empty map and the loader is inert.
+    """
+    from app.services.settings_service import SettingsService
+    if not SettingsService.get('extensions.runtime_frontend', True):
+        return {}
+
+    out = {}
+    for p in plugins:
+        manifest = p.manifest or {}
+        entry = (manifest.get('frontend_entry') or '').strip()
+        if not entry.endswith('.mjs'):
+            continue
+        hashes = (p.config or {}).get(RUNTIME_FRONTEND_HASH_KEY) or {}
+        out[p.slug] = {
+            'entry': entry,
+            'hashes': hashes,
+            'sdk_version': manifest.get('sdk_version') or '',
+        }
+    return out
 
 
 def _tag(items, slug):
@@ -98,4 +137,8 @@ def get_active_contributions():
         'layouts': layouts,
         'tabs': tabs,
         'ai': ai,
+        # Panel SDK version the client uses to gate runtime bundles (plan 25 #1).
+        'sdk_version': SDK_VERSION,
+        # Runtime-loadable ESM frontends (plan 25 Phase 2, core-slim #39).
+        'frontends': _runtime_frontends(plugins),
     }

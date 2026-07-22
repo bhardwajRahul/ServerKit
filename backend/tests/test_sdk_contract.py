@@ -28,9 +28,6 @@ def test_backend_mirror_matches_frontend_sdk_version():
     )
 
 
-@pytest.mark.skip(reason="plan 42: hollow feature - runtime-frontend contribution "
-                         "surface (sdk_version/frontends in get_active_contributions) "
-                         "was lost in the data loss; restored by plan 42 recovery")
 def test_contributions_reports_sdk_version(client, auth_headers):
     resp = client.get('/api/v1/plugins/contributions', headers=auth_headers)
     assert resp.status_code == 200

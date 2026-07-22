@@ -153,6 +153,12 @@ class SettingsService:
         # 503s the module's API (same mechanism as the plugin status guard). The
         # toggle state later becomes the extraction auto-install signal (#34).
         'module_wordpress_enabled': {'value': True, 'type': 'boolean', 'description': 'Show the WordPress module (nav, routes, and /api/v1/wordpress).'},
+        # Runtime-frontend delivery kill switch (core-slim #39). When on, the
+        # /plugins/contributions envelope advertises a `frontends` descriptor map
+        # so a production panel can blob-import an installed extension's prebuilt
+        # ESM bundle without a rebuild. Off removes the map and the client loader
+        # is inert (baked builtins still render via the build-time glob).
+        'extensions.runtime_frontend': {'value': True, 'type': 'boolean', 'description': 'Deliver installed extensions\' prebuilt ESM frontends to production panels at runtime (no rebuild).'},
     }
 
     # Settings that must never be returned through the API (only "is it set?").
