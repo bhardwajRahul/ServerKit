@@ -1051,6 +1051,51 @@ class DockerService:
             return {'success': False, 'error': str(e)}
 
     @classmethod
+    def compose_up_streaming(cls, project_path, on_line, detach=True, build=False,
+                             compose_file=None):
+        """Start Docker Compose services, streaming each output line to on_line.
+
+        Same overlay/command construction as ``compose_up``, but runs via Popen
+        with plain, ANSI-free progress (plan 51 D5) and delivers output
+        line-by-line so the Deploy Console shows the real pull/build/start
+        transcript live (the biggest reason template-install errors used to be
+        unreadable). Returns ``{success, exit_code}``; the actual failure output
+        lands in the stream (and thus the persisted failure tail), so no separate
+        stderr blob is returned. Never raises — the buffered ``compose_up``
+        remains for callers without a callback.
+        """
+        try:
+            cmd = cls._compose_cmd_with_overlay(project_path, compose_file)
+            # Global compose flags before the subcommand: no ANSI colors, plain
+            # (non-TTY) progress so the transcript greps/reads cleanly. The
+            # stream also strips residual ANSI/\r as a backstop.
+            cmd = cmd + ['--ansi', 'never', '--progress', 'plain', 'up']
+            if detach:
+                cmd.append('-d')
+            if build:
+                cmd.append('--build')
+
+            proc = subprocess.Popen(
+                cmd, cwd=project_path,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, bufsize=1,
+            )
+            for line in iter(proc.stdout.readline, ''):
+                try:
+                    on_line(line.rstrip('\n'))
+                except Exception:
+                    pass
+            proc.stdout.close()
+            exit_code = proc.wait()
+            return {'success': exit_code == 0, 'exit_code': exit_code}
+        except Exception as e:
+            try:
+                on_line(f'docker compose up failed to start: {e}')
+            except Exception:
+                pass
+            return {'success': False, 'exit_code': -1, 'error': str(e)}
+
+    @classmethod
     def compose_down(cls, project_path, volumes=False, remove_orphans=True, compose_file=None):
         """Stop Docker Compose services."""
         try:

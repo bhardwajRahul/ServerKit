@@ -4,16 +4,16 @@ Executes the same deployment plan against the local server or a connected agent.
 """
 
 import base64
-import json
 import os
 import time
 from datetime import datetime
 from typing import Any, Dict
 
 from app import db
-from app.models.deployment_job import DeploymentJob, DeploymentJobLog
+from app.models.deployment_job import DeploymentJob
 from app.services.agent_registry import agent_registry
 from app.services.docker_service import DockerService
+from app.services.run_log_service import RunLogStream
 from app.services.telemetry_service import TelemetryService, generate_correlation_id
 
 
@@ -29,6 +29,10 @@ class DeploymentPlanRunner:
         self.correlation_id = job.correlation_id or generate_correlation_id()
         if not job.correlation_id:
             job.correlation_id = self.correlation_id
+        # All log/step/close writes funnel through the one batched, crash-proof
+        # seam (plan 51 D4). runner.log() stays a thin wrapper for call-site
+        # compatibility with the 98ad048 code.
+        self.stream = RunLogStream.for_job(job)
 
     @property
     def is_remote(self) -> bool:
@@ -69,9 +73,9 @@ class DeploymentPlanRunner:
 
             for index, step in enumerate(steps, start=1):
                 name = step.get('name') or step.get('type') or f"Step {index}"
-                self.job.current_step = index
-                self.job.current_step_name = name
-                db.session.commit()
+                # set_step flushes prior lines, updates the job row, records the
+                # previous step's duration, and emits a live status (D4).
+                self.stream.set_step(index, name)
 
                 self.log('info', name, step_index=index)
                 TelemetryService.emit(
@@ -106,6 +110,8 @@ class DeploymentPlanRunner:
                 payload={'job_id': self.job.id, 'kind': self.job.kind, 'total_steps': len(steps)},
                 commit=False,
             )
+            # Final flush + persist step timings; terminal status emit.
+            self.stream.close('succeeded')
             return {'success': True, 'steps': results}
 
         except Exception as exc:
@@ -143,30 +149,15 @@ class DeploymentPlanRunner:
                 )
             except Exception:
                 pass
+            # Final flush + persist failure tail / hint / step timings; terminal
+            # status emit. Marking-failed above never depends on this (D10).
+            self.stream.close('failed', error_message=str(exc))
             return {'success': False, 'error': str(exc), 'steps': results}
 
     def log(self, level: str, message: str, data: Any = None, step_index: int = None):
-        payload = None
-        if data is not None:
-            try:
-                payload = json.dumps(self._trim_data(data), default=str)
-            except TypeError:
-                payload = json.dumps(str(data))
-
-        # Logging must never kill the deployment: a failed log insert rolls
-        # back and is skipped rather than crashing the runner mid-job.
-        try:
-            entry = DeploymentJobLog(
-                job_id=self.job.id,
-                step_index=step_index,
-                level=level,
-                message=message,
-                data=payload,
-            )
-            db.session.add(entry)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
+        """Thin wrapper over the batched RunLogStream (kept for call-site
+        compatibility with the 98ad048 runner). Never raises."""
+        self.stream.log(level, message, step_index=step_index, data=data)
 
     def _execute_step(self, step: Dict[str, Any]) -> Any:
         step_type = step.get('type')
@@ -244,10 +235,22 @@ class DeploymentPlanRunner:
         project_dir = step.get('project_dir') or step.get('project_path')
         if not project_dir:
             raise DeploymentStepError('docker.compose.up step requires project_dir for local targets')
-        result = DockerService.compose_up(project_dir, detach=detach, build=build)
+        # Stream the real pull/build/start transcript into the run log so the
+        # Deploy Console shows it live and a failure persists a meaningful tail
+        # (plan 51 D5). The line callback rides the batched stream.
+        current_step = self.job.current_step
+        result = DockerService.compose_up_streaming(
+            project_dir,
+            on_line=lambda line: self.stream.log('info', line, step_index=current_step),
+            detach=detach,
+            build=build,
+        )
         if not result.get('success'):
-            raise DeploymentStepError(result.get('error') or 'docker compose up failed')
-        self.log('debug', 'Local compose up finished', result)
+            raise DeploymentStepError(
+                result.get('error')
+                or f"docker compose up failed (exit code {result.get('exit_code')})"
+            )
+        self.log('debug', 'Local compose up finished')
         return result
 
     def _compose_ps(self, step: Dict[str, Any]) -> Dict[str, Any]:
@@ -304,15 +307,3 @@ class DeploymentPlanRunner:
             raise DeploymentStepError(data.get('error') or f'Agent command failed: {action}')
 
         return data if data is not None else {'success': True}
-
-    def _trim_data(self, data: Any) -> Any:
-        if isinstance(data, str):
-            return data[:6000]
-        if isinstance(data, dict):
-            trimmed = {}
-            for key, value in data.items():
-                trimmed[key] = self._trim_data(value)
-            return trimmed
-        if isinstance(data, list):
-            return [self._trim_data(item) for item in data[:50]]
-        return data

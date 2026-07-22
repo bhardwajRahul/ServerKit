@@ -22,10 +22,6 @@ container_status_subscribers = set()
 container_status_thread = None
 container_status_stop_event = threading.Event()
 
-# Store active build subscriptions
-build_subscribers = {}  # sid -> app_id
-build_log_queues = {}  # app_id -> queue
-
 # Store active container log streams
 container_log_streams = {}  # sid -> {'process': Popen, 'app_id': int, 'thread': Thread, 'stop_event': Event}
 
@@ -370,72 +366,67 @@ def handle_leave_room(data):
         emit('left', {'room': room})
 
 
-# ==================== BUILD LOG STREAMING ====================
+# ==================== DEPLOY CONSOLE STREAMING ====================
+#
+# Live push for the Deploy Console (plan 51). Room is per DeploymentJob
+# (`deploy_{job_id}`); the RunLogStream seam batches writes and emits one
+# `deploy_log` (a batch of persisted lines) per flush plus `deploy_status`
+# (the job summary dict) on step/terminal transitions. This is an ACCELERATOR
+# on top of the `GET /deployment-jobs/<id>/logs?after_id=` polling endpoint —
+# the console stays 100% functional with sockets disabled (D2).
 
-@socketio.on('subscribe_build')
-def handle_subscribe_build(data):
-    """Subscribe to build log streaming for an app."""
+@socketio.on('subscribe_deploy')
+def handle_subscribe_deploy(data):
+    """Subscribe to live Deploy Console updates for a deployment job.
+
+    Auth mirrors the read API (D3/§8): any authenticated user may watch — job
+    ids are unguessable UUIDs and the REST read endpoint exposes them the same
+    way. The connect handler already verified the JWT and recorded identity in
+    `connected_clients`; a socket missing from that set is not authenticated.
+    """
     sid = request.sid
-    app_id = data.get('app_id')
-
-    if not app_id:
-        emit('error', {'message': 'app_id required'})
+    if sid not in connected_clients:
+        emit('error', {'message': 'Authentication required'})
         return
 
-    # Store subscription
-    build_subscribers[sid] = app_id
+    job_id = (data or {}).get('job_id')
+    if not job_id:
+        emit('error', {'message': 'job_id required'})
+        return
 
-    # Join a room for this app's builds
-    join_room(f'build_{app_id}')
-
-    emit('subscribed', {'channel': 'build', 'app_id': app_id})
-
-
-@socketio.on('unsubscribe_build')
-def handle_unsubscribe_build():
-    """Unsubscribe from build log streaming."""
-    sid = request.sid
-
-    if sid in build_subscribers:
-        app_id = build_subscribers[sid]
-        leave_room(f'build_{app_id}')
-        del build_subscribers[sid]
-
-    emit('unsubscribed', {'channel': 'build'})
+    join_room(f'deploy_{job_id}')
+    emit('subscribed', {'channel': 'deploy', 'job_id': job_id})
 
 
-def emit_build_log(app_id: int, message: str, level: str = 'info'):
-    """Emit a build log message to all subscribers.
+@socketio.on('unsubscribe_deploy')
+def handle_unsubscribe_deploy(data=None):
+    """Leave a deployment job's live room."""
+    job_id = (data or {}).get('job_id')
+    if job_id:
+        leave_room(f'deploy_{job_id}')
+    emit('unsubscribed', {'channel': 'deploy', 'job_id': job_id})
 
-    This function is called from the build service to stream logs.
+
+def emit_deploy_log(job_id: str, lines: list):
+    """Emit a batch of persisted deploy log lines to a job's room.
+
+    Called from RunLogStream on each flush. `lines` is a list of
+    {id, step_index, level, message, ts} dicts (already persisted, carrying
+    real DB ids so the client can dedupe + after_id re-sync).
     """
-    socketio.emit('build_log', {
-        'app_id': app_id,
-        'message': message,
-        'level': level,
-        'timestamp': time.time()
-    }, room=f'build_{app_id}')
+    socketio.emit('deploy_log', {
+        'job_id': job_id,
+        'lines': lines,
+    }, room=f'deploy_{job_id}')
 
 
-def emit_build_status(app_id: int, status: str, details: dict = None):
-    """Emit a build status update to all subscribers."""
-    socketio.emit('build_status', {
-        'app_id': app_id,
+def emit_deploy_status(job_id: str, status: dict):
+    """Emit a deployment job status summary (same shape as
+    GET /deployment-jobs/<id>, without logs) to the job's room."""
+    socketio.emit('deploy_status', {
+        'job_id': job_id,
         'status': status,
-        'details': details or {},
-        'timestamp': time.time()
-    }, room=f'build_{app_id}')
-
-
-def create_build_log_callback(app_id: int):
-    """Create a log callback function for the build service.
-
-    Returns a function that can be passed to BuildService.build()
-    to stream logs in real-time via WebSocket.
-    """
-    def log_callback(message: str):
-        emit_build_log(app_id, message)
-    return log_callback
+    }, room=f'deploy_{job_id}')
 
 
 # ==================== CONTAINER LOG STREAMING ====================
