@@ -182,6 +182,7 @@ backend/app/plugins/serverkit-analytics/
 backend/app/plugins/serverkit-cloud-provision/
 backend/app/plugins/serverkit-crowdsec/
 backend/app/plugins/serverkit-dns-server/
+backend/app/plugins/serverkit-email/
 backend/app/plugins/serverkit-ftp/
 backend/app/plugins/serverkit-gpu/
 backend/app/plugins/serverkit-gui/
@@ -193,7 +194,9 @@ backend/app/plugins/serverkit-tramo/
 frontend/src/plugins/serverkit-analytics/
 frontend/src/plugins/serverkit-crowdsec/
 frontend/src/plugins/serverkit-dns-server/
+frontend/src/plugins/serverkit-email/
 frontend/src/plugins/serverkit-gpu/
+frontend/src/plugins/serverkit-gui/
 frontend/src/plugins/serverkit-k8s/
 frontend/src/plugins/serverkit-mail/
 frontend/src/plugins/serverkit-tramo/
