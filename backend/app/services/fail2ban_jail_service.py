@@ -70,7 +70,7 @@ ignoreregex =
 enabled = true
 filter = {filter}
 logpath = {logpath}
-port = http,https
+port = {port}
 maxretry = {maxretry}
 findtime = {findtime}
 bantime = {bantime}
@@ -103,9 +103,26 @@ bantime = {bantime}
         return re.sub(r'[^a-zA-Z0-9_-]', '-', (name or '')).strip('-') or 'site'
 
     @classmethod
+    def jail_name_for_key(cls, key):
+        """``serverkit-<key>`` jail name for any sanitized key (site name, game
+        server id, …). The generic naming primitive under jail_name(app)."""
+        return cls.JAIL_PREFIX + cls._sanitize(key)
+
+    @classmethod
     def jail_name(cls, app):
         """``serverkit-<key>`` jail name for an application."""
-        return cls.JAIL_PREFIX + cls._sanitize(getattr(app, 'name', None))
+        return cls.jail_name_for_key(getattr(app, 'name', None))
+
+    @classmethod
+    def _jail_path_for_name(cls, jail):
+        """Absolute path of a jail file by full jail name, guarded so it can only
+        ever be a ServerKit-owned file inside JAIL_DIR."""
+        filename = f'{jail}.conf'
+        if (not filename.startswith(cls.JAIL_PREFIX)
+                or '/' in filename or '\\' in filename or '..' in filename):
+            # Unreachable given _sanitize, but refuse rather than risk a stray path.
+            raise ValueError(f'refusing to target non-ServerKit jail file: {filename!r}')
+        return os.path.join(cls.JAIL_DIR, filename)
 
     @classmethod
     def _jail_filename(cls, app):
@@ -113,14 +130,8 @@ bantime = {bantime}
 
     @classmethod
     def _jail_path(cls, app):
-        """Absolute path of the per-site jail file, guarded so it can only ever be
-        a ServerKit-owned file inside JAIL_DIR."""
-        filename = cls._jail_filename(app)
-        if (not filename.startswith(cls.JAIL_PREFIX)
-                or '/' in filename or '\\' in filename or '..' in filename):
-            # Unreachable given _sanitize, but refuse rather than risk a stray path.
-            raise ValueError(f'refusing to target non-ServerKit jail file: {filename!r}')
-        return os.path.join(cls.JAIL_DIR, filename)
+        """Absolute path of the per-site jail file (guarded)."""
+        return cls._jail_path_for_name(cls.jail_name(app))
 
     # ---------- file helpers ----------
 
@@ -156,15 +167,26 @@ bantime = {bantime}
     # ---------- filter ----------
 
     @classmethod
-    def ensure_filter(cls):
-        """Write the ServerKit WP-login filter if missing or out of date."""
+    def ensure_filter(cls, filter_name=None, filter_content=None):
+        """Write a ServerKit-owned Fail2ban filter if missing or out of date.
+
+        Generic: any vertical can supply its own ``serverkit-*`` filter (e.g. a
+        game-server console-login filter). Defaults to the WordPress login/xmlrpc
+        filter for back-compat. Ownership-guarded — the name must be a
+        ``serverkit-`` filter, so this never touches an operator's own filters."""
         if not cls.available():
             return cls._unavailable()
-        path = os.path.join(cls.FILTER_DIR, f'{cls.WP_FILTER}.conf')
+        filter_name = filter_name or cls.WP_FILTER
+        filter_content = filter_content if filter_content is not None else cls.FILTER_CONTENT
+        if not filter_name.startswith(cls.JAIL_PREFIX):
+            return {'success': False,
+                    'error': f'filter name must start with {cls.JAIL_PREFIX!r}'}
+        safe = cls._sanitize(filter_name)
+        path = os.path.join(cls.FILTER_DIR, f'{safe}.conf')
         existing = cls._read_text(path)
-        if existing is not None and existing.strip() == cls.FILTER_CONTENT.strip():
+        if existing is not None and existing.strip() == filter_content.strip():
             return {'success': True, 'path': path, 'changed': False}
-        res = cls._write_file(path, cls.FILTER_CONTENT)
+        res = cls._write_file(path, filter_content)
         if not res.get('success'):
             return res
         return {'success': True, 'path': path, 'changed': True}
@@ -172,59 +194,91 @@ bantime = {bantime}
     # ---------- jail lifecycle ----------
 
     @classmethod
-    def _render_jail(cls, app, logpath, maxretry, findtime, bantime):
+    def _render_jail_config(cls, *, jail, site, filter_name, logpath,
+                            maxretry, findtime, bantime, port='http,https'):
         return cls.JAIL_TEMPLATE.format(
-            jail=cls.jail_name(app), site=getattr(app, 'name', ''), filter=cls.WP_FILTER,
-            logpath=logpath,
+            jail=jail, site=site, filter=filter_name, logpath=logpath,
             maxretry=maxretry or cls.MAXRETRY,
             findtime=findtime or cls.FINDTIME,
             bantime=bantime or cls.BANTIME,
+            port=port,
         )
 
     @classmethod
-    def enable_wp_jail(cls, app, *, maxretry=None, findtime=None, bantime=None):
-        """Create/refresh a WP brute-force jail for *app* and reload fail2ban.
+    def _render_jail(cls, app, logpath, maxretry, findtime, bantime):
+        """WP-flavored back-compat renderer (serverkit-wp-login filter, web ports)."""
+        return cls._render_jail_config(
+            jail=cls.jail_name(app), site=getattr(app, 'name', ''),
+            filter_name=cls.WP_FILTER, logpath=logpath,
+            maxretry=maxretry, findtime=findtime, bantime=bantime, port='http,https')
 
-        Idempotent (regenerates the jail file). Best-effort: returns a ``skipped``
-        descriptor when fail2ban is unavailable rather than raising, so callers in
-        the site-create path never fail because of it."""
+    @classmethod
+    def enable_jail(cls, key, *, filter_name, filter_content, logpath,
+                    maxretry=None, findtime=None, bantime=None,
+                    port='http,https', site_label=None):
+        """Create/refresh an arbitrary ServerKit-owned brute-force jail; reload.
+
+        The generic engine behind enable_wp_jail, reusable by other verticals
+        (e.g. a game-server login/RCON jail). ``key`` names the jail
+        (``serverkit-<sanitized key>``); ``filter_name``/``filter_content`` define
+        the ``serverkit-*`` filter to (re)write; ``logpath`` is the log to watch;
+        ``port`` sets the jail's ports. Idempotent and best-effort: returns a
+        ``skipped`` descriptor when fail2ban is unavailable rather than raising."""
         if not cls.available():
             return cls._unavailable()
-        if not getattr(app, 'name', None):
-            return {'success': False, 'error': 'application has no name'}
+        if not key:
+            return {'success': False, 'error': 'jail key is required'}
 
-        flt = cls.ensure_filter()
+        flt = cls.ensure_filter(filter_name, filter_content)
         if not flt.get('success'):
             return flt
 
-        logpath = NginxService.site_access_log_path(app.name)
         cls._ensure_logpath(logpath)
-
+        jail = cls.jail_name_for_key(key)
         try:
-            jail_path = cls._jail_path(app)
+            jail_path = cls._jail_path_for_name(jail)
         except ValueError as e:
             return {'success': False, 'error': str(e)}
 
-        written = cls._write_file(jail_path, cls._render_jail(
-            app, logpath, maxretry, findtime, bantime))
+        written = cls._write_file(jail_path, cls._render_jail_config(
+            jail=jail, site=site_label or key, filter_name=cls._sanitize(filter_name),
+            logpath=logpath, maxretry=maxretry, findtime=findtime, bantime=bantime,
+            port=port))
         if not written.get('success'):
             return written
 
         reloaded = cls.reload()
         return {
-            'success': True, 'enabled': True, 'jail': cls.jail_name(app),
+            'success': True, 'enabled': True, 'jail': jail,
             'path': jail_path, 'logpath': logpath,
             'reloaded': reloaded.get('success'), 'reload_message': reloaded.get('message'),
         }
 
     @classmethod
-    def disable_jail(cls, app):
-        """Remove a site's ServerKit jail file and reload fail2ban. No-op (success)
+    def enable_wp_jail(cls, app, *, maxretry=None, findtime=None, bantime=None):
+        """Create/refresh a WP brute-force jail for *app* and reload fail2ban.
+
+        Thin wrapper over the generic enable_jail engine with the WordPress
+        login/xmlrpc filter and the site's nginx access log."""
+        if not cls.available():
+            return cls._unavailable()
+        if not getattr(app, 'name', None):
+            return {'success': False, 'error': 'application has no name'}
+        logpath = NginxService.site_access_log_path(app.name)
+        return cls.enable_jail(
+            app.name, filter_name=cls.WP_FILTER, filter_content=cls.FILTER_CONTENT,
+            logpath=logpath, maxretry=maxretry, findtime=findtime, bantime=bantime,
+            port='http,https', site_label=app.name)
+
+    @classmethod
+    def remove_jail(cls, key):
+        """Remove a ServerKit jail by key and reload fail2ban. No-op (success)
         when the jail does not exist or fail2ban is unavailable."""
         if not cls.available():
             return cls._unavailable()
+        jail = cls.jail_name_for_key(key)
         try:
-            jail_path = cls._jail_path(app)
+            jail_path = cls._jail_path_for_name(jail)
         except ValueError as e:
             return {'success': False, 'error': str(e)}
 
@@ -238,8 +292,14 @@ bantime = {bantime}
             return {'success': False, 'error': str(e)}
 
         reloaded = cls.reload()
-        return {'success': True, 'removed': True, 'jail': cls.jail_name(app),
+        return {'success': True, 'removed': True, 'jail': jail,
                 'reloaded': reloaded.get('success')}
+
+    @classmethod
+    def disable_jail(cls, app):
+        """Remove a site's ServerKit jail file and reload fail2ban. Thin wrapper
+        over remove_jail keyed by the application name."""
+        return cls.remove_jail(getattr(app, 'name', None))
 
     @classmethod
     def reload(cls):

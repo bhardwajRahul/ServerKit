@@ -170,6 +170,67 @@ def test_get_status_shape_when_jail_absent():
     assert st['fail2ban_running'] is False
 
 
+# ---------- generic jail engine (plan 52 — reusable beyond WordPress) ----------
+
+def test_enable_jail_generic_writes_custom_filter_jail_and_port():
+    """The generic engine any vertical can use (e.g. a game-server login jail):
+    an arbitrary serverkit-* filter, a custom logpath, and a non-web port."""
+    writes = {}
+
+    def fake_run(cmd, **kwargs):
+        if cmd[:1] == ['tee'] and 'input' in kwargs:
+            writes[cmd[1]] = kwargs['input']
+        return _ok()
+
+    custom_filter = ('# ServerKit game-server login filter.\n[Definition]\n'
+                     'failregex = ^.*Failed login from <HOST>\nignoreregex =\n')
+    with patch.object(F2B, 'available', return_value=True), \
+            patch.object(F2B, '_read_text', return_value=None), \
+            patch('app.services.fail2ban_jail_service.run_privileged', side_effect=fake_run):
+        res = F2B.enable_jail(
+            'mc survival', filter_name='serverkit-mc-login',
+            filter_content=custom_filter, logpath='/var/log/mc/console.log',
+            maxretry=4, findtime=300, bantime=1800, port='25565', site_label='MC Survival')
+
+    assert res['success'] is True and res['enabled'] is True
+    # key is sanitized + prefixed like any jail
+    assert res['jail'] == 'serverkit-mc-survival'
+
+    filter_path = os.path.join(F2B.FILTER_DIR, 'serverkit-mc-login.conf')
+    jail_path = os.path.join(F2B.JAIL_DIR, 'serverkit-mc-survival.conf')
+    assert filter_path in writes and 'Failed login from <HOST>' in writes[filter_path]
+    jail = writes[jail_path]
+    assert '[serverkit-mc-survival]' in jail
+    assert 'filter = serverkit-mc-login' in jail
+    assert 'logpath = /var/log/mc/console.log' in jail
+    assert 'port = 25565' in jail
+    assert 'maxretry = 4' in jail and 'findtime = 300' in jail and 'bantime = 1800' in jail
+
+
+def test_ensure_filter_rejects_non_serverkit_name():
+    with patch.object(F2B, 'available', return_value=True):
+        res = F2B.ensure_filter('evil-filter', '[Definition]\n')
+    assert res['success'] is False
+    assert 'serverkit-' in res['error']
+
+
+def test_remove_jail_by_key_targets_serverkit_file():
+    removed = {}
+
+    def fake_run(cmd, **kwargs):
+        if cmd[:1] == ['rm']:
+            removed['path'] = cmd[-1]
+        return _ok()
+
+    with patch.object(F2B, 'available', return_value=True), \
+            patch('app.services.fail2ban_jail_service.os.path.exists', return_value=True), \
+            patch('app.services.fail2ban_jail_service.run_privileged', side_effect=fake_run):
+        res = F2B.remove_jail('mc survival')
+
+    assert res['success'] is True and res['removed'] is True
+    assert removed['path'] == os.path.join(F2B.JAIL_DIR, 'serverkit-mc-survival.conf')
+
+
 # ---------- WpSecurityService wrapper ----------
 
 def test_wp_security_set_brute_force_delegates_to_jail_service():
