@@ -1,14 +1,23 @@
 # ServerKit Roadmap
 
-> **Status: core feature-complete.** All planned core phases below have shipped. ServerKit no longer adds new features to the core — new functionality is developed as installable **extensions** distributed through the built-in Marketplace, and core development is limited to stability fixes and UI/UX polish (including issues reported by the community). This document is kept as the historical record of how the core was built out.
+> **Status: core phases complete — actively developed.** All original core phases below have shipped. Development now focuses on three tracks: the **deployment experience** (a live deploy console with streaming logs), the **extension platform** (runtime loading, signed releases, standalone extension repos), and **new capability areas delivered as installable extensions** through the built-in Marketplace — plus stability fixes and UI/UX polish from community reports. See **Active Development** below for what's in flight; the phase list is kept as the historical record of how the core was built out.
 
 This document outlines the development roadmap for ServerKit. Features are organized by phases and priority.
 
 ---
 
-## Current Version: v1.6.0 (In Development)
+## Current Version: v1.7.x (In Development)
 
-### Recently Completed (v1.5.0)
+### Recently Completed (v1.7.x)
+
+- **New Service Wizard & Template Catalog** - Three-step service creation (Source / Connect / Review) backed by a server-side template catalog with one-click compose templates and Git-repo templates.
+- **Extensions Platform Maturation** - Marketplace registry backed by standalone extension repos (Kubernetes, Automations, Analytics, Mail, GPU, CrowdSec, DNS server, and more), with built-in features progressively extracted to keep the default panel lean.
+- **Privacy-First Web Analytics** - Cookieless, self-hosted analytics extension with WordPress and nginx integration and optional geo lookup.
+- **Agent Fleet & Peering** - ServerKit-to-ServerKit peering (embedded agent mode), fleet doctor tooling, and agent capability upgrades.
+- **Auth & Proxy Hardening** - Trusted reverse-proxy client-IP handling and per-IP login brute-force throttling.
+- **UI Polish** - Skeleton loading states, unified tab groups and segmented bars, drawer-based flows, modal-based env var management.
+
+### Earlier (v1.5.0)
 
 - **New UI & Services Page** - Integrated full Services page with detail views, metrics, logs, and shell.
 - **Environment Pipeline** - Multi-environment management for WordPress (Prod/Staging/Dev) with promotion/sync.
@@ -300,9 +309,10 @@ Integrated full Services page with detail views, metrics, logs, shell, settings,
 
 ---
 
-# Upcoming Development
+# Later Phases (Completed)
 
-The phases below are ordered by priority. Higher phases ship first.
+The phases below were the second wave of core development, ordered by priority at the time.
+All have since shipped.
 
 ---
 
@@ -577,6 +587,44 @@ Spin up and manage cloud servers directly from the panel.
 
 ---
 
+# Active Development (H2 2026)
+
+Current focus areas on the `dev` branch. Core work centers on the deploy experience and
+platform infrastructure; new capability areas ship as Marketplace extensions.
+
+## Deploy Console & Live Run Logs
+
+The publish pipeline is becoming ServerKit's signature experience: deploy anything, watch it
+happen live, and debug failures entirely from the UI.
+
+- [ ] Full-page live deploy console for every install and deploy (templates, Git repos, uploads, redeploys)
+- [ ] Streaming build output with a step timeline, per-step durations, and live elapsed time
+- [ ] Failure cards showing the real error tail with plain-language hints and one-click retry
+- [ ] Unified batched run-log layer (database persistence + WebSocket push, polling fallback)
+
+## Extension Platform
+
+- [ ] Runtime frontend loading — installed extensions render without rebuilding the panel
+- [ ] Signed extension releases, with explicit install consent for unsigned or third-party code
+- [ ] Remaining built-ins extracted to standalone repos (including the WordPress flagship)
+- [ ] Security suite (Fail2ban, ClamAV, Lynis, auto-updates, image scanning) as installable extensions for a leaner default panel
+
+## Game Server Hosting (new extension family)
+
+- [ ] Minecraft server extension: guided setup, live console, player management, world backups, scheduled restarts with in-game warnings
+- [ ] "Share with friends" connect card, with optional domain (SRV record) support
+- [ ] Reusable game-server framework (console, players, saves, schedules) enabling future titles
+
+## Fleet & Agents
+
+- [ ] Live command-output streaming from remote agents into the deploy console
+
+## Release Engineering
+
+- [ ] End-to-end verification sweep and publishing round for pending releases and extension repos
+
+---
+
 ## Version Milestones
 
 | Version | Target Features | Status |
@@ -588,12 +636,14 @@ Spin up and manage cloud servers directly from the panel.
 | v1.3.0 | Email server, API enhancements | Completed |
 | v1.4.0 | Team & permissions, SSO & OAuth login | Completed |
 | v1.5.0 | New UI, Visual Designer, Services Page | Completed |
-| v1.6.0 | Workflow triggers & completion, fleet management | Current |
+| v1.6.0 | Workflow triggers & completion, fleet management | Completed |
 | v1.7.0 | Cross-server monitoring, agent plugin system | Completed |
 | v1.8.0 | Server templates, multi-tenancy | Completed |
 | v1.9.0 | Advanced SSL, DNS management, Nginx config | Completed |
 | v2.0.0 | Status pages, server provisioning, performance | Completed |
 | v3.0.0 | Mobile app, Marketplace | Completed |
+
+Current released line: **v1.7.x** — see **Active Development** above for what's in flight.
 
 ---
 
@@ -618,5 +668,5 @@ The core is no longer taking on new features. The best way to propose new functi
 
 <p align="center">
   <strong>ServerKit Roadmap</strong><br>
-  Last updated: March 2026
+  Last updated: July 2026
 </p>
