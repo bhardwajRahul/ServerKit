@@ -18,7 +18,6 @@ import {
 } from '@/components/ds';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import EmptyState from '../components/EmptyState';
-import DeploymentJobProgress from '../components/DeploymentJobProgress';
 
 // Featured templates (curated list)
 const FEATURED_TEMPLATES = [
@@ -935,13 +934,13 @@ const RepoTemplateDetailBody = ({ template, manifest, loading, getCategoryIcon }
 
 const InstallModal = ({ template, onClose, onSuccess }) => {
     const toast = useToast();
+    const navigate = useNavigate();
     const [appName, setAppName] = useState(template.id.toLowerCase().replace(/[^a-z0-9-]/g, '-'));
     const [variables, setVariables] = useState({});
     const [servers, setServers] = useState([{ id: 'local', name: 'Local server', is_local: true }]);
     const [selectedServerId, setSelectedServerId] = useState('local');
     const [installing, setInstalling] = useState(false);
     const [errors, setErrors] = useState([]);
-    const [jobId, setJobId] = useState(null);
 
     useEffect(() => {
         // Initialize variables with defaults
@@ -972,22 +971,10 @@ const InstallModal = ({ template, onClose, onSuccess }) => {
         }
     }
 
-    function handleJobSuccess(latestJob) {
-        setInstalling(false);
-        onSuccess(latestJob.result?.app_id || latestJob.app_id);
-    }
-
-    function handleJobFailure(message) {
-        setInstalling(false);
-        setErrors([message]);
-        toast.error(message);
-    }
-
     async function handleInstall(e) {
         e.preventDefault();
         setInstalling(true);
         setErrors([]);
-        setJobId(null);
 
         try {
             // Validate first
@@ -1003,7 +990,9 @@ const InstallModal = ({ template, onClose, onSuccess }) => {
                 serverId: selectedServerId
             });
             if (result.success && result.job_id) {
-                setJobId(result.job_id);
+                // Job started — hand off to the full-page Deploy Console.
+                onClose?.();
+                navigate(`/deployments/${result.job_id}`);
             } else if (result.success) {
                 setInstalling(false);
                 onSuccess(result.app_id);
@@ -1102,16 +1091,6 @@ const InstallModal = ({ template, onClose, onSuccess }) => {
                             </>
                         )}
 
-                        {jobId && (
-                            <div className="detail-section">
-                                <h4>Deployment Status</h4>
-                                <DeploymentJobProgress
-                                    jobId={jobId}
-                                    onSuccess={handleJobSuccess}
-                                    onFailure={handleJobFailure}
-                                />
-                            </div>
-                        )}
                     </div>
                     <div className="modal-footer">
                         <Button type="button" variant="outline" onClick={onClose} disabled={installing}>

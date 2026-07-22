@@ -164,7 +164,12 @@ const ServiceDetail = () => {
             }
 
             if (hasBuildConfig) {
-                await api.deployApp(service.id);
+                const res = await api.deployApp(service.id);
+                if (res?.deploy_job_id) {
+                    // Async deploy → watch it live on the Deploy Console.
+                    navigate(`/deployments/${res.deploy_job_id}`);
+                    return;
+                }
             } else {
                 await api.triggerAppDeploy(service.id, true);
             }

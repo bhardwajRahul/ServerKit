@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import EmptyState from '../EmptyState';
 import { useToast } from '../../contexts/ToastContext';
@@ -20,6 +21,7 @@ const BuildTab = ({ appId, appPath, app }) => {
     const [loading, setLoading] = useState(true);
     const [building, setBuilding] = useState(false);
     const [deploying, setDeploying] = useState(false);
+    const navigate = useNavigate();
     const [showConfigModal, setShowConfigModal] = useState(false);
     const [showLogsModal, setShowLogsModal] = useState(false);
     const [selectedLog, setSelectedLog] = useState(null);
@@ -130,8 +132,13 @@ const BuildTab = ({ appId, appPath, app }) => {
         setError(null);
         try {
             const result = await api.deployApp(appId, { no_cache: noCache });
+            if (result?.deploy_job_id) {
+                // Async deploy → watch it live on the Deploy Console.
+                navigate(`/deployments/${result.deploy_job_id}`);
+                return;
+            }
             if (result.success) {
-                toast.success(`Deployment v${result.deployment.version} successful!`);
+                toast.success('Deployment started');
             } else {
                 setError(result.error || 'Deployment failed');
             }
