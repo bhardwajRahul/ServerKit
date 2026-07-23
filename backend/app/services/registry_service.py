@@ -204,6 +204,28 @@ def refresh(force=False):
     return entries
 
 
+def _show_unreviewed():
+    """Unreviewed community entries are developer-stage content.
+
+    They list in the Marketplace (and install, behind the 409 risk
+    acknowledgment) only when the panel runs in a development context:
+    Flask debug mode (development/testing config) or the ``dev_mode``
+    setting toggled on in Settings. Production panels with dev_mode off
+    never see them — a hidden extension is not installable either.
+    """
+    try:
+        from flask import current_app
+        if current_app.debug or current_app.config.get('TESTING'):
+            return True
+    except RuntimeError:
+        return False  # no app context (CLI/scripts): hide by default
+    try:
+        from app.services.settings_service import SettingsService
+        return bool(SettingsService.get('dev_mode'))
+    except Exception:
+        return False
+
+
 def list_extensions():
     return refresh()
 
@@ -245,6 +267,8 @@ def list_catalog(include_bundled=False):
     entries = refresh()
     if not include_bundled:
         entries = [e for e in entries if not e.get('bundled')]
+    if not _show_unreviewed():
+        entries = [e for e in entries if e.get('trust') != 'unreviewed']
     return [to_catalog_dict(e) for e in entries]
 
 

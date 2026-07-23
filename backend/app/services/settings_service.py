@@ -62,7 +62,7 @@ class SettingsService:
         'dev_mode': {
             'value': False,
             'type': 'boolean',
-            'description': 'Enable developer mode for debugging tools and icon reference'
+            'description': 'Enable developer mode: debugging tools, icon reference, and unreviewed community extensions in the Marketplace'
         },
         'managed_app_base_port': {
             'value': 0,

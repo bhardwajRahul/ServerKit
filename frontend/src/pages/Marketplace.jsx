@@ -108,7 +108,7 @@ const sourceBadgeVariant = (source) => {
 };
 
 // Trust badge derived from the registry's hash-bound review stamp. 'reviewed'
-// shows who/when in the tooltip; 'unreviewed' warns on registry cards only
+// shows who/when in the tooltip; 'unreviewed' warns on registry entries
 // (built-in entries never carry a trust field).
 const TrustBadge = ({ entry }) => {
     if (entry.trust === 'reviewed') {
@@ -196,8 +196,10 @@ const Marketplace = () => {
     const [manualInstallSource, setManualInstallSource] = useState(null);
     const [installing, setInstalling] = useState(false);
     const [detailEntry, setDetailEntry] = useState(null);
-    // Registry slug awaiting unreviewed-risk confirmation — drives the
-    // acknowledge-risk dialog (confirm retries with acknowledge_risk: true).
+    // Registry entry awaiting risk confirmation — drives the acknowledge-risk
+    // dialog (confirm retries with acknowledge_risk: true). Shape:
+    // { slug, reason } where reason is 'unreviewed' (proactive gate or 409)
+    // or 'unverified' (409: entry has no pinned checksum).
     const [riskTarget, setRiskTarget] = useState(null);
     // Plugin pending uninstall — drives the keep-vs-purge data-policy dialog.
     const [uninstallTarget, setUninstallTarget] = useState(null);
@@ -252,7 +254,7 @@ const Marketplace = () => {
         } catch (err) {
             // 409 trust gate — ask for explicit confirmation, then retry.
             if (err.status === 409 && err.data?.requires_acknowledgment) {
-                setRiskTarget(slug);
+                setRiskTarget({ slug, reason: err.data?.reason || 'unreviewed' });
             } else {
                 toast.error(err.message || 'Registry install failed');
             }
@@ -267,14 +269,14 @@ const Marketplace = () => {
         } else if (entry.trust === 'unreviewed') {
             // Proactive gate: unreviewed registry entries confirm first
             // (the backend 409 path above covers the race/stale cases).
-            setRiskTarget(entry.installKey);
+            setRiskTarget({ slug: entry.installKey, reason: 'unreviewed' });
         } else {
             handleRegistryInstall(entry.installKey);
         }
     };
 
     const confirmRiskyInstall = () => {
-        const slug = riskTarget;
+        const slug = riskTarget?.slug;
         setRiskTarget(null);
         if (slug) handleRegistryInstall(slug, true);
     };
@@ -546,7 +548,9 @@ const Marketplace = () => {
                 <Modal
                     open
                     onClose={() => setRiskTarget(null)}
-                    title="Install unreviewed extension?"
+                    title={riskTarget.reason === 'unverified'
+                        ? 'Install without checksum verification?'
+                        : 'Install unreviewed extension?'}
                     size="sm"
                     footer={
                         <>
@@ -559,8 +563,11 @@ const Marketplace = () => {
                 >
                     <div className="extension-risk-dialog">
                         <p>
-                            This is a community extension whose exact code has not been
-                            reviewed by the ServerKit maintainers.
+                            {riskTarget.reason === 'unverified'
+                                ? 'This extension has no pinned checksum, so the panel '
+                                  + 'cannot verify the artifact it would download.'
+                                : 'This is a community extension whose exact code has not '
+                                  + 'been reviewed by the ServerKit maintainers.'}
                         </p>
                         <p className="text-muted">
                             It runs with full panel privileges. Only install it if you trust

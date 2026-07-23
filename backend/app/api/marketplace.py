@@ -46,23 +46,41 @@ def install_registry(slug):
     if not user or not user.is_admin:
         return jsonify({'error': 'Admin access required'}), 403
 
-    # Trust gate: an unreviewed community extension (or one with no pinned
-    # checksum) installs only after an explicit risk acknowledgment — the
-    # Marketplace shows a confirmation dialog and resends with
-    # acknowledge_risk: true. first_party / reviewed entries install as-is.
+    # Trust gate: an unreviewed community extension, or any entry with no
+    # pinned checksum (possible even for first_party), installs only after an
+    # explicit risk acknowledgment — the Marketplace shows a confirmation
+    # dialog and resends with acknowledge_risk: true. first_party / reviewed
+    # entries install as-is. `reason` tells the UI which case it is so the
+    # dialog copy stays accurate.
     from app.services import registry_service
     entry = registry_service.get_entry(slug)
+    # Hidden means not installable: unreviewed entries only exist in
+    # development contexts (see registry_service._show_unreviewed).
+    if entry is not None and entry.get('trust') == 'unreviewed' \
+            and not registry_service._show_unreviewed():
+        return jsonify({'error': 'Extension not found in the registry'}), 404
     body = request.get_json(silent=True) or {}
     trust = (entry or {}).get('trust', 'unreviewed')
     acknowledged = body.get('acknowledge_risk') is True
-    if entry is not None and not acknowledged and (
-            trust == 'unreviewed' or not entry.get('sha256')):
+    reason = None
+    if entry is not None and not acknowledged:
+        if trust == 'unreviewed':
+            reason = 'unreviewed'
+        elif not entry.get('sha256'):
+            reason = 'unverified'
+    if reason:
+        message = (
+            'This community extension has not been reviewed by the ServerKit '
+            'maintainers; installing it runs unreviewed code with full panel '
+            'privileges.'
+            if reason == 'unreviewed' else
+            'This extension has no pinned checksum, so the panel cannot '
+            'verify the artifact it would install.'
+        )
         return jsonify({
-            'error': 'This community extension has not been reviewed by the '
-                     'ServerKit maintainers; installing it runs unreviewed code '
-                     'with full panel privileges. Resend with '
-                     'acknowledge_risk: true to proceed.',
+            'error': f'{message} Resend with acknowledge_risk: true to proceed.',
             'trust': trust,
+            'reason': reason,
             'requires_acknowledgment': True,
         }), 409
 

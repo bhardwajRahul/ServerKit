@@ -162,12 +162,21 @@ The Marketplace renders **Reviewed** (with a *Reviewed by \<reviewer\> on
 entry with no `sha256` to verify against — requires explicit consent:
 `POST /api/v1/marketplace/registry/<slug>/install` without
 `{"acknowledge_risk": true}` in the JSON body returns **409** with
-`{"error": …, "trust": …, "requires_acknowledgment": true}`. The Marketplace
-catches this, shows a confirmation dialog explaining that the extension is
-unreviewed community code running with full panel privileges, and resends with
-`acknowledge_risk: true` only if the operator confirms (the acknowledgment is
-recorded in the audit log). `first_party` and `reviewed` entries install
-unchanged, with no extra prompt.
+`{"error": …, "trust": …, "reason": …, "requires_acknowledgment": true}`,
+where `reason` is `unreviewed` (community code not vetted) or `unverified`
+(no pinned checksum, possible even for `first_party`). The Marketplace catches
+this, shows a confirmation dialog whose copy matches the reason, and resends
+with `acknowledge_risk: true` only if the operator confirms (the
+acknowledgment is recorded in the audit log). `first_party` and `reviewed`
+entries install unchanged, with no extra prompt.
+
+**Unreviewed entries are developer-stage content.** On a production panel
+(Flask debug off, `dev_mode` setting off) `unreviewed` entries do not appear
+in the Marketplace at all, and the install endpoint answers **404** for them —
+hiding is the default, the 409 acknowledgment flow only exists where they are
+visible. They list and install only in development contexts: Flask debug mode
+(development/testing config) or the `dev_mode` setting toggled on under
+Settings → Site. `first_party` and `reviewed` entries are unaffected.
 
 ---
 

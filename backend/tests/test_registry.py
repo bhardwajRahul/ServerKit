@@ -434,6 +434,7 @@ def test_install_gate_blocks_unreviewed_without_ack(app, client, auth_headers, f
     data = resp.get_json()
     assert data['requires_acknowledgment'] is True
     assert data['trust'] == 'unreviewed'
+    assert data['reason'] == 'unreviewed'
     assert 'unreviewed' in data['error']
 
 
@@ -445,7 +446,10 @@ def test_install_gate_blocks_first_party_without_sha256(app, client, auth_header
     resp = client.post('/api/v1/marketplace/registry/community-ext/install',
                        headers=auth_headers)
     assert resp.status_code == 409
-    assert resp.get_json()['requires_acknowledgment'] is True
+    data = resp.get_json()
+    assert data['requires_acknowledgment'] is True
+    assert data['reason'] == 'unverified'
+    assert 'checksum' in data['error']
 
 
 def test_install_gate_passes_with_acknowledge_risk(app, client, auth_headers, fake_install, monkeypatch):
@@ -467,3 +471,45 @@ def test_install_gate_unaffected_for_reviewed(app, client, auth_headers, fake_in
     resp = client.post('/api/v1/marketplace/registry/community-ext/install',
                        headers=auth_headers)
     assert resp.status_code == 201
+
+
+def test_catalog_hides_unreviewed_outside_dev_mode(app, client, auth_headers, monkeypatch):
+    # Production panel with dev_mode off: unreviewed entries never list.
+    monkeypatch.setattr(registry_service, '_show_unreviewed', lambda: False)
+    _seed_cache(monkeypatch, _entry())
+    resp = client.get('/api/v1/marketplace/registry', headers=auth_headers)
+    assert resp.status_code == 200
+    assert resp.get_json()['extensions'] == []
+
+
+def test_catalog_lists_unreviewed_in_dev_mode(app, client, auth_headers, monkeypatch):
+    monkeypatch.setattr(registry_service, '_show_unreviewed', lambda: True)
+    _seed_cache(monkeypatch, _entry())
+    resp = client.get('/api/v1/marketplace/registry', headers=auth_headers)
+    assert resp.status_code == 200
+    slugs = [e['slug'] for e in resp.get_json()['extensions']]
+    assert 'community-ext' in slugs
+
+
+def test_catalog_keeps_reviewed_visible_outside_dev_mode(app, client, auth_headers, monkeypatch):
+    monkeypatch.setattr(registry_service, '_show_unreviewed', lambda: False)
+    _seed_cache(monkeypatch, _entry(review={'reviewer': 'jhd3197', 'sha256': _SHA_A}))
+    resp = client.get('/api/v1/marketplace/registry', headers=auth_headers)
+    assert resp.status_code == 200
+    slugs = [e['slug'] for e in resp.get_json()['extensions']]
+    assert 'community-ext' in slugs
+
+
+def test_install_hidden_unreviewed_returns_404(app, client, auth_headers, fake_install, monkeypatch):
+    # Hidden means not installable, even with acknowledge_risk.
+    monkeypatch.setattr(registry_service, '_show_unreviewed', lambda: False)
+    _seed_cache(monkeypatch, _entry())
+    resp = client.post('/api/v1/marketplace/registry/community-ext/install',
+                       headers=auth_headers, json={'acknowledge_risk': True})
+    assert resp.status_code == 404
+
+
+def test_show_unreviewed_defaults_on_under_testing_config(app):
+    # The test suite runs with DEBUG/TESTING on, i.e. a development context.
+    with app.test_request_context():
+        assert registry_service._show_unreviewed() is True
