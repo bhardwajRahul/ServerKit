@@ -290,7 +290,7 @@ See the [Installation Guide](docs/INSTALLATION.md) for step-by-step instructions
 
 Development now happens in two places:
 
-- **🧩 Extensions** — new functionality ships as installable extensions through the Marketplace (100+ one-click templates and growing). The core stays lean; you install only what you need.
+- **🧩 Extensions** — new functionality ships as installable extensions through the Marketplace (100+ one-click templates and growing). The core stays lean; you install only what you need. Browse the catalog: [jhd3197/serverkit-extensions](https://github.com/jhd3197/serverkit-extensions).
 - **✨ Core polish** — ongoing UI/UX refinements and fixes for issues reported by the community. No new core features are planned.
 
 Full history: [ROADMAP.md](ROADMAP.md)
@@ -305,6 +305,7 @@ Full history: [ROADMAP.md](ROADMAP.md)
 | [Installation Guide](docs/INSTALLATION.md) | Complete setup instructions |
 | [Deployment Guide](docs/DEPLOYMENT.md) | CLI commands and production deployment |
 | [Agent](https://github.com/jhd3197/serverkit-agent) | Install & run the multi-server agent (Linux/Windows/macOS) — separate repo |
+| [Extensions Registry](https://github.com/jhd3197/serverkit-extensions) | The curated extension marketplace `index.json` — separate repo |
 | [Agent Pairing](docs/pairing.md) | Secure short-code agent enrollment |
 | [API Reference](docs/API.md) | REST API endpoints |
 | [New Features](docs/NEW_FEATURES.md) | Endpoint & page reference for the latest `dev` features |
