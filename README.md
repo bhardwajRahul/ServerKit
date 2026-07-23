@@ -290,8 +290,8 @@ See the [Installation Guide](docs/INSTALLATION.md) for step-by-step instructions
 
 Development now happens in three places:
 
-- **🧩 Extensions** — new functionality ships as installable extensions through the Marketplace (100+ one-click templates and growing). The core stays lean; you install only what you need. Browse the catalog: [jhd3197/serverkit-extensions](https://github.com/jhd3197/serverkit-extensions).
-- **🎨 Themes** — the panel's look is community-extensible too: 17 built-in themes, one-click installs from the gallery, and a live Theme Studio to build and share your own. Browse the catalog with screenshots of every theme: [jhd3197/serverkit-themes](https://github.com/jhd3197/serverkit-themes).
+- **[🧩 Extensions](https://github.com/jhd3197/serverkit-extensions)** — new functionality ships as installable extensions through the Marketplace (100+ one-click templates and growing). The core stays lean; you install only what you need. [Browse the catalog →](https://github.com/jhd3197/serverkit-extensions)
+- **[🎨 Themes](https://github.com/jhd3197/serverkit-themes)** — the panel's look is community-extensible too: 17 built-in themes, one-click installs from the gallery, and a live Theme Studio to build and share your own. [See every theme →](https://github.com/jhd3197/serverkit-themes#gallery)
 - **✨ Core polish** — ongoing UI/UX refinements and fixes for issues reported by the community. No new core features are planned.
 
 Full history: [ROADMAP.md](ROADMAP.md)
