@@ -288,9 +288,10 @@ See the [Installation Guide](docs/INSTALLATION.md) for step-by-step instructions
 
 **ServerKit's core is feature-complete** — every planned core phase has shipped, from the first Flask + React infrastructure to multi-server fleets, SSO, the automation engine, and the extension marketplace.
 
-Development now happens in two places:
+Development now happens in three places:
 
 - **🧩 Extensions** — new functionality ships as installable extensions through the Marketplace (100+ one-click templates and growing). The core stays lean; you install only what you need. Browse the catalog: [jhd3197/serverkit-extensions](https://github.com/jhd3197/serverkit-extensions).
+- **🎨 Themes** — the panel's look is community-extensible too: 17 built-in themes, one-click installs from the gallery, and a live Theme Studio to build and share your own. [See every theme](docs/screenshots/themes/README.md) · browse the catalog: [jhd3197/serverkit-themes](https://github.com/jhd3197/serverkit-themes).
 - **✨ Core polish** — ongoing UI/UX refinements and fixes for issues reported by the community. No new core features are planned.
 
 Full history: [ROADMAP.md](ROADMAP.md)
