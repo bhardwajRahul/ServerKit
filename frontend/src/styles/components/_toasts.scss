@@ -63,8 +63,8 @@
 
     // Variants
     &-success {
-        border-color: fade($success, 30%);
-        background: fade($success, 10%);
+        border-color: fade($success-raw, 30%);
+        background: fade($success-raw, 10%);
 
         .toast-icon {
             color: $success;
@@ -72,8 +72,8 @@
     }
 
     &-error {
-        border-color: fade($danger, 30%);
-        background: fade($danger, 10%);
+        border-color: fade($danger-raw, 30%);
+        background: fade($danger-raw, 10%);
 
         .toast-icon {
             color: $danger;
@@ -81,8 +81,8 @@
     }
 
     &-warning {
-        border-color: fade($warning, 30%);
-        background: fade($warning, 10%);
+        border-color: fade($warning-raw, 30%);
+        background: fade($warning-raw, 10%);
 
         .toast-icon {
             color: $warning;

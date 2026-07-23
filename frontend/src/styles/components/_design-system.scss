@@ -654,7 +654,7 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     border: 1px dashed var(--border); border-radius: 14px;
     background: var(--surface);
 
-    &__icon { color: var(--danger); margin-bottom: 14px; }
+    &__icon { color: var(--red); margin-bottom: 14px; }
     &__title { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 6px; }
     &__message { font-size: 13px; color: var(--text-dim); max-width: 420px; margin: 0 0 16px; }
 }
@@ -680,7 +680,7 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
         cursor: pointer; transition: background 0.12s, color 0.12s, border-color 0.12s;
 
         &:hover { background: var(--surface-3); }
-        &.is-active { color: var(--accent-bright); background: var(--accent-bg-soft); border-color: var(--accent-soft); }
+        &.is-active { color: var(--accent-bright); background: var(--accent-bg-soft); border-color: var(--accent-dim); }
     }
     &__count {
         font-family: var(--mono); font-size: 10.5px; color: var(--text-faint);

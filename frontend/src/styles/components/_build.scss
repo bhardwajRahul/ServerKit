@@ -86,8 +86,8 @@
 
 // Current Deployment Card
 .current-deployment {
-    background: linear-gradient(135deg, fade($success, 5%), fade($accent-primary-raw, 5%));
-    border-color: fade($success, 30%);
+    background: linear-gradient(135deg, fade($success-raw, 5%), fade($accent-primary-raw, 5%));
+    border-color: fade($success-raw, 30%);
 
     .deployment-current-info {
         display: flex;

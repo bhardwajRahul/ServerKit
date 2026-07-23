@@ -18,9 +18,13 @@ cd frontend || exit 0
 rel=$(echo "$files" | sed 's#^frontend/##')
 echo "$rel" | xargs npx eslint
 status=$?
+
+# Theme-token guard (plan 60): whitelist/validators/alias expansion/seed themes.
+node scripts/check-theme-tokens.mjs || status=1
+
 if [ "$status" -ne 0 ]; then
     echo ""
-    echo "✖ Commit blocked: fix the ESLint error(s) above (warnings are allowed)."
+    echo "✖ Commit blocked: fix the ESLint/theme-token error(s) above (warnings are allowed)."
     echo "  To bypass for an emergency commit: git commit --no-verify"
 fi
 exit $status

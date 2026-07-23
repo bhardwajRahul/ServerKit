@@ -259,7 +259,7 @@
     }
 
     &.btn-danger:hover {
-        background: fade($danger, 20%);
+        background: fade($danger-raw, 20%);
         color: $danger;
     }
 }

@@ -139,9 +139,9 @@
     border: 1px solid transparent;
 
     &.env-production {
-        background: fade($success, 15%);
+        background: fade($success-raw, 15%);
         color: $success;
-        border-color: fade($success, 30%);
+        border-color: fade($success-raw, 30%);
     }
 
     &.env-development {
@@ -151,9 +151,9 @@
     }
 
     &.env-staging {
-        background: fade($warning, 15%);
+        background: fade($warning-raw, 15%);
         color: $warning;
-        border-color: fade($warning, 30%);
+        border-color: fade($warning-raw, 30%);
     }
 
     .env-linked-icon {
@@ -176,22 +176,22 @@
 }
 
 .badge-info {
-    background-color: fade($info, 15%);
+    background-color: fade($info-raw, 15%);
     color: $info;
 }
 
 .badge-success {
-    background-color: fade($success, 15%);
+    background-color: fade($success-raw, 15%);
     color: $success;
 }
 
 .badge-error {
-    background-color: fade($danger, 15%);
+    background-color: fade($danger-raw, 15%);
     color: $danger;
 }
 
 .badge-warning {
-    background-color: fade($warning, 15%);
+    background-color: fade($warning-raw, 15%);
     color: $warning;
 }
 

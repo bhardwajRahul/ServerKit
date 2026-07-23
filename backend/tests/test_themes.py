@@ -96,6 +96,47 @@ def test_import_rejects_theme_with_no_valid_tokens(client, auth_headers):
     assert resp.status_code == 400
 
 
+def test_import_rejects_malicious_preview_swatch(client, auth_headers):
+    """Preview swatches are painted as inline CSS — an url() payload must be
+    rejected, not stored."""
+    payload = {
+        **VALID_THEME,
+        'slug': 'evil-preview',
+        'preview': ['#111111', '#222222', 'url(https://evil.example/x)', '#444444'],
+    }
+    resp = client.post('/api/v1/themes/import', json=payload, headers=auth_headers)
+    assert resp.status_code == 400
+
+
+def test_import_accepts_valid_mixed_preview(client, auth_headers):
+    """Hex, functional rgb()/hsl() and named colors are all legit swatches."""
+    payload = {
+        **VALID_THEME,
+        'slug': 'mixed-preview',
+        'preview': ['#88c0d0', 'rgb(136, 192, 208)', 'rebeccapurple', 'hsl(210, 50%, 40%)'],
+    }
+    resp = client.post('/api/v1/themes/import', json=payload, headers=auth_headers)
+    assert resp.status_code == 201, resp.get_json()
+    assert resp.get_json()['preview'] == payload['preview']
+
+
+def test_import_tolerates_unknown_metadata_fields(client, auth_headers):
+    """Unknown-but-harmless top-level metadata (license, index-only fields like
+    image/modes) is ignored, not rejected and not stored."""
+    payload = {
+        **VALID_THEME,
+        'slug': 'licensed',
+        'license': 'MIT',
+        'image': 'https://example.com/shot.png',
+        'modes': ['dark'],
+    }
+    resp = client.post('/api/v1/themes/import', json=payload, headers=auth_headers)
+    assert resp.status_code == 201, resp.get_json()
+    stored = resp.get_json()
+    assert stored['slug'] == 'licensed'
+    assert 'license' not in stored and 'image' not in stored and 'modes' not in stored
+
+
 def test_import_rejects_reserved_default_slug(client, auth_headers):
     payload = {**VALID_THEME, 'slug': 'default'}
     resp = client.post('/api/v1/themes/import', json=payload, headers=auth_headers)

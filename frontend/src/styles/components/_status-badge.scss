@@ -18,19 +18,19 @@
     }
 
     &--success {
-        background: rgba($success, 0.15);
+        background: rgba($success-raw, 0.15);
         color: $success;
         .status-badge__dot { background: $success; }
     }
 
     &--danger {
-        background: rgba($danger, 0.15);
+        background: rgba($danger-raw, 0.15);
         color: $danger;
         .status-badge__dot { background: $danger; }
     }
 
     &--warning {
-        background: rgba($warning, 0.15);
+        background: rgba($warning-raw, 0.15);
         color: $warning;
         .status-badge__dot { background: $warning; }
     }

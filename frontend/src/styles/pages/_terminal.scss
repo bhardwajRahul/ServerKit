@@ -752,15 +752,15 @@ $lk-default:  #646b7a;
 
     &.on {
         background: var(--green);
-        box-shadow: 0 0 0 0 fade($success, 60%);
+        box-shadow: 0 0 0 0 fade($success-raw, 60%);
         animation: lv-pulse 1.6s ease-out infinite;
     }
 }
 
 @keyframes lv-pulse {
-    0%   { box-shadow: 0 0 0 0 fade($success, 60%); }
-    70%  { box-shadow: 0 0 0 8px fade($success, 0%); }
-    100% { box-shadow: 0 0 0 0 fade($success, 0%); }
+    0%   { box-shadow: 0 0 0 0 fade($success-raw, 60%); }
+    70%  { box-shadow: 0 0 0 8px fade($success-raw, 0%); }
+    100% { box-shadow: 0 0 0 0 fade($success-raw, 0%); }
 }
 
 // ─── Content (the log well) ───────────────────────────
@@ -1245,7 +1245,7 @@ $lk-default:  #646b7a;
     }
 
     &.status-failed {
-        background: linear-gradient(135deg, fade($danger, 5%), var(--surface) 60%);
+        background: linear-gradient(135deg, fade($danger-raw, 5%), var(--surface) 60%);
     }
 }
 
@@ -1281,8 +1281,8 @@ $lk-default:  #646b7a;
     flex-shrink: 0;
 
     &.is-large { width: 12px; height: 12px; }
-    &.status-running { background: var(--green); box-shadow: 0 0 0 3px fade($success, 18%); }
-    &.status-failed  { background: var(--red);   box-shadow: 0 0 0 3px fade($danger, 18%); }
+    &.status-running { background: var(--green); box-shadow: 0 0 0 3px fade($success-raw, 18%); }
+    &.status-failed  { background: var(--red);   box-shadow: 0 0 0 3px fade($danger-raw, 18%); }
     &.status-stopped { background: var(--text-ghost); }
     &.status-other   { background: var(--amber); }
 }
@@ -1563,7 +1563,7 @@ $lk-default:  #646b7a;
         }
 
         &.selected {
-            background: fade($info, 10%);
+            background: fade($info-raw, 10%);
         }
     }
 

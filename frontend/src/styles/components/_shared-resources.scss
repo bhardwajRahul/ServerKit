@@ -64,7 +64,7 @@
 
         &:hover {
             color: $danger;
-            background: fade($danger, 18%);
+            background: fade($danger-raw, 18%);
         }
     }
 }

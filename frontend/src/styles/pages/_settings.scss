@@ -838,12 +838,12 @@
     font-size: $font-size-sm;
 
     &.success {
-        background: fade($success, 15%);
+        background: fade($success-raw, 15%);
         color: $success;
     }
 
     &.error {
-        background: fade($danger, 15%);
+        background: fade($danger-raw, 15%);
         color: $danger;
     }
 }
@@ -984,7 +984,7 @@
         flex-shrink: 0;
         width: 48px;
         height: 48px;
-        background: linear-gradient(135deg, $warning 0%, darken($warning, 10%) 100%);
+        background: linear-gradient(135deg, $warning 0%, darken($warning-raw, 10%) 100%);
         border-radius: $radius-lg;
         display: flex;
         align-items: center;
@@ -1120,8 +1120,8 @@
     }
 
     &.settings-linked-warning {
-        background: fade($warning, 10%);
-        border: 1px solid fade($warning, 20%);
+        background: fade($warning-raw, 10%);
+        border: 1px solid fade($warning-raw, 20%);
     }
 }
 
@@ -2018,7 +2018,7 @@
         flex-shrink: 0;
         width: 44px;
         height: 44px;
-        background: linear-gradient(135deg, $warning 0%, darken($warning, 10%) 100%);
+        background: linear-gradient(135deg, $warning 0%, darken($warning-raw, 10%) 100%);
         border-radius: $radius-lg;
         display: flex;
         align-items: center;
@@ -2132,7 +2132,7 @@
         font-weight: $font-weight-medium;
 
         &--active {
-            background: fade($color-success, 15%);
+            background: fade($success-raw, 15%);
             color: $color-success;
         }
     }
@@ -2361,8 +2361,8 @@
     gap: $space-3;
     padding: $space-4;
     margin-bottom: $space-4;
-    background: fade($warning, 10%);
-    border: 1px solid fade($warning, 20%);
+    background: fade($warning-raw, 10%);
+    border: 1px solid fade($warning-raw, 20%);
     border-radius: $radius-md;
 
     .migration-pending-icon { color: $warning; flex-shrink: 0; margin-top: 1px; }

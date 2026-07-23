@@ -135,7 +135,7 @@
     transition: border-color 0.2s;
 
     &.enabled {
-        border-color: fade($success, 40%);
+        border-color: fade($success-raw, 40%);
     }
 }
 
@@ -255,12 +255,12 @@
     }
 
     &.critical span {
-        background: fade($danger, 20%);
+        background: fade($danger-raw, 20%);
         color: $danger;
     }
 
     &.warning span {
-        background: fade($warning, 20%);
+        background: fade($warning-raw, 20%);
         color: $warning;
     }
 
@@ -270,7 +270,7 @@
     }
 
     &.success span {
-        background: fade($success, 20%);
+        background: fade($success-raw, 20%);
         color: $success;
     }
 
@@ -415,8 +415,8 @@
     }
 
     &--off {
-        background: fade($danger, 12%);
-        border-color: fade($danger, 40%);
+        background: fade($danger-raw, 12%);
+        border-color: fade($danger-raw, 40%);
         color: $danger;
     }
 

@@ -109,7 +109,7 @@
         opacity: 0.6;
 
         td {
-            background: fade($warning, 5%);
+            background: fade($warning-raw, 5%);
         }
     }
 
@@ -169,12 +169,12 @@
         font-weight: 500;
 
         &.active {
-            background: fade($success, 15%);
+            background: fade($success-raw, 15%);
             color: $success;
         }
 
         &.inactive {
-            background: fade($warning, 15%);
+            background: fade($warning-raw, 15%);
             color: $warning;
         }
     }
@@ -343,7 +343,7 @@
     color: $warning;
 
     &:hover {
-        background: fade($warning, 10%);
+        background: fade($warning-raw, 10%);
     }
 }
 
@@ -351,7 +351,7 @@
     color: $success;
 
     &:hover {
-        background: fade($success, 10%);
+        background: fade($success-raw, 10%);
     }
 }
 
@@ -359,7 +359,7 @@
     color: $danger;
 
     &:hover {
-        background: fade($danger, 10%);
+        background: fade($danger-raw, 10%);
     }
 }
 
@@ -510,7 +510,7 @@
     }
 
     &.accepted {
-        background: fade($success, 15%);
+        background: fade($success-raw, 15%);
         color: $success;
     }
 
@@ -520,7 +520,7 @@
     }
 
     &.revoked {
-        background: fade($danger, 15%);
+        background: fade($danger-raw, 15%);
         color: $danger;
     }
 }
@@ -729,7 +729,7 @@
 
         &:hover {
             color: $danger;
-            background: fade($danger, 10%);
+            background: fade($danger-raw, 10%);
         }
     }
 }

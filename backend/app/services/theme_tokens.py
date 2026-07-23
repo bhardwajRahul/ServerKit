@@ -175,8 +175,13 @@ def validate_theme(raw):
         accent = None
 
     preview = raw.get('preview')
-    if not (isinstance(preview, list) and len(preview) == 4
+    if (isinstance(preview, list) and len(preview) == 4
             and all(isinstance(c, str) for c in preview)):
+        # Swatches are painted as inline CSS — every one must be a real color
+        # (same gate as accent), never an url()/expression() payload.
+        if any(validate_token_value('--surface', c) is None for c in preview):
+            return None, 'preview swatches must be valid colors'
+    else:
         # Derive a reasonable preview from the tokens if absent/malformed.
         primary = tokens.get('dark') or tokens.get('light') or {}
         preview = [

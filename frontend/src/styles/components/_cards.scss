@@ -207,7 +207,7 @@
     }
 
     &.apps {
-        background: fade($success, 10%);
+        background: fade($success-raw, 10%);
         color: $success;
     }
 
@@ -217,12 +217,12 @@
     }
 
     &.size {
-        background: fade($warning, 10%);
+        background: fade($warning-raw, 10%);
         color: $warning;
     }
 
     &.alerts {
-        background: fade($danger, 10%);
+        background: fade($danger-raw, 10%);
         color: $danger;
     }
 
@@ -312,8 +312,8 @@
 .danger-zone {
     @include flex-between();
     padding: $space-6;
-    border: 1px solid fade($danger, 30%);
-    background: fade($danger, 5%);
+    border: 1px solid fade($danger-raw, 30%);
+    background: fade($danger-raw, 5%);
     border-radius: $radius-xl;
 
     h3, h4 {

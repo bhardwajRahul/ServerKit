@@ -141,7 +141,7 @@
     justify-content: center;
     gap: $space-2;
     padding: $space-5;
-    background: linear-gradient(135deg, fade($accent-primary-raw, 5%), fade($success, 5%));
+    background: linear-gradient(135deg, fade($accent-primary-raw, 5%), fade($success-raw, 5%));
     border: 1px solid $border-subtle;
     border-radius: $radius-lg;
     margin-bottom: $space-6;

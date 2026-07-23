@@ -173,8 +173,8 @@
     align-items: center;
     gap: $space-3;
     padding: $space-3 $space-4;
-    background: fade($color-info, 10%);
-    border: 1px solid fade($color-info, 25%);
+    background: fade($info-raw, 10%);
+    border: 1px solid fade($info-raw, 25%);
     border-radius: $radius-md;
     margin-bottom: $space-4;
     font-size: $font-size-sm;
@@ -206,7 +206,7 @@
     position: relative;
 
     &.production {
-        border-color: fade($color-danger, 45%);
+        border-color: fade($danger-raw, 45%);
     }
 
     &.locked {
@@ -251,7 +251,7 @@
     display: flex;
     align-items: center;
     padding: 2px 4px;
-    background: fade($color-warning, 15%);
+    background: fade($warning-raw, 15%);
     color: $color-warning;
     border-radius: $radius-sm;
 }
@@ -299,7 +299,7 @@
             color: $color-danger;
 
             &:hover {
-                background: fade($color-danger, 10%);
+                background: fade($danger-raw, 10%);
             }
         }
     }
@@ -355,7 +355,7 @@
     align-items: center;
     gap: $space-1;
     padding: $space-2 $space-3;
-    background: fade($color-warning, 10%);
+    background: fade($warning-raw, 10%);
     font-size: $font-size-xs;
     color: $color-warning;
     border-radius: 0 0 $radius-lg $radius-lg;
@@ -834,8 +834,8 @@
     align-items: flex-start;
     gap: $space-3;
     padding: $space-3 $space-4;
-    background: fade($color-warning, 8%);
-    border: 1px solid fade($color-warning, 20%);
+    background: fade($warning-raw, 8%);
+    border: 1px solid fade($warning-raw, 20%);
     border-radius: $radius-md;
     margin-top: $space-4;
     font-size: $font-size-sm;
@@ -961,19 +961,19 @@
     flex-shrink: 0;
 
     &.success {
-        background: fade($color-success, 12%);
+        background: fade($success-raw, 12%);
         color: $color-success;
     }
     &.danger {
-        background: fade($color-danger, 12%);
+        background: fade($danger-raw, 12%);
         color: $color-danger;
     }
     &.warning {
-        background: fade($color-warning, 12%);
+        background: fade($warning-raw, 12%);
         color: $color-warning;
     }
     &.info {
-        background: fade($color-info, 12%);
+        background: fade($info-raw, 12%);
         color: $color-info;
     }
     &.primary {
@@ -1027,12 +1027,12 @@
     border-radius: $radius-sm;
 
     &.failed {
-        background: fade($color-danger, 12%);
+        background: fade($danger-raw, 12%);
         color: $color-danger;
     }
 
     &.running {
-        background: fade($color-info, 12%);
+        background: fade($info-raw, 12%);
         color: $color-info;
     }
 }
@@ -1320,7 +1320,7 @@
     }
 
     &.different {
-        background: fade($color-danger, 5%);
+        background: fade($danger-raw, 5%);
         .compare-row-icon { color: $color-danger; }
         .compare-row-value-a,
         .compare-row-value-b {
@@ -1627,8 +1627,8 @@
     align-items: center;
     gap: $space-2;
     padding: $space-3;
-    background: fade($color-warning, 8%);
-    border: 1px solid fade($color-warning, 20%);
+    background: fade($warning-raw, 8%);
+    border: 1px solid fade($warning-raw, 20%);
     border-radius: $radius-md;
     margin-top: $space-3;
     margin-bottom: $space-3;
@@ -1738,8 +1738,8 @@
     align-items: center;
     gap: $space-2;
     padding: $space-2 $space-3;
-    background: fade($color-warning, 10%);
-    border: 1px solid fade($color-warning, 20%);
+    background: fade($warning-raw, 10%);
+    border: 1px solid fade($warning-raw, 20%);
     border-radius: $radius-md;
     font-size: $font-size-xs;
     color: $color-warning;
@@ -1984,15 +1984,15 @@
     border-radius: $radius-sm;
 
     &.health-healthy {
-        background: fade($color-success, 12%);
+        background: fade($success-raw, 12%);
         color: $color-success;
     }
     &.health-degraded {
-        background: fade($color-warning, 12%);
+        background: fade($warning-raw, 12%);
         color: $color-warning;
     }
     &.health-unhealthy {
-        background: fade($color-danger, 12%);
+        background: fade($danger-raw, 12%);
         color: $color-danger;
     }
     &.health-unknown {
@@ -2310,7 +2310,7 @@
 
 .operation-progress-bar {
     height: 4px;
-    background: fade($color-info, 20%);
+    background: fade($info-raw, 20%);
     border-radius: 2px;
     overflow: hidden;
 }
@@ -2431,21 +2431,21 @@
         font-weight: $font-weight-medium;
         padding: 2px 8px;
         border-radius: $radius-sm;
-        background: fade($color-info, 12%);
+        background: fade($info-raw, 12%);
         color: $color-info;
 
         &.promotion-status-completed {
-            background: fade($color-success, 12%);
+            background: fade($success-raw, 12%);
             color: $color-success;
         }
 
         &.promotion-status-failed {
-            background: fade($color-danger, 12%);
+            background: fade($danger-raw, 12%);
             color: $color-danger;
         }
 
         &.promotion-status-rolled_back {
-            background: fade($color-warning, 12%);
+            background: fade($warning-raw, 12%);
             color: $color-warning;
         }
     }

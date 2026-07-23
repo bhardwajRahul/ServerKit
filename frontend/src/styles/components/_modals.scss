@@ -147,12 +147,12 @@
     }
 
     &-danger {
-        background: fade($danger, 15%);
+        background: fade($danger-raw, 15%);
         color: $danger;
     }
 
     &-warning {
-        background: fade($warning, 15%);
+        background: fade($warning-raw, 15%);
         color: $warning;
     }
 

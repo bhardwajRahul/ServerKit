@@ -201,7 +201,7 @@
 
     &--online {
         background: linear-gradient(90deg, $success, #84cc16);
-        box-shadow: 0 0 22px fade($success, 35%);
+        box-shadow: 0 0 22px fade($success-raw, 35%);
     }
 
     &--connecting {
@@ -1770,8 +1770,8 @@
 .security-warning {
     margin-top: $space-3;
     padding: $space-3 $space-4;
-    background: fade($warning, 10%);
-    border: 1px solid fade($warning, 25%);
+    background: fade($warning-raw, 10%);
+    border: 1px solid fade($warning-raw, 25%);
     border-radius: $radius-md;
     font-size: $font-size-xs;
     color: $warning;
@@ -1807,8 +1807,8 @@
     border: 1px solid $border-subtle;
     border-radius: $radius-lg;
 
-    &.severity-critical { border-color: fade($danger, 45%); }
-    &.severity-high { border-color: fade($warning, 45%); }
+    &.severity-critical { border-color: fade($danger-raw, 45%); }
+    &.severity-high { border-color: fade($warning-raw, 45%); }
     &.severity-medium { border-color: fade($accent-primary-raw, 45%); }
     &.severity-low { border-color: $border-subtle; }
 }
@@ -3391,18 +3391,18 @@
 
         &--online {
             background: var(--green-bg);
-            border-color: fade($success, 25%);
+            border-color: fade($success-raw, 25%);
             color: var(--green);
-            box-shadow: 0 0 0 4px fade($success, 7%), 0 0 24px fade($success, 12%);
+            box-shadow: 0 0 0 4px fade($success-raw, 7%), 0 0 24px fade($success-raw, 12%);
         }
         &--offline {
             background: var(--red-bg);
-            border-color: fade($danger, 25%);
+            border-color: fade($danger-raw, 25%);
             color: var(--red);
         }
         &--connecting {
             background: var(--amber-bg);
-            border-color: fade($warning, 25%);
+            border-color: fade($warning-raw, 25%);
             color: var(--amber);
         }
     }
@@ -3814,12 +3814,12 @@
     }
 
     &--warning {
-        border-color: fade($warning, 45%);
+        border-color: fade($warning-raw, 45%);
         .notification__icon { background: $warning-bg; color: $warning; }
     }
 
     &--danger {
-        border-color: fade($danger, 45%);
+        border-color: fade($danger-raw, 45%);
         .notification__icon { background: $danger-bg; color: $danger; }
     }
 }
@@ -4138,7 +4138,7 @@
 
     .security-warning {
         background: var(--amber-bg);
-        border-color: fade($warning, 30%);
+        border-color: fade($warning-raw, 30%);
         color: var(--amber);
     }
 
@@ -4182,12 +4182,12 @@
         }
 
         &--warning {
-            border-color: fade($warning, 28%);
+            border-color: fade($warning-raw, 28%);
             .notification__icon { background: var(--amber-bg); color: var(--amber); }
         }
 
         &--danger {
-            border-color: fade($danger, 28%);
+            border-color: fade($danger-raw, 28%);
             .notification__icon { background: var(--red-bg); color: var(--red); }
         }
     }

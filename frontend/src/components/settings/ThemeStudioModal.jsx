@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Download, Save, Github, Sparkles } from 'lucide-react';
+import { Download, Save, Github } from 'lucide-react';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -237,11 +237,5 @@ const ThemeStudioModal = ({ open, onOpenChange }) => {
         </Dialog>
     );
 };
-
-export const ThemeStudioTrigger = ({ onClick }) => (
-    <Button variant="outline" size="sm" onClick={onClick}>
-        <Sparkles size={14} /> Create theme
-    </Button>
-);
 
 export default ThemeStudioModal;

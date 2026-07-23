@@ -535,10 +535,10 @@
 
 @keyframes pulse-green {
     0%, 100% {
-        box-shadow: 0 0 0 0 fade($success, 40%);
+        box-shadow: 0 0 0 0 fade($success-raw, 40%);
     }
     50% {
-        box-shadow: 0 0 0 4px fade($success, 0%);
+        box-shadow: 0 0 0 4px fade($success-raw, 0%);
     }
 }
 
@@ -963,7 +963,7 @@
         }
 
         &.current {
-            background: fade($success, 5%);
+            background: fade($success-raw, 5%);
             margin: 0 (-$space-2);
             padding-left: $space-2;
             padding-right: $space-2;

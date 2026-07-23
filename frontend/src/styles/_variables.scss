@@ -90,23 +90,29 @@ $accent-bg-soft: var(--accent-bg-soft);
 // --------------------------------------------
 // COLORS - Semantic
 // --------------------------------------------
-// Redesign "infra console" semantic palette (raw hex so SCSS fade()/darken()
-// keep working). The matching --green/--amber/--red/--cyan/--violet CSS vars
-// live in _theme-variables.scss for design-system primitives.
-$success: #3ddc97;
+// Redesign "infra console" semantic palette. $success/$warning/$danger/$info
+// are var()-backed so runtime themes (plan 60: --green/--amber/--red/--cyan)
+// recolor them; the *-raw hex twins feed SCSS compile-time functions
+// (fade()/rgba()/darken()) that can't operate on a var().
+$success-raw: #3ddc97;
+$warning-raw: #f5b945;
+$danger-raw: #fb6f6f;
+$info-raw: #49c7f0;
+
+$success: var(--green, #3ddc97);
 $success-bg: rgba(61, 220, 151, 0.12);
 $success-border: rgba(61, 220, 151, 0.22);
 
-$warning: #f5b945;
+$warning: var(--amber, #f5b945);
 $warning-bg: rgba(245, 185, 69, 0.12);
 $warning-border: rgba(245, 185, 69, 0.22);
 
-$danger: #fb6f6f;
+$danger: var(--red, #fb6f6f);
 $danger-hover: #e95f5f;
 $danger-bg: rgba(251, 111, 111, 0.12);
 $danger-border: rgba(251, 111, 111, 0.22);
 
-$info: #49c7f0;
+$info: var(--cyan, #49c7f0);
 $info-bg: rgba(73, 199, 240, 0.12);
 $info-border: rgba(73, 199, 240, 0.22);
 
@@ -140,8 +146,9 @@ $color-star: #f59e0b;
 // --------------------------------------------
 // TYPOGRAPHY
 // --------------------------------------------
-$font-main: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-$font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+// var()-backed so runtime themes (plan 60: --sans/--mono) can swap the stacks.
+$font-main: var(--sans, 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+$font-mono: var(--mono, 'IBM Plex Mono', ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace);
 
 $font-size-xs: 10px;
 $font-size-sm: 12px;

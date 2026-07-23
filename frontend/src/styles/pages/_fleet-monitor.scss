@@ -129,9 +129,9 @@
         font-weight: 500;
         font-variant-numeric: tabular-nums;
         transition: background-color 0.3s;
-        background: var(--card-bg);
+        background: var(--bg-card);
 
-        &.is-empty { background: var(--card-bg); color: inherit; }
+        &.is-empty { background: var(--bg-card); color: inherit; }
         &.is-low { background: var(--green); color: inherit; }
         &.is-medium { background: var(--amber); color: inherit; }
         &.is-high { background: #f97316; color: #fff; }

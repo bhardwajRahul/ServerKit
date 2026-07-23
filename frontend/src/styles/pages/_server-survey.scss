@@ -201,8 +201,8 @@
     // Decommission checklist — shown once all surveyed sites are migrated.
     &__decommission {
         padding: $space-4;
-        background: rgba($success, 0.06);
-        border: 1px solid rgba($success, 0.3);
+        background: rgba($success-raw, 0.06);
+        border: 1px solid rgba($success-raw, 0.3);
         border-radius: $radius-lg;
 
         .survey-tab__section-title { color: $success; }

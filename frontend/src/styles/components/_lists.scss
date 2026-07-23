@@ -97,7 +97,7 @@
 
     &.active {
         border-color: $success;
-        background: fade($success, 5%);
+        background: fade($success-raw, 5%);
     }
 }
 
@@ -133,7 +133,7 @@
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     color: $warning;
-    background: fade($warning, 12%);
+    background: fade($warning-raw, 12%);
     white-space: nowrap;
 }
 
@@ -142,7 +142,7 @@
     padding: $space-3 $space-4;
     margin-bottom: $space-3;
     border-radius: $radius-md;
-    background: fade($warning, 8%);
+    background: fade($warning-raw, 8%);
     font-size: $font-size-sm;
 }
 

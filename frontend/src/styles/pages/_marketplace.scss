@@ -312,12 +312,12 @@
 
     .installed-item__icon--extension {
         color: $success;
-        background: fade($success, 12%);
+        background: fade($success-raw, 12%);
     }
 
     .installed-item__icon--local {
         color: $warning;
-        background: fade($warning, 12%);
+        background: fade($warning-raw, 12%);
     }
 
     .installed-item__icon--plugin {
@@ -358,7 +358,7 @@
     }
 
     .installed-item--error {
-        border-color: fade($danger, 30%);
+        border-color: fade($danger-raw, 30%);
     }
 
     // "Update available" pill on plugin rows. Uses the info badge variant for

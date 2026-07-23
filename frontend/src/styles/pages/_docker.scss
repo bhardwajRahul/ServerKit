@@ -277,15 +277,15 @@
     border-radius: $radius-full;
 
     &.running {
-        background: fade($success, 10%);
+        background: fade($success-raw, 10%);
         color: $success;
-        border: 1px solid fade($success, 20%);
+        border: 1px solid fade($success-raw, 20%);
     }
 
     &.exited {
-        background: fade($danger, 10%);
+        background: fade($danger-raw, 10%);
         color: $danger;
-        border: 1px solid fade($danger, 20%);
+        border: 1px solid fade($danger-raw, 20%);
     }
 }
 
@@ -776,10 +776,10 @@
         box-shadow: $shadow-md;
     }
 
-    &[data-kind='containers'] .dx-stat-icon { color: $info; background: fade($info, 12%); }
+    &[data-kind='containers'] .dx-stat-icon { color: $info; background: fade($info-raw, 12%); }
     &[data-kind='images']     .dx-stat-icon { color: $violet; background: fade($violet, 12%); }
-    &[data-kind='volumes']    .dx-stat-icon { color: $success; background: fade($success, 12%); }
-    &[data-kind='networks']   .dx-stat-icon { color: $warning; background: fade($warning, 12%); }
+    &[data-kind='volumes']    .dx-stat-icon { color: $success; background: fade($success-raw, 12%); }
+    &[data-kind='networks']   .dx-stat-icon { color: $warning; background: fade($warning-raw, 12%); }
 }
 
 .dx-stat-icon {
@@ -846,7 +846,7 @@
     }
 
     &.running {
-        background: fade($success, 12%);
+        background: fade($success-raw, 12%);
         color: $success;
         .dot { background: $success; }
     }
@@ -937,7 +937,7 @@
     @include transition(all);
     overflow: hidden;
 
-    &.is-running { border-color: fade($success, 40%); }
+    &.is-running { border-color: fade($success-raw, 40%); }
     &.is-stopped { border-color: $border-default; }
 
     &:hover {
@@ -976,7 +976,7 @@
     border-radius: 50%;
     flex-shrink: 0;
 
-    &.running { background: $success; box-shadow: 0 0 0 3px fade($success, 16%); }
+    &.running { background: $success; box-shadow: 0 0 0 3px fade($success-raw, 16%); }
     &.stopped { background: $text-tertiary; }
 }
 
@@ -991,7 +991,7 @@
     background: $bg-tertiary;
     color: $text-tertiary;
 
-    &.running { background: fade($success, 14%); color: $success; }
+    &.running { background: fade($success-raw, 14%); color: $success; }
     &.stopped { background: $bg-tertiary; color: $text-tertiary; }
 }
 
@@ -1456,12 +1456,12 @@
     }
 
     &.is-danger:hover {
-        border-color: fade($danger, 35%);
+        border-color: fade($danger-raw, 35%);
         color: $danger;
     }
 
     &.is-success:hover {
-        border-color: fade($success, 35%);
+        border-color: fade($success-raw, 35%);
         color: $success;
     }
 }
@@ -1488,12 +1488,12 @@
     }
 
     &.is-danger:hover {
-        border-color: fade($danger, 35%);
+        border-color: fade($danger-raw, 35%);
         color: $danger;
     }
 
     &.is-success:hover {
-        border-color: fade($success, 35%);
+        border-color: fade($success-raw, 35%);
         color: $success;
     }
 }
@@ -1566,7 +1566,7 @@
     width: 38px;
     height: 38px;
     border-radius: $radius-md;
-    background: fade($info, 12%);
+    background: fade($info-raw, 12%);
     color: $info;
     display: flex;
     align-items: center;

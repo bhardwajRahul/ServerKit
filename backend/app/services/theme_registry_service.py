@@ -32,8 +32,8 @@ _BUNDLED_INDEX = os.path.join(
 )
 
 # The curated public index. Default goes through serverkit.ai, which proxies the
-# raw-GitHub index (operator-gated route). Until that route ships, operators can
-# point SERVERKIT_THEMES_REGISTRY_URL at the raw index:
+# raw-GitHub index (operator-gated route). Operators can also point
+# SERVERKIT_THEMES_REGISTRY_URL straight at the raw index:
 #   https://raw.githubusercontent.com/jhd3197/serverkit-themes/main/index.json
 DEFAULT_REGISTRY_URL = 'https://serverkit.ai/themes/index.json'
 
@@ -64,7 +64,12 @@ try:
 except ValueError:
     _TTL = 3600
 
-_cache = {'ts': 0.0, 'entries': None, 'source': None, 'base_url': None}
+# After a failed fetch with no cache to serve, hold the bundled fallback only
+# this long before retrying upstream (instead of the full TTL) — the panel
+# recovers quickly when the registry comes back, without hammering it.
+_FAILURE_TTL = 60
+
+_cache = {'ts': 0.0, 'entries': None, 'source': None}
 
 
 def _resolve_url(path, base_url):
@@ -126,21 +131,27 @@ def refresh(force=False):
 
     entries = None
     source = None
-    base_url = None
+    failed = False
     try:
-        entries, base_url = _fetch_remote()
+        entries, _ = _fetch_remote()
         if entries is not None:
             source = 'remote'
     except Exception as e:
+        failed = True
         logger.warning('Theme registry fetch failed (%s): %s', _registry_url(), e)
 
     if entries is None:
         if _cache['entries'] is not None:
+            # Failed refresh with a last-good cache: serve it and stamp the
+            # timestamp so the TTL applies — otherwise every call retries the
+            # network and stalls up to the fetch timeout.
+            _cache['ts'] = now
             return _cache['entries']
         entries = _load_bundled()
         source = 'bundled'
 
-    _cache.update({'entries': entries, 'ts': now, 'source': source, 'base_url': base_url})
+    ts = now - (_TTL - _FAILURE_TTL) if failed else now
+    _cache.update({'entries': entries, 'ts': ts, 'source': source})
     return entries
 
 

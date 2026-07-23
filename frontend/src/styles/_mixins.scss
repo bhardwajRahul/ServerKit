@@ -186,7 +186,7 @@
     }
 
     &::-webkit-scrollbar-track {
-        background: $bg-body;
+        background: var(--scrollbar-track, #0a0b0e);
     }
 
     &::-webkit-scrollbar-thumb {

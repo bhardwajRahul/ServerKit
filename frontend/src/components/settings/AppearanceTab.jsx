@@ -3,14 +3,13 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import useDashboardLayout from '../../hooks/useDashboardLayout';
-import { ChevronDown, ChevronUp, RotateCcw, Upload, Store } from 'lucide-react';
+import { ChevronDown, ChevronUp, RotateCcw, Upload, Store, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import useSettingFocus from '../../hooks/useSettingFocus';
 import ThemeGallery from './ThemeGallery';
 import ThemeBrowseModal from './ThemeBrowseModal';
 import ThemeStudioModal from './ThemeStudioModal';
-import { Sparkles } from 'lucide-react';
 import api from '../../services/api';
 
 const ACCENT_PRESETS = [

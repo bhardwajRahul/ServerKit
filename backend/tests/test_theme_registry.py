@@ -13,11 +13,11 @@ from app.services import theme_registry_service
 def _reset_registry_cache():
     """The registry cache is module-level; clear it around each test."""
     theme_registry_service._cache.update(
-        {'ts': 0.0, 'entries': None, 'source': None, 'base_url': None}
+        {'ts': 0.0, 'entries': None, 'source': None}
     )
     yield
     theme_registry_service._cache.update(
-        {'ts': 0.0, 'entries': None, 'source': None, 'base_url': None}
+        {'ts': 0.0, 'entries': None, 'source': None}
     )
 
 
@@ -121,3 +121,60 @@ def test_registry_install_requires_admin(client, app, monkeypatch):
         headers = {'Authorization': f'Bearer {create_access_token(identity=u.id)}'}
     resp = client.post('/api/v1/themes/registry/aurora/install', headers=headers)
     assert resp.status_code == 403
+
+
+def test_registry_failure_serves_last_good_without_refetch(monkeypatch):
+    """A failed refresh with a last-good cache stamps the cache timestamp, so
+    the TTL applies and follow-up calls don't retry (and stall on) the network."""
+    calls = []
+
+    def flaky_get(url, *a, **k):
+        calls.append(url)
+        if len(calls) == 1:
+            return _FakeResp(FAKE_INDEX)
+        raise RuntimeError('offline')
+
+    monkeypatch.setattr(theme_registry_service.requests, 'get', flaky_get)
+    monkeypatch.setenv('SERVERKIT_THEMES_REGISTRY_URL', 'https://fake.local/index.json')
+
+    first = theme_registry_service.refresh()
+    assert [t['slug'] for t in first] == ['aurora']
+
+    # Expire the cache, then fail the refresh: last-good entries are served
+    # and the timestamp is stamped.
+    theme_registry_service._cache['ts'] = 0.0
+    second = theme_registry_service.refresh()
+    assert [t['slug'] for t in second] == ['aurora']
+    assert len(calls) == 2
+
+    # Within the TTL the fallback is served from cache — no network retry.
+    third = theme_registry_service.refresh()
+    assert [t['slug'] for t in third] == ['aurora']
+    assert len(calls) == 2
+
+
+def test_registry_failure_without_cache_backs_off(monkeypatch):
+    """With no cache to serve, a failed fetch falls back to the bundled index
+    under a short failure backoff: repeated calls don't hammer upstream, and
+    the registry is retried once the backoff expires."""
+    calls = []
+
+    def failing_get(url, *a, **k):
+        calls.append(url)
+        raise RuntimeError('offline')
+
+    monkeypatch.setattr(theme_registry_service.requests, 'get', failing_get)
+    monkeypatch.setenv('SERVERKIT_THEMES_REGISTRY_URL', 'https://fake.local/index.json')
+
+    first = theme_registry_service.refresh()
+    assert first  # bundled fallback served
+
+    # Within the failure backoff, no second upstream attempt.
+    second = theme_registry_service.refresh()
+    assert second == first
+    assert len(calls) == 1
+
+    # After the failure backoff expires, the registry is retried.
+    theme_registry_service._cache['ts'] -= theme_registry_service._FAILURE_TTL + 1
+    theme_registry_service.refresh()
+    assert len(calls) == 2

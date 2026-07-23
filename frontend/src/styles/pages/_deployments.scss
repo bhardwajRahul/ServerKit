@@ -297,8 +297,8 @@
         }
 
         &--error {
-            background: fade($danger, 10%);
-            border: 1px solid fade($danger, 30%);
+            background: fade($danger-raw, 10%);
+            border: 1px solid fade($danger-raw, 30%);
             color: $danger;
         }
     }

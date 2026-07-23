@@ -216,7 +216,7 @@ $sk-ai-z: 1100;
 .sk-ai-message__error {
     color: #fca5a5;
     font-size: 13px;
-    border: 1px solid fade($danger, 40%);
+    border: 1px solid fade($danger-raw, 40%);
     border-radius: 8px;
     padding: 8px 10px;
 }
@@ -266,7 +266,7 @@ $sk-ai-z: 1100;
     border-radius: 10px;
     background: var(--sk-ai-bg-body);
     overflow: hidden;
-    &--error { border-color: fade($danger, 50%); }
+    &--error { border-color: fade($danger-raw, 50%); }
 }
 .sk-ai-tool-card__head {
     width: 100%;

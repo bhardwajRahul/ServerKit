@@ -68,7 +68,7 @@
 
     &[aria-invalid='true'] {
         border-color: $danger;
-        box-shadow: 0 0 0 3px fade($danger, 18%);
+        box-shadow: 0 0 0 3px fade($danger-raw, 18%);
     }
 }
 
@@ -924,13 +924,13 @@
 
     &--danger {
         color: $danger;
-        background: fade($danger, 10%);
-        border-color: fade($danger, 20%);
+        background: fade($danger-raw, 10%);
+        border-color: fade($danger-raw, 20%);
     }
     &--warning {
         color: $warning;
-        background: fade($warning, 10%);
-        border-color: fade($warning, 20%);
+        background: fade($warning-raw, 10%);
+        border-color: fade($warning-raw, 20%);
     }
     &--info {
         color: $accent-primary;

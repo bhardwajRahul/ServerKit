@@ -153,8 +153,8 @@
 .bg-gray-700 { background-color: $bg-hover; }
 .bg-gray-100 { background-color: $bg-elevated; }
 .bg-blue-100 { background-color: fade($accent-primary-raw, 10%); }
-.bg-green-100 { background-color: fade($success, 10%); }
-.bg-red-100 { background-color: fade($danger, 10%); }
+.bg-green-100 { background-color: fade($success-raw, 10%); }
+.bg-red-100 { background-color: fade($danger-raw, 10%); }
 .bg-body { background-color: $bg-body; }
 
 // --------------------------------------------

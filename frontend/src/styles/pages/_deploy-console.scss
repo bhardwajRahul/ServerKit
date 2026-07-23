@@ -101,7 +101,7 @@ $dc-surface-line: rgba(255, 255, 255, 0.04);
     }
 
     &__degraded {
-        background: rgba($warning, 0.1);
+        background: rgba($warning-raw, 0.1);
         color: $warning;
     }
 
@@ -361,7 +361,7 @@ $dc-surface-line: rgba(255, 255, 255, 0.04);
         margin: 0;
         padding: $space-2;
         border-radius: $radius-md;
-        background: rgba($warning, 0.12);
+        background: rgba($warning-raw, 0.12);
         color: $warning;
         font-size: $font-size-sm;
     }

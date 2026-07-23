@@ -23,8 +23,8 @@
         align-items: flex-start;
         gap: $space-2;
         padding: $space-3 $space-4;
-        background: fade($warning, 10%);
-        border: 1px solid fade($warning, 30%);
+        background: fade($warning-raw, 10%);
+        border: 1px solid fade($warning-raw, 30%);
         border-radius: $radius-md;
         font-size: $font-size-sm;
         color: $text-secondary;
@@ -226,8 +226,8 @@
 
     &--warn {
         color: $warning;
-        background: fade($warning, 12%);
-        border-color: fade($warning, 28%);
+        background: fade($warning-raw, 12%);
+        border-color: fade($warning-raw, 28%);
     }
 
     &--danger {
@@ -886,9 +886,9 @@
         text-align: center;
 
         &--ok { color: $success; background: $success-bg; }
-        &--warn { color: $warning; background: fade($warning, 12%); }
+        &--warn { color: $warning; background: fade($warning-raw, 12%); }
         &--danger,
-        &--expired { color: $danger; background: fade($danger, 12%); }
+        &--expired { color: $danger; background: fade($danger-raw, 12%); }
         &--neutral { color: $text-tertiary; background: var(--surface-2); }
     }
 

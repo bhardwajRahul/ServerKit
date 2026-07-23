@@ -698,7 +698,7 @@
         gap: $space-3;
 
         &--active {
-            border-color: fade($warning, 45%);
+            border-color: fade($warning-raw, 45%);
         }
 
         > div {

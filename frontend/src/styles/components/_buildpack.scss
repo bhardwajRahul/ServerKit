@@ -14,7 +14,7 @@
     border-radius: $radius-lg;
 
     &--unknown {
-        border-color: fade($warning, 40%);
+        border-color: fade($warning-raw, 40%);
     }
 
     &--loading {
@@ -72,17 +72,17 @@
         color: $text-tertiary;
 
         &[data-level='high'] {
-            background: fade($success, 15%);
+            background: fade($success-raw, 15%);
             color: $success;
         }
 
         &[data-level='medium'] {
-            background: fade($warning, 15%);
+            background: fade($warning-raw, 15%);
             color: $warning;
         }
 
         &[data-level='low'] {
-            background: fade($danger, 12%);
+            background: fade($danger-raw, 12%);
             color: $danger;
         }
     }

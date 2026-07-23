@@ -96,8 +96,8 @@
         display: flex;
         gap: $space-3;
         padding: $space-4;
-        background: fade($color-warning, 8%);
-        border: 1px solid fade($color-warning, 20%);
+        background: fade($warning-raw, 8%);
+        border: 1px solid fade($warning-raw, 20%);
         border-radius: $radius-md;
         margin-bottom: $space-4;
 
@@ -382,7 +382,7 @@
     }
 
     &.running {
-        background: fade($color-success, 12%);
+        background: fade($success-raw, 12%);
         color: $color-success;
 
         .status-dot {
@@ -438,12 +438,12 @@
     margin-top: $space-3;
 
     &.production {
-        background: fade($color-danger, 12%);
+        background: fade($danger-raw, 12%);
         color: $color-danger;
     }
 
     &.development {
-        background: fade($color-info, 12%);
+        background: fade($info-raw, 12%);
         color: $color-info;
     }
 }
@@ -487,7 +487,7 @@
             color: $color-danger;
 
             &:hover {
-                background: fade($color-danger, 10%);
+                background: fade($danger-raw, 10%);
             }
         }
     }
@@ -1334,7 +1334,7 @@
 
     .bulk-update-bar {
         background: var(--amber-bg);
-        border: 1px solid fade($warning, 25%);
+        border: 1px solid fade($warning-raw, 25%);
         border-radius: var(--radius);
         font-family: var(--mono);
         font-size: 12px;
@@ -1561,7 +1561,7 @@
         }
 
         &.current {
-            background: fade($success, 5%);
+            background: fade($success-raw, 5%);
         }
     }
 
@@ -1875,7 +1875,7 @@
     }
 
     &.stale {
-        border-color: fade($warning, 35%);
+        border-color: fade($warning-raw, 35%);
     }
 }
 
@@ -1918,17 +1918,17 @@
     letter-spacing: 0.5px;
 
     &.env-production {
-        background: fade($color-danger, 12%);
+        background: fade($danger-raw, 12%);
         color: $color-danger;
     }
 
     &.env-staging {
-        background: fade($color-warning, 12%);
+        background: fade($warning-raw, 12%);
         color: $color-warning;
     }
 
     &.env-development {
-        background: fade($color-info, 12%);
+        background: fade($info-raw, 12%);
         color: $color-info;
     }
 }
@@ -2163,8 +2163,8 @@
     }
 
     &.current {
-        border-color: fade($color-success, 40%);
-        background: fade($color-success, 4%);
+        border-color: fade($success-raw, 40%);
+        background: fade($success-raw, 4%);
     }
 }
 
@@ -2772,7 +2772,7 @@
     color: $color-danger;
     margin-bottom: $space-4;
     padding: $space-3;
-    background: fade($color-danger, 10%);
+    background: fade($danger-raw, 10%);
     border-radius: 50%;
 }
 
@@ -2797,8 +2797,8 @@
     align-items: center;
     gap: $space-2;
     padding: $space-3 $space-4;
-    background: fade($color-danger, 8%);
-    border: 1px solid fade($color-danger, 20%);
+    background: fade($danger-raw, 8%);
+    border: 1px solid fade($danger-raw, 20%);
     border-radius: $radius-md;
     color: $color-danger;
     font-size: $font-size-sm;
@@ -2861,8 +2861,8 @@
     align-items: center;
     gap: $space-2;
     padding: $space-3;
-    background: fade($color-success, 8%);
-    border: 1px solid fade($color-success, 20%);
+    background: fade($success-raw, 8%);
+    border: 1px solid fade($success-raw, 20%);
     border-radius: $radius-md;
     margin-bottom: $space-4;
 
@@ -2990,7 +2990,7 @@
     justify-content: center;
     width: 80px;
     height: 80px;
-    background: fade($color-warning, 12%);
+    background: fade($warning-raw, 12%);
     border-radius: 50%;
     color: $color-warning;
     margin-bottom: $space-5;
@@ -3044,13 +3044,13 @@
     min-width: 200px;
 
     &.current {
-        border-color: fade($color-danger, 40%);
-        background: fade($color-danger, 4%);
+        border-color: fade($danger-raw, 40%);
+        background: fade($danger-raw, 4%);
     }
 
     &.required {
-        border-color: fade($color-success, 40%);
-        background: fade($color-success, 4%);
+        border-color: fade($success-raw, 40%);
+        background: fade($success-raw, 4%);
     }
 }
 
@@ -3146,7 +3146,7 @@
 
     &.current {
         border-color: $color-warning;
-        background: fade($color-warning, 6%);
+        background: fade($warning-raw, 6%);
     }
 
     .tier-name {
@@ -3167,13 +3167,13 @@
         font-weight: $font-weight-medium;
         color: $color-danger;
         padding: 2px 8px;
-        background: fade($color-danger, 10%);
+        background: fade($danger-raw, 10%);
         border-radius: $radius-sm;
         display: inline-block;
 
         &.allowed {
             color: $color-success;
-            background: fade($color-success, 10%);
+            background: fade($success-raw, 10%);
         }
     }
 }
@@ -3186,8 +3186,8 @@
     gap: $space-4;
     margin: 0 $space-4 $space-4;
     padding: $space-4;
-    background: fade($color-success, 8%);
-    border: 1px solid fade($color-success, 25%);
+    background: fade($success-raw, 8%);
+    border: 1px solid fade($success-raw, 25%);
     border-radius: $radius-md;
 
     .wp-creds-banner-text {

@@ -81,8 +81,8 @@
 
 .private-url-enabled {
     .private-url-display {
-        background: fade($success, 10%);
-        border: 1px solid fade($success, 30%);
+        background: fade($success-raw, 10%);
+        border: 1px solid fade($success-raw, 30%);
         border-radius: $radius-md;
         padding: $space-4;
         margin-bottom: $space-4;

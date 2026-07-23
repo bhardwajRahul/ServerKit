@@ -130,7 +130,7 @@
     padding: $space-2 $space-3;
     border: 1px solid $border-subtle;
     border-radius: $radius-md;
-    background: fade($warning, 8%);
+    background: fade($warning-raw, 8%);
     font-size: $font-size-xs;
     color: $text-secondary;
 
