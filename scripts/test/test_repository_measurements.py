@@ -49,7 +49,7 @@ def dynamic(): pass
             self.assertNotIn('501 MB', block)
         self.assertIn('**5,678**', blocks['README.md'])
         self.assertIn('**5.678**', blocks['docs/README.es.md'])
-        self.assertIn('**0,80 MB**', blocks['docs/README.pt.md'])
+        self.assertIn('**3,20 MB**', blocks['docs/README.pt.md'])
         self.assertIn('**3.20 MB**', blocks['docs/README.zh-CN.md'])
 
     def test_unknown_test_count_cannot_be_published_as_zero(self):

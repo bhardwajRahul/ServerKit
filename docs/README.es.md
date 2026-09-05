@@ -52,8 +52,7 @@ Instantánea: **2026-09-05**. [Definiciones, medidas y comandos para reproducirl
 | **1.212** declaraciones de rutas del núcleo | en **104** declaraciones de blueprints de `backend/app/api`; inventario del código, sin extensiones |
 | **118** plantillas de apps incluidas | archivos YAML de apps en el directorio raíz; las plantillas de extensiones de bases de datos se cuentan aparte |
 | **5.089** casos de prueba de backend recopilados | recopilación de un checkout limpio; no significa que todos se hayan ejecutado o aprobado |
-| **0,83 MB** gzip de JS/CSS enlazado por el HTML | scripts, estilos y precargas de módulos del HTML de producción |
-| **3,31 MB** gzip de todo el JS/CSS generado | incluye módulos diferidos, idiomas y adaptadores de dependencias; excluye fuentes e imágenes |
+| **3,31 MB** de JS/CSS en total, comprimido con gzip | incluye módulos diferidos, idiomas y adaptadores de dependencias; excluye fuentes e imágenes |
 | **$0** de licencia | Licencia MIT, sin suscripciones ni tarifas por usuario |
 
 Los valores gzip suman archivos comprimidos por separado a nivel 9; no son tiempos de carga medidos. La RAM y el tamaño de imagen dependen de la compilación, plataforma y carga de trabajo.

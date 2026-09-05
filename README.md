@@ -52,11 +52,10 @@ Snapshot: **2026-09-05**. [Definitions, raw measurements and reproduction comman
 | **1,212** core route declarations | in **104** blueprint declarations under `backend/app/api`; source inventory, excluding extensions |
 | **118** bundled app templates | root-level app YAML files; database extension templates counted separately |
 | **5,089** backend test cases collected | clean-checkout collection; this is not a claim that every case passed or ran |
-| **0.83 MB** gzip, HTML-linked JS/CSS | scripts, stylesheets and modulepreloads listed in the production HTML |
-| **3.31 MB** gzip, all built JS/CSS | includes lazy chunks, locale bundles and vendor shims; excludes fonts and images |
+| **3.31 MB** total JS/CSS, gzipped | includes lazy chunks, locale bundles and vendor shims; excludes fonts and images |
 | **$0** license cost | MIT-licensed, without subscription or seat fees |
 
-Gzip values sum separately compressed files at level 9; they are not measured page-load times. RAM usage and image size depend on the build, platform and workload; no universal footprint is claimed.
+The total sums files individually compressed with gzip at level 9; it is not a measured page-load time. RAM usage and image size depend on the build, platform and workload; no universal footprint is claimed.
 <!-- END GENERATED MEASUREMENTS -->
 
 ---

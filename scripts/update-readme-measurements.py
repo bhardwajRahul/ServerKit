@@ -24,25 +24,22 @@ def blocks(source, build):
     tests = source['backend_tests_clean_collected']
     if tests is None:
         raise ValueError('Refresh repository.json with --collect-tests before publishing counts')
-    linked = build['html_linked_code']['gzip_bytes'] / 1_000_000
     total = build['all_code']['gzip_bytes'] / 1_000_000
     en = [
         f'Snapshot: **{date}**. [Definitions, raw measurements and reproduction commands](docs/METRICS.md).',
         f'| **{routes:,}** core route declarations | in **{blueprints}** blueprint declarations under `backend/app/api`; source inventory, excluding extensions |',
         f'| **{templates}** bundled app templates | root-level app YAML files; database extension templates counted separately |',
         f'| **{tests:,}** backend test cases collected | clean-checkout collection; this is not a claim that every case passed or ran |',
-        f'| **{linked:.2f} MB** gzip, HTML-linked JS/CSS | scripts, stylesheets and modulepreloads listed in the production HTML |',
-        f'| **{total:.2f} MB** gzip, all built JS/CSS | includes lazy chunks, locale bundles and vendor shims; excludes fonts and images |',
+        f'| **{total:.2f} MB** total JS/CSS, gzipped | includes lazy chunks, locale bundles and vendor shims; excludes fonts and images |',
         '| **$0** license cost | MIT-licensed, without subscription or seat fees |',
-        'Gzip values sum separately compressed files at level 9; they are not measured page-load times. RAM usage and image size depend on the build, platform and workload; no universal footprint is claimed.',
+        'The total sums files individually compressed with gzip at level 9; it is not a measured page-load time. RAM usage and image size depend on the build, platform and workload; no universal footprint is claimed.',
     ]
     es = [
         f'Instantánea: **{date}**. [Definiciones, medidas y comandos para reproducirlas](METRICS.md).',
         f'| **{routes:,}** declaraciones de rutas del núcleo | en **{blueprints}** declaraciones de blueprints de `backend/app/api`; inventario del código, sin extensiones |',
         f'| **{templates}** plantillas de apps incluidas | archivos YAML de apps en el directorio raíz; las plantillas de extensiones de bases de datos se cuentan aparte |',
         f'| **{tests:,}** casos de prueba de backend recopilados | recopilación de un checkout limpio; no significa que todos se hayan ejecutado o aprobado |',
-        f'| **{linked:.2f} MB** gzip de JS/CSS enlazado por el HTML | scripts, estilos y precargas de módulos del HTML de producción |',
-        f'| **{total:.2f} MB** gzip de todo el JS/CSS generado | incluye módulos diferidos, idiomas y adaptadores de dependencias; excluye fuentes e imágenes |',
+        f'| **{total:.2f} MB** de JS/CSS en total, comprimido con gzip | incluye módulos diferidos, idiomas y adaptadores de dependencias; excluye fuentes e imágenes |',
         '| **$0** de licencia | Licencia MIT, sin suscripciones ni tarifas por usuario |',
         'Los valores gzip suman archivos comprimidos por separado a nivel 9; no son tiempos de carga medidos. La RAM y el tamaño de imagen dependen de la compilación, plataforma y carga de trabajo.',
     ]
@@ -51,8 +48,7 @@ def blocks(source, build):
         f'| **{routes:,}** declarações de rotas do núcleo | em **{blueprints}** declarações de blueprints em `backend/app/api`; inventário do código, sem extensões |',
         f'| **{templates}** templates de apps incluídos | arquivos YAML de apps no diretório raiz; templates de extensões de banco são contados separadamente |',
         f'| **{tests:,}** casos de teste de backend coletados | coleta de um checkout limpo; não significa que todos executaram ou passaram |',
-        f'| **{linked:.2f} MB** gzip de JS/CSS vinculado pelo HTML | scripts, estilos e pré-carregamentos de módulos no HTML de produção |',
-        f'| **{total:.2f} MB** gzip de todo o JS/CSS gerado | inclui módulos sob demanda, idiomas e adaptadores de dependências; exclui fontes e imagens |',
+        f'| **{total:.2f} MB** de JS/CSS no total, comprimido com gzip | inclui módulos sob demanda, idiomas e adaptadores de dependências; exclui fontes e imagens |',
         '| **$0** de licença | Licença MIT, sem assinaturas ou taxas por usuário |',
         'Os valores gzip somam arquivos comprimidos separadamente no nível 9; não são tempos de carregamento medidos. A RAM e o tamanho da imagem dependem da compilação, plataforma e carga de trabalho.',
     ]
@@ -61,8 +57,7 @@ def blocks(source, build):
         f'| **{routes:,}** 个核心路由声明 | 来自 `backend/app/api` 中 **{blueprints}** 个蓝图声明；这是源码清单，不包括扩展 |',
         f'| **{templates}** 个内置应用模板 | 模板目录根层级的应用 YAML 文件；数据库扩展模板另计 |',
         f'| **{tests:,}** 个已收集的后端测试用例 | 基于干净检出的测试收集结果；不代表所有用例均已运行或通过 |',
-        f'| **{linked:.2f} MB** gzip 的 HTML 直接引用 JS/CSS | 生产 HTML 中的脚本、样式表和模块预加载资源 |',
-        f'| **{total:.2f} MB** gzip 的全部构建 JS/CSS | 包括按需模块、语言包和依赖适配文件；不含字体和图片 |',
+        f'| **{total:.2f} MB** 全部 JS/CSS 的 gzip 压缩总大小 | 包括按需模块、语言包和依赖适配文件；不含字体和图片 |',
         '| **$0** 许可费用 | MIT 许可证，无订阅或席位费用 |',
         'gzip 数值为各文件分别按级别 9 压缩后的总和，并非实测页面加载时间。内存占用与镜像大小取决于构建、平台和工作负载，不作通用占用保证。',
     ]
@@ -71,7 +66,6 @@ def blocks(source, build):
         if path.endswith(('.es.md', '.pt.md')):
             for old, new in [(f'{routes:,}', f'{routes:,}'.replace(',', '.')),
                              (f'{tests:,}', f'{tests:,}'.replace(',', '.')),
-                             (f'{linked:.2f} MB', f'{linked:.2f} MB'.replace('.', ',')),
                              (f'{total:.2f} MB', f'{total:.2f} MB'.replace('.', ','))]:
                 rows = [row.replace(old, new) for row in rows]
         result[path] = '\n'.join([BEGIN, rows[0], '', '| | |', '|---|---|', *rows[1:-1], '', rows[-1], END])
