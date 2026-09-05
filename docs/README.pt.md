@@ -44,25 +44,26 @@ ou o custo de plataformas gerenciadas.
 
 ## 📊 Em Números
 
-Tudo abaixo é medido a partir deste repositório, não estimado.
+<!-- BEGIN GENERATED MEASUREMENTS -->
+Registro: **2026-09-05**. [Definições, medições e comandos de reprodução](METRICS.md).
 
 | | |
 |---|---|
-| **1.519** endpoints REST | distribuídos em 107 blueprints — `/api/v1/*`, com OpenAPI e Swagger UI em `/api/v1/docs` |
-| **106** templates de aplicações | incluídos no repositório, sem precisar de conta em nenhum registro |
-| **2.633** testes de backend | a suíte completa roda a cada alteração |
-| **1,75 MB** de interface web (gzip) | 65 telas, servidas do seu próprio servidor — sem CDN |
-| **~180 MB** residentes | o painel inteiro, um único processo — convive folgadamente com suas apps num VPS de 1 GB |
-| **501 MB** de imagem de contêiner | ou instale direto no host; Docker é opcional para o painel |
-| **$0** | Licença MIT. Sem planos, sem limite de usuários, sem upsell — e nada é enviado para fora. |
+| **1.212** declarações de rotas do núcleo | em **104** declarações de blueprints em `backend/app/api`; inventário do código, sem extensões |
+| **118** templates de apps incluídos | arquivos YAML de apps no diretório raiz; templates de extensões de banco são contados separadamente |
+| **5.089** casos de teste de backend coletados | coleta de um checkout limpo; não significa que todos executaram ou passaram |
+| **0,83 MB** gzip de JS/CSS vinculado pelo HTML | scripts, estilos e pré-carregamentos de módulos no HTML de produção |
+| **3,31 MB** gzip de todo o JS/CSS gerado | inclui módulos sob demanda, idiomas e adaptadores de dependências; exclui fontes e imagens |
+| **$0** de licença | Licença MIT, sem assinaturas ou taxas por usuário |
 
-Auto-hospedado e nativo em Docker, em hardware que você já paga.
+Os valores gzip somam arquivos comprimidos separadamente no nível 9; não são tempos de carregamento medidos. A RAM e o tamanho da imagem dependem da compilação, plataforma e carga de trabalho.
+<!-- END GENERATED MEASUREMENTS -->
 
 ---
 
 ## 🚀 Início Rápido
 
-> ⏱️ Pronto para usar em menos de 2 minutos
+> O tempo de instalação depende do servidor, da rede e dos pacotes necessários.
 
 ### Opção 1: Instalação em Uma Linha (Recomendado)
 
@@ -115,7 +116,7 @@ Consulte o [Guia de Instalação](INSTALLATION.md) para instruções passo a pas
 | **Disco** | 10 GB | 20+ GB |
 | **Docker** | 24.0+ (opcional para o painel) | Mais recente |
 
-> O painel em si usa apenas ~180 MB de RAM e ~500 MB de disco — o resto é margem para os seus apps. Funciona bem num VPS de 1 GB, num notebook antigo ou num Raspberry Pi (ARM64): feito tanto para homelabs quanto para produção.
+> Estes requisitos orientam o dimensionamento; não são um teste de capacidade. Reserve RAM e disco adicionais para apps, imagens, bancos, logs e backups. Consulte o [guia de medição](METRICS.md) para medir sua carga de trabalho.
 
 ---
 

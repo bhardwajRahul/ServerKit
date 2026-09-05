@@ -1,0 +1,42 @@
+name: Measurement tools and README tables
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'README.md'
+      - 'docs/README*.md'
+      - 'docs/measurements/**'
+      - 'scripts/measure-repository.py'
+      - 'scripts/update-readme-measurements.py'
+      - 'scripts/profile-api.py'
+      - 'scripts/test/test_repository_measurements.py'
+      - 'scripts/test/test_profile_api.py'
+      - '.github/workflows/measurements-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'docs/README*.md'
+      - 'docs/measurements/**'
+      - 'scripts/measure-repository.py'
+      - 'scripts/update-readme-measurements.py'
+      - 'scripts/profile-api.py'
+      - 'scripts/test/test_repository_measurements.py'
+      - 'scripts/test/test_profile_api.py'
+      - '.github/workflows/measurements-ci.yml'
+
+jobs:
+  measurements:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test measurement tools (stdlib only)
+        run: |
+          python -m unittest discover -s scripts/test -p test_repository_measurements.py
+          python -m unittest discover -s scripts/test -p test_profile_api.py
+      - name: Check translated README tables against reviewed snapshots
+        run: python scripts/update-readme-measurements.py

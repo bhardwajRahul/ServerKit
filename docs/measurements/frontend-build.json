@@ -1,0 +1,1008 @@
+{
+  "schema_version": 1,
+  "measured_at_utc": "2026-09-05T18:36:33.444Z",
+  "node_version": "v22.17.0",
+  "measured_code_sha256": "150d84e581e07c19533a81a25946e1e62e9666ef3287c6a99159625e8ad8acd6",
+  "compression": "gzip, level 9, each file separately; sizes are bytes",
+  "scope": "Built JS/MJS/CSS, including public vendor shims. Excludes HTML, fonts, images, maps and other non-code assets.",
+  "html_linked_scope": "Only script, stylesheet and modulepreload URLs in index.html; not a complete runtime network trace or every later lazy import.",
+  "all_code": {
+    "files": 185,
+    "bytes": 11683004,
+    "gzip_bytes": 3306531
+  },
+  "html_linked_code": {
+    "files": 74,
+    "bytes": 3293694,
+    "gzip_bytes": 828863
+  },
+  "largest_code_assets": [
+    {
+      "path": "assets/index-CVanDihf.css",
+      "bytes": 974501,
+      "gzip_bytes": 138204
+    },
+    {
+      "path": "assets/bn-DQJxc4qM.js",
+      "bytes": 598496,
+      "gzip_bytes": 131054
+    },
+    {
+      "path": "assets/th-DHsDkRJN.js",
+      "bytes": 578831,
+      "gzip_bytes": 128442
+    },
+    {
+      "path": "assets/ru-BiYZQRSY.js",
+      "bytes": 487932,
+      "gzip_bytes": 135557
+    },
+    {
+      "path": "assets/ar-0QC_HyYN.js",
+      "bytes": 415266,
+      "gzip_bytes": 120978
+    },
+    {
+      "path": "assets/vendor-charts-_7lweA91.js",
+      "bytes": 395861,
+      "gzip_bytes": 102971
+    },
+    {
+      "path": "assets/vi-BBWpEAcO.js",
+      "bytes": 378809,
+      "gzip_bytes": 114517
+    },
+    {
+      "path": "assets/fr-B3wJvclY.js",
+      "bytes": 354826,
+      "gzip_bytes": 115299
+    },
+    {
+      "path": "assets/ko-cbntekXb.js",
+      "bytes": 352061,
+      "gzip_bytes": 113937
+    },
+    {
+      "path": "assets/de-CMeQ0Q04.js",
+      "bytes": 349793,
+      "gzip_bytes": 115655
+    },
+    {
+      "path": "assets/pl-IIic_FFF.js",
+      "bytes": 340721,
+      "gzip_bytes": 117822
+    },
+    {
+      "path": "assets/es-XJqtqF-U.js",
+      "bytes": 339857,
+      "gzip_bytes": 111055
+    }
+  ],
+  "assets": [
+    {
+      "path": "assets/AgentFleet-B7_nz7or.js",
+      "bytes": 25349,
+      "gzip_bytes": 5714
+    },
+    {
+      "path": "assets/AppMap-CTfYFAwx.js",
+      "bytes": 8785,
+      "gzip_bytes": 3623
+    },
+    {
+      "path": "assets/Backups-Oz9kMTOB.js",
+      "bytes": 51208,
+      "gzip_bytes": 13490
+    },
+    {
+      "path": "assets/BandwidthSparkline-I7vIa8HL.js",
+      "bytes": 3706,
+      "gzip_bytes": 1327
+    },
+    {
+      "path": "assets/BuildpackPreview-Q2-EkG9o.js",
+      "bytes": 5774,
+      "gzip_bytes": 1804
+    },
+    {
+      "path": "assets/Coexistence-si7t-Es2.js",
+      "bytes": 7182,
+      "gzip_bytes": 2697
+    },
+    {
+      "path": "assets/ConfirmDialog-Xo0CScem.js",
+      "bytes": 5916,
+      "gzip_bytes": 2192
+    },
+    {
+      "path": "assets/CopyButton-COhap6yN.js",
+      "bytes": 891,
+      "gzip_bytes": 531
+    },
+    {
+      "path": "assets/CronJobs-BtIZjJkN.js",
+      "bytes": 21282,
+      "gzip_bytes": 6357
+    },
+    {
+      "path": "assets/DangerZone-CeOUNJX1.js",
+      "bytes": 436,
+      "gzip_bytes": 261
+    },
+    {
+      "path": "assets/Dashboard-C7wEIJzA.js",
+      "bytes": 92154,
+      "gzip_bytes": 27286
+    },
+    {
+      "path": "assets/DatabaseMigration-IBv_4l6X.js",
+      "bytes": 11400,
+      "gzip_bytes": 3158
+    },
+    {
+      "path": "assets/Databases-DnIYu_4Y.js",
+      "bytes": 140972,
+      "gzip_bytes": 36620
+    },
+    {
+      "path": "assets/DeliveryLog-BaOYzcsI.js",
+      "bytes": 11805,
+      "gzip_bytes": 3960
+    },
+    {
+      "path": "assets/DeployConsole-CTg1peo-.js",
+      "bytes": 22982,
+      "gzip_bytes": 7274
+    },
+    {
+      "path": "assets/DeploymentTimeline-Cd5SKe1b.js",
+      "bytes": 20334,
+      "gzip_bytes": 5105
+    },
+    {
+      "path": "assets/Deployments-Cb4SIJ1_.js",
+      "bytes": 8442,
+      "gzip_bytes": 3090
+    },
+    {
+      "path": "assets/Docker-NZDQdIHg.js",
+      "bytes": 72809,
+      "gzip_bytes": 17031
+    },
+    {
+      "path": "assets/DocsLink-Bp7QN8rQ.js",
+      "bytes": 520,
+      "gzip_bytes": 361
+    },
+    {
+      "path": "assets/Documentation-dM5OBmcr.js",
+      "bytes": 5673,
+      "gzip_bytes": 1976
+    },
+    {
+      "path": "assets/Domains-Bsg8FNM-.js",
+      "bytes": 38171,
+      "gzip_bytes": 10964
+    },
+    {
+      "path": "assets/Downloads-ezWmWO2h.js",
+      "bytes": 11505,
+      "gzip_bytes": 3157
+    },
+    {
+      "path": "assets/EmptyState-Y4MOQukK.js",
+      "bytes": 9160,
+      "gzip_bytes": 1935
+    },
+    {
+      "path": "assets/Errors-DzPb9SiS.js",
+      "bytes": 10264,
+      "gzip_bytes": 3192
+    },
+    {
+      "path": "assets/FavoriteStar-1bzf-gC-.js",
+      "bytes": 1037,
+      "gzip_bytes": 539
+    },
+    {
+      "path": "assets/FileManager-cHPvs09J.js",
+      "bytes": 51779,
+      "gzip_bytes": 13761
+    },
+    {
+      "path": "assets/FleetProxy-h7e8g-IF.js",
+      "bytes": 7114,
+      "gzip_bytes": 2499
+    },
+    {
+      "path": "assets/FormField-2_Ug2SOb.js",
+      "bytes": 854,
+      "gzip_bytes": 413
+    },
+    {
+      "path": "assets/GithubAppCallback-b0_L6wmf.js",
+      "bytes": 2024,
+      "gzip_bytes": 972
+    },
+    {
+      "path": "assets/ImportWizard-Dzlrl0qj.js",
+      "bytes": 25368,
+      "gzip_bytes": 6529
+    },
+    {
+      "path": "assets/Incidents-BtO5YA7X.js",
+      "bytes": 12305,
+      "gzip_bytes": 4092
+    },
+    {
+      "path": "assets/InfoList-ChCWQp3d.js",
+      "bytes": 527,
+      "gzip_bytes": 310
+    },
+    {
+      "path": "assets/Jobs-DbCbs30I.js",
+      "bytes": 9760,
+      "gzip_bytes": 3317
+    },
+    {
+      "path": "assets/LogContent-C6VMFag4.js",
+      "bytes": 6859,
+      "gzip_bytes": 2564
+    },
+    {
+      "path": "assets/Login-CShxPoYB.js",
+      "bytes": 8043,
+      "gzip_bytes": 2886
+    },
+    {
+      "path": "assets/LogsDrawerContext-CV3lsDLs.js",
+      "bytes": 367,
+      "gzip_bytes": 245
+    },
+    {
+      "path": "assets/Marketplace-BXogLkIf.js",
+      "bytes": 48828,
+      "gzip_bytes": 13409
+    },
+    {
+      "path": "assets/Modal-BkNur6mo.js",
+      "bytes": 811,
+      "gzip_bytes": 435
+    },
+    {
+      "path": "assets/MonitorDetail-DhRumRM0.js",
+      "bytes": 18171,
+      "gzip_bytes": 5457
+    },
+    {
+      "path": "assets/Monitoring-6f1eTDj5.js",
+      "bytes": 56756,
+      "gzip_bytes": 14857
+    },
+    {
+      "path": "assets/Monitors-Oo9D7iNc.js",
+      "bytes": 15393,
+      "gzip_bytes": 4850
+    },
+    {
+      "path": "assets/NewService-Do77mcY9.js",
+      "bytes": 31523,
+      "gzip_bytes": 8734
+    },
+    {
+      "path": "assets/NotFound-Bf7Nc2HG.js",
+      "bytes": 1454,
+      "gzip_bytes": 700
+    },
+    {
+      "path": "assets/Notifications-BB-uc34Y.js",
+      "bytes": 6111,
+      "gzip_bytes": 2027
+    },
+    {
+      "path": "assets/OperationsContext-BWUXcieJ.js",
+      "bytes": 8343,
+      "gzip_bytes": 3264
+    },
+    {
+      "path": "assets/PageLayout-2EmhsU7a.js",
+      "bytes": 721,
+      "gzip_bytes": 365
+    },
+    {
+      "path": "assets/PageLoader-B1ff2He2.js",
+      "bytes": 399,
+      "gzip_bytes": 293
+    },
+    {
+      "path": "assets/ProcessTable-C5Xw0IBc.js",
+      "bytes": 6783,
+      "gzip_bytes": 2472
+    },
+    {
+      "path": "assets/ProjectDetail-DO9cznS3.js",
+      "bytes": 9680,
+      "gzip_bytes": 3157
+    },
+    {
+      "path": "assets/Projects-BW641fiW.js",
+      "bytes": 5805,
+      "gzip_bytes": 2244
+    },
+    {
+      "path": "assets/ProviderBrands-n8ow8BwC.js",
+      "bytes": 4127,
+      "gzip_bytes": 1933
+    },
+    {
+      "path": "assets/PublicStatusPage-B_FGxbpY.js",
+      "bytes": 5410,
+      "gzip_bytes": 1634
+    },
+    {
+      "path": "assets/QueueDetail-Ds3f4209.js",
+      "bytes": 11537,
+      "gzip_bytes": 3580
+    },
+    {
+      "path": "assets/QueueOperations-hNYzIn9Y.js",
+      "bytes": 18011,
+      "gzip_bytes": 4699
+    },
+    {
+      "path": "assets/Recipes-EH0l2sQ3.js",
+      "bytes": 9972,
+      "gzip_bytes": 3508
+    },
+    {
+      "path": "assets/Register-BONdPwz7.js",
+      "bytes": 4791,
+      "gzip_bytes": 1420
+    },
+    {
+      "path": "assets/RemoteAccess-DRR_o5VW.js",
+      "bytes": 13731,
+      "gzip_bytes": 4086
+    },
+    {
+      "path": "assets/RequiresDocker-DUCyiExP.js",
+      "bytes": 2139,
+      "gzip_bytes": 923
+    },
+    {
+      "path": "assets/ResourceListPage-3tIVlPoI.js",
+      "bytes": 4915,
+      "gzip_bytes": 2138
+    },
+    {
+      "path": "assets/ResourcePicker-C_YXfpQh.js",
+      "bytes": 18302,
+      "gzip_bytes": 6792
+    },
+    {
+      "path": "assets/SSLCertificates-qbXCdUWI.js",
+      "bytes": 17225,
+      "gzip_bytes": 4988
+    },
+    {
+      "path": "assets/SSOCallback-rgvpTdcS.js",
+      "bytes": 2078,
+      "gzip_bytes": 967
+    },
+    {
+      "path": "assets/SSOProviderIcon-suLUgNY8.js",
+      "bytes": 1889,
+      "gzip_bytes": 989
+    },
+    {
+      "path": "assets/SchedulePicker-DAtjeFHA.js",
+      "bytes": 8809,
+      "gzip_bytes": 2831
+    },
+    {
+      "path": "assets/Security-qC_UMwg3.js",
+      "bytes": 54385,
+      "gzip_bytes": 13122
+    },
+    {
+      "path": "assets/ServerDetail-CDd5Wkip.js",
+      "bytes": 129188,
+      "gzip_bytes": 31455
+    },
+    {
+      "path": "assets/ServerKitLogo-aeIpNoKQ.js",
+      "bytes": 1270,
+      "gzip_bytes": 649
+    },
+    {
+      "path": "assets/ServerTemplates-D7bkBRSw.js",
+      "bytes": 12569,
+      "gzip_bytes": 3856
+    },
+    {
+      "path": "assets/Servers-TCnaphdY.js",
+      "bytes": 32392,
+      "gzip_bytes": 9407
+    },
+    {
+      "path": "assets/ServiceDetail-Cn35S5nZ.js",
+      "bytes": 167733,
+      "gzip_bytes": 40071
+    },
+    {
+      "path": "assets/Services-RVzvCk8b.js",
+      "bytes": 13044,
+      "gzip_bytes": 4162
+    },
+    {
+      "path": "assets/ServicesTab-BJea8xcn.js",
+      "bytes": 9478,
+      "gzip_bytes": 3355
+    },
+    {
+      "path": "assets/Settings-BA5eqeLx.js",
+      "bytes": 288851,
+      "gzip_bytes": 66778
+    },
+    {
+      "path": "assets/Setup-PIskKI_6.js",
+      "bytes": 30350,
+      "gzip_bytes": 7839
+    },
+    {
+      "path": "assets/SharedVariables-S12uNdkC.js",
+      "bytes": 12971,
+      "gzip_bytes": 3701
+    },
+    {
+      "path": "assets/SourceConnectionCallback-EDi4BaCM.js",
+      "bytes": 2060,
+      "gzip_bytes": 1000
+    },
+    {
+      "path": "assets/Spinner-CtgnlSA5.js",
+      "bytes": 501,
+      "gzip_bytes": 296
+    },
+    {
+      "path": "assets/StatusBadge-DRJArhzg.js",
+      "bytes": 488,
+      "gzip_bytes": 327
+    },
+    {
+      "path": "assets/StyleGuide-CdNNP6XM.js",
+      "bytes": 76602,
+      "gzip_bytes": 16097
+    },
+    {
+      "path": "assets/TargetPicker-Bld9Lg9q.js",
+      "bytes": 2156,
+      "gzip_bytes": 1032
+    },
+    {
+      "path": "assets/Telemetry-1jNM23AA.js",
+      "bytes": 11187,
+      "gzip_bytes": 3763
+    },
+    {
+      "path": "assets/Templates-DVdE6NeT.js",
+      "bytes": 19594,
+      "gzip_bytes": 6928
+    },
+    {
+      "path": "assets/Terminal-DCB2JSbv.js",
+      "bytes": 32222,
+      "gzip_bytes": 9040
+    },
+    {
+      "path": "assets/TestSandbox-B-JFVi1o.js",
+      "bytes": 11876,
+      "gzip_bytes": 4025
+    },
+    {
+      "path": "assets/Trans-DUhiEKWi.js",
+      "bytes": 10742,
+      "gzip_bytes": 4523
+    },
+    {
+      "path": "assets/Vaults-B6sy9xuk.js",
+      "bytes": 11796,
+      "gzip_bytes": 3422
+    },
+    {
+      "path": "assets/WorkspaceDetail-Z46ncHsN.js",
+      "bytes": 28809,
+      "gzip_bytes": 7316
+    },
+    {
+      "path": "assets/Workspaces-DFAW186J.js",
+      "bytes": 7880,
+      "gzip_bytes": 2799
+    },
+    {
+      "path": "assets/api-CCJRyK9u.js",
+      "bytes": 150808,
+      "gzip_bytes": 30239
+    },
+    {
+      "path": "assets/ar-0QC_HyYN.js",
+      "bytes": 415266,
+      "gzip_bytes": 120978
+    },
+    {
+      "path": "assets/badge-DAehhJoZ.js",
+      "bytes": 302,
+      "gzip_bytes": 235
+    },
+    {
+      "path": "assets/bn-DQJxc4qM.js",
+      "bytes": 598496,
+      "gzip_bytes": 131054
+    },
+    {
+      "path": "assets/button-DRJXHEms.js",
+      "bytes": 2804,
+      "gzip_bytes": 1263
+    },
+    {
+      "path": "assets/card-GJcYnddq.js",
+      "bytes": 1077,
+      "gzip_bytes": 363
+    },
+    {
+      "path": "assets/clipboard-Dn2VjE_I.js",
+      "bytes": 468,
+      "gzip_bytes": 297
+    },
+    {
+      "path": "assets/de-CMeQ0Q04.js",
+      "bytes": 349793,
+      "gzip_bytes": 115655
+    },
+    {
+      "path": "assets/deployActivity-Bhx2ttym.js",
+      "bytes": 1123,
+      "gzip_bytes": 589
+    },
+    {
+      "path": "assets/dialog-ZZdAdpRd.js",
+      "bytes": 1416,
+      "gzip_bytes": 563
+    },
+    {
+      "path": "assets/dist-4WJ2Dj-L.js",
+      "bytes": 303,
+      "gzip_bytes": 216
+    },
+    {
+      "path": "assets/dist-BvEkDNZs.js",
+      "bytes": 2782,
+      "gzip_bytes": 1233
+    },
+    {
+      "path": "assets/dist-CDyCHLYj.js",
+      "bytes": 3647,
+      "gzip_bytes": 1623
+    },
+    {
+      "path": "assets/docsLinks-xcEiS2b-.js",
+      "bytes": 361,
+      "gzip_bytes": 192
+    },
+    {
+      "path": "assets/downloadBlob-DzNlCt_E.js",
+      "bytes": 384,
+      "gzip_bytes": 276
+    },
+    {
+      "path": "assets/dropdown-menu-DR95iY5T.js",
+      "bytes": 20837,
+      "gzip_bytes": 6160
+    },
+    {
+      "path": "assets/ds-D9j8MO1I.js",
+      "bytes": 44492,
+      "gzip_bytes": 14462
+    },
+    {
+      "path": "assets/en-Bo0tKDxj.js",
+      "bytes": 298916,
+      "gzip_bytes": 100788
+    },
+    {
+      "path": "assets/engineHelpers-C4Oij3xe.js",
+      "bytes": 2719,
+      "gzip_bytes": 1354
+    },
+    {
+      "path": "assets/es-XJqtqF-U.js",
+      "bytes": 339857,
+      "gzip_bytes": 111055
+    },
+    {
+      "path": "assets/expiry-CenJDggT.js",
+      "bytes": 566,
+      "gzip_bytes": 366
+    },
+    {
+      "path": "assets/fleetMetrics-DwDMpmOp.js",
+      "bytes": 226,
+      "gzip_bytes": 184
+    },
+    {
+      "path": "assets/formatBytes-hXxZgKZa.js",
+      "bytes": 537,
+      "gzip_bytes": 385
+    },
+    {
+      "path": "assets/fr-B3wJvclY.js",
+      "bytes": 354826,
+      "gzip_bytes": 115299
+    },
+    {
+      "path": "assets/grid-DeT-2Rw7.js",
+      "bytes": 39447,
+      "gzip_bytes": 11750
+    },
+    {
+      "path": "assets/id-B0jBKWcn.js",
+      "bytes": 317606,
+      "gzip_bytes": 106301
+    },
+    {
+      "path": "assets/index-CVanDihf.css",
+      "bytes": 974501,
+      "gzip_bytes": 138204
+    },
+    {
+      "path": "assets/index-EBJ5Gl3z.js",
+      "bytes": 261895,
+      "gzip_bytes": 70767
+    },
+    {
+      "path": "assets/input-Bv21FA6l.js",
+      "bytes": 290,
+      "gzip_bytes": 222
+    },
+    {
+      "path": "assets/intl-CYUOvOJ7.js",
+      "bytes": 3788,
+      "gzip_bytes": 1391
+    },
+    {
+      "path": "assets/it-cbe2smqs.js",
+      "bytes": 336985,
+      "gzip_bytes": 111563
+    },
+    {
+      "path": "assets/ko-cbntekXb.js",
+      "bytes": 352061,
+      "gzip_bytes": 113937
+    },
+    {
+      "path": "assets/label-oL-uqm3Y.js",
+      "bytes": 966,
+      "gzip_bytes": 583
+    },
+    {
+      "path": "assets/monitorShared-DVkEym-a.js",
+      "bytes": 2004,
+      "gzip_bytes": 657
+    },
+    {
+      "path": "assets/pl-IIic_FFF.js",
+      "bytes": 340721,
+      "gzip_bytes": 117822
+    },
+    {
+      "path": "assets/popover-grWqLIUn.js",
+      "bytes": 65548,
+      "gzip_bytes": 22239
+    },
+    {
+      "path": "assets/pt-Cg2aVclu.js",
+      "bytes": 334621,
+      "gzip_bytes": 111049
+    },
+    {
+      "path": "assets/recents-FDjDwDOB.js",
+      "bytes": 908,
+      "gzip_bytes": 462
+    },
+    {
+      "path": "assets/redirectAfterLogin-CPIFFUZ-.js",
+      "bytes": 915,
+      "gzip_bytes": 524
+    },
+    {
+      "path": "assets/reducedMotion-0K54bujL.js",
+      "bytes": 191,
+      "gzip_bytes": 146
+    },
+    {
+      "path": "assets/rolldown-runtime-QTnfLwEv.js",
+      "bytes": 694,
+      "gzip_bytes": 422
+    },
+    {
+      "path": "assets/ru-BiYZQRSY.js",
+      "bytes": 487932,
+      "gzip_bytes": 135557
+    },
+    {
+      "path": "assets/sanitizeSvg-CXkzvfQS.js",
+      "bytes": 1168,
+      "gzip_bytes": 656
+    },
+    {
+      "path": "assets/sdk-96DUmOoT.css",
+      "bytes": 20337,
+      "gzip_bytes": 4151
+    },
+    {
+      "path": "assets/sdk-BEMkzTit.js",
+      "bytes": 158165,
+      "gzip_bytes": 42507
+    },
+    {
+      "path": "assets/select--cDlodis.js",
+      "bytes": 21203,
+      "gzip_bytes": 7215
+    },
+    {
+      "path": "assets/si-CWfS2ftP.js",
+      "bytes": 34706,
+      "gzip_bytes": 14957
+    },
+    {
+      "path": "assets/sidebarItems-BQHByGBH.js",
+      "bytes": 9738,
+      "gzip_bytes": 2847
+    },
+    {
+      "path": "assets/socket-DQzBk5Bx.js",
+      "bytes": 44588,
+      "gzip_bytes": 13691
+    },
+    {
+      "path": "assets/status-BxnZ9AU0.js",
+      "bytes": 2499,
+      "gzip_bytes": 991
+    },
+    {
+      "path": "assets/switch-CdYeyLle.js",
+      "bytes": 2206,
+      "gzip_bytes": 1135
+    },
+    {
+      "path": "assets/tabs-C3UHtSwH.js",
+      "bytes": 4682,
+      "gzip_bytes": 2008
+    },
+    {
+      "path": "assets/textarea-Dhv2X_qv.js",
+      "bytes": 285,
+      "gzip_bytes": 217
+    },
+    {
+      "path": "assets/th-DHsDkRJN.js",
+      "bytes": 578831,
+      "gzip_bytes": 128442
+    },
+    {
+      "path": "assets/time-CUKTAUl6.js",
+      "bytes": 155,
+      "gzip_bytes": 127
+    },
+    {
+      "path": "assets/tr-Cgpafv9G.js",
+      "bytes": 339275,
+      "gzip_bytes": 113917
+    },
+    {
+      "path": "assets/useAuth-DvhpMS6C.js",
+      "bytes": 277,
+      "gzip_bytes": 220
+    },
+    {
+      "path": "assets/useClipboard-DVlBSA7W.js",
+      "bytes": 579,
+      "gzip_bytes": 389
+    },
+    {
+      "path": "assets/useConfirm-COuqNMAk.js",
+      "bytes": 986,
+      "gzip_bytes": 475
+    },
+    {
+      "path": "assets/useDeployJobStream-D1vDRLvz.js",
+      "bytes": 460,
+      "gzip_bytes": 335
+    },
+    {
+      "path": "assets/useDevMode-Dq_QB4CY.js",
+      "bytes": 29017,
+      "gzip_bytes": 8669
+    },
+    {
+      "path": "assets/useFocusParam-CreB-V8z.js",
+      "bytes": 486,
+      "gzip_bytes": 330
+    },
+    {
+      "path": "assets/useForm-C2D0nl4x.js",
+      "bytes": 3562,
+      "gzip_bytes": 1350
+    },
+    {
+      "path": "assets/useLockBodyScroll-gg82pj_N.js",
+      "bytes": 352,
+      "gzip_bytes": 247
+    },
+    {
+      "path": "assets/useNotifications-Dg5pvKZV.js",
+      "bytes": 203,
+      "gzip_bytes": 171
+    },
+    {
+      "path": "assets/usePolling-lF1Jduua.js",
+      "bytes": 1518,
+      "gzip_bytes": 762
+    },
+    {
+      "path": "assets/useResourceTier-UN-1X2SK.js",
+      "bytes": 292,
+      "gzip_bytes": 225
+    },
+    {
+      "path": "assets/useRunStream-Dh5UfWEc.js",
+      "bytes": 2817,
+      "gzip_bytes": 1369
+    },
+    {
+      "path": "assets/useServerQuery-CFbs0jQD.js",
+      "bytes": 3631,
+      "gzip_bytes": 1533
+    },
+    {
+      "path": "assets/useServerStream-CGv3kSRa.js",
+      "bytes": 569,
+      "gzip_bytes": 351
+    },
+    {
+      "path": "assets/useServerkitAI-CpuE8vn8.js",
+      "bytes": 279,
+      "gzip_bytes": 224
+    },
+    {
+      "path": "assets/useShortcut-DO6Hv-Zh.js",
+      "bytes": 487,
+      "gzip_bytes": 329
+    },
+    {
+      "path": "assets/useTabParam-DRBvsDeG.js",
+      "bytes": 170,
+      "gzip_bytes": 162
+    },
+    {
+      "path": "assets/useTheme-CpQxtsz9.js",
+      "bytes": 278,
+      "gzip_bytes": 220
+    },
+    {
+      "path": "assets/useToast-CU7WGWSC.js",
+      "bytes": 278,
+      "gzip_bytes": 219
+    },
+    {
+      "path": "assets/useTopbarActions-ByKBotYf.js",
+      "bytes": 571,
+      "gzip_bytes": 372
+    },
+    {
+      "path": "assets/useWorkspace-Cj3WMLIv.js",
+      "bytes": 286,
+      "gzip_bytes": 224
+    },
+    {
+      "path": "assets/utils-Dc1WCZV1.js",
+      "bytes": 48525,
+      "gzip_bytes": 15746
+    },
+    {
+      "path": "assets/vendor-charts-_7lweA91.js",
+      "bytes": 395861,
+      "gzip_bytes": 102971
+    },
+    {
+      "path": "assets/vendor-flow-BW6KGJkc.js",
+      "bytes": 297879,
+      "gzip_bytes": 93822
+    },
+    {
+      "path": "assets/vendor-flow-CHpVij2M.css",
+      "bytes": 15395,
+      "gzip_bytes": 2518
+    },
+    {
+      "path": "assets/vendor-icons-jUsvj-1n.js",
+      "bytes": 55257,
+      "gzip_bytes": 16367
+    },
+    {
+      "path": "assets/vendor-react-hujXv21x.js",
+      "bytes": 197077,
+      "gzip_bytes": 62099
+    },
+    {
+      "path": "assets/vendor-xterm-DK8RooJ5.js",
+      "bytes": 291643,
+      "gzip_bytes": 68496
+    },
+    {
+      "path": "assets/vendor-xterm-kHJ-D0s7.css",
+      "bytes": 2853,
+      "gzip_bytes": 770
+    },
+    {
+      "path": "assets/vi-BBWpEAcO.js",
+      "bytes": 378809,
+      "gzip_bytes": 114517
+    },
+    {
+      "path": "assets/zh-Hans-CHEKgzkQ.js",
+      "bytes": 292831,
+      "gzip_bytes": 111140
+    },
+    {
+      "path": "assets/zh-Hant-mu8MTZYn.js",
+      "bytes": 292985,
+      "gzip_bytes": 112962
+    },
+    {
+      "path": "serverkit-vendor/i18next.mjs",
+      "bytes": 1020,
+      "gzip_bytes": 469
+    },
+    {
+      "path": "serverkit-vendor/react-dom-client.mjs",
+      "bytes": 507,
+      "gzip_bytes": 340
+    },
+    {
+      "path": "serverkit-vendor/react-dom.mjs",
+      "bytes": 1050,
+      "gzip_bytes": 509
+    },
+    {
+      "path": "serverkit-vendor/react-i18next.mjs",
+      "bytes": 1427,
+      "gzip_bytes": 538
+    },
+    {
+      "path": "serverkit-vendor/react-jsx-runtime.mjs",
+      "bytes": 518,
+      "gzip_bytes": 340
+    },
+    {
+      "path": "serverkit-vendor/react-router-dom.mjs",
+      "bytes": 7498,
+      "gzip_bytes": 1593
+    },
+    {
+      "path": "serverkit-vendor/react.mjs",
+      "bytes": 1958,
+      "gzip_bytes": 702
+    },
+    {
+      "path": "serverkit-vendor/serverkit-sdk.mjs",
+      "bytes": 5217,
+      "gzip_bytes": 1437
+    },
+    {
+      "path": "sw.js",
+      "bytes": 2064,
+      "gzip_bytes": 786
+    }
+  ]
+}
