@@ -13,6 +13,7 @@ import socket from '/src/services/socket.js';
 import { WorkspaceProvider } from '/src/contexts/WorkspaceContext.jsx';
 import { workspaceStore } from '/src/services/workspaceStore.js';
 import { useMetricHistory } from '/src/components/dashboard/widgets/useWidgetData.js';
+import MetricsTab from '/src/components/service-detail/MetricsTab.jsx';
 const handlers = new Map();
 let hidden = false;
 const state = { calls: 0, pending: [] };
@@ -58,6 +59,16 @@ function Widgets() {
         React.createElement(Widget, { index: 0, tick }), React.createElement(Widget, { index: 1, tick }));
 }
 createRoot(document.getElementById('widgets')).render(React.createElement(WorkspaceProvider, {}, React.createElement(Widgets)));
+const serviceState = { containers: [], pending: [], python: [] };
+api.getContainers = async () => ({ containers: serviceState.containers });
+api.getContainerStats = (id) => new Promise((resolve, reject) => serviceState.pending.push({ id, resolve, reject }));
+api.getPythonAppStatus = () => new Promise((resolve) => serviceState.python.push(resolve));
+function Service() {
+    const [app, setApp] = useState(null);
+    window.serviceFixture = { state: serviceState, setApp };
+    return app ? React.createElement(MetricsTab, { app }) : null;
+}
+createRoot(document.getElementById('service')).render(React.createElement(Service));
 `;
 const server = await createServer({
     server: { host: '127.0.0.1', port: 0, open: false },
@@ -69,7 +80,7 @@ const server = await createServer({
             vite.middlewares.use('/__metrics-regression', async (_req, res) => {
                 res.setHeader('Content-Type', 'text/html');
                 res.end(await vite.transformIndexHtml('/__metrics-regression',
-                    '<div id="root"></div><div id="widgets"></div><script type="module">import "virtual:metrics-regression"</script>'));
+                    '<div id="root"></div><div id="widgets"></div><div id="service"></div><script type="module">import "virtual:metrics-regression"</script>'));
             });
         },
     }],
@@ -136,7 +147,57 @@ try {
         [null, null], 'workspace switching cannot display another workspace payload');
     await action(() => window.widgetFixture.resolve());
     await page.waitForFunction(() => window.widgetFixture.state.snapshots.every((item) => !item.loading));
+    // Exercise the actual service component: disappearance, rejected polls,
+    // runtime switches and a late response from the previous application.
+    await page.clock.install();
+    await action(() => {
+        window.serviceFixture.state.containers = [{ Id: 'a', Names: ['alpha'] }];
+        window.serviceFixture.setApp({ id: 1, name: 'alpha', app_type: 'docker' });
+    });
+    await page.waitForFunction(() => window.serviceFixture.state.pending.length === 1);
+    await action(() => window.serviceFixture.state.pending.shift().resolve({ cpu_percent: 42 }));
+    await page.locator('#service .metrics-tab').waitFor();
+    assert.match(await page.locator('#service').innerText(), /42\.0%/);
+    await action(() => { window.serviceFixture.state.containers = []; });
+    await page.clock.fastForward(10001);
+    await page.locator('#service .empty-state__title').waitFor();
+    assert.equal(await page.locator('#service .metrics-tab').count(), 0, 'missing container clears previous stats');
+    await action(() => { window.serviceFixture.state.containers = [{ Id: 'a', Names: ['alpha'] }]; });
+    await page.clock.fastForward(10001);
+    await page.waitForFunction(() => window.serviceFixture.state.pending.length === 1);
+    await action(() => window.serviceFixture.state.pending.shift().resolve({ cpu_percent: 51 }));
+    await page.locator('#service .metrics-tab').waitFor();
+    await page.clock.fastForward(10001);
+    await page.waitForFunction(() => window.serviceFixture.state.pending.length === 1);
+    await action(() => window.serviceFixture.state.pending.shift().reject(new Error('container stopped')));
+    await page.locator('#service .empty-state__title').waitFor();
+    await page.clock.fastForward(10001);
+    await page.waitForFunction(() => window.serviceFixture.state.pending.length === 1);
+    await action(() => {
+        window.serviceFixture.state.containers = [{ Id: 'b', Names: ['beta'] }];
+        window.serviceFixture.setApp({ id: 2, name: 'beta', app_type: 'docker' });
+    });
+    await page.waitForFunction(() => window.serviceFixture.state.pending.length === 2);
+    assert.equal(await page.locator('#service [aria-busy="true"]').count(), 1, 'new app starts loading');
+    await action(() => window.serviceFixture.state.pending.pop().resolve({ cpu_percent: 17 }));
+    await page.locator('#service .metrics-tab').waitFor();
+    await action(() => window.serviceFixture.state.pending.shift().resolve({ cpu_percent: 99 }));
+    await page.waitForTimeout(50);
+    assert.match(await page.locator('#service').innerText(), /17\.0%/, 'late previous app response is ignored');
+    assert.doesNotMatch(await page.locator('#service').innerText(), /99\.0%/);
+    await action(() => window.serviceFixture.setApp({ id: 3, name: 'python', app_type: 'flask' }));
+    await page.waitForFunction(() => window.serviceFixture.state.python.length === 1);
+    assert.equal(await page.locator('#service .metrics-tab').count(), 0, 'Python switch clears Docker state');
+    await action(() => window.serviceFixture.state.python.shift()({ active: true, pid: 123 }));
+    await page.locator('#service .metrics-tab').waitFor();
+    await action(() => window.serviceFixture.setApp({ id: 4, name: 'other-python', app_type: 'flask' }));
+    await page.waitForFunction(() => window.serviceFixture.state.python.length === 1);
+    assert.equal(await page.locator('#service [aria-busy="true"]').count(), 1, 'Python switch also resets loading');
+    assert.doesNotMatch(await page.locator('#service').innerText(), /123/);
+    await action(() => window.serviceFixture.state.python.shift()({ active: false }));
+    await page.locator('#service .metrics-tab').waitFor();
     assert.deepEqual(errors, []);
+    console.log('Service metrics regression passed: missing container, failed poll, app switch, late response and Python state reset.');
     console.log('Metrics browser regression passed: slow response, manual sharing, socket loss/reconnect, hidden tab, remote selection, refresh off; widget sharing, refresh retention, workspace isolation.');
 } finally {
     await browser?.close();
