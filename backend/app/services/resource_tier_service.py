@@ -153,29 +153,9 @@ class ResourceTierService:
 
     @staticmethod
     def _detect_container():
-        """
-        Identify container virtualisation, or None on bare metal / a full VM.
-
-        This matters more than core count on small hosts: Docker frequently
-        cannot run inside an unprivileged LXC or OpenVZ container at all, so a
-        box can look adequate on paper and still be unable to host anything.
-        """
-        try:
-            if os.path.exists('/.dockerenv'):
-                return 'docker'
-            if os.path.isdir('/proc/vz') and not os.path.isdir('/proc/bc'):
-                return 'openvz'
-            # systemd-nspawn and LXC both advertise themselves here.
-            with open('/proc/1/environ', 'rb') as fh:
-                environ = fh.read().decode('utf-8', 'replace')
-            for entry in environ.split('\0'):
-                if entry.startswith('container='):
-                    return entry.split('=', 1)[1] or 'container'
-        except Exception:
-            # /proc is absent on Windows dev boxes and restricted in some
-            # sandboxes — "unknown" is the honest answer, not an error.
-            return None
-        return None
+        """Share host inventory's container capability detection."""
+        from app.services import host_inventory_service
+        return host_inventory_service._detect_container()
 
     @classmethod
     def get_headroom(cls, specs=None):

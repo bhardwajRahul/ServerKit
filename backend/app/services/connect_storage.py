@@ -18,9 +18,9 @@ config would race, and the operator should be told where it is coming from
 rather than watching their edit disappear.
 """
 import logging
-from datetime import datetime, timezone
 
 from app.services.connect_commands import handler
+from app.services.connect_format import iso_datetime as _iso
 from app.services.storage_provider_service import StorageProviderService
 
 logger = logging.getLogger(__name__)
@@ -29,18 +29,6 @@ logger = logging.getLogger(__name__)
 # S3-compatible endpoint, R2, Wasabi and the rest), so the panel keeps one
 # client and writes one provider block.
 PANEL_PROVIDER = 's3'
-
-
-def _iso(value):
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value.isoformat()
-    return None
 
 
 # ==================== commands ====================

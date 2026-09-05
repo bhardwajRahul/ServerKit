@@ -19,6 +19,7 @@ provenance.
 import re
 
 from app import db
+from app.utils.actor import current_actor_id as _current_user_id
 from app.models.shared_resource import (
     ResourceTag,
     SharedVariable,
@@ -46,21 +47,6 @@ def _audit(action, **kwargs):
         AuditService.log(action, details=details, **kwargs)
     except Exception:
         pass
-
-
-def _current_user_id():
-    """Resolve the acting user id, or None outside a request.
-
-    Goes through rbac.get_current_user() rather than get_jwt_identity() so an
-    API-key caller is attributed to the key's owner. Reading the JWT directly
-    *raises* for those requests, and the blanket except below turned that into
-    a silent user_id=None on every row written here."""
-    try:
-        from app.middleware.rbac import get_current_user
-        user = get_current_user()
-        return user.id if user else None
-    except Exception:
-        return None
 
 
 class SharedResourceService:
