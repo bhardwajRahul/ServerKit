@@ -19,6 +19,11 @@ def upgrade():
     if 'auth_version' not in columns:
         op.add_column('users', sa.Column('auth_version', sa.String(32),
                                        nullable=False, server_default='0'))
+    # The startup schema sync may have added the column ahead of us as a bare
+    # nullable TEXT (no default). A NULL auth_version can never match a token
+    # claim, which locks every existing user out — always backfill.
+    op.execute("UPDATE users SET auth_version = '0' "
+               "WHERE auth_version IS NULL OR auth_version = ''")
     if 'revoked_sessions' not in inspector.get_table_names():
         op.create_table('revoked_sessions',
                         sa.Column('session_id', sa.String(32), primary_key=True),
