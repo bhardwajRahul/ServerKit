@@ -796,6 +796,7 @@ Regenerate (backend/):
 - `POST /auth/login`
 - `POST /auth/login-links`
 - `POST /auth/login-links/redeem`
+- `POST /auth/logout`
 - `POST /auth/passkeys/authenticate`
 - `POST /auth/passkeys/options/authenticate`
 - `POST /auth/passkeys/options/register`

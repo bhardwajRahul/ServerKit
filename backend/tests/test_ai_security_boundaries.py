@@ -254,11 +254,12 @@ def test_cancelled_confirmation_does_not_create_pending_action(app):
 
 
 def test_stream_tool_rejects_logged_out_session_after_approval(app, no_pii):
-    from flask_jwt_extended import create_access_token, decode_token
+    from flask_jwt_extended import decode_token
+    from factories import access_token_for
     from app.models import RevokedSession
     with app.app_context():
         user = make_user(db, role='admin')
-        claims = decode_token(create_access_token(identity=user.id))
+        claims = decode_token(access_token_for(user))
         called = []
 
         def logout():

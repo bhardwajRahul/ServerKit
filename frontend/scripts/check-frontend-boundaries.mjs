@@ -221,25 +221,25 @@ for (const file of LEGACY_POLLERS.keys()) {
 const ADOPTION_CEILINGS = [
     {
         name: 'raw api.* calls in pages/ (E1: useServerQuery/useServerMutation)',
-        ceiling: 405,
+        ceiling: 398,
         include: (file) => file.startsWith('pages/'),
         pattern: /\bapi\s*\.\s*\w+\s*\(/g,
     },
     {
         name: 'per-page toast.error extractions in pages/ (E1: query-layer error presentation)',
-        ceiling: 218,
+        ceiling: 206,
         include: (file) => file.startsWith('pages/'),
         pattern: /toast\s*\.\s*error\s*\(/g,
     },
     {
         name: 'hand-rolled form-group blocks (F2: FormField/useForm)',
-        ceiling: 343,
+        ceiling: 321,
         include: (file) => file.startsWith('pages/') || file.startsWith('components/'),
         pattern: /form-group/g,
     },
     {
         name: 'unencoded ?k=${v} query interpolations in services/api (C4: buildQuery/encoding template)',
-        ceiling: 97,
+        ceiling: 0,
         include: (file) => file.startsWith('services/api/'),
         pattern: /[?&][A-Za-z_]+=\$\{(?!encodeURIComponent)/g,
     },

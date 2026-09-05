@@ -2,8 +2,8 @@
   "schema_version": 1,
   "policy": "Exact reviewed inventory of direct persistence, subprocess, and filesystem mutation calls in Flask API controllers. New calls are forbidden; remove entries as controllers delegate to services.",
   "counts": {
-    "filesystem": 9,
-    "persistence": 494
+    "filesystem": 8,
+    "persistence": 488
   },
   "owners": {
     "api/admin.py": {
@@ -265,14 +265,7 @@
     "api/apps.py::create_app::persistence::db.session.commit()::1",
     "api/apps.py::create_app_db_snapshot::persistence::db.session.add(snapshot)::1",
     "api/apps.py::create_app_db_snapshot::persistence::db.session.commit()::1",
-    "api/apps.py::create_app_from_repository::filesystem::shutil.rmtree(app_path, ignore_errors=True)::1",
     "api/apps.py::create_app_from_repository::persistence::Application.query.filter_by(name=name, server_id=None).first()::1",
-    "api/apps.py::create_app_from_repository::persistence::Application.query.get(app.id)::1",
-    "api/apps.py::create_app_from_repository::persistence::db.session.add(app)::1",
-    "api/apps.py::create_app_from_repository::persistence::db.session.commit()::1",
-    "api/apps.py::create_app_from_repository::persistence::db.session.commit()::2",
-    "api/apps.py::create_app_from_repository::persistence::db.session.delete(existing_app)::1",
-    "api/apps.py::create_app_from_repository::persistence::db.session.rollback()::1",
     "api/apps.py::create_manual_app::persistence::Application.query.filter_by(name=name).first()::1",
     "api/apps.py::create_manual_app::persistence::db.session.add(app)::1",
     "api/apps.py::create_manual_app::persistence::db.session.commit()::1",

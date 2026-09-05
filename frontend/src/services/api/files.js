@@ -95,7 +95,7 @@ export async function getFileTypeBreakdown(path = '/home', maxDepth = 3) {
 export async function downloadFile(path) {
     const token = this.getToken();
     const url = `${this.baseUrl}/files/download?path=${encodeURIComponent(path)}`;
-    window.open(`${url}&token=${token}`, '_blank');
+    window.open(`${url}&token=${encodeURIComponent(token)}`, '_blank');
 }
 
 export async function getFileBlob(path) {
@@ -201,7 +201,7 @@ export async function controlFTPService(action, service = null) {
 }
 
 export async function getFTPConfig(service = null) {
-    const params = service ? `?service=${service}` : '';
+    const params = service ? `?service=${encodeURIComponent(service)}` : '';
     return this.request(`/ftp/config${params}`);
 }
 
@@ -255,7 +255,7 @@ export async function disconnectFTPSession(pid) {
 }
 
 export async function getFTPLogs(lines = 100) {
-    return this.request(`/ftp/logs?lines=${lines}`);
+    return this.request(`/ftp/logs?lines=${encodeURIComponent(lines)}`);
 }
 
 export async function installFTPServer(service = 'vsftpd') {
@@ -311,7 +311,7 @@ export async function toggleWebhook(webhookId) {
 }
 
 export async function getGitWebhookLogs(webhookId, limit = 50) {
-    return this.request(`/git/webhooks/${webhookId}/logs?limit=${limit}`);
+    return this.request(`/git/webhooks/${webhookId}/logs?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function testWebhook(webhookId) {
@@ -324,7 +324,7 @@ export async function getGiteaStatus() {
 }
 
 export async function getGiteaRepositories(limit = 50) {
-    return this.request(`/git/repos?limit=${limit}`);
+    return this.request(`/git/repos?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getGiteaBranches(owner, repo) {
@@ -333,11 +333,11 @@ export async function getGiteaBranches(owner, repo) {
 
 // Git Deployments
 export async function getAppDeployments(appId, limit = 20) {
-    return this.request(`/git/deployments/app/${appId}?limit=${limit}`);
+    return this.request(`/git/deployments/app/${appId}?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getDeployment(deploymentId, includeLogs = false) {
-    return this.request(`/git/deployments/${deploymentId}?logs=${includeLogs}`);
+    return this.request(`/git/deployments/${deploymentId}?logs=${encodeURIComponent(includeLogs)}`);
 }
 
 export async function triggerGitDeploy(appId, branch = null) {
@@ -355,7 +355,7 @@ export async function rollbackDeployment(appId, targetVersion = null) {
 }
 
 export async function getWebhookDeployments(webhookId, limit = 20) {
-    return this.request(`/git/deployments/webhook/${webhookId}?limit=${limit}`);
+    return this.request(`/git/deployments/webhook/${webhookId}?limit=${encodeURIComponent(limit)}`);
 }
 
 // Domains endpoints
@@ -410,7 +410,7 @@ export async function verifyDomain(domainId) {
 // prefill the "give this a subdomain" action.
 export async function suggestSubdomain(applicationId, base) {
     const q = base ? `&base=${encodeURIComponent(base)}` : '';
-    return this.request(`/domains/suggest-subdomain?application_id=${applicationId}${q}`);
+    return this.request(`/domains/suggest-subdomain?application_id=${encodeURIComponent(applicationId)}${q}`);
 }
 
 // Base domains a site can be published under (<slug>.<base>), for the picker.
@@ -482,7 +482,7 @@ export async function runStatusCheck(compId) {
 }
 
 export async function getStatusCheckHistory(compId, hours = 24) {
-    return this.request(`/status/components/${compId}/history?hours=${hours}`);
+    return this.request(`/status/components/${compId}/history?hours=${encodeURIComponent(hours)}`);
 }
 
 export async function getStatusPageIncidents(pageId) {

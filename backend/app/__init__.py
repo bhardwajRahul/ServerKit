@@ -128,6 +128,8 @@ def create_app(config_name=None):
 
     # Initialize extensions
     db.init_app(app)
+    from app.middleware.request_profiling import register_request_profiling
+    register_request_profiling(app, db)
     migrate.init_app(app, db)
     jwt.init_app(app)
     # Storage backend comes from app.config's RATELIMIT_STORAGE_URI when set

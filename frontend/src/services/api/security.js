@@ -23,7 +23,7 @@ export async function disableFirewall(firewall = null) {
 }
 
 export async function getFirewallRules(firewall = null) {
-    const params = firewall ? `?firewall=${firewall}` : '';
+    const params = firewall ? `?firewall=${encodeURIComponent(firewall)}` : '';
     return this.request(`/firewall/rules${params}`);
 }
 
@@ -162,7 +162,7 @@ export async function getSSLHealth(domain) {
 }
 
 export async function getSSLExpiryAlerts(days = 30) {
-    return this.request(`/ssl/expiry-alerts?days=${days}`);
+    return this.request(`/ssl/expiry-alerts?days=${encodeURIComponent(days)}`);
 }
 
 // Security (ClamAV, File Integrity) endpoints
@@ -193,15 +193,15 @@ export async function checkFileIntegrity() {
 }
 
 export async function getFailedLogins(hours = 24) {
-    return this.request(`/security/failed-logins?hours=${hours}`);
+    return this.request(`/security/failed-logins?hours=${encodeURIComponent(hours)}`);
 }
 
 export async function getSecurityEvents(limit = 100) {
-    return this.request(`/security/events?limit=${limit}`);
+    return this.request(`/security/events?limit=${encodeURIComponent(limit)}`);
 }
 // SSH Key endpoints
 export async function getSSHKeys(user = 'root') {
-    return this.request(`/security/ssh-keys?user=${user}`);
+    return this.request(`/security/ssh-keys?user=${encodeURIComponent(user)}`);
 }
 
 export async function addSSHKey(key, user = 'root') {
@@ -212,7 +212,7 @@ export async function addSSHKey(key, user = 'root') {
 }
 
 export async function removeSSHKey(keyId, user = 'root') {
-    return this.request(`/security/ssh-keys/${keyId}?user=${user}`, {
+    return this.request(`/security/ssh-keys/${keyId}?user=${encodeURIComponent(user)}`, {
         method: 'DELETE'
     });
 }

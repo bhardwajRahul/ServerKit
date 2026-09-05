@@ -11,7 +11,7 @@ import pytest
 
 import app.sockets as sk
 from app import db
-from factories import make_user
+from factories import make_user, access_token_for
 
 BACKEND = Path(__file__).resolve().parents[1]
 
@@ -38,11 +38,11 @@ def _run(app, handler, data=None, sid='sid-1'):
 
 def _authed(sid='sid-1', role='developer'):
     with sk._connected_clients_lock:
-        from flask_jwt_extended import create_access_token, decode_token
+        from flask_jwt_extended import decode_token
         user = make_user(db, role=role)
         sk.connected_clients[sid] = {
             'user_id': user.id, 'role': role,
-            'claims': decode_token(create_access_token(identity=user.id)),
+            'claims': decode_token(access_token_for(user)),
         }
 
 

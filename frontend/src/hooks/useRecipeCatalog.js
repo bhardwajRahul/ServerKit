@@ -43,17 +43,4 @@ export function useRecipeCatalog() {
     };
 }
 
-// Start one recipe run. Returns the deployment job id; errors are toasted by
-// the mutation wrapper so callers can just navigate on success.
-export async function runRecipe({ startRun, toast, t }, body, { serverName }) {
-    try {
-        const result = await startRun.mutateAsync(body);
-        toast.success(t('app.recipes.started', 'Recipe started on {{server}}.', {
-            server: serverName,
-        }));
-        return result.job_id;
-    } catch (err) {
-        toast.error(err.message || t('app.recipes.startFailed', 'Could not start the recipe'));
-        return null;
-    }
-}
+export { runRecipe } from '../utils/runRecipe.js';

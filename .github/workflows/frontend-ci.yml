@@ -1,20 +1,7 @@
 name: Frontend CI
 
-# The frontend's lint gate ran nowhere until now — `npm run lint` was in
-# package.json and in CLAUDE.md, but no workflow ever invoked it. That silently
-# unenforced three project-specific checkers that exist precisely because a
-# human review keeps missing what they catch:
-#
-#   check-settings-index  every Settings tab has a search-index entry
-#   check-theme-tokens    the theme-token whitelist stays in 3-way sync
-#   check-html-sinks      every raw-HTML sink is sanitized or annotated (XSS)
-#
-# `npm run lint` and `npm test` run here. The test suite (`node --test`,
-# 141 assertions over pure-logic modules) sat invocable-but-uninvoked the
-# same way lint once did — written insurance no workflow cashed in. The
-# frontend is already COMPILED in CI by Release Build Smoke Test, whose
-# scripts/build-release.sh does `npm ci && npm run build` — adding a build
-# job here would just duplicate that.
+# Run the warning ratchet, repository integrity checks, unit tests and browser
+# regressions. Release Build Smoke Test separately compiles the production app.
 #
 # backend/app/** is in the paths because check-html-sinks scans it too (for
 # `|safe`, `Markup(`, `render_template_string`), so a backend-only commit can
@@ -52,23 +39,32 @@ jobs:
         working-directory: frontend
         run: npm ci
       - name: Lint
-        # eslint + the three checkers, chained by the package.json script.
-        # Currently 926 warnings / 0 errors, and eslint exits 0 on warnings —
-        # so this gates on errors only. If you ever want the warning count
-        # ratcheted the way backend/tests/BASELINE_COUNT ratchets test count,
-        # add --max-warnings=<N> here rather than mass-fixing in one commit.
+        # Reject errors and warning growth by file/rule, then run all integrity
+        # checks chained by package.json. Keep the baseline reviewed in Git.
         working-directory: frontend
         run: npm run lint
       - name: Unit tests
         # node --test over src/**/__tests__ — pure-logic modules, no jsdom.
         working-directory: frontend
         run: npm test
-      - name: Install browser for Settings regressions
+      - name: Install browser for regressions
         working-directory: frontend
         run: npx playwright install --with-deps chromium
       - name: Settings browser regressions
         working-directory: frontend
         run: npm run test:browser
+      - name: Shared controls browser regressions
+        working-directory: frontend
+        run: npm run test:controls
+      - name: Metrics and widget browser regressions
+        working-directory: frontend
+        run: npm run test:metrics
+      - name: Authentication and layout hooks browser regressions
+        working-directory: frontend
+        run: npm run test:hooks
+      - name: Backup request and form browser regressions
+        working-directory: frontend
+        run: npm run test:backups
       - name: Upload Settings screenshots
         if: always()
         uses: actions/upload-artifact@v4

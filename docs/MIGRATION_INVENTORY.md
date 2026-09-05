@@ -18,11 +18,11 @@ debt. Regenerate with `python scripts/generate-migration-inventory.py`.
 | API crashes swallowed without recording | app.error_reporting | 0 | 0 | INVARIANT at 0 |
 | Hand-shaped {'error': ...} bodies in app/api | typed errors + the global handler | 1141 | 1150 | migrate when touched; new endpoints raise |
 | Raw subprocess calls outside the runners | app/utils/system.py runners | 24 | 24 | migrate when touched |
-| Controller-boundary violations (routes doing service work) | service layer extraction | 503 | 503 | migrate when touched (first-wave ratchet) |
-| raw api.* calls in pages/ | E1: useServerQuery/useServerMutation | 402 | 405 | migrate when touched |
-| per-page toast.error extractions in pages/ | E1: query-layer error presentation | 209 | 218 | migrate when touched |
-| hand-rolled form-group blocks | F2: FormField/useForm | 326 | 343 | migrate when touched |
-| unencoded ?k=${v} query interpolations in services/api | C4: buildQuery/encoding template | 86 | 97 | migrate when touched |
+| Controller-boundary violations (routes doing service work) | service layer extraction | 496 | 496 | migrate when touched (first-wave ratchet) |
+| raw api.* calls in pages/ | E1: useServerQuery/useServerMutation | 398 | 398 | migrate when touched |
+| per-page toast.error extractions in pages/ | E1: query-layer error presentation | 206 | 206 | migrate when touched |
+| hand-rolled form-group blocks | F2: FormField/useForm | 321 | 321 | migrate when touched |
+| unencoded ?k=${v} query interpolations in services/api | C4: buildQuery/encoding template | 0 | 0 | INVARIANT at 0 |
 | raw setInterval pollers | E2: usePolling/refetchInterval | 7 | 7 | DELIBERATE RESIDUE: clock ticks, socket-fallback hooks, and sibling-repo extension timers - each listed per file |
 | direct navigator.clipboard call sites | F3: copyToClipboard | 0 | 0 | INVARIANT at 0 |
 | hex colour literals outside token files | G: var(--token) | 150 | 150 | migrate when touched |

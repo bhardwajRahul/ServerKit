@@ -48,7 +48,7 @@ export async function getTelemetryEventTypes(params = {}) {
 }
 
 export async function cleanupTelemetryEvents(days = 90) {
-    return this.request(`/telemetry/events?days=${days}`, { method: 'DELETE' });
+    return this.request(`/telemetry/events?days=${encodeURIComponent(days)}`, { method: 'DELETE' });
 }
 
 export async function emitTestTelemetryEvent(data = {}) {

@@ -1,10 +1,10 @@
 """Socket authorization must hold both when joining and during delivery."""
 import pytest
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_refresh_token
 
 from app import sockets as sk
 from app.models.deployment_job import DeploymentJob
-from factories import make_user, make_application, headers_for
+from factories import make_user, make_application, headers_for, access_token_for
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def clients(app):
 
     def connect(user=None, token=None):
         client = sk.socketio.test_client(app, auth={
-            'token': token or create_access_token(identity=user.id),
+            'token': token or access_token_for(user),
         })
         opened.append(client)
         if client.is_connected():
@@ -30,11 +30,11 @@ def clients(app):
 def test_socket_rejects_non_session_tokens(db_session, clients, kind):
     user = make_user(db_session, role='admin')
     if kind == 'pending':
-        token = create_access_token(identity=user.id, additional_claims={'2fa_pending': True})
+        token = access_token_for(user, additional_claims={'2fa_pending': True})
     elif kind == 'refresh':
         token = create_refresh_token(identity=user.id)
     else:
-        token = create_access_token(identity=user.id, expires_delta=False)
+        token = access_token_for(user, expires_delta=False)
     assert not clients(token=token).is_connected()
 
 
@@ -208,7 +208,7 @@ def test_run_polling_cannot_bypass_socket_gate(client, db_session):
 
 def test_logout_revokes_existing_socket(client, db_session, clients):
     user = make_user(db_session)
-    token = create_access_token(identity=user.id)
+    token = access_token_for(user)
     sock = clients(token=token)
     response = client.post('/api/v1/auth/logout', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200

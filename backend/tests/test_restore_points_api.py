@@ -437,8 +437,10 @@ def test_deleted_and_inactive_jwt_users_fail_closed_on_get(
     response = client.get(
         f'/api/v1/restore-points/{point.id}', headers=inactive_headers,
     )
-    assert response.status_code == 403
-    assert response.get_json()['error'] == 'Account is deactivated'
+    # Session validation rejects inactive/deleted identities before the route's
+    # resource policy runs. They no longer carry authenticated credentials.
+    assert response.status_code == 401
+    assert response.get_json()['msg'] == 'Token has been revoked'
 
     deleted = make_user(db_session, role='developer')
     deleted_headers = headers_for(deleted)
@@ -447,8 +449,8 @@ def test_deleted_and_inactive_jwt_users_fail_closed_on_get(
     response = client.get(
         f'/api/v1/restore-points/{point.id}', headers=deleted_headers,
     )
-    assert response.status_code == 403
-    assert response.get_json()['error'] == 'Authenticated user not found'
+    assert response.status_code == 401
+    assert response.get_json()['msg'] == 'Token has been revoked'
 
 
 def test_developer_api_key_reaches_policy_guarded_post(

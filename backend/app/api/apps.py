@@ -4,7 +4,6 @@
 import os
 import json
 import re
-import shutil
 from datetime import datetime
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -21,7 +20,7 @@ from app.services.source_connection_service import SourceConnectionService
 from app.services.remote_docker_service import RemoteDockerService
 from app.services.container_registry_service import ContainerRegistryService
 from app.services.image_update_service import ImageUpdateService
-from app.services import container_status_service, application_lifecycle_service
+from app.services import container_status_service, application_lifecycle_service, repository_application_service
 from app.services.application_lifecycle_service import (
     _compose_target, _local_compose_file, _agent_result_failed,
     _agent_result_error, _assert_managed_app_path,
@@ -854,92 +853,36 @@ def create_app_from_repository():
     )
 
     try:
-        db.session.add(app)
-        db.session.commit()
-
-        deploy_result = GitService.configure_deployment(
-            app_id=app.id,
-            app_path=app.root_path,
-            repo_url=deploy_repo_url,
-            branch=branch or 'main',
-            auto_deploy=auto_deploy,
+        created = repository_application_service.finalize_repository_application(
+            app, user_id=user.id, repo_url=deploy_repo_url, branch=branch or 'main',
+            auto_deploy=auto_deploy, manifest=manifest,
+            build_options={
+                'build_method': resolved_build_method,
+                'dockerfile_path': dockerfile_path,
+                'custom_build_cmd': custom_build_cmd,
+                'custom_start_cmd': custom_start_cmd,
+                'buildpack_plan': buildpack_plan,
+                'buildpack_overrides': buildpack_overrides,
+            },
         )
-        if not deploy_result.get('success'):
-            raise RuntimeError(deploy_result.get('error', 'Failed to configure deployment'))
-
-        build_result = BuildService.configure_build(
-            app_id=app.id,
-            app_path=app.root_path,
-            build_method=resolved_build_method,
-            dockerfile_path=dockerfile_path,
-            custom_build_cmd=custom_build_cmd,
-            custom_start_cmd=custom_start_cmd,
-            buildpack_plan=buildpack_plan,
-            buildpack_overrides=buildpack_overrides,
-        )
-        if not build_result.get('success'):
-            raise RuntimeError(build_result.get('error', 'Failed to configure build'))
-
-        # Stop dropping what we detect: persist the manifest, seed non-secret
-        # env values, and record the health-check path (plan 17, Phase 1).
-        manifest_summary = None
-        try:
-            from app.services.manifest_persistence_service import ManifestPersistenceService
-            manifest_summary = ManifestPersistenceService.apply_import(
-                app, manifest, user_id=user.id,
-                source_repo=deploy_repo_url, source_ref=branch or 'main',
-            )
-        except Exception:
-            manifest_summary = None
-
-        # Actually deploy + start the service: hand it to the same observable
-        # DeploymentJob pipeline template installs use (kind 'app_deploy' →
-        # unified job 'deploy.app' → DeploymentService.deploy). A queue failure
-        # must NOT fail app creation — the service stays 'stopped' and the user
-        # can deploy manually from the Builds tab.
-        deploy_job_id = None
-        try:
-            from app.services.deployment_job_service import DeploymentJobService
-            enqueue_result = DeploymentJobService.enqueue_app_deploy(
-                app, user_id=user.id, trigger='install')
-            if enqueue_result.get('success'):
-                deploy_job_id = enqueue_result.get('job_id')
-            else:
-                current_app.logger.warning(
-                    'app deploy enqueue failed for app %s: %s',
-                    app.id, enqueue_result.get('error'))
-        except Exception as exc:
-            current_app.logger.warning(
-                'app deploy enqueue failed for app %s: %s', app.id, exc)
 
         return jsonify({
             'message': 'Repository service created',
             'app': _attach_deploy_config(app.to_dict(include_linked=True)),
-            'deploy_job_id': deploy_job_id,
-            'manifest_import': manifest_summary,
+            'deploy_job_id': created['deploy_job_id'],
+            'manifest_import': created['manifest_import'],
             'deploy_config': {
                 'repo_url': _safe_repo_url(deploy_repo_url),
                 'branch': branch or 'main',
                 'auto_deploy': auto_deploy,
-                'webhook_url': deploy_result.get('webhook_url'),
+                'webhook_url': created['deploy_result'].get('webhook_url'),
             },
-            'build_config': build_result.get('config'),
+            'build_config': created['build_config'],
             'detection': detection,
             'manifest': manifest,
         }), 201
     except Exception as exc:
-        db.session.rollback()
-        if app.id:
-            GitService.remove_deployment(app.id)
-            # Unwinding a create that failed, not deleting an app someone made:
-            # a hard delete (no query_active, no tombstone) is what belongs
-            # here — a half-created service must not land in the recycle bin.
-            existing_app = Application.query.get(app.id)
-            if existing_app:
-                db.session.delete(existing_app)
-                db.session.commit()
-        if os.path.abspath(app_path).startswith(os.path.abspath(paths.APPS_DIR) + os.sep):
-            shutil.rmtree(app_path, ignore_errors=True)
+        repository_application_service.abort_repository_creation(app)
         return jsonify({'error': str(exc)}), 400
 
 

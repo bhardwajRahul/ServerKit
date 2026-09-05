@@ -268,7 +268,7 @@ export async function exportEnvFile(appId, includeSecrets = true) {
 }
 
 export async function getEnvVarHistory(appId, limit = 50) {
-    return this.request(`/apps/${appId}/env/history?limit=${limit}`);
+    return this.request(`/apps/${appId}/env/history?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function clearEnvVars(appId) {
@@ -285,7 +285,7 @@ export async function getComposeServices(appId) {
 
 // Docker App Logs and Status
 export async function getDockerAppLogs(appId, lines = 100) {
-    return this.request(`/apps/${appId}/logs?lines=${lines}`);
+    return this.request(`/apps/${appId}/logs?lines=${encodeURIComponent(lines)}`);
 }
 
 export async function getDockerAppStatus(appId) {
@@ -492,7 +492,7 @@ export async function triggerBuild(appId, noCache = false) {
 }
 
 export async function getBuildLogs(appId, limit = 20) {
-    return this.request(`/builds/apps/${appId}/build-logs?limit=${limit}`);
+    return this.request(`/builds/apps/${appId}/build-logs?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getBuildLogDetail(appId, timestamp) {
@@ -511,11 +511,11 @@ export async function deployApp(appId, options = {}) {
 }
 
 export async function getDeployments(appId, limit = 20, offset = 0) {
-    return this.request(`/builds/apps/${appId}/deployments?limit=${limit}&offset=${offset}`);
+    return this.request(`/builds/apps/${appId}/deployments?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`);
 }
 
 export async function getDeploymentDetail(deploymentId, includeLogs = false) {
-    return this.request(`/builds/deployments/${deploymentId}?include_logs=${includeLogs}`);
+    return this.request(`/builds/deployments/${deploymentId}?include_logs=${encodeURIComponent(includeLogs)}`);
 }
 
 export async function getDeploymentDiff(deploymentId) {

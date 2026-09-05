@@ -264,6 +264,26 @@ class TestFromRepositoryDeployWiring:
         assert res.status_code == 201
         assert res.get_json()['deploy_job_id'] is None
 
+    @pytest.mark.parametrize('stage', ['deployment', 'build'])
+    def test_setup_failure_unwinds_committed_app(self, app, client, auth_headers, monkeypatch, stage):
+        from unittest.mock import Mock
+        from app.models import Application
+        from app.services.git_service import GitService
+        from app.services.build_service import BuildService
+        self._mock_create_stack(monkeypatch, enqueue_result={'success': True, 'job_id': 'unused'})
+        cleanup = Mock()
+        monkeypatch.setattr(GitService, 'remove_deployment', cleanup)
+        service, method = ((GitService, 'configure_deployment') if stage == 'deployment'
+                           else (BuildService, 'configure_build'))
+        monkeypatch.setattr(service, method, Mock(return_value={'success': False, 'error': 'setup rejected'}))
+        res = client.post('/api/v1/apps/from-repository', headers=auth_headers, json={
+            'name': 'repo-failed', 'repo_url': 'https://github.com/acme/repo-failed.git',
+        })
+        assert res.status_code == 400
+        assert res.get_json()['error'] == 'setup rejected'
+        assert Application.query.filter_by(name='repo-failed').first() is None
+        cleanup.assert_called_once()
+
 
 class TestListJobsAppIdFilter:
     def test_service_filter(self, app):

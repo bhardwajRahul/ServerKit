@@ -11,20 +11,20 @@ import pytest
 from app import db
 from app.models import Application, Domain
 from app.services.domain_attach_service import DomainAttachService
+from factories import make_application
 
 
 @pytest.fixture
 def deleted_domain(app):
     with app.app_context():
-        application = Application(name='shop', app_type='docker', port=8001, user_id=1)
-        db.session.add(application)
-        db.session.flush()
+        application = make_application(db, name='shop', port=8001)
         gone = Domain(name='old.example.com', application_id=application.id, is_primary=True)
         db.session.add(gone)
         db.session.commit()
         gone.soft_delete()
         db.session.commit()
-        yield {'app_id': application.id, 'domain_id': gone.id, 'name': gone.name}
+        yield {'app_id': application.id, 'user_id': application.user_id,
+               'domain_id': gone.id, 'name': gone.name}
 
 
 def test_app_payload_hides_deleted_domains(app, deleted_domain):
@@ -42,9 +42,8 @@ def test_a_deleted_name_is_not_a_clash(app, deleted_domain):
     """Migration 083 made the unique index partial so deleting frees the name.
     An application-level clash check must not re-impose the burn."""
     with app.app_context():
-        other = Application(name='other', app_type='docker', port=8002, user_id=1)
-        db.session.add(other)
-        db.session.commit()
+        make_application(db, name='other', port=8002,
+                         user_id=deleted_domain['user_id'])
 
         clash = Domain.query_active().filter_by(name=deleted_domain['name']).first()
         assert clash is None, 'a tombstone still blocks the name for another app'

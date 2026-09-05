@@ -3,14 +3,14 @@
 from datetime import datetime, timedelta, timezone
 import pytest
 from flask import g
-from flask_jwt_extended import create_access_token, verify_jwt_in_request
+from flask_jwt_extended import verify_jwt_in_request
 
 from app.services.cf_ops_change_service import CfOpsChangeService
 from app.services.connect_format import iso_datetime
 from app.services.resource_tier_service import ResourceTierService
 from app.services.shared_resource_service import _current_user_id
 from app.utils.actor import current_actor_id
-from factories import make_user
+from factories import make_user, headers_for
 
 
 @pytest.mark.parametrize('lookup', [current_actor_id, _current_user_id, CfOpsChangeService._current_user_id])
@@ -23,7 +23,7 @@ def test_shared_actor_preserves_authenticated_owner(app, db_session, kind):
     user = make_user(db_session, role='admin', username=f'actor-{kind}')
     headers = {}
     if kind == 'jwt':
-        headers['Authorization'] = f'Bearer {create_access_token(identity=str(user.id))}'
+        headers = headers_for(str(user.id))
     with app.test_request_context(headers=headers):
         if kind == 'jwt':
             verify_jwt_in_request()

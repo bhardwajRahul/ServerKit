@@ -39,11 +39,16 @@ def make_user(db, username=None, role='developer', password='x', **overrides):
     return user
 
 
-def headers_for(user):
-    """JWT auth headers for a User row (or a raw user id)."""
+def access_token_for(user, **token_options):
+    """Mint through one door, allowing explicit malformed/expired test claims."""
     from flask_jwt_extended import create_access_token
     user_id = getattr(user, 'id', user)
-    return {'Authorization': f'Bearer {create_access_token(identity=user_id)}'}
+    return create_access_token(identity=user_id, **token_options)
+
+
+def headers_for(user, **token_options):
+    """JWT auth headers for a User row (or a raw user id)."""
+    return {'Authorization': f'Bearer {access_token_for(user, **token_options)}'}
 
 
 def make_workspace(db, name='ws', created_by=None, **overrides):

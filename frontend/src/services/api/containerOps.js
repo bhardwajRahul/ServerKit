@@ -66,7 +66,7 @@ export async function applyWaf(appId) {
 }
 
 export async function getWafEvents(appId, limit = 50) {
-    return this.request(`/waf/applications/${appId}/events?limit=${limit}`);
+    return this.request(`/waf/applications/${appId}/events?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getWafStatus() {

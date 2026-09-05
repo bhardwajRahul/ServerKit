@@ -165,9 +165,9 @@ def test_detach_requires_group_and_target_write(client, sr_rbac):
 def test_create_group_requires_scope_write(client, sr_rbac):
     s = sr_rbac.s
     body = {'scope_type': 'workspace', 'scope_id': str(s.ws_id), 'name': 'New'}
-    assert client.post(G, json=body, headers=s.member).status_code == 201
-    assert client.post(G, json=body, headers=s.viewer).status_code == 403
-    assert client.post(G, json=body, headers=s.foreign).status_code == 403
+    for persona, status in [('member', 201), ('viewer', 403), ('foreign', 403)]:
+        response = client.post(G, json=body, headers=getattr(s, persona))
+        assert response.status_code == status, (persona, response.get_json())
 
 
 def test_create_group_application_scope_foreign_denied(client, sr_rbac):

@@ -116,8 +116,9 @@ def test_appless_job_detail_requester_or_admin(client, job_rbac):
     """An app-less job belongs to its requester (or a panel admin)."""
     s = job_rbac.s
     url = f'/api/v1/deployment-jobs/{job_rbac.owner_job_id}'
-    assert client.get(url, headers=s.owner).status_code == 200
-    assert client.get(url, headers=s.admin).status_code == 200
+    for headers in (s.owner, s.admin):
+        response = client.get(url, headers=headers)
+        assert response.status_code == 200, response.get_json()
     for persona in ('member', 'viewer', 'foreign'):
         assert client.get(url, headers=getattr(s, persona)).status_code == 403, persona
 

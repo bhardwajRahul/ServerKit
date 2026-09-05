@@ -17,7 +17,7 @@ export async function getDeploymentJob(jobId, includeLogs = true, includePlan = 
 }
 
 export async function getDeploymentJobLogs(jobId, afterId = null) {
-    const suffix = afterId ? `?after_id=${afterId}` : '';
+    const suffix = afterId ? `?after_id=${encodeURIComponent(afterId)}` : '';
     return this.request(`/deployment-jobs/${jobId}/logs${suffix}`);
 }
 

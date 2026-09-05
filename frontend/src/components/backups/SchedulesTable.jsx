@@ -108,14 +108,15 @@ export default function SchedulesTable({
             headerKey: 'app.schedulesTable.next', header: 'Next',
             sortable: true,
             sortValue: (s) => {
-                const next = s.enabled ? nextFire(s, now) : null;
+                const next = nextFire(s);
                 return next ? next.getTime() : null;
             },
             cellClassName: 'sk-cell-mono',
             render: (schedule) => {
-                const next = schedule.enabled ? nextFire(schedule, now) : null;
+                const next = nextFire(schedule);
+                if (schedule.schedule_error) return <span title={schedule.schedule_error}>{t('app.schedulesTable.invalidSchedule', 'Invalid schedule')}</span>;
                 return schedule.enabled
-                    ? (next ? untilLabel(next, now) : '—')
+                    ? (next ? <span title={schedule.next_run_at}>{untilLabel(next, now)}</span> : '—')
                     : <span className="bk-paused">paused</span>;
             },
         },

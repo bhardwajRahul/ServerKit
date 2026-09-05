@@ -1,0 +1,59 @@
+import { useTranslation } from 'react-i18next';
+import Modal from '@/components/Modal';
+import { FormField } from '@/components/FormField';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import useForm from '@/hooks/useForm';
+
+export default function AddScheduleModal({ open, onClose, onCreate, onCreated, remoteEnabled, timezone }) {
+    const { t } = useTranslation();
+    const form = useForm({
+        initialValues: { name: '', backupType: 'application', target: '', scheduleTime: '02:00', days: ['daily'], uploadRemote: false },
+        onSubmit: async (values) => {
+            await onCreate(values);
+            form.reset();
+            onCreated();
+        },
+    });
+    const targetLabel = form.values.backupType === 'files'
+        ? t('app.backups.schedulePaths', 'Paths (comma-separated)')
+        : form.values.backupType === 'database'
+            ? t('app.backups.scheduleDatabase', 'Database (format: mysql:dbname or postgresql:dbname)')
+            : t('app.backups.applicationName', 'Application Name');
+
+    return (
+        <Modal open={open} onClose={() => { if (!form.isSubmitting) onClose(); }} title={t('app.backups.addBackupSchedule', 'Add Backup Schedule')}>
+            <form onSubmit={form.handleSubmit} data-walkthrough="backup-schedule-form">
+                {form.submitError && <p className="error-message" role="alert">{form.submitError}</p>}
+                <FormField htmlFor="backup-schedule-name" label={t('app.backups.scheduleName', 'Schedule Name')} error={form.getFieldError('name')} required>
+                    <Input id="backup-schedule-name" type="text" {...form.getFieldProps('name')} placeholder={t('app.backups.dailyAppBackup', 'Daily App Backup')} required />
+                </FormField>
+                <FormField htmlFor="backup-schedule-type" label={t('app.backups.backupType', 'Backup Type')} error={form.getFieldError('backupType')}>
+                    <select id="backup-schedule-type" {...form.getFieldProps('backupType')}>
+                        <option value="application">{t('app.backups.application', 'Application')}</option>
+                        <option value="database">{t('app.backups.database', 'Database')}</option>
+                        <option value="files">{t('app.backups.filesDirectories', 'Files / Directories')}</option>
+                    </select>
+                </FormField>
+                <FormField htmlFor="backup-schedule-target" label={targetLabel} error={form.getFieldError('target')} required>
+                    <Input id="backup-schedule-target" type="text" {...form.getFieldProps('target')} placeholder={form.values.backupType === 'files' ? '/etc/nginx,/var/www/config' : form.values.backupType === 'database' ? 'mysql:mydb' : 'my-app'} required />
+                </FormField>
+                <FormField htmlFor="backup-schedule-time" label={t('common.labels.time', 'Time')} error={form.getFieldError('scheduleTime')} hint={timezone} required>
+                    <Input id="backup-schedule-time" type="time" {...form.getFieldProps('scheduleTime')} required />
+                </FormField>
+                {remoteEnabled && (
+                    <FormField>
+                        <label className="checkbox-label">
+                            <input type="checkbox" name="uploadRemote" checked={form.values.uploadRemote} onChange={form.handleChange} />
+                            <span>{t('app.backups.uploadToRemoteStorageAfterBackup', 'Upload to remote storage after backup')}</span>
+                        </label>
+                    </FormField>
+                )}
+                <div className="modal-actions">
+                    <Button type="button" variant="outline" onClick={onClose} disabled={form.isSubmitting}>{t('common.actions.cancel', 'Cancel')}</Button>
+                    <Button type="submit" disabled={form.isSubmitting} data-walkthrough="backup-schedule-submit">{t('app.backups.addSchedule', 'Add Schedule')}</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+}

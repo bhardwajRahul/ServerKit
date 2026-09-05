@@ -249,7 +249,7 @@ export default function BackupsOverview({
     const nextScheduled = (() => {
         const upcoming = (schedules || [])
             .filter((s) => s.enabled !== false)
-            .map((s) => ({ schedule: s, at: nextFire(s, now) }))
+            .map((s) => ({ schedule: s, at: nextFire(s) }))
             .filter((x) => x.at)
             .sort((a, b) => a.at - b.at);
         return upcoming[0] || null;
@@ -301,8 +301,8 @@ export default function BackupsOverview({
                     <div className="sk-kpi__sub">
                         <span>
                             {nextScheduled
-                                ? `${nextScheduled.schedule.name || 'schedule'} · ${nextScheduled.schedule.schedule_time}`
-                                : 'no enabled schedules'}
+                                ? `${nextScheduled.schedule.name || 'schedule'} · ${[nextScheduled.schedule.schedule_time, nextScheduled.schedule.timezone].filter(Boolean).join(' ')}`
+                                : t('app.backupsOverview.noScheduledRun', 'no scheduled run reported')}
                         </span>
                     </div>
                 </MetricCard>

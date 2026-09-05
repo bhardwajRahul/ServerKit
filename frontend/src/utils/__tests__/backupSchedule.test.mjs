@@ -2,41 +2,40 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { nextFire, untilLabel, frequencyLabel } from '../backupSchedule.js';
 
-test('daily schedules use one clock and roll an elapsed slot across midnight', () => {
-    const now = new Date(2026, 8, 5, 23, 45);
-    const next = nextFire({ schedule_time: '00:15' }, now);
-    assert.equal(next.getDate(), 6);
-    assert.equal(untilLabel(next, now), 'in 30m');
-    assert.equal(now.getDate(), 5);
-    assert.equal(nextFire({ schedule_time: '23:45' }, now).getDate(), 6);
-});
-
-test('weekly schedules accept full and abbreviated weekdays, including next week', () => {
-    const now = new Date(2026, 8, 5, 12); // Saturday
-    assert.equal(nextFire({ schedule_time: '13:00', days: ['Saturday'] }, now).getDate(), 5);
-    assert.equal(nextFire({ schedule_time: '11:00', days: ['sat'] }, now).getDate(), 12);
-    assert.equal(frequencyLabel({ schedule_time: '02:00', days: ['sunday'] }), 'Weekly · Sun 02:00');
-});
-
-test('malformed schedules cannot silently normalize into a different run time', () => {
-    const now = new Date(2026, 8, 5);
-    for (const schedule_time of ['', '12', ':30', '24:00', '12:60', '-1:00', '12:30:00']) {
-        assert.equal(nextFire({ schedule_time }, now), null, schedule_time);
-    }
-    assert.equal(nextFire({ schedule_time: '12:30', days: ['noday'] }, now), null);
-    assert.equal(nextFire({ schedule_time: '12:30' }, new Date(NaN)), null);
-});
-
-test('spring-forward skips a wall-clock slot the server cannot execute', () => {
+test('countdowns use the authoritative instant across browser timezones', () => {
     const previous = process.env.TZ;
-    process.env.TZ = 'America/New_York';
     try {
-        const now = new Date(2026, 2, 8, 0);
-        const next = nextFire({ schedule_time: '02:30', days: ['daily'] }, now);
-        assert.equal(next.getDate(), 9);
-        assert.equal(next.getHours(), 2);
+        for (const zone of ['UTC', 'America/Los_Angeles', 'Asia/Tokyo']) {
+            process.env.TZ = zone;
+            const next = nextFire({ schedule_time: '02:00', timezone: 'America/New_York', next_run_at: '2026-09-06T02:00:00-04:00' });
+            assert.equal(next.toISOString(), '2026-09-06T06:00:00.000Z');
+            assert.equal(untilLabel(next, new Date('2026-09-06T05:30:00Z')), 'in 30m');
+        }
     } finally {
         if (previous === undefined) delete process.env.TZ;
         else process.env.TZ = previous;
     }
+});
+
+test('unknown, invalid, disabled and timezone-less next runs are never guessed', () => {
+    for (const next_run_at of [undefined, null, '', 'invalid', '2026-09-06T02:00:00', 1788650000]) {
+        assert.equal(nextFire({ schedule_time: '02:00', next_run_at }), null);
+    }
+    const next_run_at = '2026-09-06T02:00:00Z';
+    assert.equal(nextFire({ enabled: false, next_run_at }), null);
+    assert.equal(nextFire({ schedule_error: 'Invalid time', next_run_at }), null);
+    assert.equal(nextFire({ enabled: true, next_run_at: null }), null); // Global pause.
+});
+
+test('DST folds use the backend offset and due slots do not move to tomorrow', () => {
+    const first = nextFire({ next_run_at: '2026-11-01T01:30:00-04:00' });
+    const second = nextFire({ next_run_at: '2026-11-01T01:30:00-05:00' });
+    assert.equal(second - first, 3600000);
+    assert.equal(untilLabel(first, first), 'due now');
+    assert.equal(untilLabel(first, second), 'due now');
+});
+
+test('frequency labels retain the server wall time and state its timezone', () => {
+    assert.equal(frequencyLabel({ schedule_time: '02:00', timezone: 'America/New_York' }), 'Daily · 02:00 America/New_York');
+    assert.equal(frequencyLabel({ schedule_time: '02:00', days: ['sunday'] }), 'Weekly · Sun 02:00');
 });

@@ -21,6 +21,8 @@ import {
 } from '@/components/ds/grid';
 import BackupsOverview from '../components/backups/BackupsOverview';
 import SchedulesTable from '../components/backups/SchedulesTable';
+import AddScheduleModal from '../components/backups/AddScheduleModal';
+import { useBackupSchedules } from '../hooks/useBackupSchedules';
 import StorageDestinations from '../components/backups/StorageDestinations';
 import { useTopbarActions, useTopbarChrome } from '@/hooks/useTopbarActions';
 import { useTableSort } from '@/hooks/useTableSort';
@@ -127,7 +129,8 @@ const Backups = () => {
     const { confirm } = useConfirm();
     const [backups, setBackups] = useState([]);
     const [stats, setStats] = useState(null);
-    const [schedules, setSchedules] = useState([]);
+    const scheduleStore = useBackupSchedules();
+    const { schedules, refresh: reloadSchedules } = scheduleStore;
     const [config, setConfig] = useState(null);
     const [storageConfig, setStorageConfig] = useState(null);
     const [costSummary, setCostSummary] = useState(null);
@@ -169,16 +172,6 @@ const Backups = () => {
         fileName: ''
     });
 
-    // Schedule form state
-    const [scheduleForm, setScheduleForm] = useState({
-        name: '',
-        backupType: 'application',
-        target: '',
-        scheduleTime: '02:00',
-        days: ['daily'],
-        uploadRemote: false
-    });
-
     // Config form state
     const [configForm, setConfigForm] = useState({
         enabled: false,
@@ -198,17 +191,12 @@ const Backups = () => {
         keep_local_copy: true
     });
 
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    const loadData = async () => {
+    const loadData = useCallback(async ({ refreshSchedules = true } = {}) => {
         try {
             setLoading(true);
-            const [backupsRes, statsRes, schedulesRes, configRes, appsRes, storageRes, costRes, ratesRes] = await Promise.all([
+            const [backupsRes, statsRes, configRes, appsRes, storageRes, costRes, ratesRes] = await Promise.all([
                 api.getBackups(),
                 api.getBackupStats(),
-                api.getBackupSchedules(),
                 api.getBackupConfig(),
                 api.getApps(),
                 api.getStorageConfig().catch(() => null),
@@ -218,8 +206,8 @@ const Backups = () => {
 
             setBackups(backupsRes.backups || []);
             setStats(statsRes);
-            setSchedules(schedulesRes.schedules || []);
             setConfig(configRes);
+            if (refreshSchedules) await reloadSchedules();
             // GET /apps responds { apps: [...] } — reading `.applications` here
             // silently produced [] on every load, so the app picker in the
             // backup dialogs was permanently empty.
@@ -250,7 +238,11 @@ const Backups = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [reloadSchedules]);
+
+    useEffect(() => {
+        loadData({ refreshSchedules: false });
+    }, [loadData]);
 
     const handleCreateBackup = async (e) => {
         e.preventDefault();
@@ -342,49 +334,18 @@ const Backups = () => {
         }
     };
 
-    const handleAddSchedule = async (e) => {
-        e.preventDefault();
-        try {
-            await api.addBackupSchedule(
-                scheduleForm.name,
-                scheduleForm.backupType,
-                scheduleForm.target,
-                scheduleForm.scheduleTime,
-                scheduleForm.days,
-                scheduleForm.uploadRemote
-            );
-            toast.success(t('app.backups.scheduleAdded', 'Schedule added'));
-            window.dispatchEvent(new CustomEvent('serverkit:walkthrough-signal', {
-                detail: { type: 'backup-schedule-created' },
-            }));
-            setShowScheduleModal(false);
-            resetScheduleForm();
-            loadData();
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
-
-    const handleToggleSchedule = async (schedule) => {
-        try {
-            await api.updateBackupSchedule(schedule.id, { enabled: !schedule.enabled });
-            toast.success(t('app.backups.schedule', 'Schedule {{value}}', { value: schedule.enabled ? 'disabled' : 'enabled' }));
-            loadData();
-        } catch (err) {
-            toast.error(err.message);
-        }
+    const handleScheduleCreated = () => {
+        toast.success(t('app.backups.scheduleAdded', 'Schedule added'));
+        window.dispatchEvent(new CustomEvent('serverkit:walkthrough-signal', {
+            detail: { type: 'backup-schedule-created' },
+        }));
+        setShowScheduleModal(false);
     };
 
     const handleRemoveSchedule = async (scheduleId) => {
         const confirmed = await confirm({ title: t('app.backups.removeSchedule', 'Remove Schedule'), message: t('app.backups.areYouSureYouWantTo5', 'Are you sure you want to remove this schedule?') });
         if (!confirmed) return;
-        try {
-            await api.removeBackupSchedule(scheduleId);
-            toast.success(t('app.backups.scheduleRemoved', 'Schedule removed'));
-            loadData();
-        } catch (err) {
-            toast.error(err.message);
-        }
+        await scheduleStore.remove(scheduleId);
     };
 
     const handleSaveConfig = async (e) => {
@@ -468,17 +429,6 @@ const Backups = () => {
             dbHost: 'localhost',
             filePaths: '',
             fileName: ''
-        });
-    };
-
-    const resetScheduleForm = () => {
-        setScheduleForm({
-            name: '',
-            backupType: 'application',
-            target: '',
-            scheduleTime: '02:00',
-            days: ['daily'],
-            uploadRemote: false
         });
     };
 
@@ -858,7 +808,7 @@ const Backups = () => {
                             schedules={schedules}
                             retentionDays={config?.retention_days || 30}
                             remoteLabel={PROVIDER_LABELS[storageConfig?.provider] || 'Local disk'}
-                            onToggle={handleToggleSchedule}
+                            onToggle={scheduleStore.toggle}
                             onRemove={handleRemoveSchedule}
                         />
                     )}
@@ -1315,86 +1265,14 @@ const Backups = () => {
                         </form>
             </Modal>
 
-            {/* Add Schedule Modal */}
-            <Modal open={showScheduleModal} onClose={() => setShowScheduleModal(false)} title={t('app.backups.addBackupSchedule', 'Add Backup Schedule')}>
-                        <form onSubmit={handleAddSchedule} data-walkthrough="backup-schedule-form">
-                                <div className="form-group">
-                                    <label>{t('app.backups.scheduleName', 'Schedule Name')}</label>
-                                    <Input
-                                        type="text"
-                                        value={scheduleForm.name}
-                                        onChange={(e) => setScheduleForm({...scheduleForm, name: e.target.value})}
-                                        placeholder={t('app.backups.dailyAppBackup', 'Daily App Backup')}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t('app.backups.backupType', 'Backup Type')}</label>
-                                    <select
-                                        value={scheduleForm.backupType}
-                                        onChange={(e) => setScheduleForm({...scheduleForm, backupType: e.target.value})}
-                                    >
-                                        <option value="application">{t('app.backups.application', 'Application')}</option>
-                                        <option value="database">{t('app.backups.database', 'Database')}</option>
-                                        <option value="files">{t('app.backups.filesDirectories', 'Files / Directories')}</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label>
-                                        {scheduleForm.backupType === 'files'
-                                            ? 'Paths (comma-separated)'
-                                            : scheduleForm.backupType === 'database'
-                                            ? 'Database (format: mysql:dbname or postgresql:dbname)'
-                                            : 'Application Name'
-                                        }
-                                    </label>
-                                    <Input
-                                        type="text"
-                                        value={scheduleForm.target}
-                                        onChange={(e) => setScheduleForm({...scheduleForm, target: e.target.value})}
-                                        placeholder={
-                                            scheduleForm.backupType === 'files'
-                                                ? '/etc/nginx,/var/www/config'
-                                                : scheduleForm.backupType === 'database'
-                                                ? 'mysql:mydb'
-                                                : 'my-app'
-                                        }
-                                        required
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label>{t('common.labels.time', 'Time')}</label>
-                                    <Input
-                                        type="time"
-                                        value={scheduleForm.scheduleTime}
-                                        onChange={(e) => setScheduleForm({...scheduleForm, scheduleTime: e.target.value})}
-                                        required
-                                    />
-                                </div>
-
-                                {storageConfig?.provider !== 'local' && (
-                                    <div className="form-group">
-                                        <label className="checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={scheduleForm.uploadRemote}
-                                                onChange={(e) => setScheduleForm({...scheduleForm, uploadRemote: e.target.checked})}
-                                            />
-                                            <span>{t('app.backups.uploadToRemoteStorageAfterBackup', 'Upload to remote storage after backup')}</span>
-                                        </label>
-                                    </div>
-                                )}
-                            <div className="modal-actions">
-                                <Button type="button" variant="outline" onClick={() => setShowScheduleModal(false)}>
-                                    {t('common.actions.cancel', 'Cancel')}
-                                </Button>
-                                <Button type="submit" data-walkthrough="backup-schedule-submit">{t('app.backups.addSchedule', 'Add Schedule')}</Button>
-                            </div>
-                        </form>
-            </Modal>
+            <AddScheduleModal
+                open={showScheduleModal}
+                onClose={() => setShowScheduleModal(false)}
+                onCreate={scheduleStore.create}
+                onCreated={handleScheduleCreated}
+                remoteEnabled={Boolean(storageConfig?.provider && storageConfig.provider !== 'local')}
+                timezone={scheduleStore.timezone || schedules[0]?.timezone}
+            />
 
             {/* Restore Modal */}
             <Modal open={showRestoreModal && !!selectedBackup} onClose={() => setShowRestoreModal(false)} title={t('app.backups.restoreBackup', 'Restore Backup')}>

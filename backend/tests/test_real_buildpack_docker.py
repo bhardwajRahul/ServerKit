@@ -74,7 +74,9 @@ def _deploy_and_probe(repo_path, expect_language, expect_framework=None,
     build = subprocess.run(
         ['docker', 'build', '-f', str(repo_path / 'Dockerfile.serverkit'),
          '-t', tag, str(repo_path)],
-        capture_output=True, text=True, timeout=600,
+        # Docker emits UTF-8 build logs even when Windows uses a legacy locale.
+        capture_output=True, text=True, encoding='utf-8', errors='replace',
+        timeout=600,
     )
     try:
         assert build.returncode == 0, (
@@ -87,13 +89,15 @@ def _deploy_and_probe(repo_path, expect_language, expect_framework=None,
         run = subprocess.run(
             ['docker', 'run', '-d', '--rm', '--name', tag,
              '-p', f'127.0.0.1:0:{port}', tag],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            timeout=60,
         )
         assert run.returncode == 0, run.stderr
         try:
             mapped = subprocess.run(
                 ['docker', 'port', tag, str(port)],
-                capture_output=True, text=True, timeout=20,
+                capture_output=True, text=True, encoding='utf-8', errors='replace',
+                timeout=20,
             ).stdout.strip().splitlines()[0]  # e.g. 127.0.0.1:49321
             url = f'http://{mapped}{probe_path}'
 
@@ -127,7 +131,8 @@ def _deploy_and_probe(repo_path, expect_language, expect_framework=None,
             if body is None:
                 logs = subprocess.run(
                     ['docker', 'logs', tag],
-                    capture_output=True, text=True, timeout=20,
+                    capture_output=True, text=True, encoding='utf-8', errors='replace',
+                    timeout=20,
                 )
                 raise AssertionError(
                     f'container never answered {url}; logs:\n'

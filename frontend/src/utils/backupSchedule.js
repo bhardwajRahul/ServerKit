@@ -3,31 +3,15 @@ const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const scheduleDays = (schedule) => (Array.isArray(schedule.days) ? schedule.days : ['daily']);
 const dayIndex = (day) => DAY_INDEX[String(day).slice(0, 3).toLowerCase()];
 
-// Legacy schedules contain wall-clock time, without an IANA timezone. Execution
-// is server-local; this preserves the existing browser-local *estimate*. An
-// authoritative cross-zone countdown requires a next_run/timezone API field.
-// Use a single explicit clock for both calculation and wording in each render.
-export function nextFire(schedule, now) {
-    const match = /^(\d{1,2}):(\d{2})$/.exec(String(schedule.schedule_time || ''));
-    if (!match || !Number.isFinite(now?.getTime())) return null;
-    const hh = Number(match[1]);
-    const mm = Number(match[2]);
-    if (hh > 23 || mm > 59) return null;
-    const days = scheduleDays(schedule);
-    const daily = days.length === 0 || days.includes('daily');
-    const wanted = new Set(days.map(dayIndex).filter((day) => day != null));
-    if (!daily && wanted.size === 0) return null;
-    for (let offset = 0; offset <= 7; offset += 1) {
-        const candidate = new Date(now);
-        candidate.setDate(candidate.getDate() + offset);
-        candidate.setHours(hh, mm, 0, 0);
-        // Spring-forward can normalize a nonexistent 02:30 into 03:30. The
-        // scheduler matches wall time exactly, so skip that day's absent slot.
-        if (candidate.getHours() !== hh || candidate.getMinutes() !== mm) continue;
-        if (candidate.getTime() <= now.getTime()) continue;
-        if (daily || wanted.has(candidate.getDay())) return candidate;
-    }
-    return null;
+// The scheduler owns wall-clock/DST calculations. Never turn schedule_time
+// into a browser-local estimate: the browser and server may be in different
+// zones. Require an explicit offset so malformed/older responses stay unknown.
+export function nextFire(schedule) {
+    const value = schedule.next_run_at;
+    if (schedule.enabled === false || schedule.schedule_error || typeof value !== 'string'
+        || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return null;
+    const next = new Date(value);
+    return Number.isFinite(next.getTime()) ? next : null;
 }
 
 export function untilLabel(date, now) {
@@ -41,7 +25,7 @@ export function untilLabel(date, now) {
 }
 
 export function frequencyLabel(schedule) {
-    const time = schedule.schedule_time || '—';
+    const time = [schedule.schedule_time || '—', schedule.timezone].filter(Boolean).join(' ');
     const days = scheduleDays(schedule);
     if (days.length === 0 || days.includes('daily')) return `Daily · ${time}`;
     if (days.length === 1) {

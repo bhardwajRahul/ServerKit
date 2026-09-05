@@ -3,9 +3,9 @@ from datetime import timedelta
 
 import pyotp
 import pytest
-from flask_jwt_extended import create_access_token, decode_token
+from flask_jwt_extended import decode_token
 
-from factories import make_user, headers_for
+from factories import make_user, headers_for, access_token_for
 from app.services.api_key_service import ApiKeyService
 
 
@@ -144,11 +144,11 @@ def test_revoked_pending_mfa_cannot_finish_login(client, db_session, change):
 
 def test_unexpired_legacy_or_expired_mfa_tokens_are_rejected(client, db_session):
     user = make_user(db_session, totp_enabled=True, totp_secret=pyotp.random_base32())
-    legacy = create_access_token(identity=user.id, additional_claims={'auth_version': None})
+    legacy = access_token_for(user, additional_claims={'auth_version': None})
     assert client.get('/api/v1/auth/me', headers=_headers(legacy)).status_code == 401
     for expiration in (False, timedelta(seconds=-1)):
-        pending = create_access_token(identity=user.id, additional_claims={'2fa_pending': True},
-                                       expires_delta=expiration)
+        pending = access_token_for(user, additional_claims={'2fa_pending': True},
+                                   expires_delta=expiration)
         response = client.post('/api/v1/auth/2fa/verify', json={
             'temp_token': pending, 'code': pyotp.TOTP(user.totp_secret).now(),
         })

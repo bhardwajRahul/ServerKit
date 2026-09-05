@@ -146,7 +146,7 @@ export async function healthCheck() {
 
 // Process endpoints
 export async function getProcesses(limit = 50, sortBy = 'cpu') {
-    return this.request(`/processes?limit=${limit}&sort=${sortBy}`);
+    return this.request(`/processes?limit=${encodeURIComponent(limit)}&sort=${encodeURIComponent(sortBy)}`);
 }
 
 export async function getProcess(pid) {
@@ -154,7 +154,7 @@ export async function getProcess(pid) {
 }
 
 export async function killProcess(pid, force = false) {
-    return this.request(`/processes/${pid}?force=${force}`, { method: 'DELETE' });
+    return this.request(`/processes/${pid}?force=${encodeURIComponent(force)}`, { method: 'DELETE' });
 }
 
 export async function getServicesStatus() {
@@ -228,7 +228,7 @@ export async function previewNginxDiff(domain, config) {
 }
 
 export async function getNginxVhostLogs(domain, type = 'access', lines = 100) {
-    return this.request(`/nginx/advanced/logs/${domain}?type=${type}&lines=${lines}`);
+    return this.request(`/nginx/advanced/logs/${domain}?type=${encodeURIComponent(type)}&lines=${encodeURIComponent(lines)}`);
 }
 
 export async function getNginxLBMethods() {
@@ -241,15 +241,15 @@ export async function getLogFiles() {
 }
 
 export async function readLog(filepath, lines = 100) {
-    return this.request(`/logs/read?path=${encodeURIComponent(filepath)}&lines=${lines}`);
+    return this.request(`/logs/read?path=${encodeURIComponent(filepath)}&lines=${encodeURIComponent(lines)}`);
 }
 
 export async function searchLog(filepath, pattern, lines = 100) {
-    return this.request(`/logs/search?path=${encodeURIComponent(filepath)}&pattern=${encodeURIComponent(pattern)}&lines=${lines}`);
+    return this.request(`/logs/search?path=${encodeURIComponent(filepath)}&pattern=${encodeURIComponent(pattern)}&lines=${encodeURIComponent(lines)}`);
 }
 
 export async function getAppLogs(appName, type = 'access', lines = 100) {
-    return this.request(`/logs/app/${appName}?type=${type}&lines=${lines}`);
+    return this.request(`/logs/app/${appName}?type=${encodeURIComponent(type)}&lines=${encodeURIComponent(lines)}`);
 }
 
 export async function getJournalLogs(unit, lines = 100) {
@@ -431,7 +431,7 @@ export async function checkAlerts() {
 }
 
 export async function getAlertHistory(limit = 100) {
-    return this.request(`/monitoring/alerts/history?limit=${limit}`);
+    return this.request(`/monitoring/alerts/history?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getMonitoringConfig() {
@@ -480,7 +480,7 @@ export async function testWebhookAlert(webhookUrl) {
 
 // Backup System endpoints
 export async function getBackups(type = null) {
-    const params = type ? `?type=${type}` : '';
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
     return this.request(`/backups${params}`);
 }
 
@@ -703,11 +703,11 @@ export async function getUptimeStats() {
 }
 
 export async function getUptimeGraph(period = '24h') {
-    return this.request(`/uptime/graph?period=${period}`);
+    return this.request(`/uptime/graph?period=${encodeURIComponent(period)}`);
 }
 
 export async function getUptimeHistory(hours = 24) {
-    return this.request(`/uptime/history?hours=${hours}`);
+    return this.request(`/uptime/history?hours=${encodeURIComponent(hours)}`);
 }
 
 export async function startUptimeTracking() {
@@ -724,7 +724,7 @@ export async function getUptimeTrackingStatus() {
 
 // Metrics History endpoints
 export async function getMetricsHistory(period = '1h') {
-    return this.request(`/system/performance-history?period=${period}`);
+    return this.request(`/system/performance-history?period=${encodeURIComponent(period)}`);
 }
 
 export async function getMetricsStats() {
