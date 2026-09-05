@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Boxes, Terminal } from 'lucide-react';
-import { useResourceTier } from '../contexts/ResourceTierContext';
+import { useResourceTier } from '../contexts/useResourceTier.js';
 import { useTranslation } from 'react-i18next';
 
 /**

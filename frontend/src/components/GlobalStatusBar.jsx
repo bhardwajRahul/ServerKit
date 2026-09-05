@@ -7,15 +7,16 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useNotifications } from '../contexts/useNotifications.js';
 import { useOperations } from '../contexts/OperationsContext';
-import { useServerkitAI } from '../contexts/AIContext';
-import { useShellDock } from '../contexts/ShellDockContext';
+import { useServerkitAI } from '../contexts/useServerkitAI.js';
+import { useShellDock } from '../contexts/useShellDock.js';
 import { useWalkthroughs } from '../contexts/walkthroughContextValue';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 import { timeAgo } from '../utils/time';
 import ShellDockTabs from './ShellDockTabs';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const SERVER_SCOPE_KEY = 'serverkit.activeServerScope';
 
@@ -49,7 +50,7 @@ function ScopeMenu({ label, options, value, onPick, wide = false }) {
         >
             <div className="statusbar-menu__head mono">{label}</div>
             {options.map((option) => (
-                <button
+                <SharedButton variant="unstyled"
                     key={option.id}
                     type="button"
                     role="option"
@@ -65,7 +66,7 @@ function ScopeMenu({ label, options, value, onPick, wide = false }) {
                     {String(option.id) === String(value) && (
                         <Check size={15} className="statusbar-menu__check" aria-hidden="true" />
                     )}
-                </button>
+                </SharedButton>
             ))}
         </div>
     );
@@ -107,7 +108,7 @@ function AlertsPanel({ onClose }) {
                 <ShellDockTabs />
             </header>
             <div className="shell-panel__filters">
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={view === 'attention' ? 'is-active' : ''}
                     onClick={() => setView('attention')}
@@ -115,8 +116,8 @@ function AlertsPanel({ onClose }) {
                     aria-selected={view === 'attention'}
                 >
                     {t('app.operationsDock.needsAttention', 'Needs attention')}
-                </button>
-                <button
+                </SharedButton>
+                <SharedButton variant="unstyled"
                     type="button"
                     className={view === 'all' ? 'is-active' : ''}
                     onClick={() => setView('all')}
@@ -124,12 +125,12 @@ function AlertsPanel({ onClose }) {
                     aria-selected={view === 'all'}
                 >
                     {t('notifications.everything', 'Everything')}
-                </button>
+                </SharedButton>
                 <span className="shell-panel__spacer" />
                 {items.some((item) => item.kind !== 'notice' && !item.read) && (
-                    <button type="button" className="shell-panel__action" onClick={markAllRead}>
+                    <SharedButton variant="unstyled" type="button" className="shell-panel__action" onClick={markAllRead}>
                         <Check size={13} /> {t('notifications.markAllRead', 'Mark all read')}
-                    </button>
+                    </SharedButton>
                 )}
             </div>
 
@@ -143,7 +144,7 @@ function AlertsPanel({ onClose }) {
                         key={item.delivery_id || item.notice_id}
                         className={`shell-alerts__row is-${alertTone(item)}${item.read ? ' is-read' : ''}`}
                     >
-                        <button type="button" className="shell-alerts__hit" onClick={() => openItem(item)}>
+                        <SharedButton variant="unstyled" type="button" className="shell-alerts__hit" onClick={() => openItem(item)}>
                             <span className="shell-alerts__dot" aria-hidden="true" />
                             <span className="shell-alerts__copy">
                                 <strong>{item.title}</strong>
@@ -154,16 +155,16 @@ function AlertsPanel({ onClose }) {
                                     ? item.action_label || t('notifications.review', 'Review')
                                     : timeAgo(item.created_at)}
                             </span>
-                        </button>
+                        </SharedButton>
                         {item.kind === 'notice' && (
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="shell-alerts__dismiss"
                                 onClick={() => dismissNotice?.(item.notice_id)}
                                 aria-label={t('notifications.dismissItem', 'Dismiss {{title}}', { title: item.title })}
                             >
                                 <X size={14} />
-                            </button>
+                            </SharedButton>
                         )}
                     </div>
                 ))}
@@ -171,9 +172,9 @@ function AlertsPanel({ onClose }) {
 
             <footer className="shell-panel__footer">
                 <span>{t('notifications.recentActivity', 'Recent system and delivery activity')}</span>
-                <button type="button" onClick={() => { navigate('/notifications'); onClose(); }}>
+                <SharedButton variant="unstyled" type="button" onClick={() => { navigate('/notifications'); onClose(); }}>
                     {t('notifications.seeAll', 'See all notifications')}
-                </button>
+                </SharedButton>
             </footer>
         </section>
     );
@@ -304,7 +305,7 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                             onPick={pickWorkspace}
                         />
                     )}
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`statusbar-select statusbar-select--workspace${scopeMenu === 'workspace' ? ' is-open' : ''}`}
                         onClick={() => setScopeMenu(scopeMenu === 'workspace' ? null : 'workspace')}
@@ -315,7 +316,7 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                         <Building2 size={13} aria-hidden="true" />
                         <span className="statusbar-select__value">{workspaceName}</span>
                         <ChevronUp size={12} aria-hidden="true" />
-                    </button>
+                    </SharedButton>
                 </span>
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
@@ -329,7 +330,7 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                             onPick={pickServer}
                         />
                     )}
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`statusbar-select${scopeMenu === 'server' ? ' is-open' : ''}`}
                         onClick={() => setScopeMenu(scopeMenu === 'server' ? null : 'server')}
@@ -341,12 +342,12 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                         <Server size={13} className="global-statusbar__mobile-icon" aria-hidden="true" />
                         <span className="statusbar-select__value mono">{selectedServer.name || selectedServer.id}</span>
                         <ChevronUp size={12} aria-hidden="true" />
-                    </button>
+                    </SharedButton>
                 </span>
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`global-statusbar__segment${activeTab === 'ops' ? ' is-active' : ''}`}
                     onClick={() => toggleTab('ops')}
@@ -361,10 +362,10 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                             : t('app.statusbar.idle', 'idle')}
                     </span>
                     {attentionCount > 0 && <span className="global-statusbar__pip is-warning" aria-hidden="true" />}
-                </button>
+                </SharedButton>
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`global-statusbar__segment${activeTab === 'recipes' ? ' is-active' : ''}`}
                     onClick={() => toggleTab('recipes')}
@@ -376,12 +377,12 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                     {activeWalkthrough && (
                             <span className="global-statusbar__muted mono">{activeProgress?.count || 0}/{activeProgress?.total || 0}</span>
                     )}
-                </button>
+                </SharedButton>
 
                 <span className="global-statusbar__spacer" />
 
                 {setupSummary && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="global-statusbar__segment global-statusbar__setup"
                         onClick={() => navigate('/monitoring/doctor')}
@@ -392,12 +393,12 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                             {t('app.statusbar.setupScore', 'setup {{score}}%', { score: setupSummary.score })}
                         </span>
                         <progress max="100" value={setupSummary.score} aria-label={t('app.setupHealthWidget.progress', 'Setup health progress')} />
-                    </button>
+                    </SharedButton>
                 )}
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`global-statusbar__segment${activeTab === 'alerts' ? ' is-active' : ''}`}
                     onClick={() => toggleTab('alerts')}
@@ -408,11 +409,11 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                     <span>{t('app.statusbar.alerts', 'Alerts')}</span>
                     {unreadCount > 0 && <span className="global-statusbar__muted mono">{unreadCount}</span>}
                     {unreadCount > 0 && <span className="global-statusbar__pip is-critical" aria-hidden="true" />}
-                </button>
+                </SharedButton>
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`global-statusbar__segment${activeTab === 'assistant' ? ' is-active' : ''}`}
                     onClick={() => toggleTab('assistant')}
@@ -422,11 +423,11 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                     <Sparkles size={13} />
                     <span>{t('app.ai.assistant', 'Assistant')}</span>
                     {assistantUnread > 0 && <span className="global-statusbar__muted mono">{assistantUnread}</span>}
-                </button>
+                </SharedButton>
 
                 <span className="global-statusbar__separator" aria-hidden="true" />
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="global-statusbar__segment global-statusbar__command"
                     onClick={onOpenPalette}
@@ -435,7 +436,7 @@ export default function GlobalStatusBar({ onOpenPalette }) {
                 >
                     <Command size={12} />
                     <span className="mono">{t('app.statusbar.commandShortcut', 'Ctrl K')}</span>
-                </button>
+                </SharedButton>
             </footer>
         </>
     );

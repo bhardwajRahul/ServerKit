@@ -1,8 +1,9 @@
 import { useContext, useState } from 'react';
 import { AlertTriangle, RefreshCw, Copy, Sparkles, ChevronDown, ChevronRight } from 'lucide-react';
-import { AIContext } from '../../contexts/AIContext';
+import { AIContext } from '../../contexts/useServerkitAI.js';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Pinned failure card (plan 51 §1.1): failed step name, the one-line error, a
 // plain-language hint when a heuristic matched, actions (Retry / Copy / Ask AI)
@@ -66,20 +67,20 @@ export default function ErrorCard({ failedStepName, failureTail, hint, errorMess
             )}
 
             <div className="deploy-console__error-actions">
-                <button type="button" className="deploy-console__btn deploy-console__btn--primary" onClick={onRetry} disabled={retrying}>
+                <SharedButton variant="unstyled" type="button" className="deploy-console__btn deploy-console__btn--primary" onClick={onRetry} disabled={retrying}>
                     <RefreshCw size={14} className={retrying ? 'deploy-console__spin' : ''} />
                     {retrying ? 'Retrying…' : 'Retry deploy'}
-                </button>
-                <button type="button" className="deploy-console__btn" onClick={copyError}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" className="deploy-console__btn" onClick={copyError}>
                     <Copy size={14} /> {t('app.errorCard.copyError', 'Copy error')}
-                </button>
+                </SharedButton>
                 {ai?.open && (
-                    <button type="button" className="deploy-console__btn" onClick={askAI}>
+                    <SharedButton variant="unstyled" type="button" className="deploy-console__btn" onClick={askAI}>
                         <Sparkles size={14} /> {t('app.errorCard.askAi', 'Ask AI')}
-                    </button>
+                    </SharedButton>
                 )}
                 {tailLines.length > 0 && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="deploy-console__error-toggle"
                         onClick={() => setShowTail((v) => !v)}
@@ -89,7 +90,7 @@ export default function ErrorCard({ failedStepName, failureTail, hint, errorMess
                         {showTail
                             ? 'Hide output'
                             : `Show output (${tailLines.length} line${tailLines.length === 1 ? '' : 's'})`}
-                    </button>
+                    </SharedButton>
                 )}
             </div>
         </div>

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import useTabParam from '../hooks/useTabParam';
 import api from '../services/api';
 import {
@@ -23,7 +22,7 @@ const VALID_TABS = ['overview', 'firewall', 'ssh-keys', 'ip-lists', 'integrity',
 
 const Security = () => {
     const { t } = useTranslation();
-    const { isAdmin } = useAuth();
+
     const [activeTab, setActiveTab] = useTabParam('/security', VALID_TABS);
     const [status, setStatus] = useState(null);
     const [loading, setLoading] = useState(true);

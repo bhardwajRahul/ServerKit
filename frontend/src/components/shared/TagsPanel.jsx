@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +73,7 @@ const TagsPanel = ({ resourceType, resourceId, readOnly = false }) => {
                         <span key={t.id} className="shared-tag">
                             <span className="shared-tag__label">{t.tag}</span>
                             {!readOnly && (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="shared-tag__remove"
                                     onClick={() => handleRemove(t.tag)}
@@ -81,7 +81,7 @@ const TagsPanel = ({ resourceType, resourceId, readOnly = false }) => {
                                     title={t('app.tagsPanel.removeTag2', 'Remove tag')}
                                 >
                                     &times;
-                                </button>
+                                </Button>
                             )}
                         </span>
                     ))

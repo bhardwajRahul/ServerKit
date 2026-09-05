@@ -54,9 +54,9 @@ export default function PreviewDrawer({
                         <h3>{file.name}</h3>
                         <p className="preview-drawer-path">{file.path}</p>
                     </div>
-                    <button type="button" className="preview-drawer-close" onClick={onClose} aria-label={t('common.actions.close', 'Close')}>
+                    <Button variant="unstyled" type="button" className="preview-drawer-close" onClick={onClose} aria-label={t('common.actions.close', 'Close')}>
                         <X size={18} />
-                    </button>
+                    </Button>
                 </header>
 
                 <div className="preview-drawer-meta">
@@ -90,22 +90,22 @@ export default function PreviewDrawer({
 
                 <div className="preview-drawer-actions">
                     {!file.is_dir && (
-                        <button type="button" className="drawer-action-btn" onClick={() => onDownload(file)}>
+                        <Button variant="unstyled" type="button" className="drawer-action-btn" onClick={() => onDownload(file)}>
                             <Download size={14} /> {t('common.actions.download', 'Download')}
-                        </button>
+                        </Button>
                     )}
-                    <button type="button" className="drawer-action-btn" onClick={() => onCopyPath(file.path)}>
+                    <Button variant="unstyled" type="button" className="drawer-action-btn" onClick={() => onCopyPath(file.path)}>
                         <Copy size={14} /> {t('app.previewDrawer.copyPath', 'Copy path')}
-                    </button>
-                    <button type="button" className="drawer-action-btn" onClick={() => onRename(file)}>
+                    </Button>
+                    <Button variant="unstyled" type="button" className="drawer-action-btn" onClick={() => onRename(file)}>
                         <Edit3 size={14} /> {t('app.previewDrawer.rename', 'Rename')}
-                    </button>
-                    <button type="button" className="drawer-action-btn" onClick={() => onPermissions(file)}>
+                    </Button>
+                    <Button variant="unstyled" type="button" className="drawer-action-btn" onClick={() => onPermissions(file)}>
                         <Lock size={14} /> {t('common.labels.permissions', 'Permissions')}
-                    </button>
-                    <button type="button" className="drawer-action-btn danger" onClick={() => onDelete(file)}>
+                    </Button>
+                    <Button variant="unstyled" type="button" className="drawer-action-btn danger" onClick={() => onDelete(file)}>
                         <Trash2 size={14} /> {t('common.actions.delete', 'Delete')}
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="preview-drawer-body">

@@ -10,6 +10,7 @@ import {
     OPS, columnLabel, coerceValue, isFilterable, isGroupable, isSortable,
     optionsFor, ruleId, valueCounts,
 } from './fields';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The per-column header menu — one popover that owns everything you can do to
 // a column, so a toolbar stops being a parking lot of Sort/Columns/Group
@@ -102,14 +103,14 @@ export function ColumnMenu({
     return (
         <Popover open={open} onOpenChange={onOpenChange}>
             <PopoverTrigger asChild>
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="sk-colmenu-btn"
                     aria-label={t('app.columnMenu.columnOptions', '{{label}} column options', { label: label })}
                     onClick={(e) => { e.stopPropagation(); }}
                 >
                     <span className="sk-colmenu-btn__dots" aria-hidden="true" />
-                </button>
+                </SharedButton>
             </PopoverTrigger>
             <PopoverContent
                 align="start"
@@ -120,34 +121,34 @@ export function ColumnMenu({
             >
                 {canSort && (
                     <>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={cn('sk-gridmenu__opt', sortDir === 'asc' && 'is-on')}
                             onClick={() => { onSort(column.key, 'asc'); onOpenChange(false); }}
                         >
                             <ArrowUp size={13} />
                             {ordered ? 'Sort low to high' : 'Sort A to Z'}
-                        </button>
-                        <button
+                        </SharedButton>
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={cn('sk-gridmenu__opt', sortDir === 'desc' && 'is-on')}
                             onClick={() => { onSort(column.key, 'desc'); onOpenChange(false); }}
                         >
                             <ArrowDown size={13} />
                             {ordered ? 'Sort high to low' : 'Sort Z to A'}
-                        </button>
+                        </SharedButton>
                     </>
                 )}
 
                 {canGroup && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={cn('sk-gridmenu__opt', grouped && 'is-on')}
                         onClick={() => { onToggleGroup(column.key); onOpenChange(false); }}
                     >
                         <Rows3 size={13} />
                         {grouped ? 'Remove grouping' : 'Group by this field'}
-                    </button>
+                    </SharedButton>
                 )}
 
                 {filterable && (
@@ -176,7 +177,7 @@ export function ColumnMenu({
                                         : picked.includes(option);
                                     const text = type === 'bool' ? (option === 'true' ? 'On' : 'Off') : option;
                                     return (
-                                        <button
+                                        <SharedButton variant="unstyled"
                                             key={option}
                                             type="button"
                                             className={cn('sk-gridmenu__opt', on && 'is-on')}
@@ -186,7 +187,7 @@ export function ColumnMenu({
                                             <span className="sk-gridmenu__box"><Check size={11} /></span>
                                             <span className="sk-gridmenu__val">{text}</span>
                                             <span className="sk-gridmenu__rest">{counts.get(option) || 0}</span>
-                                        </button>
+                                        </SharedButton>
                                     );
                                 })}
                             </div>
@@ -217,13 +218,13 @@ export function ColumnMenu({
                                 {!!column.quick?.length && (
                                     <div className="sk-gridmenu__quick">
                                         {column.quick.map((q) => (
-                                            <button
+                                            <SharedButton variant="unstyled"
                                                 key={q.label}
                                                 type="button"
                                                 onClick={() => writeValue(String(q.value), q.op)}
                                             >
                                                 {q.label}
-                                            </button>
+                                            </SharedButton>
                                         ))}
                                     </div>
                                 )}
@@ -235,46 +236,46 @@ export function ColumnMenu({
                 {(canMove || canHideHere) && <div className="sk-gridmenu__sep" />}
                 {canMove && (
                     <>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="sk-gridmenu__opt"
                             disabled={!canMoveLeft}
                             onClick={() => { onMove(column.key, -1); onOpenChange(false); }}
                         >
                             <ChevronLeft size={13} />{t('app.columnMenu.moveLeft', 'Move left')}
-                        </button>
-                        <button
+                        </SharedButton>
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="sk-gridmenu__opt"
                             disabled={!canMoveRight}
                             onClick={() => { onMove(column.key, 1); onOpenChange(false); }}
                         >
                             <ChevronRight size={13} />{t('app.columnMenu.moveRight', 'Move right')}
-                        </button>
+                        </SharedButton>
                     </>
                 )}
                 {canHideHere && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-gridmenu__opt"
                         onClick={() => { onHide(column.key); onOpenChange(false); }}
                     >
                         <EyeOff size={13} />{t('app.columnMenu.hideThisField', 'Hide this field')}
-                    </button>
+                    </SharedButton>
                 )}
 
                 {filterable && (
                     <div className="sk-gridmenu__foot">
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             onClick={() => { writeRule(null); setDraft(''); }}
                             disabled={!rule}
                         >
                             {t('app.columnMenu.clearFilter', 'Clear filter')}
-                        </button>
-                        <button type="button" className="is-primary" onClick={() => onOpenChange(false)}>
+                        </SharedButton>
+                        <SharedButton variant="unstyled" type="button" className="is-primary" onClick={() => onOpenChange(false)}>
                             {t('common.actions.done', 'Done')}
-                        </button>
+                        </SharedButton>
                     </div>
                 )}
             </PopoverContent>

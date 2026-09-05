@@ -19,9 +19,8 @@ export { ScoreGauge } from './ScoreGauge';
 export { Feed, FeedItem } from './Feed';
 export { Drawer } from './Drawer';
 export { SearchField } from './SearchField';
-export {
-    FilterDrawer, FilterButton, countActiveFilters, emptyFilterValue,
-} from './FilterDrawer';
+export { FilterDrawer, FilterButton } from './FilterDrawer';
+export { countActiveFilters, emptyFilterValue } from './filterValues';
 export { PageTopbar } from './PageTopbar';
 export { DataTable } from './DataTable';
 export { SortChipBar } from './SortChipBar';

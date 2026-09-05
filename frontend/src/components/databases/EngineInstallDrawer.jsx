@@ -9,7 +9,7 @@ import { Drawer, SegControl } from '@/components/ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import EngineGlyph from './EngineGlyph';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useTranslation } from 'react-i18next';
@@ -49,7 +49,7 @@ function SecretRow({ password, onRegenerate, disabled }) {
         <div className="dbx-secret">
             <span className="dbx-secret__value">{revealed ? password : '•'.repeat(20)}</span>
             <span className="dbx-secret__actions">
-                <button
+                <Button variant="unstyled"
                     type="button"
                     className="dbx-icon-xs"
                     onClick={() => setRevealed((r) => !r)}
@@ -57,9 +57,9 @@ function SecretRow({ password, onRegenerate, disabled }) {
                     title={revealed ? t('app.engineInstallDrawer.hide', 'Hide') : t('app.engineInstallDrawer.reveal', 'Reveal')}
                 >
                     {revealed ? <EyeOff size={13} aria-hidden="true" /> : <Eye size={13} aria-hidden="true" />}
-                </button>
+                </Button>
                 {onRegenerate && (
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="dbx-icon-xs"
                         onClick={() => { onRegenerate(); setRevealed(true); }}
@@ -68,9 +68,9 @@ function SecretRow({ password, onRegenerate, disabled }) {
                         title={t('app.engineInstallDrawer.regenerate', 'Regenerate')}
                     >
                         <RefreshCw size={13} aria-hidden="true" />
-                    </button>
+                    </Button>
                 )}
-                <button
+                <Button variant="unstyled"
                     type="button"
                     className="dbx-icon-xs"
                     onClick={copy}
@@ -78,7 +78,7 @@ function SecretRow({ password, onRegenerate, disabled }) {
                     title={t('common.actions.copy', 'Copy')}
                 >
                     <Copy size={13} aria-hidden="true" />
-                </button>
+                </Button>
             </span>
         </div>
     );
@@ -316,13 +316,13 @@ export default function EngineInstallDrawer({ entry, open, onOpenChange, onInsta
                                 {suggestedPort && (
                                     <>
                                         {' '}
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className="dbx-inline-link"
                                             onClick={() => { setPort(String(suggestedPort)); setError(''); }}
                                         >
                                             {t('app.engineInstallDrawer.usePort', 'Use port')} {suggestedPort}
-                                        </button>
+                                        </Button>
                                     </>
                                 )}
                             </div>

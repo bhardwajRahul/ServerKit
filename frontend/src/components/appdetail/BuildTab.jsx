@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import EmptyState from '../EmptyState';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { InfoList, InfoItem } from '../InfoList';
 import BuildpackPreview from '../buildpack/BuildpackPreview';
@@ -11,23 +11,21 @@ import { Input } from '@/components/ui/input';
 import { Pill, statusKind } from '@/components/ds';
 import Modal from '@/components/Modal';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
+import { CardHeader as SharedCardHeader, CardFooter as SharedCardFooter } from '@/components/ui/card';
 
-const BuildTab = ({ appId, appPath, app }) => {
+const BuildTab = ({ appId, app }) => {
     const { t } = useTranslation();
     const toast = useToast();
     const { confirm: confirmBuild } = useConfirm();
     const [buildConfig, setBuildConfig] = useState(null);
     const [detection, setDetection] = useState(null);
     const [deployments, setDeployments] = useState([]);
-    const [currentDeployment, setCurrentDeployment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [building, setBuilding] = useState(false);
     const [deploying, setDeploying] = useState(false);
     const navigate = useNavigate();
     const [showConfigModal, setShowConfigModal] = useState(false);
-    const [showLogsModal, setShowLogsModal] = useState(false);
-    const [selectedLog, setSelectedLog] = useState(null);
-    const [buildLogs, setBuildLogs] = useState([]);
     const [error, setError] = useState(null);
     const [bpDockerfile, setBpDockerfile] = useState(null);
 
@@ -53,11 +51,7 @@ const BuildTab = ({ appId, appPath, app }) => {
         keepDeployments: 5
     });
 
-    useEffect(() => {
-        loadData();
-    }, [appId]);
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const [configRes, detectRes, deploymentsRes] = await Promise.all([
@@ -82,14 +76,18 @@ const BuildTab = ({ appId, appPath, app }) => {
             }
 
             setDeployments(deploymentsRes.deployments || []);
-            setCurrentDeployment(deploymentsRes.current);
 
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    }
+    }, [appId]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
 
     async function handleConfigureBuild(e) {
         e.preventDefault();
@@ -191,12 +189,12 @@ const BuildTab = ({ appId, appPath, app }) => {
             {error && (
                 <div className="alert alert-danger">
                     {error}
-                    <button type="button" onClick={() => setError(null)} className="alert-close">&times;</button>
+                    <Button variant="unstyled" type="button" onClick={() => setError(null)} className="alert-close">&times;</Button>
                 </div>
             )}
 
             {detection && (
-                <div className="card">
+                <SharedCard variant="legacy" className="card">
                     <h3>{t('app.buildTab.autoDetectionResults', 'Auto-Detection Results')}</h3>
                     <div className="detection-results">
                         <div className="detection-item">
@@ -216,27 +214,27 @@ const BuildTab = ({ appId, appPath, app }) => {
                             </div>
                         )}
                     </div>
-                </div>
+                </SharedCard>
             )}
 
             {app?.buildpack_plan && (
-                <div className="card">
+                <SharedCard variant="legacy" className="card">
                     <h3>{t('app.buildTab.buildPack', 'Build Pack')}</h3>
                     <BuildpackPreview
                         plan={app.buildpack_plan}
                         dockerfile={bpDockerfile}
                         overrides={app.buildpack_overrides || {}}
                     />
-                </div>
+                </SharedCard>
             )}
 
-            <div className="card">
-                <div className="card-header-row">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy-row" className="card-header-row">
                     <h3>{t('app.buildTab.buildConfiguration', 'Build Configuration')}</h3>
                     <Button variant="outline" size="sm" onClick={() => setShowConfigModal(true)}>
                         {t('app.buildTab.configure', 'Configure')}
                     </Button>
-                </div>
+                </SharedCardHeader>
                 {buildConfig ? (
                     <InfoList>
                         <InfoItem label={t('app.buildTab.method', 'Method')} value={buildConfig.build_method} />
@@ -245,7 +243,7 @@ const BuildTab = ({ appId, appPath, app }) => {
                 ) : (
                     <p className="hint">{t('app.buildTab.noBuildConfigurationClickConfigureTo', 'No build configuration. Click Configure to set up.')}</p>
                 )}
-                <div className="card-actions">
+                <SharedCardFooter variant="legacy" className="card-actions">
                     <Button
                         onClick={() => handleDeploy(false)}
                         disabled={deploying || building}
@@ -259,11 +257,11 @@ const BuildTab = ({ appId, appPath, app }) => {
                     >
                         {building ? 'Building...' : 'Build Only'}
                     </Button>
-                </div>
-            </div>
+                </SharedCardFooter>
+            </SharedCard>
 
             {deployments.length > 0 && (
-                <div className="card">
+                <SharedCard variant="legacy" className="card">
                     <h3>{t('app.buildTab.deploymentHistory', 'Deployment History')}</h3>
                     <div className="deployments-list">
                         {deployments.map(dep => (
@@ -289,7 +287,7 @@ const BuildTab = ({ appId, appPath, app }) => {
                             </div>
                         ))}
                     </div>
-                </div>
+                </SharedCard>
             )}
 
             <Modal open={showConfigModal} onClose={() => setShowConfigModal(false)} title={t('app.buildTab.buildConfiguration', 'Build Configuration')}>

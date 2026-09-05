@@ -4,8 +4,8 @@ import {
     RefreshCw, SlidersHorizontal, X,
 } from 'lucide-react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useToast } from '../contexts/useToast.js';
 import { useMetrics } from '../hooks/useMetrics';
 import useDashboardBoards from '../hooks/useDashboardBoards';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -77,7 +77,6 @@ const Dashboard = () => {
     });
 
     // ---- host identity strip ----------------------------------------------
-    const { metrics: localMetrics, loading: metricsLoading, connected, refresh: refreshMetrics } = useMetrics(true);
     const [systemInfo, setSystemInfo] = useState(null);
     const [servers, setServers] = useState([]);
     const [selectedServer, setSelectedServer] = useState({ id: 'local', name: 'Local (this server)' });
@@ -85,6 +84,10 @@ const Dashboard = () => {
     const [remoteMetrics, setRemoteMetrics] = useState(null);
     const [remoteSystemInfo, setRemoteSystemInfo] = useState(null);
     const isRemote = selectedServer.id !== 'local';
+    const { metrics: localMetrics, loading: metricsLoading, refresh: refreshMetrics } = useMetrics(true, refreshInterval * 1000, {
+        enabled: !isRemote,
+        autoRefresh: refreshInterval > 0,
+    });
     const metrics = isRemote ? remoteMetrics : localMetrics;
 
     // Uptime and clock tick locally between server samples so they don't freeze
@@ -197,16 +200,9 @@ const Dashboard = () => {
         immediate: false,
     });
 
-    // Board-wide refresh pulse: every widget watches ctx.tick.
-    useEffect(() => {
-        if (!refreshInterval) return undefined;
-        const id = setInterval(() => setTick((k) => k + 1), refreshInterval * 1000);
-        return () => clearInterval(id);
-    }, [refreshInterval]);
-
-    // HTTP polling fallback for live metrics when the socket is down.
-    usePolling(refreshMetrics, refreshInterval * 1000, {
-        enabled: Boolean(refreshInterval) && !connected && !isRemote,
+    // Shared scheduler pauses widget refreshes in hidden tabs.
+    usePolling(() => setTick((k) => k + 1), refreshInterval * 1000, {
+        enabled: refreshInterval > 0,
         immediate: false,
     });
 
@@ -469,9 +465,9 @@ const Dashboard = () => {
                         {selectedServer.name} · {range} {t('app.dashboard.refresh', '· refresh')} {refreshInterval ? `${refreshInterval}s` : 'off'}
                     </span>
                     <span className="skw-tv__clock mono">{displayTime}</span>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => setTvMode(false)}>
+                    <Button variant="unstyled" type="button" className="btn btn-outline btn-sm" onClick={() => setTvMode(false)}>
                         <X size={14} /> {t('app.dashboard.exit', 'Exit')}
-                    </button>
+                    </Button>
                 </div>
                 <div className="skw-tv__body">{grid}</div>
             </div>
@@ -527,18 +523,18 @@ const Dashboard = () => {
                                 {board.id === activeBoardId && edit ? widgets.length : (board.widgets || []).length}
                             </span>
                             {edit && boards.length > 1 && board.id === activeBoardId && (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="skw-iconbtn skw-iconbtn--bare"
                                     aria-label={t('app.dashboard.delete', 'Delete {{name}}', { name: board.name })}
                                     onClick={(e) => { e.stopPropagation(); handleRemoveBoard(board.id); }}
                                 >
                                     <X size={12} />
-                                </button>
+                                </Button>
                             )}
                         </div>
                     ))}
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="skw-tab skw-tab--add"
                         onClick={handleCreateBoard}
@@ -546,7 +542,7 @@ const Dashboard = () => {
                         title={t('app.dashboard.newDashboard', 'New dashboard')}
                     >
                         <Plus size={14} />
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="skw-bar__ctl">
@@ -561,7 +557,7 @@ const Dashboard = () => {
                     ) : (
                         <Popover open={serverMenuOpen} onOpenChange={setServerMenuOpen}>
                             <PopoverTrigger asChild>
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className={`skw-varpick${serverMenuOpen ? ' is-open' : ''}`}
                                     aria-label={t('app.dashboard.switchServer', 'Switch server')}
@@ -569,14 +565,14 @@ const Dashboard = () => {
                                     <span className="skw-varpick__k mono">server</span>
                                     <span className="skw-varpick__v">{selectedServer.name || hostname}</span>
                                     <ChevronDown size={13} aria-hidden="true" />
-                                </button>
+                                </Button>
                             </PopoverTrigger>
                             <PopoverContent align="start" sideOffset={7} className="env-menu">
                                 <div className="env-menu__head">{t('app.dashboard.dashboardVariableServer', 'Dashboard variable · $server')}</div>
                                 {servers.map((server) => {
                                     const online = server.status === 'online';
                                     return (
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             key={server.id}
                                             className="env-opt"
@@ -597,7 +593,7 @@ const Dashboard = () => {
                                             {server.id === selectedServer.id && (
                                                 <span className="env-opt__check" aria-hidden="true"><Check size={15} /></span>
                                             )}
-                                        </button>
+                                        </Button>
                                     );
                                 })}
                             </PopoverContent>
@@ -621,7 +617,7 @@ const Dashboard = () => {
                             ))}
                         </select>
                     </div>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="skw-iconbtn"
                         title={t('app.dashboard.refreshNow', 'Refresh now')}
@@ -629,8 +625,8 @@ const Dashboard = () => {
                         onClick={() => { setTick((k) => k + 1); if (isRemote) fetchRemote(); else refreshMetrics(); }}
                     >
                         <RefreshCw size={15} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         className="skw-iconbtn"
                         title={t('app.dashboard.tvMode', 'TV mode')}
@@ -638,12 +634,12 @@ const Dashboard = () => {
                         onClick={() => setTvMode(true)}
                     >
                         <Maximize2 size={15} />
-                    </button>
+                    </Button>
                     {edit ? (
                         <>
-                            <button type="button" className="skw-barbtn" onClick={() => setLibraryOpen(true)}>
+                            <Button variant="unstyled" type="button" className="skw-barbtn" onClick={() => setLibraryOpen(true)}>
                                 <Plus size={14} /> {t('app.dashboard.addWidget', 'Add widget')}
-                            </button>
+                            </Button>
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -655,7 +651,7 @@ const Dashboard = () => {
                             >
                                 <Keyboard size={14} />
                             </Button>
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="skw-iconbtn"
                                 onClick={handleReset}
@@ -663,12 +659,12 @@ const Dashboard = () => {
                                 aria-label={t('app.dashboard.restoreTheShippedLayout', 'Restore the shipped layout')}
                             >
                                 <History size={14} />
-                            </button>
+                            </Button>
                         </>
                     ) : (
-                        <button type="button" className="skw-barbtn" onClick={startEdit}>
+                        <Button variant="unstyled" type="button" className="skw-barbtn" onClick={startEdit}>
                             <SlidersHorizontal size={14} /> {t('common.actions.edit', 'Edit')}
-                        </button>
+                        </Button>
                     )}
                 </div>
             </div>
@@ -688,17 +684,17 @@ const Dashboard = () => {
                         {t('app.dashboard.thisBoardHasNoWidgetsYet', 'This board has no widgets yet. Add one to get started, or restore the layout it shipped with.')}
                     </div>
                     <div className="skw-empty-board__acts">
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="btn btn-primary btn-sm"
                             onClick={() => { startEdit(); setLibraryOpen(true); }}
                         >
                             <Plus size={14} /> {t('app.dashboard.addAWidget', 'Add a widget')}
-                        </button>
+                        </Button>
                         {activeBoard?.slug && (
-                            <button type="button" className="btn btn-outline btn-sm" onClick={handleReset}>
+                            <Button variant="unstyled" type="button" className="btn btn-outline btn-sm" onClick={handleReset}>
                                 <History size={14} /> {t('app.dashboard.restoreDefaultLayout', 'Restore default layout')}
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

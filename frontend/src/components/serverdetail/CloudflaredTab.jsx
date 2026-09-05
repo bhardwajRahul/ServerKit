@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -347,13 +347,13 @@ const CloudflaredTab = ({ serverId, serverStatus }) => {
                     >
                         {t('app.cloudflaredTab.routeSubdomain', 'Route subdomain')}
                     </Button>
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className="btn-icon danger"
                         onClick={() => handleDelete(t)}
                         title={t('common.actions.delete', 'Delete')}
                     >
                         <TrashIcon />
-                    </button>
+                    </Button>
                 </>
             ),
         },
@@ -509,8 +509,8 @@ const CloudflaredTab = ({ serverId, serverStatus }) => {
                 <p className="sk-modal__subtitle">
                     {t('app.cloudflaredTab.provisionsANewCloudflareTunnelOn', 'Provisions a new Cloudflare Tunnel on this server.')}
                 </p>
-                <form onSubmit={handleCreate} className="space-y-4">
-                        <div className="space-y-1.5">
+                <form onSubmit={handleCreate} className="sk-form-stack">
+                        <div className="sk-form-field">
                             <Label htmlFor="cf-name">{t('app.cloudflaredTab.tunnelName', 'Tunnel Name')}</Label>
                             <Input
                                 id="cf-name"
@@ -520,7 +520,7 @@ const CloudflaredTab = ({ serverId, serverStatus }) => {
                                 required
                                 autoFocus
                             />
-                            <p className="text-xs text-muted-foreground">{t('app.cloudflaredTab.lettersNumbersDashesUnderscoresUpTo', 'Letters, numbers, dashes, underscores. Up to 32 chars.')}</p>
+                            <p className="sk-form-hint">{t('app.cloudflaredTab.lettersNumbersDashesUnderscoresUpTo', 'Letters, numbers, dashes, underscores. Up to 32 chars.')}</p>
                         </div>
                         <div className="modal-actions">
                             <Button type="button" variant="outline" onClick={() => setShowCreateModal(false)} disabled={creating}>{t('common.actions.cancel', 'Cancel')}</Button>
@@ -537,8 +537,8 @@ const CloudflaredTab = ({ serverId, serverStatus }) => {
                 <p className="sk-modal__subtitle">
                     {t('app.cloudflaredTab.aCnameForThisHostnameWill', 'A CNAME for this hostname will be created in Cloudflare DNS, pointing at the tunnel.')}
                 </p>
-                <form onSubmit={handleRoute} className="space-y-4">
-                        <div className="space-y-1.5">
+                <form onSubmit={handleRoute} className="sk-form-stack">
+                        <div className="sk-form-field">
                             <Label htmlFor="cf-host">{t('app.cloudflaredTab.hostname', 'Hostname')}</Label>
                             <Input
                                 id="cf-host"
@@ -590,13 +590,13 @@ const CloudflaredLoginCard = ({ login, onCancel }) => {
                     >
                         {t('app.cloudflaredTab.openCloudflareLogin', 'Open Cloudflare login')}
                     </a>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="btn btn-outline"
                         onClick={() => copyToClipboard(login.authUrl)}
                     >
                         {t('app.cloudflaredTab.copyUrl', 'Copy URL')}
-                    </button>
+                    </Button>
                 </div>
                 <p className="cloudflared-login-card__hint">
                     <strong>{t('app.cloudflaredTab.step22', 'Step 2 / 2:')}</strong> {t('app.cloudflaredTab.waitingForTheAgentToReceive', 'waiting for the agent to receive cert.pem from Cloudflare. This page will refresh automatically once authorisation completes.')}

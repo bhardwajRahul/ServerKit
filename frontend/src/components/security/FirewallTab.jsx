@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useEffect, useMemo  } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '@/hooks/useConfirm';
 import EmptyState from '@/components/EmptyState';
 import Modal from '../Modal';
@@ -18,6 +18,7 @@ import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { Ban, Shield } from 'lucide-react';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 const RULE_TYPE_TONES = {
     port: 'accent',
@@ -119,11 +120,43 @@ const FirewallTab = () => {
         { port: 27017, name: 'MongoDB', protocol: 'tcp' },
     ];
 
-    useEffect(() => {
-        loadData();
+    const loadStatus = useCallback(async () => {
+        try {
+            const data = await api.getFirewallStatus();
+            setStatus(data);
+        } catch (error) {
+            console.error('Failed to load status:', error);
+        }
     }, []);
 
-    const loadData = async () => {
+    const loadRules = useCallback(async () => {
+        try {
+            const data = await api.getFirewallRules();
+            setRules(data.rules || []);
+        } catch (error) {
+            console.error('Failed to load rules:', error);
+        }
+    }, []);
+
+    const loadBlockedIPs = useCallback(async () => {
+        try {
+            const data = await api.getBlockedIPs();
+            setBlockedIPs(data.blocked_ips || []);
+        } catch (error) {
+            console.error('Failed to load blocked IPs:', error);
+        }
+    }, []);
+
+    const loadGuard = useCallback(async () => {
+        try {
+            const data = await api.getMetadataGuard();
+            setGuard(data);
+        } catch (error) {
+            console.error('Failed to load metadata guard status:', error);
+        }
+    }, []);
+
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             await Promise.all([loadStatus(), loadRules(), loadBlockedIPs(), loadGuard()]);
@@ -132,43 +165,12 @@ const FirewallTab = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [loadStatus, loadRules, loadBlockedIPs, loadGuard]);
 
-    const loadStatus = async () => {
-        try {
-            const data = await api.getFirewallStatus();
-            setStatus(data);
-        } catch (error) {
-            console.error('Failed to load status:', error);
-        }
-    };
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
-    const loadRules = async () => {
-        try {
-            const data = await api.getFirewallRules();
-            setRules(data.rules || []);
-        } catch (error) {
-            console.error('Failed to load rules:', error);
-        }
-    };
-
-    const loadBlockedIPs = async () => {
-        try {
-            const data = await api.getBlockedIPs();
-            setBlockedIPs(data.blocked_ips || []);
-        } catch (error) {
-            console.error('Failed to load blocked IPs:', error);
-        }
-    };
-
-    const loadGuard = async () => {
-        try {
-            const data = await api.getMetadataGuard();
-            setGuard(data);
-        } catch (error) {
-            console.error('Failed to load metadata guard status:', error);
-        }
-    };
 
     const handleGuardToggle = async (enabled) => {
         setGuardLoading(true);
@@ -477,12 +479,12 @@ const FirewallTab = () => {
                     />
 
                     {activeSubTab === 'status' && (
-                        <div className="card">
-                            <div className="card-header">
+                        <SharedCard variant="legacy" className="card">
+                            <SharedCardHeader variant="legacy" className="card-header">
                                 <h3>{t('app.firewallTab.firewallInformation', 'Firewall Information')}</h3>
                                 <Button variant="outline" size="sm" onClick={loadData}>{t('common.actions.refresh', 'Refresh')}</Button>
-                            </div>
-                            <div className="card-body">
+                            </SharedCardHeader>
+                            <SharedCardContent variant="legacy" className="card-body">
                                 <div className="sec-rows">
                                     <div className="sk-info-row">
                                         <span className="k">{t('common.labels.type', 'Type')}</span>
@@ -501,8 +503,8 @@ const FirewallTab = () => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </div>
+                            </SharedCardContent>
+                        </SharedCard>
                     )}
 
                     {activeSubTab === 'rules' && (
@@ -534,11 +536,11 @@ const FirewallTab = () => {
                             <GridChips {...chrome.chipProps} />
 
                             {rules.length === 0 ? (
-                                <div className="card">
+                                <SharedCard variant="legacy" className="card">
                                     <p className="text-muted">{t('app.firewallTab.noRulesConfigured', 'No rules configured')}</p>
-                                </div>
+                                </SharedCard>
                             ) : (
-                                <div className="card sec-flush">
+                                <SharedCard variant="legacy" className="card sec-flush">
                                     <DataTable
                                         columns={chrome.columns}
                                         data={rules}
@@ -554,21 +556,21 @@ const FirewallTab = () => {
                                             />
                                         )}
                                     />
-                                </div>
+                                </SharedCard>
                             )}
                         </>
                     )}
 
                     {activeSubTab === 'blocked' && (
-                        <div className="card sec-flush">
-                            <div className="card-header">
+                        <SharedCard variant="legacy" className="card sec-flush">
+                            <SharedCardHeader variant="legacy" className="card-header">
                                 <h3>{t('app.firewallTab.blockedIpAddresses', 'Blocked IP Addresses')}</h3>
                                 <Button variant="default" size="sm" onClick={() => setShowBlockIPModal(true)}>{t('app.firewallTab.blockIp', 'Block IP')}</Button>
-                            </div>
+                            </SharedCardHeader>
                             {blockedIPs.length === 0 ? (
-                                <div className="card-body">
+                                <SharedCardContent variant="legacy" className="card-body">
                                     <EmptyState icon={Ban} title={t('app.firewallTab.noBlockedIps', 'No blocked IPs')} />
-                                </div>
+                                </SharedCardContent>
                             ) : (
                                 <div className="blocked-list">
                                     {blockedIPs.map((item, index) => (
@@ -583,15 +585,15 @@ const FirewallTab = () => {
                                     ))}
                                 </div>
                             )}
-                        </div>
+                        </SharedCard>
                     )}
 
                     {activeSubTab === 'quick' && (
-                        <div className="card">
-                            <div className="card-header">
+                        <SharedCard variant="legacy" className="card">
+                            <SharedCardHeader variant="legacy" className="card-header">
                                 <h3>{t('app.firewallTab.quickPortAccess', 'Quick Port Access')}</h3>
-                            </div>
-                            <div className="card-body">
+                            </SharedCardHeader>
+                            <SharedCardContent variant="legacy" className="card-body">
                                 <p className="sec-hint sec-hint--lead">{t('app.firewallTab.oneClickEnableDisableCommonService', 'One-click enable/disable common service ports')}</p>
                                 <div className="quick-ports-grid">
                                     {commonPorts.map(({ port, name, protocol }) => {
@@ -617,15 +619,15 @@ const FirewallTab = () => {
                                         );
                                     })}
                                 </div>
-                            </div>
-                        </div>
+                            </SharedCardContent>
+                        </SharedCard>
                     )}
                 </>
             )}
 
             {guard && (
-                <div className="card">
-                    <div className="card-header">
+                <SharedCard variant="legacy" className="card">
+                    <SharedCardHeader variant="legacy" className="card-header">
                         <h3>{t('app.firewallTab.cloudMetadataGuard2', 'Cloud Metadata Guard')}</h3>
                         {guard.supported ? (
                             <Pill kind={guard.active ? 'green' : 'gray'}>
@@ -634,8 +636,8 @@ const FirewallTab = () => {
                         ) : (
                             <Pill kind="gray">{t('app.firewallTab.unsupportedOnThisHost', 'Unsupported on this host')}</Pill>
                         )}
-                    </div>
-                    <div className="card-body">
+                    </SharedCardHeader>
+                    <SharedCardContent variant="legacy" className="card-body">
                         <div className="sec-rows">
                             <div className="sk-info-row">
                                 <span className="k">{t('app.firewallTab.blockContainerAccessTo169254', 'Block container access to 169.254.169.254')}</span>
@@ -656,8 +658,8 @@ const FirewallTab = () => {
                         <p className="sec-hint">
                             {t('app.firewallTab.stopsAppContainersFromReachingThe', 'Stops app containers from reaching the cloud metadata endpoint, preventing SSRF attacks from stealing instance credentials.')}
                         </p>
-                    </div>
-                </div>
+                    </SharedCardContent>
+                </SharedCard>
             )}
 
             <GridFilterDrawer {...chrome.drawerProps} />

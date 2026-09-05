@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useEffect, useMemo  } from 'react';
 import {
     XAxis, YAxis, CartesianGrid,
     Tooltip, ResponsiveContainer, Area, AreaChart
@@ -6,6 +6,7 @@ import {
 import { Cpu, MemoryStick, HardDrive, TrendingUp } from 'lucide-react';
 import api from '../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Chart series colors — redesign "infra console" palette (see
 // docs/REDESIGN_MAP.md). Kept as hex (not CSS var()) on purpose: var() does not
@@ -53,11 +54,7 @@ const MetricsGraph = ({ compact = false, timezone, serverId }) => {
         }));
     };
 
-    useEffect(() => {
-        loadHistory();
-    }, [period, serverId]);
-
-    async function loadHistory() {
+    const loadHistory = useCallback(async () => {
         try {
             setLoading(true);
             const response = serverId
@@ -70,26 +67,33 @@ const MetricsGraph = ({ compact = false, timezone, serverId }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [period, serverId]);
 
-    function formatTimestamp(isoString) {
-        const date = new Date(isoString);
-        const tz = safeTimeZone(timezone);
-        if (period === '1h' || period === '6h' || period === '24h') {
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz });
-        } else if (period === '7d') {
-            return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', timeZone: tz });
-        } else {
-            return date.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: tz });
+    useEffect(() => {
+        loadHistory();
+    }, [loadHistory]);
+
+
+    const chartData = useMemo(() => {
+        function formatTimestamp(isoString) {
+            const date = new Date(isoString);
+            const tz = safeTimeZone(timezone);
+            if (period === '1h' || period === '6h' || period === '24h') {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: tz });
+            } else if (period === '7d') {
+                return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', timeZone: tz });
+            } else {
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric', timeZone: tz });
+            }
         }
-    }
 
-    const chartData = data?.data?.map(point => ({
-        time: formatTimestamp(point.timestamp),
-        cpu: point.cpu?.percent ?? point.cpu_percent ?? 0,
-        memory: point.memory?.percent ?? point.memory_percent ?? 0,
-        disk: point.disk?.percent ?? point.disk_percent ?? 0
-    })) || [];
+        return data?.data?.map(point => ({
+            time: formatTimestamp(point.timestamp),
+            cpu: point.cpu?.percent ?? point.cpu_percent ?? 0,
+            memory: point.memory?.percent ?? point.memory_percent ?? 0,
+            disk: point.disk?.percent ?? point.disk_percent ?? 0
+        })) || [];
+    }, [data, timezone, period]);
 
     // Auto-zoom: compute Y-axis ceiling from visible metrics
     const yDomain = useMemo(() => {
@@ -171,13 +175,13 @@ const MetricsGraph = ({ compact = false, timezone, serverId }) => {
                     </div>
                     <div className="period-selector">
                         {periods.map(p => (
-                            <button type="button"
+                            <SharedButton variant="unstyled" type="button"
                                 key={p}
                                 className={`period-btn ${period === p ? 'active' : ''}`}
                                 onClick={() => setPeriod(p)}
                             >
                                 {p}
-                            </button>
+                            </SharedButton>
                         ))}
                     </div>
                 </div>
@@ -229,34 +233,34 @@ const MetricsGraph = ({ compact = false, timezone, serverId }) => {
                     <span>{t('app.metricsGraph.realTimePerformance', 'Real-time Performance')}</span>
                 </div>
                 <div className="metrics-filter-legend">
-                    <button type="button"
+                    <SharedButton variant="unstyled" type="button"
                         className={`filter-btn cpu ${visibleMetrics.cpu ? 'active' : ''}`}
                         onClick={() => toggleMetric('cpu')}
                     >
                         CPU
-                    </button>
-                    <button type="button"
+                    </SharedButton>
+                    <SharedButton variant="unstyled" type="button"
                         className={`filter-btn memory ${visibleMetrics.memory ? 'active' : ''}`}
                         onClick={() => toggleMetric('memory')}
                     >
                         RAM
-                    </button>
-                    <button type="button"
+                    </SharedButton>
+                    <SharedButton variant="unstyled" type="button"
                         className={`filter-btn disk ${visibleMetrics.disk ? 'active' : ''}`}
                         onClick={() => toggleMetric('disk')}
                     >
                         {t('common.labels.disk', 'Disk')}
-                    </button>
+                    </SharedButton>
                 </div>
                 <div className="period-selector">
                     {periods.map(p => (
-                        <button type="button"
+                        <SharedButton variant="unstyled" type="button"
                             key={p}
                             className={`period-btn ${period === p ? 'active' : ''}`}
                             onClick={() => setPeriod(p)}
                         >
                             {p}
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             </div>

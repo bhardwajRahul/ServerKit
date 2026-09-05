@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trash2, Undo2 } from 'lucide-react';
 import api from '@/services/api';
-import { useToast } from '@/contexts/ToastContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/useToast.js';
+import { useAuth } from '@/contexts/useAuth.js';
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/EmptyState';
 import { Pill, DataTable, DataTableFooter } from '@/components/ds';
@@ -85,7 +85,7 @@ export default function RecycleBinTab() {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

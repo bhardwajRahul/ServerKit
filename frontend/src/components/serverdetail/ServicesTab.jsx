@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Pill, Drawer, DataTable, DataTableFooter, ListToolbar, SearchField, serviceStatusKind } from '../ds';
@@ -154,7 +154,7 @@ const ServicesTab = ({ serverId = null, serverStatus = 'online' }) => {
         } finally {
             setLoading(false);
         }
-    }, [isLocal, serverId, toast]);
+    }, [isLocal, serverId, t, toast]);
 
     useEffect(() => {
         if (!isLocal && serverStatus !== 'online') {
@@ -503,21 +503,21 @@ const ServicesTab = ({ serverId = null, serverStatus = 'online' }) => {
                         </div>
 
                         <div className="preview-drawer-actions">
-                            <button type="button"
+                            <Button variant="unstyled" type="button"
                                 className="drawer-action-btn"
                                 onClick={() => control(logsFor.unit, 'start')}
                                 disabled={busyUnit === logsFor.unit}
-                            >{t('common.actions.start', 'Start')}</button>
-                            <button type="button"
+                            >{t('common.actions.start', 'Start')}</Button>
+                            <Button variant="unstyled" type="button"
                                 className="drawer-action-btn"
                                 onClick={() => control(logsFor.unit, 'stop')}
                                 disabled={busyUnit === logsFor.unit}
-                            >{t('common.actions.stop', 'Stop')}</button>
-                            <button type="button"
+                            >{t('common.actions.stop', 'Stop')}</Button>
+                            <Button variant="unstyled" type="button"
                                 className="drawer-action-btn"
                                 onClick={() => control(logsFor.unit, 'restart')}
                                 disabled={busyUnit === logsFor.unit}
-                            >{t('common.actions.restart', 'Restart')}</button>
+                            >{t('common.actions.restart', 'Restart')}</Button>
                         </div>
 
                         <LogToolbar

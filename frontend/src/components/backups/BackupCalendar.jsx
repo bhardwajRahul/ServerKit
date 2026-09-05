@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { statusKind } from './format';
+
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Card of the backup "Protection" panel: a Monday-first month grid of backup
 // runs. Pairs with the .backup-calendar styles. Uses native Date math (no libs).
@@ -103,17 +104,17 @@ export default function BackupCalendar({ runs, onDayClick }) {
     return (
         <div className="backup-calendar">
             <div className="backup-calendar__head">
-                <button type="button" className="backup-calendar__nav" onClick={prevMonth} aria-label={t('app.backupCalendar.previousMonth', 'Previous month')}><ChevronLeft size={16} /></button>
+                <SharedButton variant="unstyled" type="button" className="backup-calendar__nav" onClick={prevMonth} aria-label={t('app.backupCalendar.previousMonth', 'Previous month')}><ChevronLeft size={16} /></SharedButton>
                 <span className="backup-calendar__month">{monthLabel}</span>
-                <button type="button" className="backup-calendar__nav" onClick={nextMonth} aria-label={t('app.backupCalendar.nextMonth', 'Next month')}><ChevronRight size={16} /></button>
-                <button type="button" className="backup-calendar__today" onClick={goToday}>{t('app.backupCalendar.today', 'Today')}</button>
+                <SharedButton variant="unstyled" type="button" className="backup-calendar__nav" onClick={nextMonth} aria-label={t('app.backupCalendar.nextMonth', 'Next month')}><ChevronRight size={16} /></SharedButton>
+                <SharedButton variant="unstyled" type="button" className="backup-calendar__today" onClick={goToday}>{t('app.backupCalendar.today', 'Today')}</SharedButton>
             </div>
             <div className="backup-calendar__grid">
                 {WEEKDAYS.map((d) => <div key={d} className="backup-calendar__dow">{d}</div>)}
                 {cells.map((cell, i) => (
                     cell
                         ? (
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 key={i}
                                 className={`backup-calendar__cell ${cell.count ? `backup-calendar__cell--has is-${cell.worst}` : ''}`}
@@ -122,7 +123,7 @@ export default function BackupCalendar({ runs, onDayClick }) {
                             >
                                 <span className="backup-calendar__daynum">{cell.day}</span>
                                 {cell.count > 0 && <span className="backup-calendar__badge">{cell.count}</span>}
-                            </button>
+                            </SharedButton>
                         )
                         : <span key={i} className="backup-calendar__cell backup-calendar__cell--empty" />
                 ))}

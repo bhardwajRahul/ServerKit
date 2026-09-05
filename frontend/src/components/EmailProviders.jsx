@@ -4,7 +4,7 @@ import api from '../services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
 
 const FIELD_LABELS = {

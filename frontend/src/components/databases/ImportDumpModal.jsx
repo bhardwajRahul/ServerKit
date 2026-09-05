@@ -175,9 +175,9 @@ export default function ImportDumpModal({ preset, isAdmin = false, onClose, onIm
                                 ? 'Neither MySQL nor PostgreSQL answered. Check that the server is running, then try again.'
                                 : `Importing is only wired for ${RESTORABLE.map((e) => ENGINE_META[e].short).join(' and ')} databases on this host — SQLite files and containerised databases have no restore route.`}
                         </p>
-                        <button type="button" className="dbx-inline-link" onClick={load}>
+                        <Button variant="unstyled" type="button" className="dbx-inline-link" onClick={load}>
                             <RefreshCw size={13} aria-hidden="true" /> {t('app.importDumpModal.tryAgain', 'Try again')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : (
@@ -217,7 +217,7 @@ export default function ImportDumpModal({ preset, isAdmin = false, onClose, onIm
                         <span className="dbx-field__label">{t('app.importDumpModal.dumpFile', 'Dump file')}</span>
                         <div className="dbx-choice" role="group" aria-label={t('app.importDumpModal.whereTheDumpLives', 'Where the dump lives')}>
                             {SOURCES.map((s) => (
-                                <button
+                                <Button variant="unstyled"
                                     key={s.id}
                                     type="button"
                                     className={`dbx-choice__btn${source === s.id ? ' is-on' : ''}`}
@@ -225,7 +225,7 @@ export default function ImportDumpModal({ preset, isAdmin = false, onClose, onIm
                                     aria-pressed={source === s.id}
                                 >
                                     {s.label}
-                                </button>
+                                </Button>
                             ))}
                         </div>
 
@@ -241,7 +241,7 @@ export default function ImportDumpModal({ preset, isAdmin = false, onClose, onIm
                                         {t('app.importDumpModal.noDumpsInServerkitSBackup', 'No dumps in ServerKit\'s backup directory yet. Back up a database, or point at a path below.')}
                                     </p>
                                 ) : backups.map((b) => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={b.filename}
                                         type="button"
                                         className={`dbx-dump${picked === b.filename ? ' is-on' : ''}`}
@@ -258,7 +258,7 @@ export default function ImportDumpModal({ preset, isAdmin = false, onClose, onIm
                                         <span className={`dbx-dump__tag is-${b.type}`}>
                                             {ENGINE_META[b.type]?.short || b.type}
                                         </span>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         ) : (

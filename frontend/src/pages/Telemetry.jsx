@@ -37,8 +37,8 @@ import { useTopbarActions, useTopbarChrome } from '@/hooks/useTopbarActions';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import { statusKind } from '@/components/ds/status';
 import { useTranslation } from 'react-i18next';
@@ -171,7 +171,7 @@ export default function Telemetry() {
         } finally {
             setLoading(false);
         }
-    }, [filters, q, showToast]);
+    }, [filters, q, showToast, t]);
 
     useEffect(() => {
         loadFilterOptions();

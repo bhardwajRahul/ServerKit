@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import api from '../../services/api';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ds';
 import useSettingFocus from '../../hooks/useSettingFocus';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import { useTranslation } from 'react-i18next';
 
 const SiteSettingsTab = ({ onDevModeChange }) => {
@@ -38,11 +38,17 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
     const [addingDomain, setAddingDomain] = useState(false);
     const [rowBusy, setRowBusy] = useState('');   // domain currently being mutated
 
-    useEffect(() => {
-        loadSettings();
+    const loadHttps = useCallback(async () => {
+        try {
+            const h = await api.getSitesHttpsStatus();
+            setHttps(h);
+            setBaseDomain(h.base_domain || '');
+            setServerIp(h.server_ip || '');
+            if (h.providers?.length) setProviderId(current => current || String(h.providers[0].id));
+        } catch { /* non-admin or endpoint unavailable */ }
     }, []);
 
-    async function loadSettings() {
+    const loadSettings = useCallback(async () => {
         try {
             const data = await api.getSystemSettings();
             setSettings({
@@ -59,17 +65,12 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [loadHttps]);
 
-    async function loadHttps() {
-        try {
-            const h = await api.getSitesHttpsStatus();
-            setHttps(h);
-            setBaseDomain(h.base_domain || '');
-            setServerIp(h.server_ip || '');
-            if (h.providers?.length && !providerId) setProviderId(String(h.providers[0].id));
-        } catch { /* non-admin or endpoint unavailable */ }
-    }
+    useEffect(() => {
+        loadSettings();
+    }, [loadSettings]);
+
 
     // The bases to show: the registry when populated, else a synthetic row for
     // the single legacy base (editable in place) so single-domain installs and
@@ -314,7 +315,6 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                                 value={publicTitle}
                                 onChange={(e) => setPublicTitle(e.target.value)}
                                 placeholder={t('app.siteSettingsTab.controlPanel', 'Control Panel')}
-                                className="w-56"
                             />
                         </div>
                     </div>
@@ -333,7 +333,6 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                                 value={panelTitle}
                                 onChange={(e) => setPanelTitle(e.target.value)}
                                 placeholder={t('common.labels.serverKit', 'ServerKit')}
-                                className="w-56"
                             />
                         </div>
                     </div>
@@ -404,7 +403,6 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                                 value={basePort}
                                 onChange={(e) => setBasePort(e.target.value)}
                                 disabled={savingPort}
-                                className="w-32"
                             />
                             <Button onClick={handleSaveBasePort} disabled={savingPort}>
                                 {savingPort ? 'Saving…' : 'Save'}
@@ -433,7 +431,6 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                                 placeholder="203.0.113.10"
                                 value={serverIp}
                                 onChange={(e) => setServerIp(e.target.value)}
-                                className="w-56"
                             />
                             <Button onClick={handleSaveServerIp} disabled={savingDomain}>
                                 {savingDomain ? 'Saving…' : 'Save'}
@@ -470,13 +467,13 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                                 {b._legacy ? (
                                     <div className="settings-control">
                                         <Input type="text" placeholder="apps.example.com" value={baseDomain}
-                                            onChange={(e) => setBaseDomain(e.target.value)} className="w-56" />
+                                            onChange={(e) => setBaseDomain(e.target.value)} />
                                         <Button onClick={handleSaveDomain} disabled={savingDomain}>
                                             {savingDomain ? 'Saving…' : 'Save'}
                                         </Button>
                                     </div>
                                 ) : (
-                                    <span className="flex items-center gap-2">
+                                    <span className="settings-site-action-label">
                                         <code>{b.domain}</code>
                                         {b.is_default && <Pill kind="blue" dot={false}>{t('common.labels.default', 'Default')}</Pill>}
                                         <Pill kind={b.https_enabled ? 'green' : 'gray'} dot={false}>
@@ -522,7 +519,7 @@ const SiteSettingsTab = ({ onDevModeChange }) => {
                         <div className="settings-label"><Label htmlFor="new-base-domain">{t('app.siteSettingsTab.addBaseDomain', 'Add base domain')}</Label></div>
                         <div className="settings-control">
                             <Input id="new-base-domain" type="text" placeholder="toto.com"
-                                value={newDomain} onChange={(e) => setNewDomain(e.target.value)} className="w-56" />
+                                value={newDomain} onChange={(e) => setNewDomain(e.target.value)} />
                             <select className="settings-select" value={newDnsMode} onChange={(e) => setNewDnsMode(e.target.value)}>
                                 <option value="wildcard">{t('app.siteSettingsTab.wildcardDns', 'Wildcard DNS')}</option>
                                 <option value="per-site">{t('app.siteSettingsTab.perSiteDns', 'Per-site DNS')}</option>

@@ -96,7 +96,7 @@ export default function MonitoringOverview({
         return () => { cancelled = true; };
     }, [period, refreshKey]);
 
-    const hostMetrics = status?.current_metrics || {};
+    const hostMetrics = useMemo(() => status?.current_metrics || {}, [status?.current_metrics]);
     const scopeRow = !isHost ? fleet.find((r) => String(r.id) === String(scope)) : null;
 
     // Current value per metric: the live reading for the panel host, the newest
@@ -104,10 +104,10 @@ export default function MonitoringOverview({
     const current = useMemo(() => {
         if (isHost) {
             return {
-                cpu: hostMetrics.cpu?.percent,
-                memory: hostMetrics.memory?.percent,
-                disk: hostMetrics.disk?.percent,
-                load: hostMetrics.load_average?.['1min'],
+                cpu: hostMetrics?.cpu?.percent,
+                memory: hostMetrics?.memory?.percent,
+                disk: hostMetrics?.disk?.percent,
+                load: hostMetrics?.load_average?.['1min'],
                 containers: null,
             };
         }
@@ -437,7 +437,7 @@ function HostCard({ active, name, sub, status, cpu, memory, disk, spark, onClick
     const kind = status === 'online' ? 'green' : status === 'offline' ? 'red' : 'gray';
     const hot = typeof cpu === 'number' && cpu > 75;
     return (
-        <button
+        <Button variant="unstyled"
             type="button"
             className={`mon-host${active ? ' is-active' : ''}`}
             onClick={onClick}
@@ -469,6 +469,6 @@ function HostCard({ active, name, sub, status, cpu, memory, disk, spark, onClick
                 <span>MEM <b>{memory == null ? '—' : `${fmt(memory, 0)}%`}</b></span>
                 <span>DSK <b>{disk == null ? '—' : `${fmt(disk, 0)}%`}</b></span>
             </span>
-        </button>
+        </Button>
     );
 }

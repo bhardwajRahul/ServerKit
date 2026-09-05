@@ -1,5 +1,6 @@
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const MODES = [
     { id: 'assistant', labelKey: 'app.modeToggle.assistant', label: 'Assistant' },
@@ -13,7 +14,7 @@ const ModeToggle = () => {
     return (
         <div className="sk-ai-modes" role="tablist" aria-label={t('app.modeToggle.chatMode', 'Chat mode')}>
             {MODES.map((m) => (
-                <button
+                <SharedButton variant="unstyled"
                     key={m.id}
                     type="button"
                     role="tab"
@@ -22,7 +23,7 @@ const ModeToggle = () => {
                     onClick={() => setMode(m.id)}
                 >
                     {m.label}
-                </button>
+                </SharedButton>
             ))}
         </div>
     );

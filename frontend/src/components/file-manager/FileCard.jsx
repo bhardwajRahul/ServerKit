@@ -4,6 +4,7 @@ import FileIcon from './FileIcon';
 import ImageThumb from './ImageThumb';
 import { getFileType, getFileExt } from './fileTypes';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 function FileCard({
     entry,
@@ -35,7 +36,7 @@ function FileCard({
             }}
             onContextMenu={(e) => onContext(e, entry)}
         >
-            <button type="button"
+            <SharedButton variant="unstyled" type="button"
                 className="file-card-check"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -46,7 +47,7 @@ function FileCard({
                 <span className={`checkbox ${selected ? 'checked' : ''}`}>
                     {selected && <Check size={12} />}
                 </span>
-            </button>
+            </SharedButton>
 
             <div className="file-card-thumb">
                 {showThumb ? (

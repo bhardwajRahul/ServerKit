@@ -60,12 +60,14 @@
 
 // Loading state component
 .loading-state {
+    min-height: 40vh;
+    text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: $space-3;
-    padding: $space-8;
+    padding: $space-10;
     color: $text-secondary;
 
     span {
@@ -105,4 +107,36 @@
         border-color: rgba(255, 255, 255, 0.3);
         border-top-color: #fff;
     }
+}
+
+.loading {
+    // Card roots also set padding; retain the shared loading inset.
+    &.uptime-card,
+    &.metrics-graph-card { padding: $space-12; }
+
+    @include flex-center();
+    min-height: 60vh;
+    padding: $space-12;
+    color: $text-secondary;
+    font-size: $font-size-sm;
+}
+
+.loading-sm {
+    color: $text-tertiary;
+    font-size: $font-size-sm;
+    padding: $space-4;
+}
+
+.spinner-inline {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-strong);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
 }

@@ -3,7 +3,7 @@ import { Languages } from 'lucide-react';
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { useLocale } from '../../contexts/LocaleContext';
+import { useLocale } from '../../contexts/useLocale.js';
 import useSettingFocus from '../../hooks/useSettingFocus';
 
 /**

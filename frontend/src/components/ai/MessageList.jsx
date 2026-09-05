@@ -1,11 +1,12 @@
 import { ArrowDown, Sparkles } from 'lucide-react';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import { useContributions } from '../../plugins/contributions';
 import useAutoScroll from '../../hooks/ai/useAutoScroll';
 import Message from './Message';
 import TypingIndicator from './TypingIndicator';
 import ConfirmActionCard from './ConfirmActionCard';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const routeMatches = (pattern, route) => {
     if (!pattern || pattern === '*') return true;
@@ -51,14 +52,14 @@ const MessageList = () => {
                     ) : (
                         <div className="sk-ai-empty__prompts">
                             {suggestions.map((p) => (
-                                <button
+                                <SharedButton variant="unstyled"
                                     key={p.label}
                                     type="button"
                                     className="sk-ai-suggested"
                                     onClick={() => ask(p.prompt, { open: true })}
                                 >
                                     {p.label}
-                                </button>
+                                </SharedButton>
                             ))}
                         </div>
                     )}
@@ -72,9 +73,9 @@ const MessageList = () => {
             )}
 
             {!isPinned && !isEmpty ? (
-                <button type="button" className="sk-ai-jump" onClick={scrollToBottom} aria-label={t('app.messageList.jumpToLatest', 'Jump to latest')}>
+                <SharedButton variant="unstyled" type="button" className="sk-ai-jump" onClick={scrollToBottom} aria-label={t('app.messageList.jumpToLatest', 'Jump to latest')}>
                     <ArrowDown size={16} />
-                </button>
+                </SharedButton>
             ) : null}
         </div>
     );

@@ -835,7 +835,7 @@ export async function disablePluginInstall(installId) {
     return this.request(`/agent-plugins/installs/${installId}/disable`, { method: 'POST' });
 }
 
-export async function uninstallPlugin(installId) {
+export async function uninstallPluginInstall(installId) {
     return this.request(`/agent-plugins/installs/${installId}`, { method: 'DELETE' });
 }
 

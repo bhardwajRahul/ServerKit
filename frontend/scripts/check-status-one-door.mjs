@@ -20,7 +20,6 @@ const ALLOWED = new Set([
   'components/backups/BackupCalendar.jsx', // STATUS_RANK: severity ordering, not colors
   'components/databases/SourceTree.jsx',   // STATUS_LABEL: labels only
   'pages/DeployConsole.jsx',               // STATUS_META: labels+icons+css classes (D4 territory)
-  'components/dashboard/widgets/renderers.jsx', // raw CSS-var renderer (D4 territory)
   'components/NotificationBell.jsx',       // SEVERITY_DOT hex dots (D4 territory)
   'pages/Notifications.jsx',               // SEVERITY_DOT hex dots (D4 territory)
   'components/LinkedAppsSection.jsx',      // css-class map (D4 territory)

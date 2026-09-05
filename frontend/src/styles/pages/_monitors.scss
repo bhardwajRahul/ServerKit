@@ -1,14 +1,682 @@
 // ============================================
 // MONITORS — list, detail, incidents, uptime strip
 // ============================================
-// Shared `mon-*` panel/section/hint rules come from _monitoring.scss, whose
-// root selector list includes these pages. Only what is new lives here.
+// Owns the shared `mon-*` panel, section, and hint vocabulary for the whole
+// Monitoring group, including its overview and detail pages.
 
 // ── panels ──────────────────────────────────────────────────
+.monitoring-page,
 .monitors-page,
 .incidents-page,
 .monitor-detail {
+    // ── shared bits ─────────────────────────────────────────
+    // Mono-uppercase eyebrow section headers
+    .mon-section-head h3,
+    .monitoring-panel__header h3 {
+        margin: 0;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
 
+    // Neutral icon tile (rule editors, channel tiles, host cards)
+    .mon-ico {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        background: var(--surface-3);
+        color: var(--text-dim);
+
+        &--sm {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+        }
+    }
+
+    // Every section stacks the same way, so a tab change never shifts the
+    // rhythm of the page.
+    .mon-overview,
+    .monitoring-stack,
+    .monitoring-delivery-layout {
+        display: grid;
+        gap: $space-5;
+    }
+
+    // Two equal panels side by side (charts row, alerts + speed test row) —
+    // the mock's `dash-grid` with two `span-2` cards.
+    .mon-grid2 {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: $space-5;
+
+        @media (max-width: 1000px) { grid-template-columns: 1fr; }
+    }
+
+    // ── section heads + panels ──────────────────────────────
+    .mon-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-3;
+        margin-bottom: -$space-2;   // the grid gap already spaces it off the grid
+
+        &__meta {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+    }
+
+    // Caption under a panel heading — says what the panel is showing and,
+    // crucially, WHICH host it is showing it for. One line: a wrapped caption
+    // pushes the chart down and makes the two panels in a row disagree on where
+    // their plots start.
+    .mon-panel-sub {
+        display: block;
+        max-width: 100%;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+        @include truncate();
+    }
+
+    .monitoring-panel__header > div {
+        // A heading with a caption stacks and takes the free space; the default
+        // row layout is for headers whose second child is a button cluster.
+        &:has(> h3) {
+            flex: 1 1 auto;
+            min-width: 0;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 3px;
+        }
+    }
+
+    // Controls on the right of a panel header never wrap or shrink — letting
+    // them do either steals width from the caption and folds a 4-button switch
+    // onto two lines.
+    .mon-period-switch,
+    .mon-legend {
+        flex: none;
+        flex-wrap: nowrap;
+    }
+
+    .mon-legend {
+        display: flex;
+        gap: $space-3;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+
+        span { display: inline-flex; align-items: center; gap: 5px; }
+
+        i {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+
+            &.is-memory { background: var(--cyan); }
+            &.is-disk { background: var(--green); }
+        }
+    }
+
+    .monitoring-panel {
+        min-width: 0;
+        padding: $space-5;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface);
+
+        &--warning {
+            border-color: rgba(251, 111, 111, 0.28);
+        }
+    }
+
+    .monitoring-panel__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-3;
+        margin-bottom: $space-4;
+
+        > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: $space-2;
+        }
+
+        @media (max-width: 640px) {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+
+    // The KPI band is the shared DS tile (MetricCard + KpiBand) — the
+    // monitoring-only copy that lived here was the same geometry twice, so the
+    // sparkline slot moved into the primitive instead.
+
+    // ── Host health strip: one card per machine, the panel host first ──
+    // This is the ex-Fleet-Monitor heatmap, except each card is a button that
+    // re-scopes the whole page rather than a cell you can only read.
+    .mon-fleet-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 14px;
+    }
+
+    .mon-host {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        padding: 14px 16px 12px;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface);
+        text-align: left;
+        cursor: pointer;
+        transition: border-color $transition-fast, background $transition-fast;
+
+        &:hover { border-color: var(--border-strong); }
+
+        &.is-active {
+            border-color: var(--accent-dim);
+            background: var(--accent-bg);
+        }
+
+        &__head {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 10px;
+
+            .sk-pill { margin-left: auto; flex-shrink: 0; }
+        }
+
+        &__ico {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            background: var(--surface-3);
+            color: var(--text-dim);
+        }
+
+        &__name {
+            flex: 1;
+            min-width: 0;
+            font-size: 13px;
+            font-weight: $font-weight-semibold;
+            color: var(--text);
+            @include truncate();
+
+            small {
+                display: block;
+                font-family: var(--mono);
+                font-size: 10px;
+                font-weight: 400;
+                color: var(--text-faint);
+                @include truncate();
+            }
+        }
+
+        &__spark {
+            display: block;
+            height: 38px;
+
+            svg { width: 100%; height: 100%; }
+
+            &--empty {
+                border-bottom: 1px dashed var(--border-soft);
+                height: 37px;
+            }
+        }
+
+        // mono footer stats (mock `.host-mini`)
+        &__mini {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+
+            span { white-space: nowrap; }
+            b { color: var(--text-dim); font-weight: 600; }
+        }
+    }
+
+    // ── alert rows (active alerts + history; prototype .alert-row)
+    .mon-alert-list {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mon-alert-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 0;
+        border-top: 1px solid var(--border-soft);
+
+        &:first-child {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        &:last-child { padding-bottom: 0; }
+
+        &__body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        &__title {
+            font-size: 13.5px;
+            font-weight: 550;
+            color: var(--text);
+        }
+
+        &__sub {
+            margin-top: 2px;
+            font-family: var(--mono);
+            font-size: 11.5px;
+            color: var(--text-faint);
+        }
+
+        &__end {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        &__time {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--text-faint);
+            white-space: nowrap;
+        }
+
+        @media (max-width: 640px) {
+            align-items: flex-start;
+
+            &__end { align-items: flex-start; }
+        }
+    }
+
+    // Severity dot (prototype .sev)
+    .mon-sev {
+        width: 9px;
+        height: 9px;
+        border-radius: 3px;
+        flex-shrink: 0;
+        background: var(--text-ghost);
+
+        &--critical { background: var(--red); }
+        &--warning { background: var(--amber); }
+        &--info { background: var(--cyan); }
+    }
+
+    // State chip (prototype .alert-state: st-firing / st-resolved) —
+    // shape from the shared %sk-state primitive (_design-system.scss)
+    .mon-state {
+        @extend %sk-state;
+
+        &--red { color: var(--red); background: var(--red-bg); }
+        &--amber { color: var(--amber); background: var(--amber-bg); }
+        &--cyan { color: var(--cyan); background: var(--cyan-bg); }
+        &--green { color: var(--green); background: var(--green-bg); }
+        &--gray { color: var(--text-faint); background: var(--surface-3); }
+    }
+
+    // ── alert-rule editors (thresholds tab) ─────────────────
+    .metric-rule-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: $space-3;
+
+        @media (max-width: 1024px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .metric-rule-editor {
+        min-width: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 150px auto;
+        gap: $space-4;
+        align-items: center;
+        padding: 15px 16px;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+
+        &.is-alerting {
+            border-color: rgba(245, 185, 69, 0.35);
+        }
+
+        &__main {
+            display: flex;
+            gap: $space-3;
+            align-items: center;
+            min-width: 0;
+
+            h4 {
+                margin: 0 0 3px;
+                font-size: 13.5px;
+                font-weight: $font-weight-semibold;
+            }
+
+            span {
+                font-family: var(--mono);
+                font-size: 11.5px;
+                color: var(--text-faint);
+            }
+        }
+
+        &__threshold {
+            display: grid;
+            gap: $space-2;
+        }
+
+        > .sk-pill { justify-self: end; }
+
+        @media (max-width: 820px) {
+            grid-template-columns: 1fr;
+            align-items: start;
+
+            > .sk-pill { justify-self: start; }
+        }
+    }
+
+    // Eyebrow-style field labels inside the editor + delivery forms
+    .metric-rule-editor__threshold label,
+    .monitoring-delivery-layout .form-group label {
+        font-family: var(--mono);
+        font-size: 10px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
+
+    // ── delivery tab ────────────────────────────────────────
+    .monitoring-delivery-layout {
+        grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+
+        @media (max-width: 1000px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .monitoring-switch-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $space-4;
+        padding: $space-4;
+        margin-bottom: $space-4;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+
+        strong {
+            display: block;
+            font-size: 13px;
+            font-weight: $font-weight-semibold;
+        }
+
+        span {
+            display: block;
+            margin-top: 3px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+    }
+
+    .notification-channel-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: $space-3;
+    }
+
+    .notification-channel-tile {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        gap: $space-3;
+        align-items: center;
+        padding: 13px 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+
+        &.is-ready {
+            border-color: rgba(61, 220, 151, 0.3);
+
+            .mon-ico {
+                @include status-variant(var(--green), var(--green-bg));
+            }
+        }
+
+        // A channel with no credentials yet is a to-do, not a failure: dim the
+        // brand mark rather than colouring it like a live one.
+        &.is-unset .mon-ico { opacity: 0.5; }
+
+        > div { min-width: 0; }
+
+        strong {
+            display: block;
+            font-size: 13px;
+            font-weight: $font-weight-semibold;
+            @include truncate();
+        }
+
+        span {
+            display: block;
+            margin-top: 2px;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--text-faint);
+            // "Configured but off" is longer than the tile is wide at three
+            // across; clip it rather than let it fold and grow the row.
+            @include truncate();
+        }
+    }
+
+    .form-help {
+        display: block;
+        margin-top: $space-1;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
+
+    // Speed test — three readings in a row, sized to sit beside the alerts
+    // panel rather than take a band of its own.
+    .mon-speed-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: $space-3;
+    }
+
+    .mon-speed {
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+
+        // Only the glyph is tinted here — the tile keeps the quiet surface, so
+        // three of them side by side don't read as three status badges.
+        &__ico {
+            display: block;
+            margin-bottom: 6px;
+            background: none;
+
+            &.is-cpu { color: var(--accent-bright); }
+            &.is-memory { color: var(--cyan); }
+            &.is-extra { color: var(--violet); }
+        }
+
+        &__val {
+            display: block;
+            font-family: var(--mono);
+            font-size: 19px;
+            font-weight: $font-weight-semibold;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            color: var(--text);
+
+            small {
+                margin-left: 3px;
+                font-size: 11px;
+                color: var(--text-faint);
+            }
+        }
+
+        &__label {
+            display: block;
+            margin-top: 5px;
+            font-size: 11.5px;
+            color: var(--text-dim);
+        }
+    }
+
+    .mon-speed-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: $space-3;
+        margin-top: $space-3;
+
+        span {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--text-faint);
+        }
+    }
+
+    // ── fleet-scoped panels (Host health, Capacity, Fleet alerts) ──
+    // Folded in from the old standalone Fleet Monitor page; they reuse the
+    // panel chrome above so the sections read as one page rather than two
+    // stapled together.
+
+    // Small mono caption used for every field label in the fleet panels.
+    .mon-field-label {
+        display: block;
+        margin-bottom: 4px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
+
+    .mon-field-hint,
+    .mon-panel-hint {
+        display: flex;
+        align-items: center;
+        gap: $space-2;
+        margin: 0;
+        font-size: $font-size-sm;
+        color: var(--text-faint);
+    }
+
+    .mon-panel-hint svg { flex-shrink: 0; color: var(--green); }
+
+    // Wide tables keep their own scroller so the panel never widens the page.
+    .mon-table-scroll { overflow-x: auto; }
+
+    .mon-row-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: $space-1;
+        white-space: nowrap;
+    }
+
+    // Add-a-rule form on the Rules tab: fields in a row, save at the end.
+    .mon-threshold-form {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: $space-3;
+        margin-bottom: $space-4;
+        padding: $space-4;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+
+        .form-group { margin: 0; min-width: 150px; flex: 1 1 150px; }
+    }
+
+    // Comparison / forecast control rows: a servers picker that grows, plus
+    // fixed-width selects.
+    .mon-compare-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: $space-4;
+        margin-bottom: $space-4;
+
+        .form-group { margin: 0; min-width: 160px; }
+
+        &__servers { flex: 1 1 320px; min-width: 0; }
+    }
+
+    .mon-server-picker {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-2;
+        max-height: 96px;
+        overflow-y: auto;
+        padding: $space-2;
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius);
+        background: var(--surface-2);
+    }
+
+    .mon-period-switch { display: flex; gap: 4px; align-items: center; }
+
+    .mon-forecast {
+        display: flex;
+        flex-direction: column;
+        gap: $space-4;
+    }
+
+    .mon-forecast__stats,
+    .mon-forecast__predictions {
+        display: grid;
+        gap: $space-3;
+    }
+
+    .mon-forecast__stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    .mon-forecast__predictions { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    .mon-forecast strong {
+        display: block;
+        font-size: $font-size-lg;
+        color: var(--text);
+
+        em { font-style: normal; font-size: $font-size-sm; color: var(--text-faint); }
+    }
+}
+
+.monitors-page,
+.incidents-page,
+.monitor-detail {
     .mon-stack { display: flex; flex-direction: column; gap: 16px; }
 
     .mon-grid-2 {
@@ -101,9 +769,80 @@
     }
 }
 
+.monitor-detail {
+    .monitor-detail__crumb {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 14px;
+        font-size: 12.5px;
+        color: var(--text-faint);
+
+        a { color: var(--accent-bright); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    }
+
+    .monitor-detail__sections { margin: 18px 0 16px; }
+
+    .mon-kpi-sub {
+        margin-top: 4px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+    }
+
+    .mon-statstrip {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+        gap: 12px;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border-soft);
+    }
+
+    .mon-statstrip__label {
+        display: block;
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-faint);
+    }
+
+    .mon-statstrip__value {
+        display: block;
+        margin-top: 3px;
+        font-family: var(--mono);
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .mon-uptime-summary { display: flex; gap: 18px; text-align: right; }
+
+    .mon-uptime-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        font-family: var(--mono);
+        font-size: 10.5px;
+        color: var(--text-faint);
+    }
+
+    .mon-checkdetail {
+        max-width: 380px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-faint);
+    }
+
+    tr.is-bad .mon-checkdetail { color: var(--red); }
+}
+
 // ── list ────────────────────────────────────────────────────
 .monitors-page {
-
     .mon-card {
         background: var(--bg-card, var(--surface-1));
         border: 1px solid var(--border-soft);
@@ -214,78 +953,6 @@
 }
 
 // ── detail ──────────────────────────────────────────────────
-.monitor-detail {
-
-    .monitor-detail__crumb {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 14px;
-        font-size: 12.5px;
-        color: var(--text-faint);
-
-        a { color: var(--accent-bright); text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    }
-
-    .monitor-detail__sections { margin: 18px 0 16px; }
-
-    .mon-kpi-sub {
-        margin-top: 4px;
-        font-family: var(--mono);
-        font-size: 10.5px;
-        color: var(--text-faint);
-    }
-
-    .mon-statstrip {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
-        gap: 12px;
-        margin-top: 14px;
-        padding-top: 14px;
-        border-top: 1px solid var(--border-soft);
-    }
-
-    .mon-statstrip__label {
-        display: block;
-        font-family: var(--mono);
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: var(--text-faint);
-    }
-
-    .mon-statstrip__value {
-        display: block;
-        margin-top: 3px;
-        font-family: var(--mono);
-        font-size: 15px;
-        font-weight: 600;
-    }
-
-    .mon-uptime-summary { display: flex; gap: 18px; text-align: right; }
-
-    .mon-uptime-axis {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 8px;
-        font-family: var(--mono);
-        font-size: 10.5px;
-        color: var(--text-faint);
-    }
-
-    .mon-checkdetail {
-        max-width: 380px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-family: var(--mono);
-        font-size: 11.5px;
-        color: var(--text-faint);
-    }
-
-    tr.is-bad .mon-checkdetail { color: var(--red); }
-}
 
 // ── 90-day uptime strip ─────────────────────────────────────
 .uptime-bars {
@@ -317,7 +984,6 @@
 
 // ── overview: monitors summary ──────────────────────────────
 .monitoring-page {
-
     .mon-monitors-summary {
         display: flex;
         flex-direction: column;
@@ -378,7 +1044,6 @@
 
 // ── incidents ───────────────────────────────────────────────
 .incidents-page {
-
     .incidents-list {
         background: var(--bg-card, var(--surface-1));
         border: 1px solid var(--border-soft);

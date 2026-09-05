@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import { useClipboard } from '../hooks/useClipboard';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const PrivateURLSection = ({ app, onUpdate }) => {
     const { t } = useTranslation();
@@ -128,13 +129,13 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                                 maxLength={50}
                             />
                         </div>
-                        <button
+                        <SharedButton variant="primary"
                             type="submit"
                             className="btn btn-primary"
                             disabled={loading}
                         >
                             {loading ? 'Enabling...' : 'Enable Private URL'}
-                        </button>
+                        </SharedButton>
                     </form>
                     <p className="slug-hint">
                         {t('app.privateURLSection.leaveEmptyToAutoGenerateA', 'Leave empty to auto-generate a random slug, or enter your own custom slug.')}
@@ -148,7 +149,7 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                             <code className="url-value">{privateUrl}</code>
                         </div>
                         <div className="url-actions">
-                            <button type="button"
+                            <SharedButton variant="outline" type="button"
                                 className="btn btn-secondary btn-sm"
                                 onClick={copyToClipboard}
                                 title={t('app.privateURLSection.copyToClipboard', 'Copy to clipboard')}
@@ -158,8 +159,8 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                                 </svg>
                                 {t('common.actions.copy', 'Copy')}
-                            </button>
-                            <button type="button"
+                            </SharedButton>
+                            <SharedButton variant="outline" type="button"
                                 className="btn btn-secondary btn-sm"
                                 onClick={handleRegenerate}
                                 disabled={loading}
@@ -171,7 +172,7 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                                     <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                                 </svg>
                                 {t('app.privateURLSection.regenerate', 'Regenerate')}
-                            </button>
+                            </SharedButton>
                         </div>
                     </div>
 
@@ -190,14 +191,14 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                                     autoFocus
                                 />
                             </div>
-                            <button
+                            <SharedButton variant="primary"
                                 type="submit"
                                 className="btn btn-primary btn-sm"
                                 disabled={loading || !customSlug}
                             >
                                 {t('common.actions.save', 'Save')}
-                            </button>
-                            <button
+                            </SharedButton>
+                            <SharedButton variant="outline"
                                 type="button"
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => {
@@ -206,25 +207,25 @@ const PrivateURLSection = ({ app, onUpdate }) => {
                                 }}
                             >
                                 {t('common.actions.cancel', 'Cancel')}
-                            </button>
+                            </SharedButton>
                         </form>
                     ) : (
-                        <button type="button"
+                        <SharedButton variant="unstyled" type="button"
                             className="btn-link"
                             onClick={() => setEditMode(true)}
                         >
                             {t('app.privateURLSection.changeSlug', 'Change slug')}
-                        </button>
+                        </SharedButton>
                     )}
 
                     <div className="private-url-footer">
-                        <button type="button"
+                        <SharedButton variant="danger" type="button"
                             className="btn btn-danger btn-sm"
                             onClick={handleDisable}
                             disabled={loading}
                         >
                             {t('app.privateURLSection.disablePrivateUrl3', 'Disable Private URL')}
-                        </button>
+                        </SharedButton>
                     </div>
                 </div>
             )}

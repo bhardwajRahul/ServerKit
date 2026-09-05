@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { EngineIcon, hasBrandIcon } from '../icons/DatabaseBrands';
+import { EngineIcon } from '../icons/DatabaseBrands';
+import { hasBrandIcon } from '../icons/databaseBrandData';
 import { engineMeta } from './engineHelpers';
 
 // The engine icon, resolved in three steps: the brand glyph we ship, then the

@@ -1,6 +1,7 @@
 import { X } from 'lucide-react';
 import { byKey, columnLabel, opLabel, ruleText } from './fields';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Active filter rules, spelled out above the grid. A filter you cannot see is
 // a filter you will blame the data for — every rule gets a chip, and every chip
@@ -14,14 +15,14 @@ export function GridChips({ cfg, columns, onRemove, onClear, onMatchChange }) {
     return (
         <div className="sk-gridchips">
             {rules.length > 1 && (
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="sk-gridchip sk-gridchip--match"
                     onClick={() => onMatchChange(cfg.filters.match === 'all' ? 'any' : 'all')}
                     title={t('app.gridChips.toggleWhetherRowsMustMatchEvery', 'Toggle whether rows must match every condition or any one')}
                 >
                     match {cfg.filters.match}
-                </button>
+                </SharedButton>
             )}
             {rules.map((rule) => {
                 const column = map.get(rule.field);
@@ -31,18 +32,18 @@ export function GridChips({ cfg, columns, onRemove, onClear, onMatchChange }) {
                         <span className="sk-gridchip__k">{columnLabel(column)}</span>
                         <span className="sk-gridchip__op">{opLabel(column.type, rule.op)}</span>
                         <span className="sk-gridchip__v">{ruleText(rule, columns)}</span>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="sk-gridchip__x"
                             onClick={() => onRemove(rule.id)}
                             aria-label={t('app.gridChips.removeFilter', 'Remove {{value}} filter', { value: columnLabel(column) })}
                         >
                             <X size={12} />
-                        </button>
+                        </SharedButton>
                     </span>
                 );
             })}
-            <button type="button" className="sk-gridchips__clear" onClick={onClear}>{t('app.gridChips.clearAll', 'Clear all')}</button>
+            <SharedButton variant="unstyled" type="button" className="sk-gridchips__clear" onClick={onClear}>{t('app.gridChips.clearAll', 'Clear all')}</SharedButton>
         </div>
     );
 }

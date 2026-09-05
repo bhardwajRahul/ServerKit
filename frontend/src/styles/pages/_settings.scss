@@ -397,66 +397,6 @@
 }
 
 // Settings Form
-.settings-form {
-    background: $bg-card;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-lg;
-    padding: $space-5;
-
-    .form-group {
-        margin-bottom: $space-4;
-
-        &:last-of-type {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            font-size: $font-size-sm;
-            font-weight: $font-weight-medium;
-            color: $text-secondary;
-            margin-bottom: $space-2;
-        }
-
-        input:not([type="checkbox"]):not([type="radio"]), select, textarea {
-            width: 100%;
-            padding: $space-3;
-            background: $bg-hover;
-            border: 1px solid $border-subtle;
-            border-radius: $radius-md;
-            color: $text-primary;
-            font-size: $font-size-sm;
-            transition: border-color $transition-fast;
-
-            &:focus {
-                outline: none;
-                border-color: $accent-primary;
-            }
-
-            &:disabled,
-            &.input-disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                background: $bg-body;
-            }
-        }
-
-        .form-help {
-            display: block;
-            margin-top: $space-1;
-            font-size: $font-size-xs;
-            color: $text-tertiary;
-        }
-    }
-
-    .form-actions {
-        margin-top: $space-5;
-        padding-top: $space-5;
-        border-top: 1px solid $border-subtle;
-        display: flex;
-        gap: $space-2;
-    }
-}
 
 // Alert Messages — see components/_alerts.scss
 
@@ -784,35 +724,6 @@
 
     @media (max-width: $breakpoint-md) {
         grid-template-columns: 1fr;
-    }
-}
-
-.info-list {
-    display: flex;
-    flex-direction: column;
-    gap: $space-2;
-
-    .info-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: $space-2 0;
-        border-bottom: 1px solid $border-subtle;
-
-        &:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-size: $font-size-sm;
-            color: $text-tertiary;
-        }
-
-        .info-value {
-            font-size: $font-size-sm;
-            font-weight: $font-weight-medium;
-            color: $text-primary;
-        }
     }
 }
 
@@ -1226,14 +1137,6 @@
 }
 
 // Loading State
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: $space-12;
-    color: $text-secondary;
-    font-size: $font-size-sm;
-}
 
 // Settings Row (for app settings tab)
 .settings-row {
@@ -2628,3 +2531,17 @@
     padding-top: $space-5;
     border-top: 1px solid $border-subtle;
 }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.settings-notification-option { display: flex; align-items: center; gap: 0.75rem; }
+.settings-site-action-label { display: flex; align-items: center; gap: 0.5rem; }
+.settings-webhook-actions { text-align: right; }
+.settings-webhook-action-icon { margin-inline-end: 0.5rem; }
+.settings-webhook-event-id { @include truncate(); font-size: 0.75rem; max-width: 200px; }
+.settings-webhook-secret { display: flex; gap: 0.5rem; }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.settings-webhook-row { cursor: pointer; }
+.settings-webhook-name { font-weight: $font-weight-medium; }
+.settings-webhook-form > * + * { margin-top: 1rem; }
+.settings-webhook-secret-field > * + * { margin-top: 0.5rem; }

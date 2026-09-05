@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import PageLoader from '../components/PageLoader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -358,7 +358,7 @@ const StatusPages = () => {
             <div className="status-layout">
                 <aside className="status-pages-list" aria-label={t('app.statusPages.statusPages', 'Status pages')}>
                     {pages.map((page) => (
-                        <button
+                        <Button variant="unstyled"
                             key={page.id}
                             type="button"
                             className={`status-page-item ${selectedPage?.id === page.id ? 'active' : ''}`}
@@ -375,7 +375,7 @@ const StatusPages = () => {
                                 <Globe2 size={13} />
                                 {page.component_count} component{page.component_count !== 1 ? 's' : ''}
                             </span>
-                        </button>
+                        </Button>
                     ))}
                     {pages.length === 0 && (
                         <EmptyState icon={Activity} title={t('app.statusPages.noStatusPagesYet', 'No status pages yet')} />
@@ -675,7 +675,7 @@ const StatusPages = () => {
                 </p>
                 <div className="status-attach-list">
                     {unattached.map((monitor) => (
-                        <button
+                        <Button variant="unstyled"
                             key={monitor.id}
                             type="button"
                             className="status-attach-row"
@@ -688,7 +688,7 @@ const StatusPages = () => {
                             <Pill kind={(STATUS_META[monitor.status] || STATUS_META.operational).pill}>
                                 {(STATUS_META[monitor.status] || STATUS_META.operational).label}
                             </Pill>
-                        </button>
+                        </Button>
                     ))}
                     {unattached.length === 0 && (
                         <p className="form-help">{t('app.statusPages.everyMonitorIsAlreadyOnA2', 'Every monitor is already on a page.')}</p>

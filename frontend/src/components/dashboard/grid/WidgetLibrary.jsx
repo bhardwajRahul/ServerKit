@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { LayoutGrid, Plus } from 'lucide-react';
 import { Drawer, SearchField } from '@/components/ds';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Registry entries carry a lucide component in `icon`. Guard against a type
 // that shipped without one (or with a plain string) so the card still renders.
@@ -252,16 +253,16 @@ export function WidgetLibrary({ types = [], onAdd, onClose }) {
                     placeholder={t('app.widgetLibrary.searchWidgets', 'Search widgets…')}
                 />
                 <div className="skw-lib__chips">
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`skw-lib__chip${category ? '' : ' skw-lib__chip--on'}`}
                         aria-pressed={!category}
                         onClick={() => setCategory(null)}
                     >
                         {t('common.labels.all', 'All')}
-                    </button>
+                    </SharedButton>
                     {categories.map((name) => (
-                        <button
+                        <SharedButton variant="unstyled"
                             key={name}
                             type="button"
                             className={`skw-lib__chip${category === name ? ' skw-lib__chip--on' : ''}`}
@@ -269,7 +270,7 @@ export function WidgetLibrary({ types = [], onAdd, onClose }) {
                             onClick={() => setCategory(category === name ? null : name)}
                         >
                             {name}
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             </div>

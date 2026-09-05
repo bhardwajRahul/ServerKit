@@ -1204,17 +1204,6 @@ $lk-default:  #646b7a;
     }
 }
 
-.btn-xs {
-    padding: 2px 6px;
-    font-size: 11px;
-
-    svg {
-        stroke: currentColor;
-        fill: none;
-        stroke-width: 2;
-    }
-}
-
 .process-details-panel {
     background: $bg-card;
     border: 1px solid $border-subtle;
@@ -1307,12 +1296,6 @@ $lk-default:  #646b7a;
     }
 }
 
-.services-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: $space-4;
-}
-
 .service-card {
     background: $bg-card;
     border: 1px solid $border-subtle;
@@ -1399,10 +1382,6 @@ $lk-default:  #646b7a;
 }
 
 // Modal adjustments for logs
-.modal-lg {
-    max-width: 900px;
-    width: 90%;
-}
 
 .modal-log-viewer {
     max-height: 500px;

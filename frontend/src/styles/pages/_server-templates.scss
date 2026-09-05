@@ -83,3 +83,6 @@
         &:hover { background: $bg-hover; }
     }
 }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.server-template-error-actions { display: flex; gap: 0.5rem; }

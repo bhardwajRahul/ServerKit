@@ -17,6 +17,7 @@ import ColumnMenu from './grid/ColumnMenu';
 import { applyFilters, isDecorative, withInferredTypes } from './grid/fields';
 import { useTranslation } from 'react-i18next';
 import { translateLabel } from '../../i18n/labels';
+import { Button as SharedButton } from '@/components/ui/button';
 
 /**
  * Declarative data table built on top of the shadcn/ui Table primitives.
@@ -457,12 +458,12 @@ export function DataTable({
                         <TableRow className="sk-dtable__nomatch">
                             <TableCell colSpan={columnCount}>
                                 <span>{t('app.dataTable.noRowsMatchTheActiveColumn', 'No rows match the active column filters.')}</span>
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     onClick={() => setFilters({ match: filters.match, rules: [] })}
                                 >
                                     {t('common.actions.clearFilters', 'Clear filters')}
-                                </button>
+                                </SharedButton>
                             </TableCell>
                         </TableRow>
                     ) : groups

@@ -3,6 +3,116 @@
 // ============================================
 
 .styleguide {
+    // The guide uses the same semantic SCSS contract it demonstrates. Dynamic
+    // token values (swatch colours, spacing widths) stay on their preview node.
+    &__section > * + * { margin-top: $space-6; }
+    &__examples > * + * { margin-top: $space-4; }
+    &__examples--compact > * + * { margin-top: $space-2; }
+
+    &__demo-card {
+        padding: $space-6;
+
+        &--flush { padding: 0; overflow: hidden; }
+        &--interactive { text-align: center; cursor: pointer; }
+    }
+
+    &__swatch-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $space-3;
+        padding: $space-5;
+    }
+
+    &__font-sample { font-family: $font-main; margin-bottom: $space-4; }
+    &__code-sample { font-family: $font-mono; font-size: $font-size-base; }
+    &__weight-sample { margin-bottom: $space-2; }
+
+    &__token-row {
+        display: flex;
+        align-items: center;
+        gap: $space-4;
+        margin-bottom: $space-2;
+
+        &--spacing { margin-bottom: $space-3; }
+    }
+
+    &__token-name {
+        font-family: $font-mono;
+        font-size: $font-size-sm;
+        color: $text-tertiary;
+
+        &--font { min-width: 160px; }
+        &--spacing { min-width: 120px; }
+        &--layout { min-width: 180px; }
+    }
+
+    &__token-value {
+        min-width: 50px;
+        font-family: $font-mono;
+        font-size: $font-size-sm;
+        color: $text-secondary;
+    }
+
+    &__description {
+        font-size: $font-size-base;
+        color: $text-secondary;
+
+        &--muted { color: $text-tertiary; }
+        &--mono { font-family: $font-mono; }
+        &--spaced { margin-bottom: $space-2; }
+        &--section-end { margin-bottom: $space-4; }
+    }
+
+    &__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $space-3;
+
+        &--aligned { align-items: center; }
+        &--spaced { margin-bottom: $space-4; }
+        &--section-end { margin-bottom: $space-6; }
+    }
+
+    &__full-width-button { width: 100%; margin-bottom: $space-4; }
+    &__progress-value { font-family: $font-mono; font-size: $font-size-base; }
+    &__progress-labels { display: flex; justify-content: space-between; margin-bottom: $space-1; }
+    &__modal-field { margin-top: $space-4; }
+    &__drawer-fields {
+        padding: $space-4 0;
+        > * + * { margin-top: $space-4; }
+    }
+    &__tab-content { padding-top: $space-4; color: $text-secondary; }
+
+    &__spinner-row { display: flex; align-items: center; gap: $space-6; }
+    &__spinner-example { display: flex; flex-direction: column; align-items: center; gap: $space-2; }
+    &__comparison-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: $space-4; }
+    &__scan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: $space-4; }
+    &__scan-icon { display: flex; justify-content: center; margin-bottom: $space-3; }
+    &__scan-title { margin-bottom: $space-1; }
+    &__log-example { height: 360px; }
+    &__journal-example { height: 160px; }
+
+    &__flex-example {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+        margin-bottom: $space-4;
+        padding: $space-2;
+        border: 1px dashed var(--border-active);
+
+        &--spread { align-items: normal; justify-content: space-between; gap: normal; }
+        &--stack {
+            flex-direction: column;
+            align-items: normal;
+            gap: $space-2;
+            max-width: 200px;
+            margin-bottom: 0;
+        }
+    }
+    &__layout-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: $space-3; }
+    &__swatch-text { font-size: $font-size-base; font-weight: $font-weight-semibold; }
+
     // Nav tabs for sections
     &__nav {
         display: flex;
@@ -89,6 +199,7 @@
 
     // Spacing bars
     &__spacing-bar {
+        height: $space-4;
         background: $accent-primary;
         border-radius: $radius-sm;
         min-width: 4px;

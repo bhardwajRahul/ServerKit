@@ -46,7 +46,7 @@ const CommandsTab = ({ appId, appType }) => {
             <p className="hint">{t('app.commandsTab.commandsRunInTheAppS', 'Commands run in the app\'s virtual environment context.')}</p>
 
             <div className="quick-commands">
-                {quickCommands.map(({ label, cmd }) => (
+                {quickCommands.map(({ labelKey, label, cmd }) => (
                     <Button
                         key={cmd}
                         variant="outline"
@@ -54,7 +54,7 @@ const CommandsTab = ({ appId, appType }) => {
                         onClick={() => handleRun(cmd)}
                         disabled={running}
                     >
-                        {label}
+                        {t(labelKey, { defaultValue: label })}
                     </Button>
                 ))}
             </div>

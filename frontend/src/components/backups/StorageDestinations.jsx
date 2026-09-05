@@ -118,10 +118,10 @@ export default function StorageDestinations({
 
             {/* Only one remote can be active at a time, so this reveals the
                 configuration form below rather than adding a second card. */}
-            <button type="button" className="bk-destcard bk-destcard--add" onClick={onAdd}>
+            <Button variant="unstyled" type="button" className="bk-destcard bk-destcard--add" onClick={onAdd}>
                 <Plus size={24} />
                 <span>{remote ? 'Change destination' : 'Add destination'}</span>
-            </button>
+            </Button>
         </div>
     );
 }

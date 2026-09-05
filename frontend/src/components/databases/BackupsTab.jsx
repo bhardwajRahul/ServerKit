@@ -12,6 +12,7 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The backend reports the engine as the bare wire name it derived from the
 // filename prefix; these are what the row (and therefore every rule) says.
@@ -169,9 +170,9 @@ export default function BackupsTab() {
             className: 'text-right',
             cellClassName: 'dbx-grid-actions',
             render: (b) => (
-                <button type="button" className="dbx-icon-btn is-danger" onClick={() => remove(b.filename)} aria-label={t('app.backupsTab.delete', 'Delete {{filename}}', { filename: b.filename })}>
+                <SharedButton variant="unstyled" type="button" className="dbx-icon-btn is-danger" onClick={() => remove(b.filename)} aria-label={t('app.backupsTab.delete', 'Delete {{filename}}', { filename: b.filename })}>
                     <Trash2 size={14} aria-hidden="true" />
-                </button>
+                </SharedButton>
             ),
         },
     ];

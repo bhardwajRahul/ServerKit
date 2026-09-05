@@ -55,7 +55,7 @@ function EnginePicker({ value, onChange, status, onInstallEngine }) {
             {CREATABLE_ENGINES.map((engine) => {
                 const running = Boolean(status?.[engine]?.installed && status?.[engine]?.running);
                 return (
-                    <button
+                    <Button variant="unstyled"
                         key={engine}
                         type="button"
                         className={`dbx-eng-opt${value === engine ? ' is-on' : ''}`}
@@ -70,11 +70,11 @@ function EnginePicker({ value, onChange, status, onInstallEngine }) {
                             <span className="dbx-eng-opt__name">{ENGINE_META[engine].label}</span>
                             <span className="dbx-eng-opt__sub">{running ? 'running' : 'not running'}</span>
                         </span>
-                    </button>
+                    </Button>
                 );
             })}
             {onInstallEngine && (
-                <button
+                <Button variant="unstyled"
                     type="button"
                     className="dbx-eng-opt dbx-eng-opt--ghost"
                     onClick={onInstallEngine}
@@ -84,7 +84,7 @@ function EnginePicker({ value, onChange, status, onInstallEngine }) {
                         <span className="dbx-eng-opt__name">{t('app.modals.installAnEngine', 'Install an engine')}</span>
                         <span className="dbx-eng-opt__sub">{t('app.modals.fromTheTemplateCatalog', 'from the template catalog')}</span>
                     </span>
-                </button>
+                </Button>
             )}
         </div>
     );

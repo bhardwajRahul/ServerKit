@@ -409,18 +409,18 @@ export function WalkthroughStudioPage() {
                     <div className="wts-library__list">
                         {loading && <p className="wts-muted">{t('common.loading', 'Loading…')}</p>}
                         {!loading && library.length === 0 && (
-                            <button type="button" className="wts-library__empty" onClick={newGuide}>
+                            <Button variant="unstyled" type="button" className="wts-library__empty" onClick={newGuide}>
                                 <Sparkles size={18} />
                                 <strong>{t('walkthroughStudio.createFirst', 'Create the first custom guide')}</strong>
                                 <span>{t('walkthroughStudio.noCodeRequired', 'No application code required')}</span>
-                            </button>
+                            </Button>
                         )}
                         {library.map((guide) => (
                             <div key={guide.id} className={`wts-library__item${originalId === guide.id ? ' is-active' : ''}`}>
-                                <button type="button" onClick={() => selectGuide(guide)}>
+                                <Button variant="unstyled" type="button" onClick={() => selectGuide(guide)}>
                                     <strong>{guide.title}</strong>
                                     <span>{guide.steps.length} {t('walkthroughStudio.steps', 'steps')}</span>
-                                </button>
+                                </Button>
                                 <Button type="button" variant="ghost" size="icon" onClick={() => deleteGuide(guide)} aria-label={t('common.actions.delete', 'Delete')}>
                                     <Trash2 size={13} />
                                 </Button>
@@ -486,7 +486,7 @@ export function WalkthroughStudioPage() {
                         <div className="wts-step-workbench">
                             <div className="wts-step-rail">
                                 {draft.steps.map((step, index) => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={`${step.id}-${index}`}
                                         type="button"
                                         className={index === stepIndex ? 'is-active' : ''}
@@ -496,7 +496,7 @@ export function WalkthroughStudioPage() {
                                         <span>{String(index + 1).padStart(2, '0')}</span>
                                         <strong>{step.title || t('walkthroughStudio.untitledStep', 'Untitled step')}</strong>
                                         <small>{step.completion?.type || 'manual'}</small>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
 

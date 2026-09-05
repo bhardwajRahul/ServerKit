@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import { GitMerge } from 'lucide-react';
 import api from '../../services/api';
 import EmptyState from '../EmptyState';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { InfoList, InfoItem } from '../InfoList';
 import DeploymentTimeline from '../deployments/DeploymentTimeline';
@@ -12,24 +12,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Pill, statusKind } from '@/components/ds';
 import Modal from '@/components/Modal';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
+import { CardFooter as SharedCardFooter } from '@/components/ui/card';
 
 // `embedded` renders this inside the Settings → Git & Deploy section, where the
 // shared RepoConnectForm already owns the connect/disconnect + repo identity. In
 // that mode we drop the empty-state CTA and the repo-config fields (repo/branch/
 // auto-deploy) and surface only the deploy pipeline: run actions, deploy scripts,
 // history and config checkpoints.
-const DeployTab = ({ appId, appPath, embedded = false }) => {
+const DeployTab = ({ appId, embedded = false }) => {
     const { t } = useTranslation();
     const toast = useToast();
     const { confirm: confirmDeploy } = useConfirm();
     const [config, setConfig] = useState(null);
-    const [gitStatus, setGitStatus] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [deploying, setDeploying] = useState(false);
     const [showConfigModal, setShowConfigModal] = useState(false);
-    const [loadingBranches, setLoadingBranches] = useState(false);
-    const [branches, setBranches] = useState([]);
     const [error, setError] = useState(null);
 
     const [configForm, setConfigForm] = useState({
@@ -40,11 +39,7 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
         postDeployScript: ''
     });
 
-    useEffect(() => {
-        loadData();
-    }, [appId]);
-
-    async function loadData() {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const [configRes, historyRes] = await Promise.all([
@@ -61,10 +56,6 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
                     preDeployScript: configRes.config.pre_deploy_script || '',
                     postDeployScript: configRes.config.post_deploy_script || ''
                 });
-                try {
-                    const statusRes = await api.getAppGitStatus(appId);
-                    setGitStatus(statusRes);
-                } catch { /* git status is optional context for the deploy tab */ }
             } else {
                 setConfig(null);
             }
@@ -75,7 +66,12 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [appId]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
 
     async function handleConfigureDeployment(e) {
         e.preventDefault();
@@ -101,7 +97,6 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
         try {
             await api.removeDeployment(appId);
             setConfig(null);
-            setGitStatus(null);
             loadData();
         } catch (err) {
             setError(err.message);
@@ -153,7 +148,7 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
             {error && (
                 <div className="alert alert-danger">
                     {error}
-                    <button type="button" onClick={() => setError(null)} className="alert-close">&times;</button>
+                    <Button variant="unstyled" type="button" onClick={() => setError(null)} className="alert-close">&times;</Button>
                 </div>
             )}
 
@@ -212,7 +207,7 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
                     </div>
 
                     <div className="deploy-grid">
-                        <div className="card">
+                        <SharedCard variant="legacy" className="card">
                             <h3>{embedded ? 'Deploy Scripts' : 'Configuration'}</h3>
                             {embedded ? (
                                 <InfoList>
@@ -226,7 +221,7 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
                                     <InfoItem label={t('app.deployTab.autoDeploy', 'Auto Deploy')} value={config.auto_deploy ? 'Enabled' : 'Disabled'} />
                                 </InfoList>
                             )}
-                            <div className="card-actions">
+                            <SharedCardFooter variant="legacy" className="card-actions">
                                 <Button variant="outline" size="sm" onClick={() => setShowConfigModal(true)}>
                                     {embedded ? 'Edit Scripts' : 'Edit'}
                                 </Button>
@@ -235,11 +230,11 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
                                         {t('common.actions.remove', 'Remove')}
                                     </Button>
                                 )}
-                            </div>
-                        </div>
+                            </SharedCardFooter>
+                        </SharedCard>
 
                         {history.length > 0 && (
-                            <div className="card">
+                            <SharedCard variant="legacy" className="card">
                                 <h3>{t('app.deployTab.deploymentHistory', 'Deployment History')}</h3>
                                 <div className="deployments-list">
                                     {history.slice(0, 5).map((dep, idx) => (
@@ -249,7 +244,7 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </SharedCard>
                         )}
                     </div>
                 </>
@@ -257,13 +252,13 @@ const DeployTab = ({ appId, appPath, embedded = false }) => {
 
             {/* Config snapshot timeline + diff — additive, independent of git
                 config so it shows the deploy history & config changes for any app. */}
-            <div className="card deploy-timeline-card">
+            <SharedCard variant="legacy" className="card deploy-timeline-card">
                 <h3>{t('app.deployTab.configCheckpoints', 'Config Checkpoints')}</h3>
                 <p className="deploy-timeline-card__hint">
                     {t('app.deployTab.anImmutableConfigCheckpointEnvKeys', 'An immutable config checkpoint (env keys, domains, image, build method, volumes) is captured before each deployment. Secret values are masked. Open a checkpoint to diff it against the previous one or restore it.')}
                 </p>
                 <DeploymentTimeline appId={appId} />
-            </div>
+            </SharedCard>
 
             <Modal open={showConfigModal} onClose={() => setShowConfigModal(false)} title={embedded ? t('app.deployTab.editDeployScripts', 'Edit Deploy Scripts') : t('app.deployTab.configureDeployment', 'Configure Deployment')}>
                         <form onSubmit={handleConfigureDeployment}>

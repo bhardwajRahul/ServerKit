@@ -17,9 +17,9 @@ import {
     CommandItem,
 } from '@/components/ui/command';
 import { useContributions } from '../plugins/contributions';
-import { useAuth } from '../contexts/AuthContext';
-import { useShellDock } from '../contexts/ShellDockContext';
-import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useShellDock } from '../contexts/useShellDock.js';
+import { useTheme } from '../contexts/useTheme.js';
 import { useWalkthroughs } from '../contexts/walkthroughContextValue';
 import usePaletteAuthz from '../hooks/usePaletteAuthz';
 import { CREATE_ITEMS } from '../data/createItems';
@@ -30,6 +30,7 @@ import { DOCS_LINKS } from '../utils/docsLinks';
 import { scoreItem } from '../utils/paletteScore';
 import { frecencyScore, recordUse, recentIds } from '../utils/paletteFrecency';
 import { getFavorites, getRecents } from '../utils/recents';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Group order in the list, plus a per-category icon and a scoring weight so the
 // headline categories (Settings, Pages, Actions) outrank raw entity hits on ties.
@@ -427,7 +428,7 @@ const CommandPalette = ({ open, onClose }) => {
                                     );
                                 })}
                                 {hiddenCount > 0 && (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         className="command-palette__more"
                                         onClick={() => setShowMoreCreates((value) => !value)}
@@ -439,7 +440,7 @@ const CommandPalette = ({ open, onClose }) => {
                                                 ? t('palette.moreIncludingExtensions', '{{count}} more · including extensions', { count: hiddenCount })
                                                 : t('palette.moreCreates', '{{count}} more', { count: hiddenCount })}</>
                                         )}
-                                    </button>
+                                    </SharedButton>
                                 )}
                             </CommandGroup>
                         );

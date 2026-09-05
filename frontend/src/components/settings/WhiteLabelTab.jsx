@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/useTheme.js';
 import { Star, X, Layers, Image, Type, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +48,7 @@ const WhiteLabelTab = () => {
                     <>
                         <div className="whitelabel-modes">
                             {WHITELABEL_MODES.map(({ id, label, icon: Icon, desc }) => (
-                                <button type="button"
+                                <Button variant="unstyled" type="button"
                                     key={id}
                                     className={`whitelabel-mode${whiteLabel.mode === id ? ' active' : ''}`}
                                     onClick={() => setWhiteLabel({ mode: id })}
@@ -56,7 +56,7 @@ const WhiteLabelTab = () => {
                                     <Icon size={20} />
                                     <span className="whitelabel-mode__label">{label}</span>
                                     <span className="whitelabel-mode__desc">{desc}</span>
-                                </button>
+                                </Button>
                             ))}
                         </div>
 

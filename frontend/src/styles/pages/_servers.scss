@@ -919,49 +919,7 @@
     }
 }
 
-.status-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-
-    &.large {
-        width: 14px;
-        height: 14px;
-    }
-}
-
-.tab-btn {
-    background: transparent;
-    border: none;
-    color: $text-tertiary;
-    font-size: $font-size-sm;
-    font-weight: $font-weight-medium;
-    padding: $space-3 $space-4;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: all $transition-base;
-
-    &:hover {
-        color: $text-primary;
-    }
-
-    &.active {
-        color: $text-primary;
-        border-bottom-color: $accent-primary;
-    }
-}
-
 // Overview Tab
-.overview-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $space-5;
-
-    @media (max-width: $breakpoint-lg) {
-        grid-template-columns: 1fr;
-    }
-}
 
 .info-card {
     background: $bg-card;
@@ -976,61 +934,6 @@
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin: 0 0 $space-4;
-    }
-}
-
-.info-list {
-    display: flex;
-    flex-direction: column;
-    gap: $space-3;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .info-label {
-        font-size: $font-size-sm;
-        color: $text-tertiary;
-    }
-
-    .info-value {
-        font-size: $font-size-sm;
-        color: $text-primary;
-
-        &.mono {
-            font-family: $font-mono;
-            font-size: $font-size-xs;
-        }
-    }
-}
-
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: $space-1;
-    padding: $space-1 $space-2;
-    border-radius: $radius-sm;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    text-transform: capitalize;
-
-    &.online {
-        @include status-variant($success, $success-bg);
-    }
-
-    &.offline {
-        @include status-variant($danger, $danger-bg);
-    }
-
-    &.connecting {
-        @include status-variant($warning, $warning-bg);
-    }
-
-    &.pending {
-        background: $bg-secondary;
-        color: $text-tertiary;
     }
 }
 
@@ -1245,51 +1148,6 @@
     }
 }
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-
-    th {
-        text-align: left;
-        font-size: $font-size-xs;
-        font-weight: $font-weight-semibold;
-        color: $text-tertiary;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        padding: $space-3;
-        border-bottom: 1px solid $border-subtle;
-    }
-
-    td {
-        padding: $space-3;
-        font-size: $font-size-sm;
-        color: $text-secondary;
-        border-bottom: 1px solid $border-subtle;
-    }
-
-    tr:last-child td {
-        border-bottom: none;
-    }
-
-    .container-name {
-        display: block;
-        color: $text-primary;
-        font-weight: $font-weight-medium;
-    }
-
-    .container-id {
-        display: block;
-        font-family: $font-mono;
-        font-size: $font-size-xs;
-        color: $text-tertiary;
-    }
-
-    .mono {
-        font-family: $font-mono;
-        font-size: $font-size-xs;
-    }
-}
-
 .status-pill {
     display: inline-flex;
     align-items: center;
@@ -1315,39 +1173,6 @@
     justify-content: flex-end;
 }
 
-.btn-icon {
-    background: transparent;
-    border: none;
-    color: $text-tertiary;
-    cursor: pointer;
-    padding: $space-2;
-    border-radius: $radius-sm;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    &:hover {
-        color: $text-primary;
-        background: $bg-hover;
-    }
-
-    &.success {
-        color: $success;
-
-        &:hover {
-            background: $success-bg;
-        }
-    }
-
-    &.danger {
-        color: $danger;
-
-        &:hover {
-            background: $danger-bg;
-        }
-    }
-}
-
 .empty-list {
     text-align: center;
     padding: $space-8;
@@ -1355,9 +1180,6 @@
 }
 
 // Metrics Tab
-.metrics-tab {
-    padding: 0;
-}
 
 .metrics-live-stats {
     margin-top: $space-6;
@@ -1544,9 +1366,6 @@
 }
 
 // Settings Tab
-.settings-tab {
-    max-width: none;
-}
 
 .settings-grid {
     display: grid;
@@ -1561,18 +1380,6 @@
 
     .form-section {
         margin-bottom: 0;
-    }
-}
-
-.settings-form {
-    margin-bottom: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 0;
-
-    .form-section .btn[type="submit"] {
-        margin-top: $space-4;
     }
 }
 
@@ -1878,16 +1685,6 @@
     }
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: $space-4;
-
-    @media (max-width: $breakpoint-sm) {
-        grid-template-columns: 1fr;
-    }
-}
-
 // ============================================
 // AGENT REGISTRATION SECTION
 // ============================================
@@ -1979,25 +1776,6 @@
 
     @media (max-width: $breakpoint-sm) {
         grid-template-columns: 1fr;
-    }
-}
-
-.permission-checkbox {
-    display: flex;
-    align-items: center;
-    gap: $space-2;
-    font-size: $font-size-sm;
-    color: $text-secondary;
-    cursor: pointer;
-
-    input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: $accent-primary;
-    }
-
-    &:hover {
-        color: $text-primary;
     }
 }
 
@@ -2314,7 +2092,6 @@
     color: $text-tertiary;
     font-size: $font-size-sm;
 }
-
 
 // ============================================
 // SERVERS — REDESIGNED OPS CONSOLE
@@ -2705,17 +2482,6 @@
 }
 
 // Servers workspace polish: match the Docker route's rail + work surface.
-.btn-ghost {
-    background: transparent;
-    border: 1px solid transparent;
-    color: $text-secondary;
-
-    &:hover {
-        background: $bg-elevated;
-        color: $text-primary;
-    }
-}
-
 
 // ============================================
 // SERVER DETAIL — REDESIGNED HEADER
@@ -3313,7 +3079,6 @@
 // tabs, settings) or styled by other partials. Scoping keeps this restyle
 // from leaking outside the ServerDetail route.
 .server-detail-page {
-
     // ---- In-page tab strip (shadcn Tabs renders .tabs / .tab) ----
     // Demo `.wp-tab` spec: 13px labels, faint → dim → active text + accent
     // underline. Tab ids/keys and deep-linking are untouched (JSX as-is).

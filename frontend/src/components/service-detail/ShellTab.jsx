@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef  } from 'react';
 import api from '../../services/api';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
@@ -15,17 +15,7 @@ const ShellTab = ({ appId, appName }) => {
     const [loading, setLoading] = useState(true);
     const terminalRef = useRef(null);
 
-    useEffect(() => {
-        loadContainers();
-    }, [appId]);
-
-    useEffect(() => {
-        if (terminalRef.current) {
-            terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-        }
-    }, [history]);
-
-    async function loadContainers() {
+    const loadContainers = useCallback(async () => {
         try {
             const data = await api.getContainers(true);
             const appContainers = (data.containers || []).filter(c =>
@@ -33,15 +23,26 @@ const ShellTab = ({ appId, appName }) => {
                 c.Labels?.['com.docker.compose.project'] === appName
             );
             setContainers(appContainers);
-            if (appContainers.length > 0 && !selectedContainer) {
-                setSelectedContainer(appContainers[0].Id);
+            if (appContainers.length > 0) {
+                setSelectedContainer(current => current || appContainers[0].Id);
             }
         } catch (err) {
             console.error('Failed to load containers:', err);
         } finally {
             setLoading(false);
         }
-    }
+    }, [appName]);
+
+    useEffect(() => {
+        loadContainers();
+    }, [appId, loadContainers]);
+
+    useEffect(() => {
+        if (terminalRef.current) {
+            terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+        }
+    }, [history]);
+
 
     async function handleExec(e) {
         e.preventDefault();
@@ -90,7 +91,7 @@ const ShellTab = ({ appId, appName }) => {
                             value={selectedContainer || ''}
                             onValueChange={setSelectedContainer}
                         >
-                            <SelectTrigger style={{ fontSize: '12px' }}>
+                            <SelectTrigger className="shell-tab__container-select">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

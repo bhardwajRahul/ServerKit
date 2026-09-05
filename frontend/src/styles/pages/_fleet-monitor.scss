@@ -11,7 +11,6 @@
 // again with a `dom-kpis` class that no stylesheet ever defined. The page uses
 // the <KpiBand> primitive now, so there is one definition of the grid and no
 // copy of it to lose. Only the page's own spacing stays.
-.sk-kpiband-wrap { margin-bottom: $space-5; }
 
 // Amber warning row (queued commands, forecast errors)
 .fleet-warnrow {

@@ -1,4 +1,4 @@
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import CenteredLayout from './layouts/CenteredLayout';
 import SplitHeroLayout from './layouts/SplitHeroLayout';
 import MinimalLayout from './layouts/MinimalLayout';

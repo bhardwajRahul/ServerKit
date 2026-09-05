@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isFavorite, toggleFavorite } from '@/utils/recents';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Pin/unpin an entity as a favorite (surfaced in the command palette's
 // Favorites section). Sits in detail-page title areas.
@@ -17,7 +18,7 @@ export function FavoriteStar({ type, id, path, label, className }) {
     };
 
     return (
-        <button
+        <SharedButton variant="unstyled"
             type="button"
             className={cn('fav-star', fav && 'is-on', className)}
             onClick={toggle}
@@ -26,7 +27,7 @@ export function FavoriteStar({ type, id, path, label, className }) {
             aria-pressed={fav}
         >
             <Star size={15} fill={fav ? 'currentColor' : 'none'} />
-        </button>
+        </SharedButton>
     );
 }
 

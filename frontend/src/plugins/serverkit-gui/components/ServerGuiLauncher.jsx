@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import ServerGui from './ServerGui.jsx';
 import { useTranslation } from 'serverkit-sdk';
+import { Button as SharedButton } from 'serverkit-sdk';
 
 /**
  * Floating launcher that appears only on /servers/:id pages.
@@ -29,27 +30,27 @@ export default function ServerGuiLauncher({ api }) {
 
     return (
         <>
-            <button type="button"
+            <SharedButton variant="unstyled" type="button"
                 className="sk-gui-launcher"
                 onClick={() => setOpen(true)}
                 title={t('gui.launcher.open', 'Open desktop view')}
             >
                 <DesktopIcon />
                 <span>{t('gui.launcher.label', 'Desktop')}</span>
-            </button>
+            </SharedButton>
 
             {open && (
                 <div className="sk-gui-modal" onClick={() => setOpen(false)}>
                     <div className="sk-gui-modal__inner" onClick={e => e.stopPropagation()}>
                         <header className="sk-gui-modal__header">
                             <h3>{t('gui.launcher.title', 'Desktop view')}</h3>
-                            <button type="button"
+                            <SharedButton variant="unstyled" type="button"
                                 className="sk-gui-modal__close"
                                 onClick={() => setOpen(false)}
                                 aria-label={t('common.actions.close', 'Close')}
                             >
                                 ×
-                            </button>
+                            </SharedButton>
                         </header>
                         <div className="sk-gui-modal__body">
                             <ServerGui api={api} serverId={serverId} />

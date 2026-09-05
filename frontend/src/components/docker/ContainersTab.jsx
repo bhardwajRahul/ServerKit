@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { statusKind } from '@/components/ds/status';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import LogToolbar from '../log-viewer/LogToolbar';
 import LogContent from '../log-viewer/LogContent';
@@ -502,7 +502,6 @@ const ContainersTab = ({ onStatsChange }) => {
                                     boxShadow: isRunning
                                         ? `0 0 6px hsl(${containerHue(getContainerName(container))} 60% 60% / 0.55)`
                                         : 'none',
-                                    opacity: isRunning ? 1 : 0.4,
                                 }}
                             />
                             <span title={getContainerName(container)}>{getContainerName(container)}</span>
@@ -659,13 +658,13 @@ const ContainersTab = ({ onStatsChange }) => {
                 const isProtected = isProtectedContainer(container);
                 return (
                     <div className="dx-row-actions" onClick={(e) => e.stopPropagation()}>
-                        <button type="button" className="dx-row-action" onClick={() => setLogsContainer(container)} title={t('common.labels.logs', 'Logs')}>
+                        <Button variant="unstyled" type="button" className="dx-row-action" onClick={() => setLogsContainer(container)} title={t('common.labels.logs', 'Logs')}>
                             <FileText size={13} />
-                        </button>
+                        </Button>
                         {isRunning && !isRemote && (
-                            <button type="button" className="dx-row-action" onClick={() => setExecContainer(container)} title={t('app.containersTab.exec', 'Exec')}>
+                            <Button variant="unstyled" type="button" className="dx-row-action" onClick={() => setExecContainer(container)} title={t('app.containersTab.exec', 'Exec')}>
                                 <TerminalLucide size={13} />
-                            </button>
+                            </Button>
                         )}
                         {isProtected ? (
                             <span className="dx-row-protected" title={t('app.containersTab.serverkitSystemContainerManagedByThe', 'ServerKit system container — managed by the panel, lifecycle controls are disabled')}>
@@ -673,21 +672,21 @@ const ContainersTab = ({ onStatsChange }) => {
                             </span>
                         ) : isRunning ? (
                             <>
-                                <button type="button" className="dx-row-action" onClick={() => handleAction(containerId, 'restart')} title={t('common.actions.restart', 'Restart')}>
+                                <Button variant="unstyled" type="button" className="dx-row-action" onClick={() => handleAction(containerId, 'restart')} title={t('common.actions.restart', 'Restart')}>
                                     <RotateCw size={13} />
-                                </button>
-                                <button type="button" className="dx-row-action is-danger" onClick={() => handleAction(containerId, 'stop')} title={t('common.actions.stop', 'Stop')}>
+                                </Button>
+                                <Button variant="unstyled" type="button" className="dx-row-action is-danger" onClick={() => handleAction(containerId, 'stop')} title={t('common.actions.stop', 'Stop')}>
                                     <Square size={13} />
-                                </button>
+                                </Button>
                             </>
                         ) : (
                             <>
-                                <button type="button" className="dx-row-action is-success" onClick={() => handleAction(containerId, 'start')} title={t('common.actions.start', 'Start')}>
+                                <Button variant="unstyled" type="button" className="dx-row-action is-success" onClick={() => handleAction(containerId, 'start')} title={t('common.actions.start', 'Start')}>
                                     <Play size={13} />
-                                </button>
-                                <button type="button" className="dx-row-action is-danger" onClick={() => handleAction(containerId, 'remove')} title={t('common.actions.remove', 'Remove')}>
+                                </Button>
+                                <Button variant="unstyled" type="button" className="dx-row-action is-danger" onClick={() => handleAction(containerId, 'remove')} title={t('common.actions.remove', 'Remove')}>
                                     <Trash2 size={13} />
-                                </button>
+                                </Button>
                             </>
                         )}
                     </div>
@@ -776,15 +775,15 @@ const ContainersTab = ({ onStatsChange }) => {
                 you cannot undo, and the per-row action already asks. Protected
                 system containers are skipped, not silently failed. */}
             <GridBulkBar count={picked.length} noun="container" onClear={() => setPicked([])}>
-                <button type="button" onClick={() => handleBulkAction('restart')} disabled={bulkBusy}>
+                <Button variant="unstyled" type="button" onClick={() => handleBulkAction('restart')} disabled={bulkBusy}>
                     <RotateCw size={13} /> {t('common.actions.restart', 'Restart')}
-                </button>
-                <button type="button" onClick={() => handleBulkAction('stop')} disabled={bulkBusy}>
+                </Button>
+                <Button variant="unstyled" type="button" onClick={() => handleBulkAction('stop')} disabled={bulkBusy}>
                     <Square size={13} /> {t('common.actions.stop', 'Stop')}
-                </button>
-                <button type="button" onClick={() => handleBulkAction('start')} disabled={bulkBusy}>
+                </Button>
+                <Button variant="unstyled" type="button" onClick={() => handleBulkAction('start')} disabled={bulkBusy}>
                     <Play size={13} /> {t('common.actions.start', 'Start')}
-                </button>
+                </Button>
             </GridBulkBar>
 
             {/* Only the SEARCH can empty the pane outright. A column rule that
@@ -955,12 +954,12 @@ const ContainerInspector = ({ container, stats, onAction, onOpenLogs, onOpenExec
                     <h3 title={getContainerName(container)}>{getContainerName(container)}</h3>
                     <span>{shortId(containerId)}</span>
                 </div>
-                <button type="button" className="dx-row-action" onClick={copyContainerId} title={t('app.containersTab.copyContainerId', 'Copy container ID')}>
+                <Button variant="unstyled" type="button" className="dx-row-action" onClick={copyContainerId} title={t('app.containersTab.copyContainerId', 'Copy container ID')}>
                     <Copy size={13} />
-                </button>
-                <button type="button" className="dx-row-action" onClick={onClose} title={t('app.containersTab.closeDetails', 'Close details')}>
+                </Button>
+                <Button variant="unstyled" type="button" className="dx-row-action" onClick={onClose} title={t('app.containersTab.closeDetails', 'Close details')}>
                     <X size={13} />
-                </button>
+                </Button>
             </div>
 
             <div className="dx-inspector-status">
@@ -971,13 +970,13 @@ const ContainerInspector = ({ container, stats, onAction, onOpenLogs, onOpenExec
             </div>
 
             <div className="dx-inspector-actions">
-                <button type="button" className="dx-action-btn" onClick={() => onOpenLogs(container)}>
+                <Button variant="unstyled" type="button" className="dx-action-btn" onClick={() => onOpenLogs(container)}>
                     <FileText size={13} /> {t('common.labels.logs', 'Logs')}
-                </button>
+                </Button>
                 {isRunning && !isRemote && (
-                    <button type="button" className="dx-action-btn" onClick={() => onOpenExec(container)}>
+                    <Button variant="unstyled" type="button" className="dx-action-btn" onClick={() => onOpenExec(container)}>
                         <TerminalLucide size={13} /> {t('app.containersTab.exec', 'Exec')}
-                    </button>
+                    </Button>
                 )}
                 {isProtected ? (
                     <span className="dx-action-protected" title={t('app.containersTab.serverkitSystemContainerManagedByThe', 'ServerKit system container — managed by the panel, lifecycle controls are disabled')}>
@@ -985,34 +984,34 @@ const ContainerInspector = ({ container, stats, onAction, onOpenLogs, onOpenExec
                     </span>
                 ) : isRunning ? (
                     <>
-                        <button type="button" className="dx-action-btn" onClick={() => onAction(containerId, 'restart')}>
+                        <Button variant="unstyled" type="button" className="dx-action-btn" onClick={() => onAction(containerId, 'restart')}>
                             <RotateCw size={13} /> {t('common.actions.restart', 'Restart')}
-                        </button>
-                        <button type="button" className="dx-action-btn is-danger" onClick={() => onAction(containerId, 'stop')}>
+                        </Button>
+                        <Button variant="unstyled" type="button" className="dx-action-btn is-danger" onClick={() => onAction(containerId, 'stop')}>
                             <Square size={13} /> {t('common.actions.stop', 'Stop')}
-                        </button>
+                        </Button>
                     </>
                 ) : (
                     <>
-                        <button type="button" className="dx-action-btn is-success" onClick={() => onAction(containerId, 'start')}>
+                        <Button variant="unstyled" type="button" className="dx-action-btn is-success" onClick={() => onAction(containerId, 'start')}>
                             <Play size={13} /> {t('common.actions.start', 'Start')}
-                        </button>
-                        <button type="button" className="dx-action-btn is-danger" onClick={() => onAction(containerId, 'remove')}>
+                        </Button>
+                        <Button variant="unstyled" type="button" className="dx-action-btn is-danger" onClick={() => onAction(containerId, 'remove')}>
                             <Trash2 size={13} /> {t('common.actions.remove', 'Remove')}
-                        </button>
+                        </Button>
                     </>
                 )}
             </div>
 
             <div className="dx-inspector-tabs">
                 {['overview', 'ports', 'mounts', 'env'].map(section => (
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         key={section}
                         className={activeSection === section ? 'active' : ''}
                         onClick={() => setActiveSection(section)}
                     >
                         {section}
-                    </button>
+                    </Button>
                 ))}
             </div>
 

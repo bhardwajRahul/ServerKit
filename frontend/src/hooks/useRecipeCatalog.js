@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { api } from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useServerMutation, useServerQuery } from './useServerQuery';
 
 // Data door for the Recipe catalog (serverkit-recipes registry). Pages render

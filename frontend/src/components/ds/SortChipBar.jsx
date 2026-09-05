@@ -2,6 +2,7 @@ import { ArrowUp, ArrowDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { translateLabel } from '../../i18n/labels';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Active-sort chip bar (Twenty's EditableSortChip pattern). Renders one chip
 // per sort level above the table: click the chip body to flip direction, ✕ to
@@ -34,7 +35,7 @@ export function SortChipBar({ columns = [], sorts = [], onChange, className }) {
                     {sorts.length > 1 && (
                         <span className="sk-sortchips__priority">{index + 1}</span>
                     )}
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-sortchips__body"
                         onClick={() => flip(sort.key)}
@@ -42,24 +43,24 @@ export function SortChipBar({ columns = [], sorts = [], onChange, className }) {
                     >
                         <span className="sk-sortchips__label">{labelFor(sort.key)}</span>
                         {sort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                    </button>
-                    <button
+                    </SharedButton>
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-sortchips__remove"
                         onClick={() => remove(sort.key)}
                         aria-label={t('app.sortChipBar.removeSortOn', 'Remove sort on {{value}}', { value: labelFor(sort.key) })}
                     >
                         <X size={12} />
-                    </button>
+                    </SharedButton>
                 </span>
             ))}
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="sk-sortchips__reset"
                 onClick={() => onChange?.([])}
             >
                 {t('app.sortChipBar.reset', 'Reset')}
-            </button>
+            </SharedButton>
         </div>
     );
 }

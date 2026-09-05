@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -108,7 +108,7 @@ const EnvironmentVariablesPanel = ({ resourceType, resourceId }) => {
         setLocalKeys(keys);
         setHierarchical(isHierarchical);
         setLoading(false);
-    }, [resourceType, resourceId, toast]);
+    }, [resourceType, resourceId, toast, t]);
 
     useEffect(() => { load(); }, [load]);
 

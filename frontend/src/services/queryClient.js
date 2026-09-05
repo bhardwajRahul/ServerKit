@@ -58,12 +58,12 @@ export function createQueryClient() {
         if (entry.state.isFetching) updateState(entry, { isFetching: false });
     };
 
-    const subscribe = (queryKey, listener) => {
+    const subscribe = (queryKey, listener, { cancelOnUnsubscribe = true } = {}) => {
         const entry = ensureEntry(queryKey);
         entry.listeners.add(listener);
         return () => {
             entry.listeners.delete(listener);
-            if (entry.listeners.size === 0) cancelEntry(entry);
+            if (cancelOnUnsubscribe && entry.listeners.size === 0) cancelEntry(entry);
         };
     };
 
@@ -135,6 +135,22 @@ export function createQueryClient() {
         });
     };
 
+    // Bound retained results for high-cardinality consumers (e.g. dashboard
+    // refresh ticks). Active observers and pending requests cannot be evicted;
+    // their eventual completion/unsubscribe can prune the namespace again.
+    const pruneQueries = (queryKeyPrefix, maxEntries) => {
+        const matching = [...entries.values()].filter((entry) => (
+            keyStartsWith(entry.queryKey, queryKeyPrefix)
+        ));
+        let excess = matching.length - Math.max(0, maxEntries);
+        for (const entry of matching) {
+            if (excess <= 0) break;
+            if (entry.promise || entry.listeners.size) continue;
+            entries.delete(entry.hash);
+            excess -= 1;
+        }
+    };
+
     const clear = () => {
         entries.forEach(cancelEntry);
         entries.clear();
@@ -146,6 +162,7 @@ export function createQueryClient() {
         fetchQuery,
         invalidateQueries,
         cancelQueries,
+        pruneQueries,
         clear,
     };
 }

@@ -64,15 +64,30 @@
     }
 }
 
-.error-message,
 .error-banner {
     display: flex;
     align-items: flex-start;
     gap: $space-2;
     line-height: 1.5;
+    background: $danger-bg;
+    border: 1px solid $danger-border;
+    color: $danger;
+    padding: $space-3 $space-4;
+    border-radius: $radius-lg;
+    margin-bottom: $space-6;
 
     > svg {
         flex-shrink: 0;
         margin-top: 2px;
+    }
+
+    &__close {
+        float: right;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        font-size: 18px;
+        line-height: 1;
     }
 }

@@ -51,7 +51,7 @@ const NewService = () => {
                 {STEPS.map(({ n, label }) => {
                     const state = step === n ? 'current' : step > n ? 'done' : 'todo';
                     return (
-                        <button
+                        <Button variant="unstyled"
                             key={n}
                             type="button"
                             className={`new-service-page__stepper-item new-service-page__stepper-item--${state}`}
@@ -63,7 +63,7 @@ const NewService = () => {
                                 {step > n ? <Check size={14} /> : n}
                             </span>
                             <span className="new-service-page__stepper-label">{label}</span>
-                        </button>
+                        </Button>
                     );
                 })}
             </nav>

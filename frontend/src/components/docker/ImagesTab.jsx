@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import EmptyState from '../EmptyState';
 import Modal from '@/components/Modal';
@@ -311,14 +311,14 @@ const ImagesTab = ({ onStatsChange }) => {
             className: 'text-right',
             render: (image) => (
                 <div className="dx-row-actions">
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="dx-row-action is-danger"
                         onClick={() => handleRemove(image)}
                         title={t('app.imagesTab.removeImage2', 'Remove image')}
                     >
                         <Trash2 size={13} />
-                    </button>
+                    </Button>
                 </div>
             ),
         },

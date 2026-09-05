@@ -254,3 +254,22 @@
     }
     .ra-svc__right { width: 100%; justify-content: space-between; }
 }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.ra-service-form > * + * { margin-top: 1rem; }
+.ra-service-field > * + * { margin-top: 0.375rem; }
+.ra-service-hint { font-size: 0.75rem; color: $text-tertiary; }
+.ra-service-routing { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0.75rem; }
+@media (min-width: $breakpoint-sm) {
+    .ra-service-routing { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (min-width: $breakpoint-sm) {
+    .ra-service-field--host { grid-column: span 2 / span 2; }
+}
+.ra-service-field--host > * + * { margin-top: 0.375rem; }
+.ra-service-option { display: flex; align-items: center; justify-content: space-between; }
+.ra-service-credentials { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 0.75rem; }
+@media (min-width: $breakpoint-sm) {
+    .ra-service-credentials { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.ra-service-description { font-size: 0.875rem; color: $text-tertiary; }

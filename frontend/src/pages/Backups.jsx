@@ -4,7 +4,7 @@ import { Upload, Check, AlertTriangle, Archive, Clock, Database, Package, Folder
 import api from '../services/api';
 import { formatBytes } from '@/utils/formatBytes';
 import { scrollBehavior } from '@/utils/reducedMotion';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
@@ -27,6 +27,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
 import useFocusParam from '../hooks/useFocusParam';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 // `backups` is kept as an alias so old /backups/backups links still resolve to
 // the archive, which now answers to `snapshots`.
@@ -638,7 +639,7 @@ const Backups = () => {
             render: (backup) => (
                 <div className="bk-actions">
                     {backup.type !== 'files' && (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="bk-iconbtn"
                             onClick={() => {
@@ -649,10 +650,10 @@ const Backups = () => {
                             aria-label={t('app.backups.restore', 'Restore {{name}}', { name: backup.name })}
                         >
                             <History size={15} />
-                        </button>
+                        </Button>
                     )}
                     {storageConfig?.provider !== 'local' && backup.remote_status !== 'synced' && (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="bk-iconbtn"
                             onClick={() => handleUploadToRemote(backup)}
@@ -663,9 +664,9 @@ const Backups = () => {
                             {uploadingBackup === backup.path
                                 ? <RefreshCw size={15} className="spinning" />
                                 : <Upload size={15} />}
-                        </button>
+                        </Button>
                     )}
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="bk-iconbtn bk-iconbtn--danger"
                         onClick={() => handleDeleteBackup(backup.path)}
@@ -673,7 +674,7 @@ const Backups = () => {
                         aria-label={t('app.backups.delete', 'Delete {{name}}', { name: backup.name })}
                     >
                         <Trash2 size={15} />
-                    </button>
+                    </Button>
                 </div>
             ),
         },
@@ -768,7 +769,7 @@ const Backups = () => {
             {error && (
                 <div className="alert alert-danger">
                     {error}
-                    <button type="button" onClick={() => setError(null)} className="alert-close">&times;</button>
+                    <Button variant="unstyled" type="button" onClick={() => setError(null)} className="alert-close">&times;</Button>
                 </div>
             )}
 
@@ -878,11 +879,11 @@ const Backups = () => {
                         }}
                     />
 
-                    <div className="card" id="bk-storage-form">
-                        <div className="card-header">
+                    <SharedCard variant="legacy" className="card" id="bk-storage-form">
+                        <SharedCardHeader variant="legacy" className="card-header">
                             <h3>{t('app.backups.configureDestination', 'Configure destination')}</h3>
-                        </div>
-                        <div className="card-body">
+                        </SharedCardHeader>
+                        <SharedCardContent variant="legacy" className="card-body">
                             {/* While ServerKit Cloud owns this
                                 destination the form here is read-only, and says
                                 where the setting comes from and how to take it
@@ -1081,18 +1082,18 @@ const Backups = () => {
                                 </div>
                             </form>
                             </fieldset>
-                        </div>
-                    </div>
+                        </SharedCardContent>
+                    </SharedCard>
                 </>
             )}
 
             {activeTab === 'settings' && (
                 <>
-                    <div className="card">
-                        <div className="card-header">
+                    <SharedCard variant="legacy" className="card">
+                        <SharedCardHeader variant="legacy" className="card-header">
                             <h3>{t('app.backups.backupSettings', 'Backup Settings')}</h3>
-                        </div>
-                        <div className="card-body">
+                        </SharedCardHeader>
+                        <SharedCardContent variant="legacy" className="card-body">
                             <form onSubmit={handleSaveConfig}>
                                 <FormField>
                                     <label className="checkbox-label">
@@ -1124,14 +1125,14 @@ const Backups = () => {
                                     </Button>
                                 </div>
                             </form>
-                        </div>
-                    </div>
+                        </SharedCardContent>
+                    </SharedCard>
 
-                    <div className="card">
-                        <div className="card-header">
+                    <SharedCard variant="legacy" className="card">
+                        <SharedCardHeader variant="legacy" className="card-header">
                             <h3>{t('app.backups.storageCostRates', 'Storage cost rates')}</h3>
-                        </div>
-                        <div className="card-body">
+                        </SharedCardHeader>
+                        <SharedCardContent variant="legacy" className="card-body">
                             <p className="form-help">
                                 {t('app.backups.serverkitIsFreeTheseAreYour', 'ServerKit is free — these are your own storage costs. Local is your server disk (leave at 0 if you don\'t track it). S3/B2 are your cloud provider\'s $/GB/month.')}
                             </p>
@@ -1178,8 +1179,8 @@ const Backups = () => {
                                     </Button>
                                 </div>
                             </form>
-                        </div>
-                    </div>
+                        </SharedCardContent>
+                    </SharedCard>
                 </>
             )}
 

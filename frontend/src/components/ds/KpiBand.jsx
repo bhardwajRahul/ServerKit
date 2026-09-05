@@ -1,5 +1,6 @@
 import { Children, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // KpiBand — the one responsive grid wrapper for KPI/stat tiles (design-system
 // primitive, plan 20). Lays a row of <MetricCard> tiles into a single grid so
@@ -86,14 +87,14 @@ export function KpiBand({
 
             {secondary.length > 0 && (
                 <>
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-kpiband__more"
                         aria-expanded={expanded}
                         onClick={() => setExpanded((v) => !v)}
                     >
                         {expanded ? 'Fewer stats' : `More stats (${secondary.length})`}
-                    </button>
+                    </SharedButton>
                     {expanded && (
                         <div className="sk-kpiband__strip">
                             {secondary.map((child, i) => (

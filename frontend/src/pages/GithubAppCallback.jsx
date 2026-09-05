@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Github, Loader2 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Lands here after the operator confirms the one-click GitHub App on github.com.
 // We convert the returned manifest code into stored app credentials, then chain
@@ -47,7 +48,7 @@ const GithubAppCallback = () => {
             }
         }
         run();
-    }, [navigate, searchParams, toast]);
+    }, [navigate, searchParams, toast, t]);
 
     return (
         <div className="auth-page">
@@ -59,9 +60,9 @@ const GithubAppCallback = () => {
                 {error ? (
                     <>
                         <p className="auth-error">{error}</p>
-                        <button type="button" className="btn btn-primary" onClick={() => navigate('/settings/connections')}>
+                        <SharedButton variant="primary" type="button" className="btn btn-primary" onClick={() => navigate('/settings/connections')}>
                             {t('app.githubAppCallback.backToConnections', 'Back to Connections')}
-                        </button>
+                        </SharedButton>
                     </>
                 ) : (
                     <div className="sso-loading">

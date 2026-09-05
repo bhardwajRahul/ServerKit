@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The selection bar: one component, one place on screen. Appears only when rows
 // are picked, and holds the actions that only make sense in bulk — so the
@@ -30,14 +31,14 @@ export function GridBulkBar({ count, noun = 'row', onClear, children }) {
             </span>
             <div className="sk-bulkbar__actions">{children}</div>
             {onClear && (
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="sk-bulkbar__clear"
                     onClick={onClear}
                     aria-label={t('app.gridBulkBar.clearSelection', 'Clear selection')}
                 >
                     <X size={14} />
-                </button>
+                </SharedButton>
             )}
         </div>
     );

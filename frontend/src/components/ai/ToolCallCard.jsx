@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Wrench, Check, AlertTriangle, Loader2, ChevronDown } from 'lucide-react';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Strip the "<prefix>__" namespace for display (e.g. core__list_apps -> list_apps).
 const displayName = (qualified) => {
@@ -34,7 +35,7 @@ const ToolCallCard = ({ call }) => {
 
     return (
         <div className={`sk-ai-tool-card${call.isError ? ' sk-ai-tool-card--error' : ''}`}>
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="sk-ai-tool-card__head"
                 onClick={() => setExpanded((v) => !v)}
@@ -46,7 +47,7 @@ const ToolCallCard = ({ call }) => {
                     {statusIcon}
                 </span>
                 <ChevronDown size={14} className={`sk-ai-tool-card__chev${expanded ? ' is-open' : ''}`} />
-            </button>
+            </SharedButton>
             {expanded && (
                 <div className="sk-ai-tool-card__body">
                     {Custom ? (

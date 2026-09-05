@@ -1,5 +1,6 @@
 import { Check, Loader2, X, Circle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Per-step duration formatter (seconds -> "3s" / "1m 4s").
 const fmtSeconds = (s) => {
@@ -33,7 +34,7 @@ export default function PipelineStrip({ steps, selected, onStepClick }) {
                 const Icon = STATE_ICON[step.state] || Circle;
                 const pct = Math.round(((step.seconds || 0) / total) * 100);
                 return (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         role="listitem"
                         key={step.index}
@@ -62,7 +63,7 @@ export default function PipelineStrip({ steps, selected, onStepClick }) {
                                 ? 'running…'
                                 : fmtSeconds(step.seconds) || (step.state === 'pending' ? 'pending' : '—')}
                         </span>
-                    </button>
+                    </SharedButton>
                 );
             })}
         </div>

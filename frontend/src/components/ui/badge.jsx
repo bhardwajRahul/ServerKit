@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 // Styling lives in styles/components/_badges.scss via the

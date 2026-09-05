@@ -1,15 +1,15 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useEffect, useMemo, useRef  } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Search, Star, ExternalLink, BookOpen, Container, Globe, BarChart3,
     Database, Shield, Cloud, MessageSquare, Video, Music, Image, Home,
     Code, Server, GitBranch, Workflow, HardDrive, Lock, Users, FileText,
-    Settings, Layers, LayoutTemplate, Check, Tag, Cpu,
+    Layers, LayoutTemplate, Check, Cpu,
     Newspaper, TrendingUp, Rocket, Box, Download, ChevronRight,
     CheckCircle2, AlertTriangle, XCircle, HelpCircle
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -218,6 +218,7 @@ const Templates = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const toast = useToast();
+    const toastError = toast.error;
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [templates, setTemplates] = useState([]);
@@ -233,31 +234,78 @@ const Templates = () => {
     const selectedKind = searchParams.get('kind') || '';
     const searchQuery = searchParams.get('search') || '';
     const installTemplateId = searchParams.get('install');
+    const installAttempt = useRef(null);
+    const templatesRequest = useRef(0);
 
     const { sorts, setSorts } = useTableSort({
         defaultSorts: FEATURED_SORT,
         storageKey: 'serverkit-table-templates-sort',
     });
 
+    const loadCategories = useCallback(async () => {
+        try {
+            const result = await api.getTemplateCategories();
+            setCategories(result.categories || []);
+        } catch {
+            toastError(t('app.templates.failedToLoadTemplates', 'Failed to load templates'));
+        }
+    }, [t, toastError]);
+
+    const loadTemplates = useCallback(async () => {
+        const request = ++templatesRequest.current;
+        setLoading(true);
+        try {
+            const result = await api.listTemplates(selectedCategory || null, searchQuery || null);
+            if (request === templatesRequest.current) setTemplates(result.templates || []);
+        } catch (err) {
+            console.error('Failed to load templates:', err);
+        } finally {
+            if (request === templatesRequest.current) setLoading(false);
+        }
+    }, [selectedCategory, searchQuery]);
+
+    const handleViewTemplate = useCallback(async (template) => {
+        // WordPress has its own dedicated page
+        if (template.id === 'wordpress') {
+            navigate('/wordpress');
+            return;
+        }
+        try {
+            const result = await api.getTemplate(template.id);
+            if (result.template) {
+                setSelectedTemplate(result.template);
+            }
+        } catch {
+            toastError(t('app.templates.failedToLoadTemplateDetails', 'Failed to load template details'));
+        }
+    }, [navigate, t, toastError]);
+
     useEffect(() => {
-        loadData();
-    }, []);
+        loadCategories();
+    }, [loadCategories]);
 
     // Compat: the old `#deploy-templates` anchor (linked from the wizard + docs)
     // now redirects to the repo-kind filtered view of the unified grid.
     useEffect(() => {
         if (window.location.hash === '#deploy-templates' && !selectedKind) {
-            updateFilters({ kind: 'repo' });
+            setSearchParams(previous => {
+                const next = new URLSearchParams(previous);
+                next.set('kind', 'repo');
+                return next;
+            });
             // Drop the hash so a refresh doesn't re-trigger.
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [selectedKind, setSearchParams]);
 
     // Auto-open install modal if template ID is in URL (compose templates only;
     // repo templates deploy through the wizard, never the install modal).
     useEffect(() => {
-        if (installTemplateId && templates.length > 0 && !loading) {
+        if (!installTemplateId) {
+            installAttempt.current = null;
+            return;
+        }
+        if (templates.length > 0 && !loading && installAttempt.current !== installTemplateId) {
             if (installTemplateId === 'wordpress') {
                 navigate('/wordpress', { replace: true });
                 return;
@@ -266,19 +314,22 @@ const Templates = () => {
             // Repo templates are no longer excluded — they deploy from this same
             // drawer, so ?install=<id> works for the whole catalog.
             if (template) {
+                installAttempt.current = installTemplateId;
                 handleViewTemplate(template).then(() => {
                     setShowInstallModal(true);
                 });
-                const newParams = new URLSearchParams(searchParams);
-                newParams.delete('install');
-                setSearchParams(newParams, { replace: true });
+                setSearchParams(previous => {
+                    const next = new URLSearchParams(previous);
+                    next.delete('install');
+                    return next;
+                }, { replace: true });
             }
         }
-    }, [installTemplateId, templates, loading]);
+    }, [installTemplateId, templates, loading, handleViewTemplate, navigate, setSearchParams]);
 
     useEffect(() => {
         loadTemplates();
-    }, [selectedCategory, searchQuery]);
+    }, [loadTemplates]);
 
     // Functional update: ?view= is written by the chrome from its own copy of
     // the search string, so rebuilding this one from a captured `searchParams`
@@ -304,29 +355,6 @@ const Templates = () => {
         updateFilters({ category: null, kind: null, search: null });
     }
 
-    async function loadData() {
-        try {
-            const [templatesRes, categoriesRes] = await Promise.all([
-                api.listTemplates(),
-                api.getTemplateCategories()
-            ]);
-            setTemplates(templatesRes.templates || []);
-            setCategories(categoriesRes.categories || []);
-        } catch (err) {
-            toast.error(t('app.templates.failedToLoadTemplates', 'Failed to load templates'));
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    async function loadTemplates() {
-        try {
-            const result = await api.listTemplates(selectedCategory || null, searchQuery || null);
-            setTemplates(result.templates || []);
-        } catch (err) {
-            console.error('Failed to load templates:', err);
-        }
-    }
 
     function handleIconError(templateId) {
         setFailedIcons(prev => new Set(prev).add(templateId));
@@ -352,101 +380,10 @@ const Templates = () => {
         return <IconComponent size={size} />;
     }
 
-    function getCategoryIcon(category) {
-        const icons = {
-            monitoring: BarChart3,
-            devops: Settings,
-            docker: Container,
-            cms: FileText,
-            blog: BookOpen,
-            storage: HardDrive,
-            collaboration: Users,
-            git: GitBranch,
-            development: Code,
-            networking: Globe,
-            proxy: Workflow,
-            ssl: Lock,
-            productivity: Layers,
-            management: Server,
-            publishing: Newspaper,
-            media: Video,
-            security: Shield,
-            database: Database,
-            'home-automation': Home,
-            analytics: TrendingUp,
-            iot: Cpu,
-            // AI / LLM
-            ai: Cpu,
-            llm: Cpu,
-            gateway: Server,
-            rag: Cpu,
-            chat: MessageSquare,
-            'low-code': Workflow,
-            workflow: Workflow,
-            website: Globe,
-            deployment: Rocket,
-            // Search
-            search: Search,
-            vector: Database,
-            // Notifications / messaging
-            notifications: MessageSquare,
-            messaging: MessageSquare,
-            communication: MessageSquare,
-            support: MessageSquare,
-            // Documents / news
-            documents: FileText,
-            pdf: FileText,
-            notes: FileText,
-            rss: Newspaper,
-            news: Newspaper,
-            // Finance / business
-            finance: TrendingUp,
-            business: TrendingUp,
-            // Productivity / tasks
-            tasks: Workflow,
-            'project-management': Workflow,
-            bookmarks: BookOpen,
-            ebooks: BookOpen,
-            audiobooks: Music,
-            automation: Workflow,
-            downloads: HardDrive,
-            // Identity / networking / privacy
-            identity: Shield,
-            sso: Shield,
-            vpn: Shield,
-            privacy: Lock,
-            dns: Globe,
-            forum: Users,
-            community: Users,
-            // Observability
-            observability: BarChart3,
-            apm: BarChart3
-        };
-        const Icon = icons[category] || Container;
-        return <Icon size={14} />;
-    }
 
     // Load the full template record. Used by the ?install=<id> deep link, which
     // needs variables/description before the deploy drawer can open.
-    async function handleViewTemplate(template) {
-        // WordPress has its own dedicated page
-        if (template.id === 'wordpress') {
-            navigate('/wordpress');
-            return;
-        }
-        try {
-            const result = await api.getTemplate(template.id);
-            if (result.template) {
-                setSelectedTemplate(result.template);
-            }
-        } catch (err) {
-            toast.error(t('app.templates.failedToLoadTemplateDetails', 'Failed to load template details'));
-        }
-    }
 
-    function deployRepoTemplate(templateId) {
-        navigate(`/services/new?template=${encodeURIComponent(templateId)}`);
-    }
 
     // What both a card click and its Deploy button do — one predictable
     // outcome for every template, compose or repo. A curated repo template
@@ -464,7 +401,7 @@ const Templates = () => {
                 setSelectedTemplate(result.template);
                 setShowInstallModal(true);
             }
-        } catch (err) {
+        } catch {
             toast.error(t('app.templates.failedToLoadTemplateDetails', 'Failed to load template details'));
         }
     }
@@ -557,7 +494,7 @@ const Templates = () => {
                 placeholder={t('app.templates.searchTemplates', 'Search templates…')}
             />
             <FilterButton count={activeFilterCount} onClick={() => setFiltersOpen(true)} />
-            <GridToolsMenu {...chrome.toolsProps} onRefresh={loadData} />
+            <GridToolsMenu {...chrome.toolsProps} onRefresh={() => Promise.all([loadCategories(), loadTemplates()])} />
         </>,
     );
 
@@ -576,22 +513,22 @@ const Templates = () => {
                 templates entirely, so both routes lead the page rather than
                 hiding behind the New Service tab. */}
             <div className="tpl-quickstart">
-                <button type="button" className="tpl-quickstart__card" onClick={() => navigate('/services/new?source=github')}>
+                <Button variant="unstyled" type="button" className="tpl-quickstart__card" onClick={() => navigate('/services/new?source=github')}>
                     <span className="tpl-quickstart__ico"><GitBranch size={18} /></span>
                     <span className="tpl-quickstart__body">
                         <span className="tpl-quickstart__title">{t('app.templates.importFromGithub', 'Import from GitHub')}</span>
                         <span className="tpl-quickstart__sub">{t('app.templates.connectARepoAndAutoDeploy', 'Connect a repo and auto-deploy on every push')}</span>
                     </span>
                     <ChevronRight size={16} className="tpl-quickstart__arrow" />
-                </button>
-                <button type="button" className="tpl-quickstart__card" onClick={() => navigate('/services/new?source=archive')}>
+                </Button>
+                <Button variant="unstyled" type="button" className="tpl-quickstart__card" onClick={() => navigate('/services/new?source=archive')}>
                     <span className="tpl-quickstart__ico"><Download size={18} /></span>
                     <span className="tpl-quickstart__body">
                         <span className="tpl-quickstart__title">{t('app.templates.importAZip', 'Import a ZIP')}</span>
                         <span className="tpl-quickstart__sub">{t('app.templates.dropInAProjectArchiveTo', 'Drop in a project archive to build & run')}</span>
                     </span>
                     <ChevronRight size={16} className="tpl-quickstart__arrow" />
-                </button>
+                </Button>
             </div>
 
             {/* The one row of chrome: the active view names what you are looking
@@ -755,7 +692,6 @@ const CapacityNote = ({ capacity, loading }) => {
 
 const InstallModal = ({ template, onClose, onSuccess, renderIcon }) => {
     const { t } = useTranslation();
-    const toast = useToast();
     const navigate = useNavigate();
     const isRepo = (template.kind || 'compose') === 'repo';
     const [appName, setAppName] = useState(

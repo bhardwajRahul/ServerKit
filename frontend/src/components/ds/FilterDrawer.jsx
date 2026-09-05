@@ -1,3 +1,4 @@
+import { countActiveFilters, emptyFilterValue } from './filterValues';
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -28,23 +29,6 @@ import { useTranslation } from 'react-i18next';
 //   value  = { ownership: '', category: ['security'] }
 //
 // `single` groups hold a string ('' = none); `multi` groups hold a string[].
-
-// Count how many filter selections are active — a single-select group counts 1
-// when set, a multi-select group counts its selected length. Drives the
-// FilterButton badge.
-export function countActiveFilters(value = {}) {
-    return Object.values(value).reduce((total, entry) => {
-        if (Array.isArray(entry)) return total + entry.length;
-        return total + (entry ? 1 : 0);
-    }, 0);
-}
-
-// Empty value object for a given schema — used to clear/initialise state.
-export function emptyFilterValue(groups = []) {
-    const next = {};
-    groups.forEach((group) => { next[group.key] = group.type === 'multi' ? [] : ''; });
-    return next;
-}
 
 // The trigger button, with an active-count badge. Kept here so hosts get the
 // button + drawer as a matched pair.
@@ -126,7 +110,7 @@ export function FilterDrawer({
                         <div className="sk-filter__label">{group.label}</div>
                         <div className="sk-filter__chips">
                             {group.options.map((option) => (
-                                <button
+                                <Button variant="unstyled"
                                     key={option.value}
                                     type="button"
                                     className={cn('sk-filter__chip', isOn(group, option.value) && 'is-on')}
@@ -140,7 +124,7 @@ export function FilterDrawer({
                                     {option.count != null && (
                                         <span className="sk-filter__chip-count">{option.count}</span>
                                     )}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </div>

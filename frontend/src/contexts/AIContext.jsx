@@ -1,6 +1,4 @@
-import {
-    createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef,
-} from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import api from '../services/api';
 import usePageContext from '../hooks/ai/usePageContext';
 import {
@@ -13,7 +11,7 @@ import {
     toAttachmentPayload,
 } from '../lib/ai/attachments';
 
-const AIContext = createContext(null);
+import { AIContext } from './useServerkitAI.js';
 
 const AI_CONFIG_CHANGED_EVENT = 'serverkit:ai-config-changed';
 
@@ -431,11 +429,3 @@ function matchRoute(pattern, route) {
     if (pattern.endsWith('*')) return route.startsWith(pattern.slice(0, -1));
     return route === pattern || route.startsWith(`${pattern}/`);
 }
-
-export function useServerkitAI() {
-    const ctx = useContext(AIContext);
-    if (!ctx) throw new Error('useServerkitAI must be used within AIProvider');
-    return ctx;
-}
-
-export { AIContext };

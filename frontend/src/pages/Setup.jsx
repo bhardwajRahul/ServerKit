@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import { Check, ArrowLeft } from 'lucide-react';
 import ServerKitLogo from '../components/ServerKitLogo';
 import SetupStepAccount from '../components/setup/SetupStepAccount';
@@ -33,8 +33,8 @@ const Setup = () => {
 
     // If user is already authenticated (e.g. page refresh mid-wizard), skip to step 2
     useEffect(() => {
-        if (isAuthenticated && currentStep === 1) {
-            setCurrentStep(2);
+        if (isAuthenticated) {
+            setCurrentStep(step => step === 1 ? 2 : step);
         }
     }, [isAuthenticated]);
 
@@ -140,7 +140,7 @@ const Setup = () => {
                 {currentStep > 2 && (
                     <Button
                         variant="ghost"
-                        className="btn-wizard-prev mb-4"
+                        className="btn-wizard-prev setup-back-action"
                         onClick={handleBack}
                     >
                         <ArrowLeft size={16} />

@@ -1,6 +1,4 @@
-import {
-    createContext, useCallback, useContext, useEffect, useMemo, useRef, useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { activateLocale } from '../i18n';
 import { setFormatLocale } from '../utils/intl';
 import {
@@ -8,7 +6,7 @@ import {
     directionFor, languageInfo, matchSupported, navigatorLanguages, resolveLocale,
 } from '../i18n/resolveLocale';
 
-const LocaleContext = createContext(null);
+import { LocaleContext } from './useLocale.js';
 
 /**
  * Owns the active locale (plan 79 §B1).
@@ -113,11 +111,7 @@ export function LocaleProvider({ children }) {
     return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
 
-export function useLocale() {
-    const context = useContext(LocaleContext);
-    if (!context) throw new Error('useLocale must be used within a LocaleProvider');
-    return context;
-}
+
 
 function readStored() {
     try {

@@ -14,6 +14,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { copyToClipboard } from '@/utils/clipboard';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const ICON_CATALOG = {
     'General': {
@@ -106,7 +107,7 @@ const IconReferenceTab = () => {
                     <h3>{group}</h3>
                     <div className="icon-reference-grid">
                         {Object.entries(icons).map(([name, IconComp]) => (
-                            <button type="button"
+                            <SharedButton variant="unstyled" type="button"
                                 key={name}
                                 className={`icon-reference-item ${copiedIcon === name ? 'copied' : ''}`}
                                 onClick={() => handleCopyImport(name)}
@@ -116,7 +117,7 @@ const IconReferenceTab = () => {
                                 <span className="icon-reference-name">
                                     {copiedIcon === name ? 'Copied!' : name}
                                 </span>
-                            </button>
+                            </SharedButton>
                         ))}
                     </div>
                 </div>

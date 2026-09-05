@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Segmented toggle. Replaces native <select> / filter-chip clusters.
 // options: array of strings, or { value, label, icon?, count? } objects.
@@ -7,7 +8,7 @@ export function SegControl({ options = [], value, onChange, className, ...props 
     return (
         <div className={cn('sk-seg', className)} role="tablist" {...props}>
             {items.map((o) => (
-                <button
+                <SharedButton variant="unstyled"
                     key={o.value}
                     type="button"
                     role="tab"
@@ -18,7 +19,7 @@ export function SegControl({ options = [], value, onChange, className, ...props 
                     {o.icon}
                     {o.label}
                     {o.count != null && <span className="sk-seg__count">{o.count}</span>}
-                </button>
+                </SharedButton>
             ))}
         </div>
     );

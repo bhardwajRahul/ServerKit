@@ -143,14 +143,6 @@
     }
 }
 
-.sk-tabgroup__inner,
-.page-container,
-.wp-list {
-    > .empty-state--loading:has(.sk-page-wrap) {
-        padding: 0;
-    }
-}
-
 // ============================================
 // PAGE SKELETON ARCHETYPES  (components/PageSkeleton.jsx)
 // One shape per page layout, so the placeholder predicts what is about to

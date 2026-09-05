@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { History, RefreshCw, Loader2, List, CalendarDays, X } from 'lucide-react';
 
 import api from '@/services/api';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast.js';
 import { useOperations } from '@/contexts/OperationsContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui/button';
@@ -80,7 +80,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } finally {
             setLoading(false);
         }
-    }, [targetType, targetId, toast]);
+    }, [targetId, targetType, toast, t]);
 
     useEffect(() => {
         setLoading(true);
@@ -113,7 +113,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } finally {
             setSaving(false);
         }
-    }, [targetType, targetId, toast]);
+    }, [targetType, targetId, toast, t]);
 
     const handleSaveSchedule = useCallback(async (fields) => {
         setSaving(true);
@@ -126,7 +126,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } finally {
             setSaving(false);
         }
-    }, [targetType, targetId, toast]);
+    }, [targetType, targetId, toast, t]);
 
     const handleBackupNow = useCallback(async () => {
         setBackingUp(true);
@@ -140,7 +140,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } finally {
             setBackingUp(false);
         }
-    }, [targetType, targetId, toast, scheduleReloads, openRun]);
+    }, [targetType, targetId, openRun, toast, t, scheduleReloads]);
 
     const handleRunDrill = useCallback(async () => {
         setDrilling(true);
@@ -153,7 +153,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } finally {
             setDrilling(false);
         }
-    }, [targetType, targetId, toast, scheduleReloads]);
+    }, [targetType, targetId, toast, t, scheduleReloads]);
 
     // Restore is always initiated from a run — opening the restore drawer.
     const openRestore = useCallback((run) => setRestoreRun(run), []);
@@ -172,7 +172,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } catch (err) {
             toast.error(err.message || t('app.protectionPanel.failedToStartRestore', 'Failed to start restore'));
         }
-    }, [restoreRun, targetType, targetId, showMaintenanceModeOption, toast, scheduleReloads]);
+    }, [restoreRun, targetType, targetId, showMaintenanceModeOption, toast, t, scheduleReloads]);
 
     const handleVerify = useCallback(async (run) => {
         try {
@@ -183,7 +183,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } catch (err) {
             toast.error(err.message || t('app.protectionPanel.verificationFailed', 'Verification failed'));
         }
-    }, [targetType, targetId, toast, load]);
+    }, [targetType, targetId, toast, t, load]);
 
     const handleDelete = useCallback(async (run) => {
         const ok = await confirm({
@@ -201,7 +201,7 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
         } catch (err) {
             toast.error(err.message || t('app.protectionPanel.failedToDeleteBackup', 'Failed to delete backup'));
         }
-    }, [confirm, targetType, targetId, toast, load, detailRun]);
+    }, [confirm, t, targetType, targetId, toast, detailRun?.id, load]);
 
     const visibleRuns = useMemo(
         () => (dayFilter ? runs.filter((r) => sameLocalDay(r.started_at, dayFilter)) : runs),
@@ -236,31 +236,31 @@ export default function ProtectionPanel({ targetType, targetId, targetName, show
                         <span>{t('app.protectionPanel.backupHistory', 'Backup history')}</span>
                         <span className="app-panel-header-actions backup-history-card__tools">
                             {dayFilter && (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="backup-history-card__chip"
                                     onClick={() => setDayFilter(null)}
                                 >
                                     {dayFilter.toLocaleDateString()} <X size={12} />
-                                </button>
+                                </Button>
                             )}
                             <div className="backup-history-card__toggle">
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className={historyView === 'list' ? 'is-active' : ''}
                                     onClick={() => setHistoryView('list')}
                                     aria-label={t('app.protectionPanel.listView', 'List view')}
                                 >
                                     <List size={14} />
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="unstyled"
                                     type="button"
                                     className={historyView === 'calendar' ? 'is-active' : ''}
                                     onClick={() => setHistoryView('calendar')}
                                     aria-label={t('app.protectionPanel.calendarView', 'Calendar view')}
                                 >
                                     <CalendarDays size={14} />
-                                </button>
+                                </Button>
                             </div>
                             <Button size="sm" variant="outline" onClick={load} disabled={loading} title={t('common.actions.refresh', 'Refresh')}>
                                 {loading ? <Loader2 size={14} className="spin" /> : <RefreshCw size={14} />}

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast.js';
 import { copyToClipboard } from '@/utils/clipboard';
 
 // Copy-to-clipboard hook with toast feedback and a transient `copied` flag.

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search, RefreshCw, ChevronDown, ChevronRight, FileText, AlertTriangle, Activity, Database, Globe, Mail, Shield, Server } from 'lucide-react';
 import { LOG_GROUPS, categoriseLog, logKindFromPath, formatBytes, formatRelativeTime } from './logHelpers';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const GROUP_ICONS = {
     web: Globe,
@@ -59,14 +60,14 @@ export default function LogFileList({ files, selectedPath, onSelect, onRefresh, 
                         placeholder={t('app.logFileList.filterLogFiles', 'Filter log files…')}
                     />
                 </div>
-                <button type="button"
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn"
                     onClick={onRefresh}
                     disabled={loading}
                     title={t('app.logFileList.reloadList', 'Reload list')}
                 >
                     <RefreshCw size={13} className={loading ? 'spinning' : ''} />
-                </button>
+                </SharedButton>
             </div>
 
             <div className="lv-sidebar-body">
@@ -85,7 +86,7 @@ export default function LogFileList({ files, selectedPath, onSelect, onRefresh, 
                         const isCollapsed = collapsed.has(group.id);
                         return (
                             <div key={group.id} className="lv-group">
-                                <button type="button"
+                                <SharedButton variant="unstyled" type="button"
                                     className="lv-group-header"
                                     onClick={() => toggleGroup(group.id)}
                                 >
@@ -93,14 +94,14 @@ export default function LogFileList({ files, selectedPath, onSelect, onRefresh, 
                                     <Icon size={13} className="lv-group-icon" />
                                     <span>{group.label}</span>
                                     <span className="lv-group-count">{group.files.length}</span>
-                                </button>
+                                </SharedButton>
                                 {!isCollapsed && (
                                     <div className="lv-group-files">
                                         {group.files.map((log) => {
                                             const kind = logKindFromPath(log.path || log.name);
                                             const isActive = selectedPath === log.path;
                                             return (
-                                                <button type="button"
+                                                <SharedButton variant="unstyled" type="button"
                                                     key={log.path}
                                                     className={`lv-file ${isActive ? 'active' : ''}`}
                                                     onClick={() => onSelect(log)}
@@ -114,7 +115,7 @@ export default function LogFileList({ files, selectedPath, onSelect, onRefresh, 
                                                             {formatRelativeTime(log.modified)}
                                                         </span>
                                                     )}
-                                                </button>
+                                                </SharedButton>
                                             );
                                         })}
                                     </div>

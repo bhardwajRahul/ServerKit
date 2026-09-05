@@ -57,7 +57,7 @@ const SetupHealthWidget = () => {
     // Clean → slim "all set" line, not a big empty card.
     if (openCount === 0) {
         return (
-            <button
+            <Button variant="unstyled"
                 type="button"
                 className="setup-health-widget setup-health-widget--clean"
                 onClick={() => navigate('/monitoring/doctor')}
@@ -67,7 +67,7 @@ const SetupHealthWidget = () => {
                     {t('app.setupHealthWidget.allSet', 'All set —')} {summary.score}{t('app.setupHealthWidget.setupHealth2', '% setup health')}
                 </span>
                 <ChevronRight size={14} />
-            </button>
+            </Button>
         );
     }
 
@@ -100,7 +100,7 @@ const SetupHealthWidget = () => {
             >
                 {t('app.setupHealthWidget.review', 'Review')}
             </Button>
-            <button
+            <Button variant="unstyled"
                 type="button"
                 className="setup-health-widget__dismiss"
                 onClick={dismiss}
@@ -108,7 +108,7 @@ const SetupHealthWidget = () => {
                 title={t('app.setupHealthWidget.dismissHint', 'Dismiss — setup health stays in the status bar')}
             >
                 <X size={14} />
-            </button>
+            </Button>
         </div>
     );
 };

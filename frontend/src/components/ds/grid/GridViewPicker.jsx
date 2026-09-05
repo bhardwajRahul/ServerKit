@@ -5,6 +5,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The saved-view selector, rendered as the page's own heading rather than yet
 // another toolbar button — the view IS what you are looking at, so its name is
@@ -52,45 +53,45 @@ export function GridViewPicker({ views, counts, onCreate, label = 'items', actio
         const isActive = active && (active.builtin ? active.name === view.name : active.id === view.id);
         return (
             <div key={key} className={cn('sk-viewpick__row', isActive && 'is-on')}>
-                <button type="button" className="sk-viewpick__rowmain" onClick={() => pick(view)}>
+                <SharedButton variant="unstyled" type="button" className="sk-viewpick__rowmain" onClick={() => pick(view)}>
                     <span className="sk-viewpick__dot" data-builtin={view.builtin ? 'true' : 'false'} />
                     <span className="sk-viewpick__nm">{view.name}</span>
                     {view.is_default && <Star size={11} className="sk-viewpick__star" />}
                     {counts && <span className="sk-viewpick__n">{counts(view)}</span>}
-                </button>
+                </SharedButton>
                 {!view.builtin && (
                     <Popover
                         open={menuFor === key}
                         onOpenChange={(o) => setMenuFor(o ? key : null)}
                     >
                         <PopoverTrigger asChild>
-                            <button type="button" className="sk-viewpick__cog" aria-label={`${view.name} options`}>
+                            <SharedButton variant="unstyled" type="button" className="sk-viewpick__cog" aria-label={`${view.name} options`}>
                                 <MoreVertical size={14} />
-                            </button>
+                            </SharedButton>
                         </PopoverTrigger>
                         <PopoverContent align="end" sideOffset={4} className="ui-popover-panel sk-gridmenu">
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-gridmenu__opt"
                                 onClick={() => { views.toggleDefault(view); setMenuFor(null); }}
                             >
                                 <Star size={13} />{view.is_default ? 'Unset as default' : 'Make default'}
-                            </button>
-                            <button
+                            </SharedButton>
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-gridmenu__opt"
                                 onClick={() => { pick(view); onCreate(`${view.name} copy`, true); setMenuFor(null); }}
                             >
                                 <Copy size={13} />{t('app.gridViewPicker.duplicateView', 'Duplicate view')}
-                            </button>
+                            </SharedButton>
                             <div className="sk-gridmenu__sep" />
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-gridmenu__opt is-danger"
                                 onClick={() => { views.removeView(view); setMenuFor(null); }}
                             >
                                 <Trash2 size={13} />{t('app.gridViewPicker.deleteView', 'Delete view')}
-                            </button>
+                            </SharedButton>
                         </PopoverContent>
                     </Popover>
                 )}
@@ -102,11 +103,11 @@ export function GridViewPicker({ views, counts, onCreate, label = 'items', actio
         <div className="sk-viewbar">
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
-                    <button type="button" className={cn('sk-viewpick', open && 'is-open')}>
+                    <SharedButton variant="unstyled" type="button" className={cn('sk-viewpick', open && 'is-open')}>
                         <span className="sk-viewpick__title">{activeName}</span>
                         {views.isDirty && <span className="sk-viewpick__ast">*</span>}
                         <ChevronDown size={16} />
-                    </button>
+                    </SharedButton>
                 </PopoverTrigger>
                 <PopoverContent align="start" sideOffset={6} className="ui-popover-panel sk-gridmenu sk-viewpick__menu">
                     {!!builtins.length && <div className="sk-gridmenu__head">{t('app.gridViewPicker.builtIn', 'Built in')}</div>}
@@ -132,25 +133,25 @@ export function GridViewPicker({ views, counts, onCreate, label = 'items', actio
                                     }}
                                 />
                             </div>
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className={cn('sk-gridmenu__opt', fromCurrent && 'is-on')}
                                 onClick={() => setFromCurrent((v) => !v)}
                             >
                                 <span className="sk-gridmenu__box"><Check size={11} /></span>
                                 {t('app.gridViewPicker.startFromCurrentFiltersColumns', 'Start from current filters & columns')}
-                            </button>
+                            </SharedButton>
                             <div className="sk-gridmenu__foot">
-                                <button type="button" onClick={() => setCreating(false)}>{t('common.actions.cancel', 'Cancel')}</button>
-                                <button type="button" className="is-primary" disabled={!name.trim()} onClick={submitNew}>
+                                <SharedButton variant="unstyled" type="button" onClick={() => setCreating(false)}>{t('common.actions.cancel', 'Cancel')}</SharedButton>
+                                <SharedButton variant="unstyled" type="button" className="is-primary" disabled={!name.trim()} onClick={submitNew}>
                                     {t('common.actions.create', 'Create')}
-                                </button>
+                                </SharedButton>
                             </div>
                         </>
                     ) : (
-                        <button type="button" className="sk-gridmenu__opt" onClick={() => setCreating(true)}>
+                        <SharedButton variant="unstyled" type="button" className="sk-gridmenu__opt" onClick={() => setCreating(true)}>
                             <Plus size={13} />{t('app.gridViewPicker.saveCurrentView', 'Save current view…')}
-                        </button>
+                        </SharedButton>
                     )}
                 </PopoverContent>
             </Popover>
@@ -159,10 +160,10 @@ export function GridViewPicker({ views, counts, onCreate, label = 'items', actio
                 <div className="sk-viewbar__dirty">
                     <AlertTriangle size={13} />
                     {t('app.gridViewPicker.unsaved', 'Unsaved')}
-                    <button type="button" onClick={views.resetView}>
+                    <SharedButton variant="unstyled" type="button" onClick={views.resetView}>
                         <History size={12} />{t('app.gridViewPicker.reset', 'Reset')}
-                    </button>
-                    <button
+                    </SharedButton>
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="is-primary"
                         onClick={() => {
@@ -171,7 +172,7 @@ export function GridViewPicker({ views, counts, onCreate, label = 'items', actio
                         }}
                     >
                         {active && !active.builtin ? 'Save' : 'Save as…'}
-                    </button>
+                    </SharedButton>
                 </div>
             )}
 

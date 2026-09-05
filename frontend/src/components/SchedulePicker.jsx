@@ -3,6 +3,7 @@ import { Check, AlertTriangle } from 'lucide-react';
 import { SegControl } from '@/components/ds';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // SchedulePicker — one friendly cron schedule picker shared by CronJobs, the
 // Backups ScheduleCard, the server-detail Cron tab, and extensions (via the SDK).
@@ -258,7 +259,7 @@ export default function SchedulePicker({ value = '', onChange, compact = false, 
             {mode === 'presets' && (
                 <div className="schedule-picker__presets">
                     {presets.map((p) => (
-                        <button
+                        <SharedButton variant="unstyled"
                             key={p.cron}
                             type="button"
                             className={`schedule-picker__preset${value.trim() === p.cron ? ' is-active' : ''}`}
@@ -266,7 +267,7 @@ export default function SchedulePicker({ value = '', onChange, compact = false, 
                         >
                             <span className="schedule-picker__preset-label">{p.label}</span>
                             <span className="schedule-picker__preset-desc">{p.desc}</span>
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             )}
@@ -332,14 +333,14 @@ export default function SchedulePicker({ value = '', onChange, compact = false, 
                             <label>{t('app.schedulePicker.onDays', 'On days')}</label>
                             <div className="schedule-picker__days">
                                 {WEEKDAYS.map((name, d) => (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         key={name}
                                         type="button"
                                         className={`schedule-picker__day${builder.weekdays.includes(d) ? ' is-active' : ''}`}
                                         onClick={() => toggleWeekday(d)}
                                     >
                                         {name}
-                                    </button>
+                                    </SharedButton>
                                 ))}
                             </div>
                         </div>

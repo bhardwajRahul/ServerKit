@@ -71,7 +71,7 @@ const SSOConfigTab = () => {
             setForceSso(data.config?.sso_force_sso ?? false);
             const domains = data.config?.sso_allowed_domains || [];
             setAllowedDomains(Array.isArray(domains) ? domains.join(', ') : '');
-        } catch (err) {
+        } catch {
             setMessage({ type: 'error', text: 'Failed to load SSO config' });
         } finally {
             setLoading(false);

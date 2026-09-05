@@ -46,13 +46,13 @@ export function JournalControls({
                     {showQuickUnits && quickUnits.length > 0 && (
                         <div className="quick-units">
                             {quickUnits.map(u => (
-                                <button type="button"
+                                <Button variant="unstyled" type="button"
                                     key={u}
                                     className={`unit-chip ${unit === u ? 'active' : ''}`}
                                     onClick={() => onUnitChange?.(unit === u ? '' : u)}
                                 >
                                     {u}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     )}

@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import {
-    OPS, byKey, columnLabel, coerceValue, emptyValueFor, fieldValue,
+    OPS, byKey, columnLabel, coerceValue, emptyValueFor,
     isFilterable, isSortable, optionsFor,
 } from './fields';
 
@@ -71,7 +71,7 @@ export function GridFilterDrawer({
                     {optionsFor(rows, column).map((option) => {
                         const on = selected.includes(option);
                         return (
-                            <button
+                            <Button variant="unstyled"
                                 key={option}
                                 type="button"
                                 className={cn('sk-gridrule__tag', on && 'is-on')}
@@ -80,7 +80,7 @@ export function GridFilterDrawer({
                                 })}
                             >
                                 {option}
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>
@@ -112,14 +112,14 @@ export function GridFilterDrawer({
             <div className="sk-griddrawer__tabs">
                 {[['filters', Filter, 'Filters', rules.length], ['fields', Layers, 'Fields', cfg.cols.length]]
                     .map(([key, Icon, text, n]) => (
-                        <button
+                        <Button variant="unstyled"
                             key={key}
                             type="button"
                             className={cn(tab === key && 'is-on')}
                             onClick={() => setTab(key)}
                         >
                             <Icon size={14} />{text}<span className="n">{n}</span>
-                        </button>
+                        </Button>
                     ))}
             </div>
 
@@ -128,23 +128,23 @@ export function GridFilterDrawer({
                     <div className="sk-gridsec">
                         <div className="sk-gridsec__head">
                             <div className="sk-gridsec__t">{t('app.gridFilterDrawer.conditions', 'Conditions')}</div>
-                            <button type="button" className="sk-gridsec__add" onClick={() => grid.addRule(columns)}>
+                            <Button variant="unstyled" type="button" className="sk-gridsec__add" onClick={() => grid.addRule(columns)}>
                                 <Plus size={13} />{t('app.gridFilterDrawer.addCondition', 'Add condition')}
-                            </button>
+                            </Button>
                         </div>
 
                         <div className="sk-gridmatch">
                             {t('app.gridFilterDrawer.match', 'Match')}
                             <div className="sk-gridseg">
                                 {['all', 'any'].map((value) => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={value}
                                         type="button"
                                         className={cn(cfg.filters.match === value && 'is-on')}
                                         onClick={() => grid.setMatch(value)}
                                     >
                                         {value}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                             {t('app.gridFilterDrawer.ofTheFollowing', 'of the following')}
@@ -202,14 +202,14 @@ export function GridFilterDrawer({
                                             </select>
                                             <ChevronDown size={13} />
                                         </div>
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className="sk-gridrule__del"
                                             onClick={() => grid.removeRule(rule.id)}
                                             aria-label={t('app.gridFilterDrawer.removeCondition', 'Remove condition')}
                                         >
                                             <X size={14} />
-                                        </button>
+                                        </Button>
                                         <div className="sk-gridrule__value">{valueEditor(rule)}</div>
                                     </div>
                                 </div>
@@ -267,7 +267,7 @@ export function GridFilterDrawer({
                                 {columns.filter((c) => !c.locked && isSortable(c)).map((c) => {
                                     const on = cfg.sub.includes(c.key);
                                     return (
-                                        <button
+                                        <Button variant="unstyled"
                                             key={c.key}
                                             type="button"
                                             className={cn('sk-gridrule__tag', on && 'is-on')}
@@ -276,7 +276,7 @@ export function GridFilterDrawer({
                                             )}
                                         >
                                             {columnLabel(c)}
-                                        </button>
+                                        </Button>
                                     );
                                 })}
                             </div>
@@ -285,19 +285,19 @@ export function GridFilterDrawer({
 
                             {showDensity && (
                             <>
-                            <div className="sk-gridsec__head" style={showRowDetail ? { marginTop: 18 } : undefined}>
+                            <div className={`sk-gridsec__head${showRowDetail ? ' sk-gridsec__head--separated' : ''}`}>
                                 <div className="sk-gridsec__t">{t('app.gridFilterDrawer.density', 'Density')}</div>
                             </div>
                             <div className="sk-gridseg sk-gridseg--wide">
                                 {[['cozy', 'Cozy'], ['compact', 'Compact']].map(([value, text]) => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={value}
                                         type="button"
                                         className={cn(cfg.density === value && 'is-on')}
                                         onClick={() => grid.setDensity(value)}
                                     >
                                         {text}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                             </>

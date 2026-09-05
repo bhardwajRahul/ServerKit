@@ -5,25 +5,8 @@
 //
 // All Simple Icons render with `fill="currentColor"`, so the existing
 // `.is-<engine>` SCSS tinting still controls the color with no inline styles.
-import {
-    SiMysql, SiMariadb, SiPostgresql, SiSqlite, SiMongodb, SiRedis, SiDocker,
-} from 'react-icons/si';
 import { Database } from 'lucide-react';
-
-// engine key -> brand icon component. Keys match ENGINE_META / node.engine.
-const ENGINE_ICONS = {
-    mysql: SiMysql,
-    mariadb: SiMariadb,
-    postgresql: SiPostgresql,
-    sqlite: SiSqlite,
-    mongodb: SiMongodb,
-    redis: SiRedis,
-    docker: SiDocker,
-};
-
-export function hasBrandIcon(engine) {
-    return Boolean(ENGINE_ICONS[engine]);
-}
+import { ENGINE_ICONS } from './databaseBrandData';
 
 // Renders the brand icon for an engine, falling back to the generic lucide
 // Database glyph for anything we don't have a brand for.

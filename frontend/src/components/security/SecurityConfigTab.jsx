@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 const SecurityConfigTab = () => {
     const { t } = useTranslation();
@@ -63,11 +64,11 @@ const SecurityConfigTab = () => {
                 </div>
             )}
 
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.securityConfigTab.clamavSettings', 'ClamAV Settings')}</h3>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <div className="form-group">
                         <div className="toggle-switch-label">
                             <Label htmlFor="clamav-enabled">{t('app.securityConfigTab.enableClamavScanning', 'Enable ClamAV scanning')}</Label>
@@ -98,14 +99,14 @@ const SecurityConfigTab = () => {
                             onChange={(e) => updateConfig('clamav', 'quarantine_path', e.target.value)}
                         />
                     </div>
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
 
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.securityConfigTab.fileIntegritySettings', 'File Integrity Settings')}</h3>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <div className="form-group">
                         <div className="toggle-switch-label">
                             <Label htmlFor="integrity-enabled">{t('app.securityConfigTab.enableFileIntegrityMonitoring', 'Enable file integrity monitoring')}</Label>
@@ -127,14 +128,14 @@ const SecurityConfigTab = () => {
                             />
                         </div>
                     </div>
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
 
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.securityConfigTab.notificationSettings', 'Notification Settings')}</h3>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <div className="form-group">
                         <div className="toggle-switch-label">
                             <Label htmlFor="notify-malware">{t('app.securityConfigTab.notifyOnMalwareDetection', 'Notify on malware detection')}</Label>
@@ -167,8 +168,8 @@ const SecurityConfigTab = () => {
                             />
                         </div>
                     </div>
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
 
             <div className="form-actions">
                 <Button variant="default" onClick={handleSave} disabled={saving}>

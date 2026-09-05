@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useTheme } from '../../contexts/useTheme.js';
 import api from '../../services/api';
 import useSettingFocus from '../../hooks/useSettingFocus';
 import { InfoList, InfoItem } from '../InfoList';

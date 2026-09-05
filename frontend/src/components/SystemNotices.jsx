@@ -82,14 +82,14 @@ export default function SystemNotices() {
                             <Settings size={13} />
                         )}
                     </Button>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="system-notice__dismiss"
                         onClick={() => handleDismiss(notice.id)}
                         aria-label={t('app.systemNotices.dismiss', 'Dismiss {{title}}', { title: notice.title })}
                     >
                         <X size={16} />
-                    </button>
+                    </Button>
                 </div>
             </div>
         </div>

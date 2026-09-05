@@ -11,7 +11,7 @@ import Modal from '@/components/Modal';
 import { SearchField } from '@/components/ds';
 import ManagedDatabasesPanel from '../components/databases/ManagedDatabasesPanel';
 import { formatBytes } from '@/utils/formatBytes';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import EmptyState from '../components/EmptyState';
 import SourceTree from '../components/databases/SourceTree';
@@ -37,6 +37,7 @@ import { listTables, connKey, connLabel, quoteIdent, ENGINE_META } from '../comp
 import { copyToClipboard } from '@/utils/clipboard';
 import { usePolling } from '@/hooks/usePolling';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Cadence while an engine install is in flight.
 const ENGINE_POLL_MS = 4000;
@@ -701,7 +702,7 @@ export default function Databases() {
             {/* ─── Toolbar ─────────────────────────────── */}
             <header className="dbx-toolbar">
                 <div className="dbx-toolbar-left">
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-icon-btn"
                         onClick={() => setSidebarVisible((v) => !v)}
@@ -709,13 +710,13 @@ export default function Databases() {
                         title={sidebarVisible ? t('app.databases.hideSources', 'Hide sources') : t('app.databases.showSources', 'Show sources')}
                     >
                         {sidebarVisible ? <PanelLeftClose size={16} aria-hidden="true" /> : <PanelLeftOpen size={16} aria-hidden="true" />}
-                    </button>
+                    </SharedButton>
                     <h1 className="dbx-title"><Database size={17} aria-hidden="true" /> {t('app.databases.databaseExplorer', 'Database Explorer')}</h1>
                 </div>
 
                 <div className="dbx-toolbar-right">
                     <div className="dbx-new" ref={newMenuRef}>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="dbx-primary"
                             onClick={() => setShowNewMenu((s) => !s)}
@@ -723,10 +724,10 @@ export default function Databases() {
                             aria-expanded={showNewMenu}
                         >
                             <Plus size={15} aria-hidden="true" /> {t('app.databases.new', 'New')} <ChevronDown size={13} aria-hidden="true" />
-                        </button>
+                        </SharedButton>
                         {showNewMenu && (
                             <div className="dbx-menu" role="menu">
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     role="menuitem"
                                     disabled={!newConsoleConn}
@@ -734,48 +735,48 @@ export default function Databases() {
                                 >
                                     <Terminal size={14} aria-hidden="true" /> {t('app.databases.sqlConsole', 'SQL console')}
                                     {!newConsoleConn && <span className="dbx-menu-hint">{t('app.databases.selectADatabase', 'select a database')}</span>}
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { setModal({ type: 'new-table', preset: dbPreset(selectedNode) }); setShowNewMenu(false); }}
                                 >
                                     <Table2 size={14} aria-hidden="true" /> {t('app.databases.tableOrCollection', 'Table or collection')}
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { setModal({ type: 'import', preset: dbPreset(selectedNode) }); setShowNewMenu(false); }}
                                 >
                                     <Download size={14} aria-hidden="true" /> {t('app.databases.importSqlDump', 'Import SQL dump…')}
-                                </button>
+                                </SharedButton>
                                 <div className="dbx-menu-sep" />
-                                <button type="button" role="menuitem" disabled={engineState('mysql', status) !== 'active'} onClick={() => { setModal({ type: 'mysql-db' }); setShowNewMenu(false); }}>
+                                <SharedButton variant="unstyled" type="button" role="menuitem" disabled={engineState('mysql', status) !== 'active'} onClick={() => { setModal({ type: 'mysql-db' }); setShowNewMenu(false); }}>
                                     <Database size={14} aria-hidden="true" /> {t('app.databases.mysqlDatabase', 'MySQL database')}
-                                </button>
-                                <button type="button" role="menuitem" disabled={engineState('postgresql', status) !== 'active'} onClick={() => { setModal({ type: 'pg-db' }); setShowNewMenu(false); }}>
+                                </SharedButton>
+                                <SharedButton variant="unstyled" type="button" role="menuitem" disabled={engineState('postgresql', status) !== 'active'} onClick={() => { setModal({ type: 'pg-db' }); setShowNewMenu(false); }}>
                                     <Database size={14} aria-hidden="true" /> {t('app.databases.postgresqlDatabase', 'PostgreSQL database')}
-                                </button>
+                                </SharedButton>
                                 <div className="dbx-menu-sep" />
-                                <button type="button" role="menuitem" disabled={engineState('mysql', status) !== 'active'} onClick={() => { openUserModal('mysql'); setShowNewMenu(false); }}>
+                                <SharedButton variant="unstyled" type="button" role="menuitem" disabled={engineState('mysql', status) !== 'active'} onClick={() => { openUserModal('mysql'); setShowNewMenu(false); }}>
                                     <Server size={14} aria-hidden="true" /> {t('app.databases.mysqlUser', 'MySQL user')}
-                                </button>
-                                <button type="button" role="menuitem" disabled={engineState('postgresql', status) !== 'active'} onClick={() => { openUserModal('postgresql'); setShowNewMenu(false); }}>
+                                </SharedButton>
+                                <SharedButton variant="unstyled" type="button" role="menuitem" disabled={engineState('postgresql', status) !== 'active'} onClick={() => { openUserModal('postgresql'); setShowNewMenu(false); }}>
                                     <Server size={14} aria-hidden="true" /> {t('app.databases.postgresqlUser', 'PostgreSQL user')}
-                                </button>
+                                </SharedButton>
                                 <div className="dbx-menu-sep" />
-                                <button type="button" role="menuitem" onClick={() => { openCatalog(); setShowNewMenu(false); }}>
+                                <SharedButton variant="unstyled" type="button" role="menuitem" onClick={() => { openCatalog(); setShowNewMenu(false); }}>
                                     <Layers size={14} aria-hidden="true" /> {t('app.databases.installADatabaseEngine', 'Install a database engine…')}
-                                </button>
+                                </SharedButton>
                             </div>
                         )}
                     </div>
-                    <button type="button" className="dbx-chip" onClick={() => setShowManaged(true)}>
+                    <SharedButton variant="unstyled" type="button" className="dbx-chip" onClick={() => setShowManaged(true)}>
                         <BookMarked size={14} aria-hidden="true" /> {t('app.databases.managed', 'Managed')}
-                    </button>
-                    <button type="button" className="dbx-chip" onClick={openBackups}>
+                    </SharedButton>
+                    <SharedButton variant="unstyled" type="button" className="dbx-chip" onClick={openBackups}>
                         <Archive size={14} aria-hidden="true" /> {t('common.labels.backups', 'Backups')}
-                    </button>
+                    </SharedButton>
                 </div>
             </header>
 
@@ -812,7 +813,7 @@ export default function Databases() {
                                         list yet, right where you notice it's
                                         missing. */}
                                     {!engineData.unavailable && (
-                                        <button
+                                        <SharedButton variant="unstyled"
                                             type="button"
                                             className="dbx-tree-install"
                                             onClick={() => openCatalog()}
@@ -826,7 +827,7 @@ export default function Databases() {
                                                     {engineData.catalog.length}
                                                 </span>
                                             )}
-                                        </button>
+                                        </SharedButton>
                                     )}
                                 </>
                             )}
@@ -849,17 +850,17 @@ export default function Databases() {
                                 >
                                     <TabIcon tab={tab} />
                                     <span className="dbx-tab-title">{tab.title}</span>
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         className="dbx-tab-close"
                                         onClick={(e) => closeTab(tab.id, e)}
                                         aria-label={t('app.databases.close', 'Close {{title}}', { title: tab.title })}
                                     >
                                         <X size={13} aria-hidden="true" />
-                                    </button>
+                                    </SharedButton>
                                 </div>
                             ))}
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="dbx-tab dbx-tab-new"
                                 disabled={!newConsoleConn}
@@ -868,7 +869,7 @@ export default function Databases() {
                                 aria-label={t('app.databases.newSqlConsole', 'New SQL console')}
                             >
                                 <Plus size={14} aria-hidden="true" />
-                            </button>
+                            </SharedButton>
                         </div>
                     )}
 
@@ -989,7 +990,7 @@ export default function Databases() {
             {ctxMenu && (
                 <div className="dbx-context" style={{ left: ctxMenu.x, top: ctxMenu.y }} role="menu">
                     {ctxActions(ctxMenu.node).map((a) => (
-                        <button
+                        <SharedButton variant="unstyled"
                             key={a.label}
                             type="button"
                             role="menuitem"
@@ -997,7 +998,7 @@ export default function Databases() {
                             onClick={() => { a.onClick(); setCtxMenu(null); }}
                         >
                             <a.icon size={14} aria-hidden="true" /> {a.label}
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             )}

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import { useServerQuery } from './useServerQuery';
 import api from '../services/api';
 import { getFavorites } from '../utils/recents';

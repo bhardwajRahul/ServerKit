@@ -12,6 +12,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTopbarChrome } from '@/hooks/useTopbarActions';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Shared chrome for resource list pages (Services, Servers, …): the status
 // filter + search toolbar, sort & column menus, the DataTable with a standard
@@ -261,7 +262,7 @@ export default function ResourceListPage({
             {renderCard && (
                 <div className="wp-list__viewswitch" role="group" aria-label={t('app.resourceListPage.layout', 'Layout')}>
                     {[['list', Rows3, 'List'], ['cards', LayoutGrid, 'Cards']].map(([key, Icon, label]) => (
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             key={key}
                             className={view === key ? 'is-active' : ''}
@@ -271,7 +272,7 @@ export default function ResourceListPage({
                             aria-pressed={view === key}
                         >
                             <Icon size={15} />
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             )}

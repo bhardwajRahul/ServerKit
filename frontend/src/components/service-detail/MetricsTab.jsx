@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import api from '../../services/api';
 import { Gauge } from '@/components/ds';
 import EmptyState from '../EmptyState';
@@ -19,10 +19,7 @@ const MetricsTab = ({ app }) => {
     const isPython = ['flask', 'django'].includes(app.app_type);
 
     // Load on mount and whenever the app changes; poll on top of that.
-    useEffect(() => { loadMetrics(); }, [app.id]);
-    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
-
-    async function loadMetrics() {
+    const loadMetrics = useCallback(async () => {
         try {
             if (isDocker) {
                 const data = await api.getContainers(true);
@@ -44,7 +41,11 @@ const MetricsTab = ({ app }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [app.id, app.name, isDocker, isPython]);
+
+    useEffect(() => { loadMetrics(); }, [loadMetrics]);
+    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
+
 
     if (loading) {
         return <EmptyState loading title={t('app.metricsTab.loadingMetrics', 'Loading metrics…')} />;

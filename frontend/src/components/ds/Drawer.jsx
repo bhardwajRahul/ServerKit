@@ -40,7 +40,7 @@ export function Drawer({
 }) {
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side={side} className={cn('sk-drawer', className)} style={{ width, maxWidth: '95vw' }}>
+            <SheetContent side={side} className={cn('sk-drawer', className)} style={{ width }}>
                 <div className="sk-drawer__head">
                     {icon && (
                         <span className="sk-drawer__ico" style={iconColor ? { color: iconColor } : undefined}>

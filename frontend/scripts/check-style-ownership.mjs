@@ -6,19 +6,12 @@
 // the rendered element is a composite nobody wrote and editing any one file
 // changes only the properties that file happens to win.
 //
-// `.empty-state` is the worked example. Three partials define it —
-// components/_empty-state.scss (flex column, min-height 200px),
-// components/_cards.scss (card background, solid border, radius) and
-// components/_users.scss (padding, colour) — and the compiled stylesheet
-// carries five competing top-level rules for it. What actually renders takes
-// its background and dashed border from one, its padding and display from
-// another, and its colour from a third.
-//
-// This is deliberately a ratchet and not a migration. Merging these correctly
-// means reproducing the computed result of the cascade, and there is no
-// byte-identical-output proof available the way there was for @keyframes — so
-// it needs eyes on the affected pages (plan invariant 9: no repo-wide
-// mechanical rewrite without behavioural tests). The count may only go down.
+// The September 2026 cleanup consolidated 114 competing definitions across
+// 50 class names, including `.empty-state`, and reduced the ceiling to zero.
+// Browser fixture comparisons checked the effective cascade across themes,
+// viewport widths, and interaction states (see check-style-cascade.mjs).
+// Keep that ownership intact: shared classes belong in their shared partial;
+// page-specific variants should be scoped to the page.
 //
 // Usage (from frontend/):
 //   node scripts/check-style-ownership.mjs            # check against the ceiling

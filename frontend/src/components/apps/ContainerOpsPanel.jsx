@@ -3,7 +3,7 @@ import { statusKind } from '@/components/ds/status';
 import { RefreshCw, ArrowUpCircle, Moon, Sun, Gauge as GaugeIcon, Boxes } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Pill } from '../ds';
 import { Button } from '@/components/ui/button';

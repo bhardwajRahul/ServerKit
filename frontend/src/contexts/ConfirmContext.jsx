@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 // App-level confirm dialog. One <ConfirmDialog> is rendered here; pages call
@@ -6,7 +6,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 // each rendering their own dialog. See useConfirm for the back-compat shim that
 // lets un-migrated pages keep working.
 
-const ConfirmContext = createContext(null);
+import { ConfirmContext } from './useConfirmContext.js';
 
 export function ConfirmProvider({ children }) {
   const [state, setState] = useState({ isOpen: false });
@@ -46,9 +46,3 @@ export function ConfirmProvider({ children }) {
     </ConfirmContext.Provider>
   );
 }
-
-export function useConfirmContext() {
-  return useContext(ConfirmContext);
-}
-
-export default ConfirmContext;

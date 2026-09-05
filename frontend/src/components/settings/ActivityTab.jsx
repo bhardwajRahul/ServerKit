@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import api from '../../services/api';
 import ContributionGraph from './ContributionGraph';
 import EmptyState from '../EmptyState';
@@ -29,22 +29,7 @@ const ActivityTab = () => {
         loadActions();
     }, []);
 
-    useEffect(() => {
-        loadLogs();
-    }, [pagination.page, filters]);
-
-    async function loadSummary() {
-        try {
-            const data = await api.getActivitySummary();
-            setSummary(data);
-        } catch {
-            // Silently handle
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    async function loadLogs() {
+    const loadLogs = useCallback(async () => {
         try {
             setFeedLoading(true);
             const params = {
@@ -66,7 +51,23 @@ const ActivityTab = () => {
         } finally {
             setFeedLoading(false);
         }
+    }, [pagination.page, pagination.perPage, filters.action, filters.user_id]);
+
+    useEffect(() => {
+        loadLogs();
+    }, [loadLogs]);
+
+    async function loadSummary() {
+        try {
+            const data = await api.getActivitySummary();
+            setSummary(data);
+        } catch {
+            // Silently handle
+        } finally {
+            setLoading(false);
+        }
     }
+
 
     async function loadUsers() {
         try {

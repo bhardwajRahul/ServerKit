@@ -1,13 +1,9 @@
-import { createContext, useContext, useCallback } from 'react';
+import { useCallback } from 'react';
 import { toast as sonner } from 'sonner';
 
-const ToastContext = createContext(null);
+import { ToastContext } from './useToast.js';
 
-export function useToast() {
-  const context = useContext(ToastContext);
-  if (!context) throw new Error('useToast must be used within a ToastProvider');
-  return context;
-}
+
 
 // Callers pass either a numeric duration (`toast.info(msg, 4000)`) or a full sonner
 // options object (`toast.info(msg, { duration: 4000 })`). Normalize both so an
@@ -30,5 +26,3 @@ export function ToastProvider({ children }) {
     </ToastContext.Provider>
   );
 }
-
-export default ToastContext;

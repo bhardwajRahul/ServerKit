@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useResourceTier } from '../../contexts/ResourceTierContext';
+import { useResourceTier } from '../../contexts/useResourceTier.js';
 import { Sparkles, Check, Loader, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import api from '../../services/api';
@@ -10,6 +10,7 @@ import {
     presetForUseCases,
     visibleCountForPreset,
 } from '../sidebarItems';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const USE_CASE_LABELS = {
     wordpress: 'WordPress Sites',
@@ -227,7 +228,7 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
                         ].map((level) => {
                             const exts = postures[level.key] || [];
                             return (
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     key={level.key}
                                     className={`summary-preset-card${securityPosture === level.key ? ' active' : ''}`}
@@ -248,7 +249,7 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
                                             <> {t('app.setupStepSummary.postureNotYetAvailable', '— not yet available from the extension registry; pick it later from the Marketplace.')}</>
                                         )}
                                     </span>
-                                </button>
+                                </SharedButton>
                             );
                         })}
                     </div>
@@ -263,14 +264,14 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
                             <span className="summary-value-note">
                                 {visibleCountForPreset(sidebarPreset)} of {SIDEBAR_ITEMS.length} items
                             </span>
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="summary-change-btn"
                                 onClick={() => setPresetOpen((open) => !open)}
                                 aria-expanded={presetOpen}
                             >
                                 {presetOpen ? 'Done' : 'Change'}
-                            </button>
+                            </SharedButton>
                         </span>
                     </div>
 
@@ -281,7 +282,7 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
                             </p>
                             <div className="summary-preset-list">
                                 {Object.entries(SIDEBAR_PRESETS).map(([key, profile]) => (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         key={key}
                                         className={`summary-preset-card${sidebarPreset === key ? ' active' : ''}`}
@@ -297,7 +298,7 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
                                         <span className="summary-preset-card__desc">
                                             {profile.description}
                                         </span>
-                                    </button>
+                                    </SharedButton>
                                 ))}
                             </div>
                         </div>
@@ -355,14 +356,14 @@ const SetupStepSummary = ({ accountInfo, useCases, twoFactorEnabled, onFinish })
             </div>
 
             <div className="wizard-nav wizard-nav--flush">
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="btn-wizard-next"
                     onClick={handleFinish}
                     disabled={installing}
                 >
                     {installing ? 'Setting up...' : 'Go to Dashboard'}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

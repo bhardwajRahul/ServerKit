@@ -1,7 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { workspaceStore } from '../services/workspaceStore';
 
-const WorkspaceContext = createContext(null);
+import { WorkspaceContext } from './useWorkspace.js';
 
 export function WorkspaceProvider({ children }) {
     const snapshot = useSyncExternalStore(
@@ -36,12 +36,3 @@ export function WorkspaceProvider({ children }) {
         </WorkspaceContext.Provider>
     );
 }
-
-export function useWorkspace() {
-    const context = useContext(WorkspaceContext);
-    if (!context) {
-        throw new Error('useWorkspace must be used within a WorkspaceProvider');
-    }
-    return context;
-}
-

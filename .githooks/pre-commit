@@ -16,7 +16,9 @@ cd frontend || exit 0
 [ -d node_modules ] || exit 0
 
 rel=$(echo "$files" | sed 's#^frontend/##')
-echo "$rel" | xargs npx eslint
+# Keep each invocation below Windows' command-line limit on broad migrations.
+# xargs still returns a failure if any batch fails.
+echo "$rel" | xargs -n 20 npx eslint
 status=$?
 
 # Theme-token guard (plan 60): whitelist/validators/alias expansion/seed themes.

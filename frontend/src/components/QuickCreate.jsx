@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Global quick-create (the "+" button beside the brand). It used to carry its
 // own little dropdown; now it opens the command palette, whose empty state
@@ -13,7 +14,7 @@ export function QuickCreate({ className, variant = 'icon' }) {
     // create button beside the ServerKit mark and GitHub star.
     const header = variant === 'header';
     return (
-        <button
+        <SharedButton variant="unstyled"
             type="button"
             className={cn('quick-create', header && 'quick-create--header', className)}
             title={t('app.quickCreate.createOrSearch', 'Create or search — Ctrl K')}
@@ -21,7 +22,7 @@ export function QuickCreate({ className, variant = 'icon' }) {
             onClick={() => window.dispatchEvent(new CustomEvent('serverkit:open-palette'))}
         >
             <Plus size={header ? 15 : 16} />
-        </button>
+        </SharedButton>
     );
 }
 

@@ -870,6 +870,23 @@
     &--lg { max-width: 42rem; }
     &--xl { max-width: 56rem; }
     &--2xl { max-width: 72rem; }
+
+    .form-group > label:not(.checkbox-label) {
+        font-family: var(--mono);
+        font-size: 10.5px;
+        font-weight: $font-weight-semibold;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+    }
+
+    .form-help {
+        display: block;
+        margin-top: $space-2;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--text-faint);
+    }
 }
 
 .sk-modal__header {

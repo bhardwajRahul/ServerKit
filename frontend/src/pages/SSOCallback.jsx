@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import api from '../services/api';
 import { consumeRedirect } from '../utils/redirectAfterLogin';
 import { Loader } from 'lucide-react';
@@ -15,42 +15,47 @@ const SSOCallback = () => {
     const { setUser } = useAuth();
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        const code = searchParams.get('code');
-        const state = searchParams.get('state');
-        const redirectUri = `${window.location.origin}/login/callback/${provider}`;
+    const attempted = useRef(null);
+    const code = searchParams.get('code');
+    const state = searchParams.get('state');
 
+    useEffect(() => {
+        const redirectUri = `${window.location.origin}/login/callback/${provider}`;
         if (!code || !state) {
             setError('Missing authorization code or state parameter.');
             return;
         }
+        const attempt = JSON.stringify([provider, code, state]);
+        if (attempted.current === attempt) return;
+        attempted.current = attempt;
+
+        async function completeAuth(code, state, redirectUri) {
+            try {
+                const response = await api.completeSSOAuth(provider, code, state, redirectUri);
+
+                if (attempted.current !== attempt) return;
+                if (response.requires_2fa) {
+                    // Redirect to login page with 2FA state
+                    navigate('/login', {
+                        state: {
+                            requires2FA: true,
+                            tempToken: response.temp_token,
+                        }
+                    });
+                    return;
+                }
+
+                setUser(response.user);
+                // sessionStorage survived the round trip to the identity provider;
+                // react-router state would not have.
+                navigate(consumeRedirect());
+            } catch (err) {
+                if (attempted.current === attempt) setError(err.message || 'SSO authentication failed');
+            }
+        }
 
         completeAuth(code, state, redirectUri);
-    }, []);
-
-    async function completeAuth(code, state, redirectUri) {
-        try {
-            const response = await api.completeSSOAuth(provider, code, state, redirectUri);
-
-            if (response.requires_2fa) {
-                // Redirect to login page with 2FA state
-                navigate('/login', {
-                    state: {
-                        requires2FA: true,
-                        tempToken: response.temp_token,
-                    }
-                });
-                return;
-            }
-
-            setUser(response.user);
-            // sessionStorage survived the round trip to the identity provider;
-            // react-router state would not have.
-            navigate(consumeRedirect());
-        } catch (err) {
-            setError(err.message || 'SSO authentication failed');
-        }
-    }
+    }, [provider, code, state, navigate, setUser]);
 
     if (error) {
         return (

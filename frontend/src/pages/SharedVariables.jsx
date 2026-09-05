@@ -1,5 +1,5 @@
 import SharedVariableGroups from '../components/shared/SharedVariableGroups';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 
 /**
  * SharedVariables — workspace-scoped management of shared variable groups

@@ -13,7 +13,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
@@ -464,10 +464,10 @@ const QueueOperations = () => {
                     <section className="queue-rail-section">
                         <div className="queue-rail-section-header queue-rail-section-header--split">
                             <span><Folder size={14} /> {t('app.queueOperations.groups', 'Groups')}</span>
-                            <button type="button" onClick={() => setShowGroupModal(true)}>{t('app.queueOperations.new', 'New')}</button>
+                            <Button variant="unstyled" type="button" onClick={() => setShowGroupModal(true)}>{t('app.queueOperations.new', 'New')}</Button>
                         </div>
                         <div className="queue-group-nav">
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className={`queue-group-nav-item ${selectedGroup === '' ? 'active' : ''}`}
                                 onClick={() => setSelectedGroup('')}
@@ -475,9 +475,9 @@ const QueueOperations = () => {
                                 <Server size={14} />
                                 <span>{t('app.queueOperations.allGroups', 'All groups')}</span>
                                 <b title={String(formatFull(totalQueues))}>{formatCompact(totalQueues)}</b>
-                            </button>
+                            </Button>
                             {groups.map(group => (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     key={group.id}
                                     className={`queue-group-nav-item ${selectedGroup === group.slug ? 'active' : ''}`}
@@ -489,7 +489,7 @@ const QueueOperations = () => {
                                         <span className="queue-group-badge">system</span>
                                     )}
                                     <b>{formatCompact(group.stats?.queues || 0)}</b>
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </section>
@@ -500,16 +500,16 @@ const QueueOperations = () => {
                             <span>{t('app.queueOperations.messageStatus', 'Message Status')}</span>
                         </div>
                         <div className="queue-status-nav">
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className={`queue-status-nav-item ${messageFilter === 'all' ? 'active' : ''}`}
                                 onClick={() => setMessageFilter('all')}
                             >
                                 <span><strong>{t('common.labels.all', 'All')}</strong><small>{t('app.queueOperations.anyStatus', 'Any status')}</small></span>
                                 <b title={String(formatFull(totalMessages))}>{formatCompact(totalMessages)}</b>
-                            </button>
+                            </Button>
                             {STATUS_ORDER.map(status => (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     key={status}
                                     className={`queue-status-nav-item queue-status-nav-item--${status} ${messageFilter === status ? 'active' : ''}`}
@@ -520,7 +520,7 @@ const QueueOperations = () => {
                                         <small>{status}</small>
                                     </span>
                                     <b title={String(formatFull(statusCounts[status] || 0))}>{formatCompact(statusCounts[status] || 0)}</b>
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </section>
@@ -586,7 +586,7 @@ const QueueOperations = () => {
                             </select>
                         </div>
                         {hasActiveFilters && (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="queue-clear-filters"
                                 onClick={() => {
@@ -596,7 +596,7 @@ const QueueOperations = () => {
                                 }}
                             >
                                 {t('common.actions.clearFilters', 'Clear filters')}
-                            </button>
+                            </Button>
                         )}
                     </div>
 
@@ -737,7 +737,7 @@ const QueueOperations = () => {
                                 </div>
                             <div className="modal-actions">
                                 <Button type="button" variant="outline" onClick={() => setSendTarget(null)}>{t('common.actions.cancel', 'Cancel')}</Button>
-                                <Button type="submit"><Send size={14} className="mr-2" /> {t('app.queueOperations.sendMessage2', 'Send Message')}</Button>
+                                <Button type="submit"><Send size={14} className="queue-action-icon" /> {t('app.queueOperations.sendMessage2', 'Send Message')}</Button>
                             </div>
                         </form>
                         )}

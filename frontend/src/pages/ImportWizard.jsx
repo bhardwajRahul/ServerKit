@@ -1,3 +1,4 @@
+import { formatBytes } from '@/utils/formatBytes';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -7,7 +8,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import HtaccessConverter from '../components/apps/HtaccessConverter';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import { Pill, statusKind } from '@/components/ds';
 import PageLayout from '../layouts/PageLayout';
@@ -44,16 +45,6 @@ const STEPS = ['Source', 'Backup', 'Analyse', 'Review', 'Run'];
 // (ds/status), shared by the run pane and the history list.
 function StatusPill({ status }) {
     return <Pill kind={statusKind(status)}>{status}</Pill>;
-}
-
-function formatSize(bytes) {
-    if (bytes == null || bytes === '') return '—';
-    const n = Number(bytes);
-    if (Number.isNaN(n)) return String(bytes);
-    if (n < 1024) return `${n} B`;
-    if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-    if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-    return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 // Analysis report (step 3): domains/databases tables, db users, crontab,
@@ -133,7 +124,7 @@ function AnalysisReport({ analysis }) {
                                     <tr key={db.name}>
                                         <td>{db.name}</td>
                                         <td>{db.engine || '—'}</td>
-                                        <td>{formatSize(db.size)}</td>
+                                        <td>{formatBytes(db.size)}</td>
                                         <td><code>{db.dump_path || '—'}</code></td>
                                     </tr>
                                 ))}
@@ -401,7 +392,7 @@ function ImportWizard() {
                         <h2>{t('app.importWizard.whereIsTheSiteComingFrom', 'Where is the site coming from?')}</h2>
                         <div className="import-wizard__sources">
                             {SOURCE_TYPES.map((s) => (
-                                <button
+                                <Button variant="unstyled"
                                     key={s.id}
                                     type="button"
                                     className="import-wizard__source-card"
@@ -411,7 +402,7 @@ function ImportWizard() {
                                     <strong>{s.name}</strong>
                                     <p>{s.description}</p>
                                     <ChevronRight size={16} className="import-wizard__source-chev" aria-hidden="true" />
-                                </button>
+                                </Button>
                             ))}
                             <Link to="/wordpress/ssh-import" className="import-wizard__source-card import-wizard__source-card--link">
                                 <span className="import-wizard__source-ico"><Server size={18} aria-hidden="true" /></span>
@@ -428,20 +419,20 @@ function ImportWizard() {
                     <div className="import-wizard__panel">
                         <h2>{t('app.importWizard.provideTheBackupArchive', 'Provide the backup archive')}</h2>
                         <div className="import-wizard__mode">
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className={`import-wizard__mode-btn${inputMode === 'upload' ? ' is-active' : ''}`}
                                 onClick={() => setInputMode('upload')}
                             >
                                 <Upload size={14} aria-hidden="true" /> {t('app.importWizard.uploadAFile', 'Upload a file')}
-                            </button>
-                            <button
+                            </Button>
+                            <Button variant="unstyled"
                                 type="button"
                                 className={`import-wizard__mode-btn${inputMode === 'url' ? ' is-active' : ''}`}
                                 onClick={() => setInputMode('url')}
                             >
                                 <Link2 size={14} aria-hidden="true" /> {t('app.importWizard.fetchFromUrl', 'Fetch from URL')}
-                            </button>
+                            </Button>
                         </div>
 
                         {inputMode === 'upload' ? (
@@ -465,7 +456,7 @@ function ImportWizard() {
                                 />
                                 <Upload size={22} aria-hidden="true" />
                                 {file ? (
-                                    <p><strong>{file.name}</strong> · {formatSize(file.size)}</p>
+                                    <p><strong>{file.name}</strong> · {formatBytes(file.size)}</p>
                                 ) : (
                                     <p>{t('app.importWizard.dragTheBackupArchiveHereOr', 'Drag the backup archive here, or click to browse')}</p>
                                 )}

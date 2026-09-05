@@ -17,7 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
-import { useShellDock } from '../contexts/ShellDockContext';
+import { useShellDock } from '../contexts/useShellDock.js';
 import { useWalkthroughs } from '../contexts/walkthroughContextValue';
 import { getWalkthroughProgress } from '../services/walkthroughState';
 import Pill from './ds/Pill';
@@ -59,7 +59,7 @@ function RecipeLibrary({ walkthroughs, state, onStart, onStop, t }) {
                 const completed = status === 'completed';
                 return (
                     <div key={walkthrough.id} className={`shell-recipes__card${active ? ' is-active' : ''}`}>
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="shell-recipes__card-hit"
                             onClick={() => onStart(walkthrough.id)}
@@ -67,7 +67,7 @@ function RecipeLibrary({ walkthroughs, state, onStart, onStop, t }) {
                             <span className={`shell-recipes__card-icon is-${walkthrough.tone}`}><Icon size={16} /></span>
                             <span className="shell-recipes__card-name">{walkthrough.title}</span>
                             <span className="shell-recipes__card-desc">{walkthrough.description}</span>
-                        </button>
+                        </Button>
                         <span className="shell-recipes__card-meta mono">
                             <Clock3 size={11} aria-hidden="true" />
                             {t('app.walkthroughs.stepsMeta', '{{count}} steps · {{duration}}', {
@@ -80,20 +80,20 @@ function RecipeLibrary({ walkthroughs, state, onStart, onStop, t }) {
                                 <Pill kind="neutral">{walkthrough.origin.plugin.replace(/^serverkit-/, '')}</Pill>
                             )}
                             {active && (
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="shell-recipes__card-stop"
                                     onClick={() => onStop(walkthrough.id)}
                                 >
                                     <Square size={10} aria-hidden="true" /> {t('app.walkthroughs.stopShort', 'Stop')}
-                                </button>
+                                </Button>
                             )}
                         </span>
                     </div>
                 );
             })}
             {secondary.length > 0 && (
-                <button
+                <Button variant="unstyled"
                     type="button"
                     className="shell-recipes__more"
                     onClick={() => setShowMore((current) => !current)}
@@ -110,7 +110,7 @@ function RecipeLibrary({ walkthroughs, state, onStart, onStop, t }) {
                             : t('app.walkthroughs.moreGuidesCount', '{{count}} optional guides', { count: secondary.length })}
                         </small>
                     </span>
-                </button>
+                </Button>
             )}
         </div>
     );
@@ -142,7 +142,7 @@ export default function WalkthroughHub() {
         setBrowse(false);
     }, [activeWalkthrough?.id]);
 
-    const steps = activeWalkthrough?.steps || [];
+    const steps = useMemo(() => activeWalkthrough?.steps || [], [activeWalkthrough?.steps]);
     const viewStep = useMemo(() => {
         const chosen = steps.find((step) => step.id === viewStepId);
         return chosen || currentStep || steps[steps.length - 1] || null;
@@ -221,7 +221,7 @@ export default function WalkthroughHub() {
                                 const done = completedSteps.includes(step.id);
                                 const viewing = viewStep && step.id === viewStep.id;
                                 return (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={step.id}
                                         type="button"
                                         role="tab"
@@ -233,7 +233,7 @@ export default function WalkthroughHub() {
                                             {done ? <Check size={12} /> : <span className="mono">{index + 1}</span>}
                                         </span>
                                         <span className="shell-recipes__step-title">{step.title}</span>
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>

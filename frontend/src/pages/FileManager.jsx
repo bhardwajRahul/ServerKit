@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { api } from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
@@ -347,7 +347,7 @@ function FileManager() {
             return true;
         }
         return false;
-    }, [isRemote, isS3, toast]);
+    }, [isRemote, isS3, t, toast]);
 
     // When the user switches to a remote target, jump to its first
     // advertised allowed_path so they don't see a "panel /home" view
@@ -392,7 +392,7 @@ function FileManager() {
         } finally {
             setLoading(false);
         }
-    }, [showHidden, toast, fileApi]);
+    }, [fileApi, showHidden, toast, t]);
 
     useEffect(() => {
         loadDirectory(currentPath);
@@ -964,9 +964,9 @@ function FileManager() {
                         {activeUploads.length > 0 && (
                             <span className="upload-tray-percent">{Math.round(totalUploadProgress)}%</span>
                         )}
-                        <button type="button" className="toolbar-icon-btn small" onClick={() => setUploads([])} title={t('common.actions.clear', 'Clear')}>
+                        <Button variant="unstyled" type="button" className="toolbar-icon-btn small" onClick={() => setUploads([])} title={t('common.actions.clear', 'Clear')}>
                             <X size={14} />
-                        </button>
+                        </Button>
                     </div>
                     <div className="upload-tray-list">
                         {uploads.map((u) => (
@@ -986,37 +986,37 @@ function FileManager() {
 
             <div className="file-manager-toolbar">
                 <div className="toolbar-left">
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className="toolbar-icon-btn"
                         onClick={() => setSidebarVisible(!sidebarVisible)}
                         title={sidebarVisible ? t('app.fileManager.hideSidebar', 'Hide sidebar') : t('app.fileManager.showSidebar', 'Show sidebar')}
                     >
                         {sidebarVisible ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
-                    </button>
+                    </Button>
                     <div className="nav-buttons">
-                        <button type="button" className="nav-btn" onClick={goBack} disabled={historyIdx === 0} title={t('common.actions.back', 'Back')}>
+                        <Button variant="unstyled" type="button" className="nav-btn" onClick={goBack} disabled={historyIdx === 0} title={t('common.actions.back', 'Back')}>
                             <ArrowLeft size={14} />
-                        </button>
-                        <button type="button" className="nav-btn" onClick={goForward} disabled={historyIdx >= history.length - 1} title={t('app.fileManager.forward', 'Forward')}>
+                        </Button>
+                        <Button variant="unstyled" type="button" className="nav-btn" onClick={goForward} disabled={historyIdx >= history.length - 1} title={t('app.fileManager.forward', 'Forward')}>
                             <ArrowRight size={14} />
-                        </button>
-                        <button type="button" className="nav-btn" onClick={goUp} disabled={!parentPath} title="Up">
+                        </Button>
+                        <Button variant="unstyled" type="button" className="nav-btn" onClick={goUp} disabled={!parentPath} title="Up">
                             <ArrowUp size={14} />
-                        </button>
-                        <button type="button" className="nav-btn" onClick={() => navigateTo(isS3 ? '/' : '/home')} title={t('app.fileManager.home', 'Home')}>
+                        </Button>
+                        <Button variant="unstyled" type="button" className="nav-btn" onClick={() => navigateTo(isS3 ? '/' : '/home')} title={t('app.fileManager.home', 'Home')}>
                             <Home size={14} />
-                        </button>
+                        </Button>
                     </div>
                     <div className="path-breadcrumb">
                         {breadcrumbs.map((crumb, idx) => (
                             <span key={crumb.path + idx} className="crumb-segment">
                                 {idx > 0 && <span className="crumb-separator">/</span>}
-                                <button type="button"
+                                <Button variant="unstyled" type="button"
                                     className={`crumb ${idx === breadcrumbs.length - 1 ? 'crumb-active' : ''}`}
                                     onClick={() => navigateTo(crumb.path)}
                                 >
                                     {crumb.name}
-                                </button>
+                                </Button>
                             </span>
                         ))}
                     </div>
@@ -1071,45 +1071,45 @@ function FileManager() {
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         />
                         {(searchResults || searchQuery) && (
-                            <button type="button"
+                            <Button variant="unstyled" type="button"
                                 className="search-field-clear"
                                 onClick={() => { setSearchResults(null); setSearchQuery(''); }}
                                 title={t('common.actions.clear', 'Clear')}
                             >
                                 <X size={12} />
-                            </button>
+                            </Button>
                         )}
                     </div>
                     <div className="view-toggle">
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
                             onClick={() => setViewMode('grid')}
                             title={t('app.fileManager.gridView', 'Grid view')}
                         >
                             <LayoutGrid size={14} />
-                        </button>
-                        <button type="button"
+                        </Button>
+                        <Button variant="unstyled" type="button"
                             className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
                             onClick={() => setViewMode('list')}
                             title={t('app.fileManager.listView', 'List view')}
                         >
                             <List size={14} />
-                        </button>
+                        </Button>
                     </div>
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className={`toolbar-icon-btn ${showHidden ? 'active' : ''}`}
                         onClick={() => setShowHidden(!showHidden)}
                         title={t('app.fileManager.toggleHiddenFiles', 'Toggle hidden files')}
                     >
                         {showHidden ? <Eye size={14} /> : <EyeOff size={14} />}
-                    </button>
-                    <button type="button"
+                    </Button>
+                    <Button variant="unstyled" type="button"
                         className="toolbar-icon-btn"
                         onClick={() => loadDirectory(currentPath)}
                         title={t('common.actions.refresh', 'Refresh')}
                     >
                         <RefreshCw size={14} className={loading ? 'spinning' : ''} />
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -1120,25 +1120,25 @@ function FileManager() {
                         <span>{selectedPaths.size} {t('app.fileManager.selected', 'selected ·')} {formatBytes(stats.selectedBytes)}</span>
                     </div>
                     <div className="bulk-bar-actions">
-                        <button type="button" className="bulk-btn" onClick={downloadSelected}>
+                        <Button variant="unstyled" type="button" className="bulk-btn" onClick={downloadSelected}>
                             <Download size={14} /> {t('common.actions.download', 'Download')}
-                        </button>
+                        </Button>
                         {selectedEntries.length === 1 && (
                             <>
-                                <button type="button" className="bulk-btn" onClick={() => openRenameModal(selectedEntries[0])}>
+                                <Button variant="unstyled" type="button" className="bulk-btn" onClick={() => openRenameModal(selectedEntries[0])}>
                                     <Edit3 size={14} /> {t('app.fileManager.rename', 'Rename')}
-                                </button>
-                                <button type="button" className="bulk-btn" onClick={() => copyPathToClipboard(selectedEntries[0].path)}>
+                                </Button>
+                                <Button variant="unstyled" type="button" className="bulk-btn" onClick={() => copyPathToClipboard(selectedEntries[0].path)}>
                                     <Copy size={14} /> {t('app.fileManager.copyPath', 'Copy path')}
-                                </button>
+                                </Button>
                             </>
                         )}
-                        <button type="button" className="bulk-btn danger" onClick={() => handleDelete(selectedEntries)}>
+                        <Button variant="unstyled" type="button" className="bulk-btn danger" onClick={() => handleDelete(selectedEntries)}>
                             <Trash2 size={14} /> {t('common.actions.delete', 'Delete')}
-                        </button>
-                        <button type="button" className="bulk-btn ghost" onClick={clearSelection}>
+                        </Button>
+                        <Button variant="unstyled" type="button" className="bulk-btn ghost" onClick={clearSelection}>
                             <X size={14} /> {t('common.actions.clear', 'Clear')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
@@ -1147,14 +1147,14 @@ function FileManager() {
                 {sidebarVisible && (
                     <aside className="file-manager-sidebar left">
                         <div className="file-manager-source">
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="file-manager-source__close"
                                 onClick={() => setSidebarVisible(false)}
                                 aria-label={t('app.fileManager.hideSidebar', 'Hide sidebar')}
                             >
                                 <X size={14} />
-                            </button>
+                            </Button>
                             <TargetPicker
                                 feature="files"
                                 value={target}
@@ -1180,13 +1180,13 @@ function FileManager() {
                                         <HardDrive size={13} />
                                         <span>{t('app.fileManager.volumes', 'Volumes')}</span>
                                     </span>
-                                    <button type="button" className="sidebar-action-btn" onClick={loadDiskMounts} disabled={diskLoading} title={t('common.actions.refresh', 'Refresh')}>
+                                    <Button variant="unstyled" type="button" className="sidebar-action-btn" onClick={loadDiskMounts} disabled={diskLoading} title={t('common.actions.refresh', 'Refresh')}>
                                         <RefreshCw size={12} className={diskLoading ? 'spinning' : ''} />
-                                    </button>
+                                    </Button>
                                 </div>
                                 <div className="sidebar-section-content disk-mount-list">
                                     {diskMounts.map((mount) => (
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             key={`${mount.device}:${mount.mountpoint}`}
                                             className={`disk-mount-item${activeMount?.mountpoint === mount.mountpoint ? ' active' : ''}`}
@@ -1206,7 +1206,7 @@ function FileManager() {
                                             <div className={`disk-progress ${getDiskColor(mount.percent)}`}>
                                                 <span className="disk-progress-fill" style={{ width: `${mount.percent}%` }} />
                                             </div>
-                                        </button>
+                                        </Button>
                                     ))}
                                     {diskLastUpdated && (
                                         <span className="disk-updated disk-updated--footer">
@@ -1226,21 +1226,21 @@ function FileManager() {
                             </div>
                             <div className="sidebar-section-content quick-access-list">
                                 {quickAccess.map(q => (
-                                    <button type="button"
+                                    <Button variant="unstyled" type="button"
                                         key={q.label}
                                         className={`quick-access-item ${currentPath === q.path ? 'active' : ''}`}
                                         onClick={() => navigateTo(q.path)}
                                     >
                                         <q.icon size={14} />
                                         <span>{q.label}</span>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </div>
 
                         <div className="sidebar-section">
                             <div className="sidebar-section-header sidebar-section-header--split">
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="sidebar-section-toggle"
                                     onClick={() => setTreeCollapsed(!treeCollapsed)}
@@ -1249,15 +1249,15 @@ function FileManager() {
                                     <FolderTreeIcon size={16} />
                                     <span>{t('app.fileManager.fileSystem', 'File system')}</span>
                                     {treeCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
-                                </button>
-                                <button type="button"
+                                </Button>
+                                <Button variant="unstyled" type="button"
                                     className="sidebar-action-btn"
                                     onClick={() => setShowNewFolderModal(true)}
                                     disabled={isRemote}
                                     title={t('app.fileManager.newFolder', 'New folder')}
                                 >
                                     <FolderPlus size={14} />
-                                </button>
+                                </Button>
                             </div>
                             {!treeCollapsed && (
                                 <div className="sidebar-section-content tree-content">
@@ -1326,7 +1326,7 @@ function FileManager() {
                             <div className="file-list">
                                 <div className="file-list-header">
                                     <span className="col-check">
-                                        <button type="button"
+                                        <Button variant="unstyled" type="button"
                                             className="checkbox-btn"
                                             onClick={() => {
                                                 if (selectedPaths.size === sortedFiltered.length) clearSelection();
@@ -1339,7 +1339,7 @@ function FileManager() {
                                             <span className={`checkbox ${selectedPaths.size === sortedFiltered.length && sortedFiltered.length > 0 ? 'checked' : ''}`}>
                                                 {selectedPaths.size === sortedFiltered.length && sortedFiltered.length > 0 && <Check size={12} />}
                                             </span>
-                                        </button>
+                                        </Button>
                                     </span>
                                     <span className="col-name">{t('common.labels.name', 'Name')}</span>
                                     <span className="col-size">{t('common.labels.size', 'Size')}</span>

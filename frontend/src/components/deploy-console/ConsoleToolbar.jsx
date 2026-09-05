@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Copy, Download, Maximize2, Minimize2, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const LEVELS = ['all', 'info', 'warn', 'error', 'debug'];
 
@@ -25,30 +26,30 @@ export default function ConsoleToolbar({
     return (
         <div className="deploy-console__toolbar">
             <div className="deploy-console__toolbar-group">
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`deploy-console__toggle ${follow ? 'is-active' : ''}`}
                     onClick={onToggleFollow}
                     aria-pressed={follow}
                 >
                     {t('app.consoleToolbar.follow', 'Follow')}
-                </button>
-                <button
+                </SharedButton>
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`deploy-console__toggle ${wrap ? 'is-active' : ''}`}
                     onClick={onToggleWrap}
                     aria-pressed={wrap}
                 >
                     {t('app.consoleToolbar.wrap', 'Wrap')}
-                </button>
-                <button
+                </SharedButton>
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`deploy-console__toggle ${timestamps ? 'is-active' : ''}`}
                     onClick={onToggleTimestamps}
                     aria-pressed={timestamps}
                 >
                     {t('app.consoleToolbar.timestamps', 'Timestamps')}
-                </button>
+                </SharedButton>
                 <label className="deploy-console__level">
                     <span className="sr-only">{t('app.consoleToolbar.logLevel', 'Log level')}</span>
                     <select value={level} onChange={(e) => onLevelChange(e.target.value)}>
@@ -58,24 +59,24 @@ export default function ConsoleToolbar({
                     </select>
                 </label>
                 {errorCount > 0 && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`deploy-console__chip deploy-console__chip--error ${level === 'error' ? 'is-active' : ''}`}
                         onClick={() => toggleLevel('error')}
                         aria-pressed={level === 'error'}
                     >
                         {errorCount} error{errorCount === 1 ? '' : 's'}
-                    </button>
+                    </SharedButton>
                 )}
                 {warnCount > 0 && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`deploy-console__chip deploy-console__chip--warn ${level === 'warn' ? 'is-active' : ''}`}
                         onClick={() => toggleLevel('warn')}
                         aria-pressed={level === 'warn'}
                     >
                         {warnCount} warning{warnCount === 1 ? '' : 's'}
-                    </button>
+                    </SharedButton>
                 )}
             </div>
 
@@ -95,7 +96,7 @@ export default function ConsoleToolbar({
                     <span className="deploy-console__nav-count">
                         {navCount ? `${Math.min(navPos + 1, navCount)}/${navCount}` : ''} {navLabel}
                     </span>
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="deploy-console__toggle"
                         onClick={onNavPrev}
@@ -103,8 +104,8 @@ export default function ConsoleToolbar({
                         title={t('app.consoleToolbar.previous', 'Previous {{value}}', { value: navLabel || 'match' })}
                     >
                         <ArrowUp size={14} />
-                    </button>
-                    <button
+                    </SharedButton>
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="deploy-console__toggle"
                         onClick={onNavNext}
@@ -112,15 +113,15 @@ export default function ConsoleToolbar({
                         title={t('app.consoleToolbar.next', 'Next {{value}}', { value: navLabel || 'match' })}
                     >
                         <ArrowDown size={14} />
-                    </button>
+                    </SharedButton>
                 </div>
-                <button type="button" className="deploy-console__toggle" onClick={onCopy} title={t('app.consoleToolbar.copyAllLogs', 'Copy all logs')}>
+                <SharedButton variant="unstyled" type="button" className="deploy-console__toggle" onClick={onCopy} title={t('app.consoleToolbar.copyAllLogs', 'Copy all logs')}>
                     <Copy size={14} /> {t('common.actions.copy', 'Copy')}
-                </button>
-                <button type="button" className="deploy-console__toggle" onClick={onDownload} title={t('app.consoleToolbar.downloadLogsAsTxt', 'Download logs as .txt')}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" className="deploy-console__toggle" onClick={onDownload} title={t('app.consoleToolbar.downloadLogsAsTxt', 'Download logs as .txt')}>
                     <Download size={14} /> {t('common.actions.download', 'Download')}
-                </button>
-                <button
+                </SharedButton>
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`deploy-console__toggle ${focused ? 'is-active' : ''}`}
                     onClick={onToggleFocus}
@@ -129,7 +130,7 @@ export default function ConsoleToolbar({
                 >
                     {focused ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
                     {focused ? 'Exit' : 'Expand'}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

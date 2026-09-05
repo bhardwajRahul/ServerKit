@@ -1,12 +1,14 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-function Card({ className, ...props }) {
-  return <div data-slot="card" className={cn('ui-card', className)} {...props} />;
+// The legacy skin keeps existing .card layouts intact while callers migrate
+// to these shared components. Both skins are owned by the SCSS design system.
+function Card({ className, variant, ...props }) {
+  return <div data-slot="card" className={cn(variant === 'legacy' ? 'card' : 'ui-card', className)} {...props} />;
 }
 
-function CardHeader({ className, ...props }) {
-  return <div data-slot="card-header" className={cn('ui-card-header', className)} {...props} />;
+function CardHeader({ className, variant, ...props }) {
+  const base = variant === 'legacy-row' ? 'card-header-row' : variant === 'legacy' ? 'card-header' : 'ui-card-header';
+  return <div data-slot="card-header" className={cn(base, className)} {...props} />;
 }
 
 function CardTitle({ className, ...props }) {
@@ -17,12 +19,12 @@ function CardDescription({ className, ...props }) {
   return <div data-slot="card-description" className={cn('ui-card-description', className)} {...props} />;
 }
 
-function CardContent({ className, ...props }) {
-  return <div data-slot="card-content" className={cn('ui-card-content', className)} {...props} />;
+function CardContent({ className, variant, ...props }) {
+  return <div data-slot="card-content" className={cn(variant === 'legacy' ? 'card-body' : 'ui-card-content', className)} {...props} />;
 }
 
-function CardFooter({ className, ...props }) {
-  return <div data-slot="card-footer" className={cn('ui-card-footer', className)} {...props} />;
+function CardFooter({ className, variant, ...props }) {
+  return <div data-slot="card-footer" className={cn(variant === 'legacy' ? 'card-actions' : 'ui-card-footer', className)} {...props} />;
 }
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

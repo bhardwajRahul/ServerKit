@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Copy, ShieldCheck, Trash2, RefreshCw, Link2, Users } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Pill } from '../ds';
@@ -32,7 +32,7 @@ export default function ManagedDatabasesPanel() {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => { load(); }, [load]);
 

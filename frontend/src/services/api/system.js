@@ -827,7 +827,7 @@ export async function getJobStatus(jobId) {
     return this.request(`/performance/jobs/${jobId}`);
 }
 
-export async function getJobStats() {
+export async function getBackgroundJobStats() {
     return this.request('/performance/jobs/stats');
 }
 

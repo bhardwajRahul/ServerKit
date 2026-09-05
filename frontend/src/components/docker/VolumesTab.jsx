@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import EmptyState from '../EmptyState';
 import Modal from '@/components/Modal';
@@ -238,14 +238,14 @@ const VolumesTab = ({ onStatsChange }) => {
             className: 'text-right',
             render: (volume) => (
                 <div className="dx-row-actions">
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="dx-row-action is-danger"
                         onClick={() => handleRemove(volume)}
                         title={t('app.volumesTab.removeVolume2', 'Remove volume')}
                     >
                         <Trash2 size={13} />
-                    </button>
+                    </Button>
                 </div>
             ),
         },

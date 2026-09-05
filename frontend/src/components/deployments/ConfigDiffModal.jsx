@@ -4,7 +4,7 @@ import api from '../../services/api';
 import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
 import { Pill } from '@/components/ds';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useTranslation } from 'react-i18next';
 

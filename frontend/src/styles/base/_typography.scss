@@ -16,8 +16,12 @@ h4 { font-size: $font-size-base; }
 
 // Text utilities
 .text-primary { color: $text-primary; }
-.text-secondary { color: $text-secondary; }
-.text-tertiary { color: $text-tertiary; }
+.text-secondary {
+color: $text-secondary;
+}
+.text-tertiary {
+color: $text-tertiary;
+}
 .text-success { color: $success; }
 .text-warning { color: $warning; }
 .text-danger { color: $danger; }
@@ -25,19 +29,25 @@ h4 { font-size: $font-size-base; }
 
 // Weight utilities
 .font-normal { font-weight: $font-weight-normal; }
-.font-medium { font-weight: $font-weight-medium; }
-.font-semibold { font-weight: $font-weight-semibold; }
-.font-bold { font-weight: $font-weight-bold; }
+.font-medium {
+font-weight: $font-weight-medium;
+}
+.font-semibold {
+font-weight: $font-weight-semibold;
+}
+.font-bold {
+font-weight: $font-weight-bold;
+}
 
 // Mono text
 .mono {
-    font-family: $font-mono;
     font-size: $font-size-sm;
+    font-family: $font-mono;
 }
 
 // Truncate
 .truncate {
-    @include truncate();
+@include truncate();
 }
 
 // Subtitle (used in page headers)

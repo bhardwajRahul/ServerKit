@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import useTabParam from '../hooks/useTabParam';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import TargetPicker from '../components/TargetPicker';
 import RemoteTerminal from '../components/RemoteTerminal';
@@ -11,7 +11,8 @@ import LogContent from '../components/log-viewer/LogContent';
 import { formatBytes, logKindFromPath } from '../components/log-viewer/logHelpers';
 import { formatBytes as formatMemory } from '@/utils/formatBytes';
 import { Drawer } from '../components/ds';
-import ProcessTable, { procUser } from '../components/ProcessTable';
+import ProcessTable from '../components/ProcessTable';
+import { procUser } from '../components/processData';
 import SystemdServicesTab from '../components/serverdetail/ServicesTab';
 import { useTableSort } from '@/hooks/useTableSort';
 import PageLayout from '../layouts/PageLayout';
@@ -29,6 +30,7 @@ import {
     Terminal as TerminalIcon, Server as ServerIcon,
     ScrollText, Cpu, Settings,
 } from 'lucide-react';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // 'logs' stays first so the default landing keeps working on installs with no
 // paired agents (the interactive shell needs a connected agent).
@@ -110,7 +112,7 @@ const TerminalShellTab = () => {
                 {servers.map(s => {
                     const online = s.status === 'online';
                     return (
-                        <button
+                        <SharedButton variant="unstyled"
                             key={s.id}
                             type="button"
                             className={`term-shell__row ${s.id === selectedId ? 'is-active' : ''}`}
@@ -122,7 +124,7 @@ const TerminalShellTab = () => {
                             <span className="term-shell__name">{s.name || s.hostname || s.id}</span>
                             {s.ip_address && <span className="term-shell__sub">{s.ip_address}</span>}
                             <span className={`term-shell__dot ${online ? 'is-on' : ''}`} />
-                        </button>
+                        </SharedButton>
                     );
                 })}
             </aside>
@@ -373,7 +375,7 @@ const LogFilesTab = () => {
                 <div className="lv-error">
                     <AlertCircle size={14} />
                     <span>{error}</span>
-                    <button type="button" onClick={() => setError(null)}>&times;</button>
+                    <SharedButton variant="unstyled" type="button" onClick={() => setError(null)}>&times;</SharedButton>
                 </div>
             )}
 
@@ -498,7 +500,7 @@ const JournalTab = () => {
     const [showLineNumbers, setShowLineNumbers] = useState(() => localStorage.getItem(JOURNAL_PREFS.showLineNumbers) !== 'false');
     const [wrapLines, setWrapLines] = useState(() => localStorage.getItem(JOURNAL_PREFS.wrapLines) !== 'false');
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [unitFilter, setUnitFilter] = useState('');
+    const [unitFilter] = useState('');
     const [lastUpdated, setLastUpdated] = useState(null);
 
     const contentRef = useRef(null);
@@ -652,20 +654,20 @@ const JournalTab = () => {
                                 placeholder={t('app.terminal.typeUnitName', 'Type unit name…')}
                             />
                         </div>
-                        <button type="button" className="lv-icon-btn" onClick={applyUnitInput} title={t('app.terminal.applyUnitFilter', 'Apply unit filter')}>
+                        <SharedButton variant="unstyled" type="button" className="lv-icon-btn" onClick={applyUnitInput} title={t('app.terminal.applyUnitFilter', 'Apply unit filter')}>
                             <Search size={13} />
-                        </button>
+                        </SharedButton>
                     </div>
 
                     <div className="lv-sidebar-body">
                         <div className="lv-group">
-                            <button type="button"
+                            <SharedButton variant="unstyled" type="button"
                                     className={`lv-file lv-file--compact ${!unit ? 'active' : ''}`}
                                     onClick={clearUnit}
                                 >
                                 <span className="lv-file-dot" />
                                 <span className="lv-file-name">{t('app.terminal.allServices', 'All services')}</span>
-                            </button>
+                            </SharedButton>
                         </div>
 
                         <div className="lv-group">
@@ -676,14 +678,14 @@ const JournalTab = () => {
                             </div>
                             <div className="lv-group-files">
                                 {filteredUnits.map(u => (
-                                    <button type="button"
+                                    <SharedButton variant="unstyled" type="button"
                                         key={u.id}
                                         className={`lv-file lv-file--compact ${unit === u.id ? 'active' : ''}}`}
                                         onClick={() => pickUnit(u.id)}
                                     >
                                         <span className={`lv-file-dot kind-${u.kind}`} />
                                         <span className="lv-file-name">{u.label}</span>
-                                    </button>
+                                    </SharedButton>
                                 ))}
                                 {filteredUnits.length === 0 && (
                                     <div className="lv-empty-hint is-compact">
@@ -701,14 +703,14 @@ const JournalTab = () => {
                                 </div>
                                 <div className="lv-group-files">
                                     {PRIORITY_OPTIONS.map(opt => (
-                                        <button type="button"
+                                        <SharedButton variant="unstyled" type="button"
                                             key={opt.value}
                                             className={`lv-file lv-file--compact ${priority === opt.value ? 'active' : ''}`}
                                             onClick={() => { setPriority(opt.value); setTimeout(loadJournalLogs, 0); }}
                                         >
                                             <span className="lv-file-dot" style={{ background: priorityColor(opt.value) }} />
                                             <span className="lv-file-name">{opt.label}</span>
-                                        </button>
+                                        </SharedButton>
                                     ))}
                                 </div>
                             </div>
@@ -944,14 +946,14 @@ const ProcessesTab = () => {
                                     <option key={n} value={n}>{t('app.terminal.top', 'Top')} {n}</option>
                                 ))}
                             </select>
-                            <button type="button"
+                            <SharedButton variant="unstyled" type="button"
                                 className={`lv-chip ${autoRefresh ? 'active' : ''}`}
                                 onClick={() => setAutoRefresh(!autoRefresh)}
                                 disabled={isRemote}
                             >
                                 <span className={`lv-pulse ${autoRefresh ? 'on' : ''}`} />
                                 <span>{t('app.terminal.live', 'Live')}</span>
-                            </button>
+                            </SharedButton>
                         </>
                     )}
                 />
@@ -1005,12 +1007,12 @@ const ProcessesTab = () => {
                             </div>
                         </div>
                         <div className="preview-drawer-actions">
-                            <button type="button" className="drawer-action-btn" onClick={() => handleKillProcess(selectedProcess.pid)}>
+                            <SharedButton variant="unstyled" type="button" className="drawer-action-btn" onClick={() => handleKillProcess(selectedProcess.pid)}>
                                 <X size={14} /> {t('app.terminal.killSigterm', 'Kill (SIGTERM)')}
-                            </button>
-                            <button type="button" className="drawer-action-btn danger" onClick={() => handleKillProcess(selectedProcess.pid, true)}>
+                            </SharedButton>
+                            <SharedButton variant="unstyled" type="button" className="drawer-action-btn danger" onClick={() => handleKillProcess(selectedProcess.pid, true)}>
                                 <AlertTriangle size={14} /> {t('app.terminal.forceKillSigkill', 'Force kill (SIGKILL)')}
-                            </button>
+                            </SharedButton>
                         </div>
                         <div className="preview-drawer-body is-padded">
                             {selectedProcess.command && (

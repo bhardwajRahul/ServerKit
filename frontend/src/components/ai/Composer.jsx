@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Paperclip, Send, Square } from 'lucide-react';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import { useTranslation } from 'react-i18next';
 import ResourcePicker from '../ResourcePicker';
 import { Button } from '../ui/button';

@@ -3,23 +3,17 @@
 // ============================================
 
 // Status badge
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: $space-1;
-    min-height: 24px;
-    padding: 4px $space-3;
-    border-radius: $radius-full;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
-    line-height: 1;
-    border: 1px solid transparent;
-    white-space: nowrap;
-}
 
 .status-dot {
     @include status-dot(currentColor);
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+
+    &.large {
+        width: 14px;
+        height: 14px;
+    }
 }
 
 // Status variants
@@ -162,12 +156,14 @@
     align-items: center;
     justify-content: center;
     min-height: 1.5rem;
-    padding: 0.25rem 0.625rem;
-    font-size: 0.75rem;
-    font-weight: 600;
     line-height: 1;
-    border-radius: 9999px;
     white-space: nowrap;
+    padding: 2px 8px;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    text-transform: uppercase;
+    font-weight: $font-weight-semibold;
+    letter-spacing: 0.5px;
 }
 
 .badge-info {
@@ -188,6 +184,8 @@
 .badge-warning {
     background-color: fade($warning-raw, 15%);
     color: $warning;
+    @include status-variant($warning, $warning-bg);
+    border: 1px solid $warning-border;
 }
 
 .badge-default {

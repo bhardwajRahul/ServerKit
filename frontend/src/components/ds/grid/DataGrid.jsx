@@ -3,6 +3,7 @@ import { ArrowUp, ArrowDown, Check, ChevronDown, ChevronRight, Filter, Minus } f
 import { cn } from '@/lib/utils';
 import ColumnMenu from './ColumnMenu';
 import { byKey, columnLabel, fieldValue, isSortable } from './fields';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The grid itself: a CSS-grid table (NOT a <table>) whose header and rows share
 // one `--sk-grid-tpl` track list, so a column's width is declared once next to
@@ -155,7 +156,7 @@ export function DataGrid({
                 : groups.map(([label, rows]) => (
                     <div key={label ?? '__all__'} className="sk-grid__group-wrap">
                         {label != null && (
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-grid__group"
                                 onClick={() => toggleGroupOpen(label)}
@@ -165,7 +166,7 @@ export function DataGrid({
                                 {label}
                                 <i />
                                 <span className="sk-grid__groupcount">{rows.length}</span>
-                            </button>
+                            </SharedButton>
                         )}
                         {(label != null && collapsed.has(label) ? [] : rows).map((row) => {
                             const key = keyOf(row);

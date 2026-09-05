@@ -14,11 +14,11 @@
 
 // Overview grid (2-column)
 .overview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: $space-6;
+display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $space-5;
 
-    @media (max-width: $breakpoint-md) {
+    @media (max-width: $breakpoint-lg) {
         grid-template-columns: 1fr;
     }
 }

@@ -3,7 +3,6 @@
 // ============================================
 
 .cron-page {
-
     .cron-servicenote {
         font-family: var(--mono);
         font-size: 11px;
@@ -144,24 +143,6 @@
 // it silently matches nothing.
 
 // create/edit modal (field labels → mono eyebrows)
-.sk-modal {
-    .form-group > label:not(.checkbox-label) {
-        font-family: var(--mono);
-        font-size: 10.5px;
-        font-weight: $font-weight-semibold;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-faint);
-    }
-
-    .form-help {
-        display: block;
-        margin-top: $space-2;
-        font-family: var(--mono);
-        font-size: 11px;
-        color: var(--text-faint);
-    }
-}
 
 .run-output {
     display: flex;
@@ -213,15 +194,6 @@
 }
 
 // spinner inside the run-now button (list row + drawer header)
-.spinner-inline {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid var(--border-strong);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
 
 // ── Job drawer (row click) ──────────────────────────────────
 .cron-drawer__headeractions {

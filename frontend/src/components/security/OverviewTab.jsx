@@ -16,6 +16,7 @@ import {
     Bug,
     Radar,
 } from 'lucide-react';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 // Status glyph per check state — paired with the label so state never relies on
 // color alone (color-blind operators), per the product a11y bar.
@@ -121,14 +122,14 @@ const OverviewTab = ({ status, onRefresh, onNavigateTab }) => {
         <div className="security-overview">
             {error && <div className="alert alert-danger">{error}</div>}
 
-            <div className="card sec-posture-card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card sec-posture-card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3><ShieldCheck size={13} /> {t('app.overviewTab.securityPosture', 'Security posture')}</h3>
                     <Button variant="outline" size="sm" onClick={() => runFix('recheck', async () => {})} disabled={busy}>
                         <RefreshCw size={13} className={busyKey === 'recheck' ? 'sec-spin' : undefined} /> {t('app.overviewTab.reCheck', 'Re-check')}
                     </Button>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <div className="sec-posture__top">
                         {score !== null ? (
                             <ScoreGauge value={score} size={104} stroke={9} color={scoreColor} label="posture" />
@@ -202,8 +203,8 @@ const OverviewTab = ({ status, onRefresh, onNavigateTab }) => {
                         )}
                         {t('app.overviewTab.addAlertDeliveryChannelsDiscordSlack', 'Add alert delivery channels (Discord, Slack, Telegram) in Settings → Notifications.')}
                     </p>
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
         </div>
     );
 };

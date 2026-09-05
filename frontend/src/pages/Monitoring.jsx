@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import useTabParam from '../hooks/useTabParam';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import DoctorPanel from '../components/monitoring/DoctorPanel';
 import MonitoringOverview from '../components/monitoring/MonitoringOverview';
@@ -297,7 +297,7 @@ const Monitoring = () => {
             {error && (
                 <div className="alert alert-danger">
                     {error}
-                    <button type="button" onClick={() => setError(null)} className="alert-close">&times;</button>
+                    <Button variant="unstyled" type="button" onClick={() => setError(null)} className="alert-close">&times;</Button>
                 </div>
             )}
 

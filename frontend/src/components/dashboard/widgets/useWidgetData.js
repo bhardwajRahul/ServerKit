@@ -5,12 +5,15 @@
  *
  * De-duplication: a board can easily hold ten stat widgets pointed at the same
  * server and range. Each one asks for the SAME history payload, so requests are
- * collapsed through a tiny module-level promise cache keyed by
+ * collapsed through the shared query client, with workspace-scoped keys for
  * `<kind>|<resource>|<metric>|<range>|<tick>`. Ten widgets on one tick produce
  * one HTTP request; the next tick makes a new key and refetches.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import api from '@/services/api';
+import { queryClient } from '@/services/queryClient';
+import { fetchShared, widgetQueryKey, pruneWidgetQueries } from '@/services/widgetQueries';
+import { useWorkspace } from '@/contexts/useWorkspace.js';
 import {
     RANGE_IDS,
     getMetric,
@@ -20,44 +23,6 @@ import {
     sourceOf,
     stampsFrom,
 } from './metrics';
-
-// Requests for the same key inside this window share one in-flight promise.
-const CACHE_TTL_MS = 4000;
-const CACHE_MAX_ENTRIES = 96;
-
-const cache = new Map();
-
-function prune(now) {
-    if (cache.size <= CACHE_MAX_ENTRIES) return;
-    for (const [key, entry] of cache) {
-        if (now - entry.at > CACHE_TTL_MS) cache.delete(key);
-    }
-    // Still oversized (a burst of distinct keys) — drop oldest-first.
-    while (cache.size > CACHE_MAX_ENTRIES) {
-        const oldest = cache.keys().next();
-        if (oldest.done) break;
-        cache.delete(oldest.value);
-    }
-}
-
-/** Share one in-flight promise per key. Exported for tests and for the
- *  fullscreen view, which mounts a second copy of the same widget. */
-export function fetchShared(key, loader) {
-    const now = Date.now();
-    const hit = cache.get(key);
-    if (hit && now - hit.at < CACHE_TTL_MS) return hit.promise;
-
-    const promise = Promise.resolve().then(loader);
-    cache.set(key, { at: now, promise });
-    // A failure must not be replayed to a later mount, and must not surface as
-    // an unhandled rejection when no consumer is attached yet.
-    promise.catch(() => {
-        const current = cache.get(key);
-        if (current && current.promise === promise) cache.delete(key);
-    });
-    prune(now);
-    return promise;
-}
 
 /**
  * Normalise a thrown API error into what a widget needs to render.
@@ -80,31 +45,45 @@ function toWidgetError(err) {
  * effect — the key is the identity.
  */
 function useShared(key, loader, enabled = true) {
+    const { activeWorkspaceId } = useWorkspace();
+    const queryKey = useMemo(() => widgetQueryKey(key, activeWorkspaceId), [key, activeWorkspaceId]);
     const loaderRef = useRef(loader);
     loaderRef.current = loader;
-
-    const [state, setState] = useState({ data: null, loading: Boolean(enabled), error: null });
+    const subscribe = useCallback((listener) => {
+        // Fullscreen can remount while a request is pending. Keep that request
+        // shared until it settles, then bound the unobserved retained results.
+        const unsubscribe = queryClient.subscribe(queryKey, listener, { cancelOnUnsubscribe: false });
+        return () => { unsubscribe(); pruneWidgetQueries(); };
+    }, [queryKey]);
+    const getSnapshot = useCallback(() => queryClient.getSnapshot(queryKey), [queryKey]);
+    const state = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+    const previous = useRef(null);
+    // Tick is the trailing numeric segment of refreshable widget keys. Keep
+    // the last successful payload during a board refresh, but never carry it
+    // across a changed resource, range, or workspace.
+    const resourceKey = key.replace(/\|\d+$/, '');
+    if (state.status === 'success') {
+        previous.current = { resourceKey, workspaceId: activeWorkspaceId, data: state.data };
+    } else if (state.status === 'error') {
+        previous.current = null;
+    }
+    const previousData = previous.current?.resourceKey === resourceKey
+        && previous.current?.workspaceId === activeWorkspaceId
+        ? previous.current.data : null;
 
     useEffect(() => {
-        if (!enabled) {
-            setState({ data: null, loading: false, error: null });
-            return undefined;
-        }
-        let cancelled = false;
-        setState((prev) => ({ data: prev.data, loading: true, error: null }));
+        if (!enabled) return;
+        fetchShared(key, () => loaderRef.current(), activeWorkspaceId).catch(() => {
+            // The shared snapshot owns errors; keep permission failures visible.
+        });
+    }, [key, activeWorkspaceId, enabled, state.revision]);
 
-        fetchShared(key, () => loaderRef.current())
-            .then((data) => {
-                if (!cancelled) setState({ data, loading: false, error: null });
-            })
-            .catch((err) => {
-                if (!cancelled) setState({ data: null, loading: false, error: toWidgetError(err) });
-            });
-
-        return () => { cancelled = true; };
-    }, [key, enabled]);
-
-    return state;
+    if (!enabled) return { data: null, loading: false, error: null };
+    return {
+        data: state.status === 'error' ? null : state.data ?? previousData,
+        loading: state.status === 'idle' || state.status === 'loading' || state.isFetching,
+        error: state.error ? toWidgetError(state.error) : null,
+    };
 }
 
 function safeRange(range) {

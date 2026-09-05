@@ -3,6 +3,7 @@ import api from '../../services/api';
 import { Button } from '@/components/ui/button';
 import { Feed, FeedItem } from '@/components/ds';
 import { useTranslation } from 'react-i18next';
+import { CardHeader as SharedCardHeader, CardContent as SharedCardContent, Card as SharedCard } from '@/components/ui/card';
 
 const EventsTab = () => {
     const { t } = useTranslation();
@@ -55,11 +56,11 @@ const EventsTab = () => {
         <div className="events-tab">
             {failedLogins && (
                 <div className={`card ${failedLogins.alert_triggered ? 'card-warning' : ''}`}>
-                    <div className="card-header">
+                    <SharedCardHeader variant="legacy" className="card-header">
                         <h3>{t('app.eventsTab.failedLoginAttempts24h', 'Failed Login Attempts (24h)')}</h3>
                         <Button variant="outline" size="sm" onClick={loadFailedLogins}>{t('common.actions.refresh', 'Refresh')}</Button>
-                    </div>
-                    <div className="card-body">
+                    </SharedCardHeader>
+                    <SharedCardContent variant="legacy" className="card-body">
                         <div className="failed-login-summary">
                             <span className={`count ${failedLogins.alert_triggered ? 'danger' : ''}`}>
                                 {failedLogins.failed_attempts}
@@ -72,16 +73,16 @@ const EventsTab = () => {
                                 <pre>{failedLogins.recent_failures.join('\n')}</pre>
                             </details>
                         )}
-                    </div>
+                    </SharedCardContent>
                 </div>
             )}
 
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.eventsTab.securityEvents', 'Security Events')}</h3>
                     <Button variant="outline" size="sm" onClick={loadEvents}>{t('common.actions.refresh', 'Refresh')}</Button>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     {loading ? (
                         <div className="loading-sm">{t('common.loading', 'Loading…')}</div>
                     ) : events.length === 0 ? (
@@ -100,8 +101,8 @@ const EventsTab = () => {
                             ))}
                         </Feed>
                     )}
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
         </div>
     );
 };

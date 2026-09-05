@@ -1,9 +1,10 @@
 import { Menu, X } from 'lucide-react';
 import { t } from '../i18n/t';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme.js';
 import ServerKitLogo from './ServerKitLogo';
 import NotificationBell from './NotificationBell';
 import QuickCreate from './QuickCreate';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Fixed header shown only on narrow viewports (< 768px). Houses the
 // hamburger toggle that opens the sidebar as an off-canvas drawer, since
@@ -16,7 +17,7 @@ const MobileTopBar = ({ navOpen, onToggle }) => {
 
     return (
         <header className="mobile-topbar">
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="mobile-topbar__toggle"
                 aria-label={navOpen
@@ -27,7 +28,7 @@ const MobileTopBar = ({ navOpen, onToggle }) => {
                 onClick={onToggle}
             >
                 {navOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
-            </button>
+            </SharedButton>
             <div className="mobile-topbar__brand">
                 {!branded && (
                     <span className="mobile-topbar__logo">

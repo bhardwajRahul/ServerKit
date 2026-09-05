@@ -5,8 +5,8 @@ import {
     AlertTriangle, Lock, Search, ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
@@ -490,7 +490,7 @@ const Domains = () => {
             render: (d) => {
                 const days = daysUntil(d.expires_at);
                 if (days == null) return <span className="dom-dash">—</span>;
-                return <span style={days < 40 ? { color: 'var(--amber)' } : undefined}>{days}d</span>;
+                return <span className={days < 40 ? 'dom-expiry--amber' : undefined}>{days}d</span>;
             },
         },
         {
@@ -514,7 +514,7 @@ const Domains = () => {
                 return <Pill kind={state === 'active' ? 'green' : 'amber'}>{state}</Pill>;
             },
         },
-    ], [appName]);
+    ], [appName, t]);
 
     const grid = useGridConfig({
         page: 'domains',
@@ -630,7 +630,7 @@ const Domains = () => {
             {error && (
                 <div className="error-banner">
                     {error}
-                    <button type="button" className="error-banner__close" onClick={() => setError('')} aria-label={t('app.domains.dismissError', 'Dismiss error')}>×</button>
+                    <Button variant="unstyled" type="button" className="error-banner__close" onClick={() => setError('')} aria-label={t('app.domains.dismissError', 'Dismiss error')}>×</Button>
                 </div>
             )}
 
@@ -660,10 +660,10 @@ const Domains = () => {
                     />
 
                     <GridBulkBar count={picked.length} noun="domain" onClear={() => setPicked([])}>
-                        <button type="button" onClick={loadData}>
+                        <Button variant="unstyled" type="button" onClick={loadData}>
                             <RefreshCw size={13} /> {t('app.domains.checkDns', 'Check DNS')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="unstyled"
                             type="button"
                             onClick={() => {
                                 const n = exportRows(
@@ -676,7 +676,7 @@ const Domains = () => {
                             }}
                         >
                             <ExternalLink size={13} /> {t('app.domains.exportCsv', 'Export CSV')}
-                        </button>
+                        </Button>
                     </GridBulkBar>
 
                     {portfolioErrors.length > 0 && (
@@ -798,7 +798,7 @@ const Domains = () => {
                                 <>
                                     <div className="sk-spec-card">
                                         <div className="sk-spec-card__label">{t('app.domains.sslCertificate', 'SSL certificate')}</div>
-                                        <div style={{ marginTop: 8 }}>{sslPill(drawerDomain)}</div>
+                                        <div className="dom-specs__value">{sslPill(drawerDomain)}</div>
                                         <div className="sk-spec-card__sub">
                                             {drawerDomain.ssl_enabled
                                                 ? (drawerDomain.ssl_expires_at ? `Expires ${new Date(drawerDomain.ssl_expires_at).toLocaleDateString()}` : "Let's Encrypt")
@@ -812,7 +812,7 @@ const Domains = () => {
                                     </div>
                                     <div className="sk-spec-card">
                                         <div className="sk-spec-card__label">{t('common.labels.status', 'Status')}</div>
-                                        <div style={{ marginTop: 8 }}>
+                                        <div className="dom-specs__value">
                                             <Pill kind={drawerDomain.ssl_enabled ? 'green' : 'amber'}>{drawerDomain.ssl_enabled ? 'active' : 'unconfigured'}</Pill>
                                         </div>
                                         <div className="sk-spec-card__sub">{t('app.domains.autoRenew', 'Auto-renew')} {drawerDomain.ssl_auto_renew ? 'on' : 'off'}</div>
@@ -827,7 +827,7 @@ const Domains = () => {
                                     </div>
                                     <div className="sk-spec-card">
                                         <div className="sk-spec-card__label">{t('app.domains.zoneStatus', 'Zone status')}</div>
-                                        <div style={{ marginTop: 8 }}>
+                                        <div className="dom-specs__value">
                                             <Pill kind={drawerDomain.cfStatus === 'active' ? 'green' : 'amber'}>{drawerDomain.cfStatus || 'active'}</Pill>
                                         </div>
                                         <div className="sk-spec-card__sub">{drawerDomain.provider}</div>

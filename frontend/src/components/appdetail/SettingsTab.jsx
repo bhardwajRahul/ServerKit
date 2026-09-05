@@ -6,6 +6,7 @@ import { DangerZone } from '../DangerZone';
 import { Button } from '@/components/ui/button';
 import { EnvTag } from '@/components/ds';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
 
 const SettingsTab = ({ app, onUpdate }) => {
     const { t } = useTranslation();
@@ -85,7 +86,7 @@ const SettingsTab = ({ app, onUpdate }) => {
         <div>
             <h3 className="app-eyebrow">{t('app.settingsTab.applicationSettings', 'Application Settings')}</h3>
 
-            <div className="card settings-section">
+            <SharedCard variant="legacy" className="card settings-section">
                 <h4>{t('app.settingsTab.environmentConfiguration', 'Environment Configuration')}</h4>
                 <div className="settings-row">
                     <div className="settings-label">
@@ -137,7 +138,7 @@ const SettingsTab = ({ app, onUpdate }) => {
                         </div>
                     </div>
                 )}
-            </div>
+            </SharedCard>
 
             <DangerZone
                 title={t('app.settingsTab.dangerZone', 'Danger Zone')}

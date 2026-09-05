@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { DataTable, DataTableFooter, Pill } from '../ds';
@@ -104,15 +104,7 @@ const ServerDockerTab = ({ serverId, serverStatus, server }) => {
     const toast = useToast();
     const { confirm: confirmDocker } = useConfirm();
 
-    useEffect(() => {
-        if (serverStatus === 'online') {
-            loadDockerData();
-        } else {
-            setLoading(false);
-        }
-    }, [serverId, serverStatus]);
-
-    async function loadDockerData() {
+    const loadDockerData = useCallback(async () => {
         setLoading(true);
         setLoadError(null);
         try {
@@ -129,7 +121,16 @@ const ServerDockerTab = ({ serverId, serverStatus, server }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [serverId]);
+
+    useEffect(() => {
+        if (serverStatus === 'online') {
+            loadDockerData();
+        } else {
+            setLoading(false);
+        }
+    }, [loadDockerData, serverStatus]);
+
 
     // If the agent reports docker capability false (Docker daemon not
     // reachable from the agent process — common on Windows when the
@@ -156,20 +157,19 @@ const ServerDockerTab = ({ serverId, serverStatus, server }) => {
 
     async function handleContainerAction(containerId, action) {
         try {
-            let result;
             if (action === 'start') {
-                result = await api.startRemoteContainer(serverId, containerId);
+                await api.startRemoteContainer(serverId, containerId);
                 toast.success(t('app.serverDockerTab.containerStarted', 'Container started'));
             } else if (action === 'stop') {
-                result = await api.stopRemoteContainer(serverId, containerId);
+                await api.stopRemoteContainer(serverId, containerId);
                 toast.success(t('app.serverDockerTab.containerStopped', 'Container stopped'));
             } else if (action === 'restart') {
-                result = await api.restartRemoteContainer(serverId, containerId);
+                await api.restartRemoteContainer(serverId, containerId);
                 toast.success(t('app.serverDockerTab.containerRestarted', 'Container restarted'));
             } else if (action === 'remove') {
                 const removeConfirmed = await confirmDocker({ titleKey: 'app.serverDockerTab.removeContainer', title: 'Remove Container', messageKey: 'app.serverDockerTab.removeThisContainer', message: 'Remove this container?' });
                 if (!removeConfirmed) return;
-                result = await api.removeRemoteContainer(serverId, containerId, true);
+                await api.removeRemoteContainer(serverId, containerId, true);
                 toast.success(t('app.serverDockerTab.containerRemoved', 'Container removed'));
             }
             loadDockerData();
@@ -250,37 +250,37 @@ const ServerDockerTab = ({ serverId, serverStatus, server }) => {
                 const isRunning = container.state === 'running';
                 return isRunning ? (
                     <>
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             className="btn-icon"
                             onClick={() => handleContainerAction(container.id, 'restart')}
                             title={t('common.actions.restart', 'Restart')}
                         >
                             <RefreshIcon />
-                        </button>
-                        <button type="button"
+                        </Button>
+                        <Button variant="unstyled" type="button"
                             className="btn-icon danger"
                             onClick={() => handleContainerAction(container.id, 'stop')}
                             title={t('common.actions.stop', 'Stop')}
                         >
                             <StopIcon />
-                        </button>
+                        </Button>
                     </>
                 ) : (
                     <>
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             className="btn-icon success"
                             onClick={() => handleContainerAction(container.id, 'start')}
                             title={t('common.actions.start', 'Start')}
                         >
                             <PlayIcon />
-                        </button>
-                        <button type="button"
+                        </Button>
+                        <Button variant="unstyled" type="button"
                             className="btn-icon danger"
                             onClick={() => handleContainerAction(container.id, 'remove')}
                             title={t('common.actions.remove', 'Remove')}
                         >
                             <TrashIcon />
-                        </button>
+                        </Button>
                     </>
                 );
             },
@@ -296,18 +296,18 @@ const ServerDockerTab = ({ serverId, serverStatus, server }) => {
                 </div>
             )}
             <div className="docker-sub-tabs">
-                <button type="button"
+                <Button variant="unstyled" type="button"
                     className={`sub-tab ${subTab === 'containers' ? 'active' : ''}`}
                     onClick={() => setSubTab('containers')}
                 >
                     {t('app.serverDockerTab.containers', 'Containers (')}{containers.length})
-                </button>
-                <button type="button"
+                </Button>
+                <Button variant="unstyled" type="button"
                     className={`sub-tab ${subTab === 'images' ? 'active' : ''}`}
                     onClick={() => setSubTab('images')}
                 >
                     {t('app.serverDockerTab.images', 'Images (')}{images.length})
-                </button>
+                </Button>
             </div>
 
             {subTab === 'containers' && (

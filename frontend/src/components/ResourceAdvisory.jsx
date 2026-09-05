@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { useResourceTier } from '../contexts/ResourceTierContext';
+import { useResourceTier } from '../contexts/useResourceTier.js';
 import { useTranslation } from 'react-i18next';
 
 // Approximate steady-state RSS per workload, mirroring WORKLOAD_FOOTPRINTS_MB

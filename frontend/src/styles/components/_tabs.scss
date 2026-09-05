@@ -133,27 +133,25 @@
 }
 
 .tab-btn {
-    display: inline-flex;
+display: inline-flex;
     align-items: center;
     gap: $space-2;
-    background: none;
+    white-space: nowrap;
+    background: transparent;
     border: none;
-    padding: $space-3 $space-5;
-    color: $text-secondary;
-    font-size: $font-size-base;
+    color: $text-tertiary;
+    font-size: $font-size-sm;
     font-weight: $font-weight-medium;
+    padding: $space-3 $space-4;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
-    @include transition();
-    white-space: nowrap;
+    transition: all $transition-base;
 
-    &:hover {
-        color: $text-primary;
-    }
+    &:hover { color: $text-primary; }
 
     &.active {
-        color: $accent-primary;
+        color: $text-primary;
         border-bottom-color: $accent-primary;
     }
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 // extension follows the panel's language and locale with no wiring of its own.
 import { useTranslation, useFormat } from 'serverkit-sdk';
 import SyntheticDesktop from './SyntheticDesktop.jsx';
+import { Button as SharedButton } from 'serverkit-sdk';
 
 const FRAME_INTERVAL_MS_DEFAULT = 700;
 const STORAGE_KEY = 'sk-gui:prefs';
@@ -206,7 +207,7 @@ function Toolbar({
 
 function ModeBtn({ label, active, disabled, title, onClick }) {
     return (
-        <button
+        <SharedButton variant="unstyled"
             type="button"
             title={title}
             disabled={disabled}
@@ -214,7 +215,7 @@ function ModeBtn({ label, active, disabled, title, onClick }) {
             className={`sk-gui__mode-btn ${active ? 'sk-gui__mode-btn--active' : ''}`}
         >
             {label}
-        </button>
+        </SharedButton>
     );
 }
 
@@ -263,12 +264,12 @@ function ScreenshotView({ baseUrl, fetchJson, intervalMs, scale, quality }) {
 
     return (
         <div className="sk-gui__viewport">
-            <button type="button"
+            <SharedButton variant="unstyled" type="button"
                 className="sk-gui__viewport-btn"
                 onClick={() => setPaused(p => !p)}
             >
                 {paused ? t('gui.resume', 'Resume') : t('gui.pause', 'Pause')}
-            </button>
+            </SharedButton>
             {error && <div className="sk-gui__banner sk-gui__banner--error">{error}</div>}
             {imgSrc ? (
                 <img className="sk-gui__frame" src={imgSrc} alt={t('gui.frameAlt', 'Remote desktop frame')} />

@@ -1,6 +1,7 @@
 import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import Spinner from '../Spinner';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 function TreeNode({ node, level, expanded, treeCache, treeLoading, currentPath, onNavigate, onToggle }) {
     const { t } = useTranslation();
@@ -16,7 +17,7 @@ function TreeNode({ node, level, expanded, treeCache, treeLoading, currentPath, 
                 style={{ paddingLeft: 6 + level * 14 }}
                 onClick={() => onNavigate(node.path)}
             >
-                <button type="button"
+                <SharedButton variant="unstyled" type="button"
                     className="tree-chevron"
                     onClick={(e) => { e.stopPropagation(); onToggle(node.path); }}
                     aria-label={isExpanded ? t('app.folderTree.collapse', 'Collapse') : t('app.folderTree.expand', 'Expand')}
@@ -28,7 +29,7 @@ function TreeNode({ node, level, expanded, treeCache, treeLoading, currentPath, 
                     ) : (
                         <ChevronRight size={12} />
                     )}
-                </button>
+                </SharedButton>
                 {isExpanded ? (
                     <FolderOpen size={14} className="tree-folder-icon open" />
                 ) : (

@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import api from '../services/api';
 import SSOProviderIcon from '../components/SSOProviderIcon';
 import ServerKitLogo from '../components/ServerKitLogo';
@@ -29,8 +29,10 @@ const Login = () => {
     const [totpCode, setTotpCode] = useState(['', '', '', '', '', '']);
     const [useBackupCode, setUseBackupCode] = useState(false);
     const [backupCode, setBackupCode] = useState('');
+    const twoFactorInFlight = useRef(false);
+    const submittedTotp = useRef(null);
 
-    const { login, setUser, setTokens, registrationEnabled, ssoProviders, passwordLoginEnabled, publicTitle } = useAuth();
+    const {  setUser, registrationEnabled, ssoProviders, passwordLoginEnabled, publicTitle } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [ssoLoading, setSsoLoading] = useState(null);
@@ -128,8 +130,10 @@ const Login = () => {
         }
     }
 
-    async function handle2FASubmit(e) {
+    const handle2FASubmit = useCallback(async (e) => {
         e.preventDefault();
+        if (twoFactorInFlight.current) return;
+        twoFactorInFlight.current = true;
         setError('');
         setLoading(true);
 
@@ -157,9 +161,10 @@ const Login = () => {
                 inputRefs.current[0]?.focus();
             }
         } finally {
+            twoFactorInFlight.current = false;
             setLoading(false);
         }
-    }
+    }, [useBackupCode, backupCode, totpCode, tempToken, setUser, navigate]);
 
     function handleTotpChange(index, value) {
         // Only allow digits
@@ -214,10 +219,18 @@ const Login = () => {
 
     // Auto-submit when all 6 digits are entered
     useEffect(() => {
-        if (!useBackupCode && totpCode.every(c => c) && !loading) {
-            handle2FASubmit({ preventDefault: () => {} });
+        if (!requires2FA || useBackupCode || !totpCode.every(c => c)) {
+            submittedTotp.current = null;
+            return;
         }
-    }, [totpCode, useBackupCode]);
+        if (loading || !tempToken) return;
+        // Loading and auth-context updates must not resubmit a completed code.
+        // Editing/clearing the digits re-arms the next attempt after a failure.
+        const attempt = `${tempToken}:${totpCode.join('')}`;
+        if (submittedTotp.current === attempt) return;
+        submittedTotp.current = attempt;
+        handle2FASubmit({ preventDefault: () => {} });
+    }, [totpCode, useBackupCode, requires2FA, tempToken, loading, handle2FASubmit]);
 
     // Render 2FA verification form
     if (requires2FA) {
@@ -336,7 +349,7 @@ const Login = () => {
                 {ssoProviders && ssoProviders.length > 0 && (
                     <div className="sso-providers">
                         {ssoProviders.map(p => (
-                            <button type="button"
+                            <Button variant="unstyled" type="button"
                                 key={p.id}
                                 className={`btn-sso btn-sso--${p.id}`}
                                 onClick={() => handleSSOLogin(p.id)}
@@ -344,7 +357,7 @@ const Login = () => {
                             >
                                 <SSOProviderIcon provider={p.id} />
                                 {ssoLoading === p.id ? 'Redirecting...' : `Continue with ${p.name}`}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 )}

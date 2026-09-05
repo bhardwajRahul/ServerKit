@@ -10,6 +10,7 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 // Scoped file-integrity monitoring: baseline-and-diff over the paths
 // ServerKit manages (nginx configs, serverkit-owned systemd units, and
@@ -282,8 +283,8 @@ const IntegrityTab = () => {
         // show never opens, even if it is the expanded one.
         const isOpen = expanded === key && changeRows.length > 0;
         return (
-            <div className="card sec-flush" key={key}>
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card sec-flush" key={key}>
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>
                         {scopeLabel(scope)}{' '}
                         <span className="sec-count">
@@ -296,8 +297,8 @@ const IntegrityTab = () => {
                     {check && (changed
                         ? <span className="sec-state sec-state--amber">{check.total_changes} changes</span>
                         : <span className="sec-state sec-state--green">clean</span>)}
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <p className="sec-hint--lead sec-hint">
                         {baseline
                             ? `Baseline: ${baseline.file_count} files, ${formatAge(baseline.created_at) || 'unknown age'}`
@@ -365,7 +366,7 @@ const IntegrityTab = () => {
                             <GridChips {...chrome.chipProps} />
                         </>
                     )}
-                </div>
+                </SharedCardContent>
                 {isOpen && (
                     <DataTable
                         columns={chrome.columns}
@@ -383,7 +384,7 @@ const IntegrityTab = () => {
                         )}
                     />
                 )}
-            </div>
+            </SharedCard>
         );
     }
 
@@ -405,11 +406,11 @@ const IntegrityTab = () => {
             {managedScopes.map(renderScopeCard)}
             {appScopes.map(renderScopeCard)}
 
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.integrityTab.applicationDocroots', 'Application docroots')} <span className="sec-count">{t('app.integrityTab.optIn', '· opt-in')}</span></h3>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     <p className="sec-hint sec-hint--lead">
                         {t('app.integrityTab.watchingADocrootHashesEveryFile', 'Watching a docroot hashes every file outside upload/cache directories, so it is opt-in per application.')}
                     </p>
@@ -432,8 +433,8 @@ const IntegrityTab = () => {
                             ))}
                         </div>
                     )}
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
 
             <GridFilterDrawer {...chrome.drawerProps} />
         </div>

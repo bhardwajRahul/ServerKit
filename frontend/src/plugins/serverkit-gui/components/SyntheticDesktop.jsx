@@ -10,7 +10,7 @@ const SYNTHETIC_REFRESH_MS = 4000;
  * Fake desktop UI rendered from agent data, used when the host has no
  * display server. Each "window" is just data the agent already exposes.
  */
-export default function SyntheticDesktop({ api, serverId, fetchJson }) {
+export default function SyntheticDesktop({  serverId, fetchJson }) {
     const { t } = useTranslation();
     const [data, setData] = useState(null);
     const [error, setError] = useState(null);

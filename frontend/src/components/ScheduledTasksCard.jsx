@@ -3,6 +3,7 @@ import { Clock, CheckCircle2, AlertCircle, History } from 'lucide-react';
 import api from '../services/api';
 import { Pill, Drawer } from '@/components/ds';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Read-only summary of an app's scheduled (cron) jobs. Rendered on the service
 // detail and WordPress detail Overview tabs. The backend endpoint is
@@ -74,14 +75,14 @@ const ScheduledTasksCard = ({ appId }) => {
                             <div className="scheduled-tasks-card__meta">
                                 <span className="scheduled-tasks-card__next">{formatWhen(job.next_run)}</span>
                                 <StatusHint job={job} />
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className="scheduled-tasks-card__runs-btn"
                                     onClick={() => openRuns(job)}
                                     title={t('app.scheduledTasksCard.viewRecentRuns', 'View recent runs')}
                                 >
                                     <History size={13} />
-                                </button>
+                                </SharedButton>
                                 <Pill kind={job.enabled ? 'green' : 'gray'}>
                                     {job.enabled ? 'Enabled' : 'Disabled'}
                                 </Pill>

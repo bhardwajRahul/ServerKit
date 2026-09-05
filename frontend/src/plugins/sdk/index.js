@@ -71,9 +71,9 @@ export { default as SchedulePicker } from '../../components/SchedulePicker';
 // Common UI primitives plugins are likely to want. Re-exports kept thin
 // on purpose — plugins can still reach for niche components directly,
 // but the everyday surface lives here.
-export { useToast } from '../../contexts/ToastContext';
-export { useAuth } from '../../contexts/AuthContext';
-export { useTheme } from '../../contexts/ThemeContext';
+export { useToast } from '../../contexts/useToast.js';
+export { useAuth } from '../../contexts/useAuth.js';
+export { useTheme } from '../../contexts/useTheme.js';
 
 // AI assistant — plugins consume the core assistant rather than building their
 // own chat UI. `useServerkitAI()` exposes:
@@ -86,7 +86,7 @@ export { useTheme } from '../../contexts/ThemeContext';
 //
 // Plugins can also declare contributions.ai = { suggested_prompts: [{route,label,prompt}],
 // tool_renderers: [{tool, component}] } in plugin.json.
-export { useServerkitAI, AIContext } from '../../contexts/AIContext';
+export { useServerkitAI, AIContext } from '../../contexts/useServerkitAI.js';
 
 // Routing helpers — plugin pages need these to navigate within the SPA.
 export {
@@ -141,7 +141,7 @@ export { timeAgo, formatRelativeTime, formatDuration } from '../../utils/time';
 // rather than a raw key path.
 export { useTranslation, Trans } from 'react-i18next';
 export { t } from '../../i18n/t';
-export { useLocale } from '../../contexts/LocaleContext';
+export { useLocale } from '../../contexts/useLocale.js';
 export { translateLabel, default as useLabel } from '../../i18n/labels';
 
 // The one locale-aware formatting door. An extension MUST NOT call
@@ -170,9 +170,8 @@ export { default as PluginSlot } from '../../components/PluginSlot';
 export { default as ResourceListPage } from '../../components/layouts/ResourceListPage';
 export { useLogsDrawer } from '../../contexts/LogsDrawerContext';
 export { default as RepoConnectForm } from '../../components/git/RepoConnectForm';
-export {
-    GIT_PROVIDERS, detectProvider, RepoProviderStrip,
-} from '../../components/git/GitProviders';
+export { RepoProviderStrip } from '../../components/git/GitProviders';
+export { GIT_PROVIDERS, detectProvider } from '../../components/git/gitProviderData';
 export { default as ProtectionPanel } from '../../components/backups/ProtectionPanel';
 
 // List-page chrome (1.4.0, plan 52 Phase 2 — the email/cloudflare-ops frontend

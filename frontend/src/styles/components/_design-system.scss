@@ -229,6 +229,7 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     display: flex;
     flex-direction: column;
     gap: 10px;
+ margin-bottom: $space-5;
 }
 
 .sk-kpiband {
@@ -1029,6 +1030,10 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     flex-direction: column;
     padding: $space-4;
 
+    > .empty-state--loading:has(.sk-page-wrap) {
+        padding: 0;
+    }
+
     // The toolbar row is the shared .sk-listhead (ResourceListPage renders
     // ListToolbar); only the search fallback and the layout switch stay here.
 
@@ -1318,6 +1323,7 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
 // Drawer — right-side slide-over header chrome (panel comes from ui/sheet).
 // ------------------------------------------------------------
 .sk-drawer {
+    max-width: 95vw;
     // Cancel the sheet's own padding/gap/scroll. This element owns three
     // full-height regions — head, body, foot — that each manage their own
     // padding, so the panel's must be zero or every one of them is inset:
@@ -1529,7 +1535,6 @@ $sk-tones: ('accent', 'green', 'cyan', 'amber', 'red', 'violet');
     &__actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
     &__chevron { color: var(--text-faint); flex-shrink: 0; margin-left: 4px; }
 }
-
 
 // ------------------------------------------------------------
 // ErrorState — consistent empty error panel.

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import { Info } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const SetupStepAccount = ({ onComplete }) => {
     const { t } = useTranslation();
@@ -103,13 +104,13 @@ const SetupStepAccount = ({ onComplete }) => {
                         />
                     </div>
 
-                    <button
+                    <SharedButton variant="unstyled"
                         type="submit"
                         className="btn-wizard-next btn-wizard-next--block"
                         disabled={loading}
                     >
                         {loading ? 'Signing in...' : 'Sign In & Continue'}
-                    </button>
+                    </SharedButton>
                 </form>
             </div>
         );
@@ -181,13 +182,13 @@ const SetupStepAccount = ({ onComplete }) => {
                     />
                 </div>
 
-                <button
+                <SharedButton variant="unstyled"
                     type="submit"
                     className="btn-wizard-next btn-wizard-next--block"
                     disabled={loading}
                 >
                     {loading ? 'Creating account...' : 'Continue'}
-                </button>
+                </SharedButton>
             </form>
         </div>
     );

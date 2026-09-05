@@ -7,6 +7,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Globe, RefreshCw, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 function expiryTone(days) {
     if (days == null) return 'neutral';
@@ -53,9 +54,9 @@ export default function RegistrarPortfolio() {
                         <span className="reg-portfolio__warn"><AlertTriangle size={13} /> {expiringSoon} {t('app.registrarPortfolio.expiring30d', 'expiring ≤30d')}</span>
                     )}
                 </div>
-                <button type="button" className="reg-portfolio__refresh" onClick={refresh} disabled={syncing}>
+                <SharedButton variant="unstyled" type="button" className="reg-portfolio__refresh" onClick={refresh} disabled={syncing}>
                     <RefreshCw size={14} className={syncing ? 'is-spinning' : ''} /> {syncing ? 'Syncing…' : 'Sync'}
-                </button>
+                </SharedButton>
             </header>
 
             <div className="reg-portfolio__list">

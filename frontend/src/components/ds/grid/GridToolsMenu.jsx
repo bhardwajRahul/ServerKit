@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { byKey, exportRows } from './fields';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The toolbar's "⋮" — everything that is neither a filter nor a per-column
 // action: export, refresh, row density, and discarding unsaved view changes.
@@ -46,15 +47,15 @@ export function GridToolsMenu({
             onOpenChange={(o) => { setOpen(o); if (!o) setPane('root'); }}
         >
             <PopoverTrigger asChild>
-                <button type="button" className="sk-gridicon" aria-label={t('app.gridToolsMenu.moreTableOptions', 'More table options')}>
+                <SharedButton variant="unstyled" type="button" className="sk-gridicon" aria-label={t('app.gridToolsMenu.moreTableOptions', 'More table options')}>
                     <MoreVertical size={16} />
-                </button>
+                </SharedButton>
             </PopoverTrigger>
             <PopoverContent align="end" sideOffset={6} className="ui-popover-panel sk-gridmenu">
                 {pane === 'root' ? (
                     <>
                         {onCopyLink && (
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-gridmenu__opt"
                                 onClick={async () => {
@@ -67,26 +68,26 @@ export function GridToolsMenu({
                                 {copied === 'ok' ? 'Link copied'
                                     : copied === 'fail' ? 'Copy failed — check permissions'
                                         : 'Copy link to this view'}
-                            </button>
+                            </SharedButton>
                         )}
-                        <button type="button" className="sk-gridmenu__opt" onClick={() => setPane('export')}>
+                        <SharedButton variant="unstyled" type="button" className="sk-gridmenu__opt" onClick={() => setPane('export')}>
                             <Download size={13} />{t('app.gridToolsMenu.export', 'Export…')}
-                        </button>
+                        </SharedButton>
                         {onRefresh && (
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="sk-gridmenu__opt"
                                 onClick={() => { onRefresh(); close(); }}
                             >
                                 <RefreshCw size={13} />{t('app.gridToolsMenu.refreshData', 'Refresh data')}
-                            </button>
+                            </SharedButton>
                         )}
                         {showDensity && (
                             <>
                                 <div className="sk-gridmenu__sep" />
                                 <div className="sk-gridmenu__head">{t('app.gridToolsMenu.rowDensity', 'Row density')}</div>
                                 {[['cozy', 'Cozy', Rows2], ['compact', 'Compact', Rows3]].map(([value, text, Icon]) => (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         key={value}
                                         type="button"
                                         className={cn('sk-gridmenu__opt', cfg.density === value && 'is-on')}
@@ -94,23 +95,23 @@ export function GridToolsMenu({
                                     >
                                         <span className="sk-gridmenu__box"><Check size={11} /></span>
                                         <Icon size={13} />{text}
-                                    </button>
+                                    </SharedButton>
                                 ))}
                             </>
                         )}
                         <div className="sk-gridmenu__sep" />
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="sk-gridmenu__opt"
                             onClick={() => { onReset(); close(); }}
                         >
                             <History size={13} />{t('app.gridToolsMenu.resetViewChanges', 'Reset view changes')}
-                        </button>
+                        </SharedButton>
                     </>
                 ) : (
                     <>
                         <div className="sk-gridmenu__head">{t('app.gridToolsMenu.export2', 'Export')}</div>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={cn('sk-gridmenu__opt', scope === 'view' && 'is-on')}
                             onClick={() => setScope('view')}
@@ -118,8 +119,8 @@ export function GridToolsMenu({
                             <span className="sk-gridmenu__box"><Check size={11} /></span>
                             {t('app.gridToolsMenu.rowsInThisView', 'Rows in this view')}
                             <span className="sk-gridmenu__rest">{rows.length}</span>
-                        </button>
-                        <button
+                        </SharedButton>
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={cn('sk-gridmenu__opt', scope === 'picked' && 'is-on')}
                             disabled={!selectedRows.length}
@@ -128,9 +129,9 @@ export function GridToolsMenu({
                             <span className="sk-gridmenu__box"><Check size={11} /></span>
                             {t('app.gridToolsMenu.selectedRows', 'Selected rows')}
                             <span className="sk-gridmenu__rest">{selectedRows.length}</span>
-                        </button>
+                        </SharedButton>
                         <div className="sk-gridmenu__sep" />
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={cn('sk-gridmenu__opt', allCols && 'is-on')}
                             onClick={() => setAllCols((v) => !v)}
@@ -138,10 +139,10 @@ export function GridToolsMenu({
                             <span className="sk-gridmenu__box"><Check size={11} /></span>
                             {t('app.gridToolsMenu.includeHiddenFields', 'Include hidden fields')}
                             <span className="sk-gridmenu__rest">{exportCols.length}</span>
-                        </button>
+                        </SharedButton>
                         <div className="sk-gridmenu__foot">
-                            <button type="button" onClick={() => go('json')}>JSON</button>
-                            <button type="button" className="is-primary" onClick={() => go('csv')}>{t('app.gridToolsMenu.downloadCsv', 'Download CSV')}</button>
+                            <SharedButton variant="unstyled" type="button" onClick={() => go('json')}>JSON</SharedButton>
+                            <SharedButton variant="unstyled" type="button" className="is-primary" onClick={() => go('csv')}>{t('app.gridToolsMenu.downloadCsv', 'Download CSV')}</SharedButton>
                         </div>
                     </>
                 )}

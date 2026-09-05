@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import { SIDEBAR_ITEMS } from '../components/sidebarItems';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 
 // Sidebar items that can never be hidden (Dashboard, Marketplace) — the palette
 // mirrors the sidebar's `alwaysVisible` so a workspace nav map can't hide them.

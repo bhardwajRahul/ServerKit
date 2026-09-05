@@ -32,7 +32,7 @@ const WORKSPACE_MEMBER_VIEWS = [
     },
 ];
 
-const WorkspaceMembersTab = ({ wsId, members, allUsers, onAddMember, onRemoveMember }) => {
+const WorkspaceMembersTab = ({ members, allUsers, onAddMember, onRemoveMember }) => {
     const { t } = useTranslation();
     const { sorts, setSorts } = useTableSort({ storageKey: 'serverkit-table-ws-members-sort' });
     const {

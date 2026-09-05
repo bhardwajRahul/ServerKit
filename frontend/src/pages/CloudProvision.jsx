@@ -1,8 +1,9 @@
+import { Card as SharedCard } from '@/components/ui/card';
 import { useState, useEffect, useCallback } from 'react';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import PageLoader from '../components/PageLoader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -40,12 +41,12 @@ const CloudProvision = () => {
             setProviders(pData.providers || []);
             setServers(sData.servers || []);
             setCosts(cData);
-        } catch (err) {
+        } catch {
             toast.error(t('app.cloudProvision.failedToLoadCloudData', 'Failed to load cloud data'));
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => { loadData(); }, [loadData]);
 
@@ -118,7 +119,7 @@ const CloudProvision = () => {
                 <TabsContent value="servers">
                     <div className="cloud-servers-grid">
                         {servers.map(srv => (
-                            <div key={srv.id} className="cloud-server-card card">
+                            <SharedCard variant="legacy" key={srv.id} className="cloud-server-card card">
                                 <div className="cloud-server-card__header">
                                     <h3>{srv.name}</h3>
                                     <Badge variant={serverStatusVariant(srv.status)}>{srv.status}</Badge>
@@ -138,7 +139,7 @@ const CloudProvision = () => {
                                         <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm(srv)}>{t('app.cloudProvision.destroy', 'Destroy')}</Button>
                                     )}
                                 </div>
-                            </div>
+                            </SharedCard>
                         ))}
                         {servers.length === 0 && (
                             <EmptyState
@@ -155,11 +156,11 @@ const CloudProvision = () => {
                 <TabsContent value="providers">
                     <div className="providers-list">
                         {providers.map(p => (
-                            <div key={p.id} className="provider-row card">
+                            <SharedCard variant="legacy" key={p.id} className="provider-row card">
                                 <strong>{p.name}</strong>
                                 <Badge variant="outline">{providerTypes[p.provider_type] || p.provider_type}</Badge>
                                 <span>{p.server_count} servers</span>
-                            </div>
+                            </SharedCard>
                         ))}
                         {providers.length === 0 && (
                             <EmptyState
@@ -175,7 +176,7 @@ const CloudProvision = () => {
 
                 <TabsContent value="costs">
                     {costs && (
-                        <div className="costs-panel card">
+                        <SharedCard variant="legacy" className="costs-panel card">
                             <h3>{t('app.cloudProvision.monthlyCostSummary', 'Monthly Cost Summary')}</h3>
                             <div className="cost-total">${costs.total_monthly}/mo across {costs.server_count} servers</div>
                             <div className="cost-breakdown">
@@ -187,7 +188,7 @@ const CloudProvision = () => {
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                        </SharedCard>
                     )}
                 </TabsContent>
             </Tabs>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Unlink } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { ConfirmDialog } from '../ConfirmDialog';
 import StatusBadge from '../StatusBadge';
 import { InfoList, InfoItem } from '../InfoList';

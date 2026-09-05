@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import {
     FolderUp, UserPlus, Network, Activity, Server, Users as UsersIcon,
     Cable, KeyRound, Ban, Check, Trash2, RefreshCw, X,
@@ -13,7 +13,7 @@ import {
 } from '@/components/ds/grid';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Modal from '@/components/Modal';
@@ -91,11 +91,46 @@ function FTPServer() {
         setHiddenKeys: setConnHiddenKeys,
     } = useColumnVisibility({ storageKey: 'serverkit-table-ftp-connections-cols' });
 
-    useEffect(() => {
-        loadData();
+    const loadConfig = useCallback(async (service) => {
+        try {
+            const data = await api.getFTPConfig(service);
+            setConfig(data);
+        } catch (error) {
+            console.error('Failed to load FTP config:', error);
+        }
     }, []);
 
-    const loadData = async () => {
+    const loadStatus = useCallback(async () => {
+        try {
+            const data = await api.getFTPStatus();
+            setStatus(data);
+            if (data.active_server) {
+                loadConfig(data.active_server);
+            }
+        } catch (error) {
+            console.error('Failed to load FTP status:', error);
+        }
+    }, [loadConfig]);
+
+    const loadUsers = useCallback(async () => {
+        try {
+            const data = await api.getFTPUsers();
+            setUsers(data.users || []);
+        } catch (error) {
+            console.error('Failed to load FTP users:', error);
+        }
+    }, []);
+
+    const loadConnections = useCallback(async () => {
+        try {
+            const data = await api.getFTPConnections();
+            setConnections(data.connections || []);
+        } catch (error) {
+            console.error('Failed to load FTP connections:', error);
+        }
+    }, []);
+
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             await Promise.all([
@@ -108,52 +143,18 @@ function FTPServer() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [loadStatus, loadUsers, loadConnections]);
 
-    const loadStatus = async () => {
-        try {
-            const data = await api.getFTPStatus();
-            setStatus(data);
-            if (data.active_server) {
-                loadConfig(data.active_server);
-            }
-        } catch (error) {
-            console.error('Failed to load FTP status:', error);
-        }
-    };
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
 
-    const loadConfig = async (service) => {
-        try {
-            const data = await api.getFTPConfig(service);
-            setConfig(data);
-        } catch (error) {
-            console.error('Failed to load FTP config:', error);
-        }
-    };
-
-    const loadUsers = async () => {
-        try {
-            const data = await api.getFTPUsers();
-            setUsers(data.users || []);
-        } catch (error) {
-            console.error('Failed to load FTP users:', error);
-        }
-    };
-
-    const loadConnections = async () => {
-        try {
-            const data = await api.getFTPConnections();
-            setConnections(data.connections || []);
-        } catch (error) {
-            console.error('Failed to load FTP connections:', error);
-        }
-    };
 
     const loadLogs = async () => {
         try {
             const data = await api.getFTPLogs(200);
             setLogs(data.content || 'No logs available');
-        } catch (error) {
+        } catch {
             setLogs('Failed to load logs');
         }
     };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ShieldCheck, ListChecks, X, RefreshCw } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Pill, SegControl } from '../ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -314,14 +314,14 @@ const AppWafPanel = ({ app, onChanged }) => {
                                 {policy.disabled_rule_ids.map((id) => (
                                     <span key={id} className="waf-panel__chip">
                                         <span className="mono">{id}</span>
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className="waf-panel__chip-remove"
                                             onClick={() => handleRemoveRule(id)}
                                             aria-label={t('app.appWafPanel.removeRule', 'Remove rule {{id}}', { id: id })}
                                         >
                                             <X size={13} />
-                                        </button>
+                                        </Button>
                                     </span>
                                 ))}
                             </div>

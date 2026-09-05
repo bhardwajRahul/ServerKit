@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../services/api';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import UserModal from './UserModal';
 import InvitationsTab from './InvitationsTab';
 import LoginLinksSection from './LoginLinksSection';

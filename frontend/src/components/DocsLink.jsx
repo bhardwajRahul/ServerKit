@@ -1,5 +1,5 @@
 import { BookOpen } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/useTheme.js';
 import { docsUrl } from '../utils/docsLinks';
 
 // Small "Docs" link (book icon) that opens a serverkit.ai docs page in a new

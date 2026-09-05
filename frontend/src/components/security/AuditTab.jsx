@@ -6,6 +6,7 @@ import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { ScoreGauge } from '@/components/ds';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 
 const scoreColor = (score) => {
@@ -36,14 +37,14 @@ const AuditTab = () => {
 
     return (
         <div className="audit-tab">
-            <div className="card">
-                <div className="card-header">
+            <SharedCard variant="legacy" className="card">
+                <SharedCardHeader variant="legacy" className="card-header">
                     <h3>{t('app.auditTab.securityAudit', 'Security Audit')}</h3>
                     <Button variant="default" onClick={runAudit} disabled={loading}>
                         {loading ? 'Running Audit...' : 'Run Audit'}
                     </Button>
-                </div>
-                <div className="card-body">
+                </SharedCardHeader>
+                <SharedCardContent variant="legacy" className="card-body">
                     {error && <div className="alert alert-danger">{error}</div>}
 
                     {!audit && !loading && (
@@ -101,8 +102,8 @@ const AuditTab = () => {
                             )}
                         </div>
                     )}
-                </div>
-            </div>
+                </SharedCardContent>
+            </SharedCard>
         </div>
     );
 };

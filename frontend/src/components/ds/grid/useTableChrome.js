@@ -136,7 +136,7 @@ export function useTableChrome({
         // leaves the previous view's filters silently applied.
         setFilters(state.columnFilters ?? NO_FILTERS);
         setColumnOrder(state.columnOrder ?? null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }, [applyPage, setSorts, setHiddenKeys, setGroupBy]);
 
     const { views, copyLink, createView } = useGridViews({

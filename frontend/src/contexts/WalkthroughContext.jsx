@@ -25,7 +25,7 @@ import {
     WALKTHROUGH_LIBRARY_EVENT,
     WALKTHROUGH_SIGNAL_EVENT,
 } from '../services/walkthroughRegistry';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth.js';
 import usePolling from '../hooks/usePolling';
 import { WalkthroughContext } from './walkthroughContextValue';
 

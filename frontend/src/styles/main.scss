@@ -37,6 +37,7 @@
 @import 'components/_modals';
 @import 'components/_htaccess-converter';
 @import 'components/_forms';
+@import 'components/_form-affordances';
 @import 'components/_badges';
 @import 'components/_tabs';
 @import 'components/_lists';
@@ -63,6 +64,8 @@
 @import 'components/_api-settings';
 @import 'components/_empty-state';
 @import 'components/_status-badge';
+@import 'components/_connection-status';
+@import 'components/_detail-tabs';
 @import 'components/_server-selector';
 @import 'components/_schedule-picker';   // shared cron picker (CronJobs, Backups, server-detail)
 @import 'components/_contribution-graph';
@@ -138,6 +141,7 @@
 @import 'pages/_services';
 @import 'pages/_service-detail';
 @import 'pages/_fleet-monitor';
+@import 'pages/_agent-fleet';
 @import 'pages/_server-templates';
 @import 'pages/_server-packages';
 @import 'pages/_server-services';
