@@ -39,7 +39,7 @@ export function ColumnsMenu({ columns = [], hiddenKeys = [], onToggle, onShowAll
                     {hideable.map((column) => {
                         const hidden = hiddenKeys.includes(column.key);
                         return (
-                            <button
+                            <Button variant="unstyled"
                                 key={column.key}
                                 type="button"
                                 className={cn('sk-tablemenu__item', 'sk-tablemenu__item--toggle', hidden && 'is-off')}
@@ -48,7 +48,7 @@ export function ColumnsMenu({ columns = [], hiddenKeys = [], onToggle, onShowAll
                             >
                                 {hidden ? <EyeOff size={13} /> : <Eye size={13} />}
                                 {labelFor(column)}
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>

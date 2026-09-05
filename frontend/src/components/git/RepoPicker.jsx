@@ -169,7 +169,7 @@ const RepoPicker = ({ provider, onPick }) => {
                     </div>
                 )}
                 {!reposLoading && repos.map((repo) => (
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         key={repo.id}
                         className={`git-connect__gh-repo${selected?.id === repo.id ? ' is-active' : ''}`}
@@ -188,7 +188,7 @@ const RepoPicker = ({ provider, onPick }) => {
                                 : t('git.picker.public', 'Public')}
                         </span>
                         {selected?.id === repo.id && <Check size={15} />}
-                    </button>
+                    </Button>
                 ))}
             </div>
 

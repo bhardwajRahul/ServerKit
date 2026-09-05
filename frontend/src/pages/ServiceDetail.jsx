@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { servicePortUrl } from '@/utils/serviceUrl';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import { useService } from '../hooks/useService';
 import useTabParam from '../hooks/useTabParam';
@@ -76,6 +76,7 @@ const ServiceDetail = () => {
     const { id, tab: rawTab } = useParams();
     const navigate = useNavigate();
     const toast = useToast();
+    const toastError = toast.error;
     const { confirm } = useConfirm();
     const { service, deployConfig, loading, error, reload, performAction, deleteService } = useService(id);
     // Active tab lives in the URL (/services/:id/:tab) so it's shareable and
@@ -116,9 +117,9 @@ const ServiceDetail = () => {
                 setVersions(data.versions || []);
                 setCurrentVersion(data.current);
             })
-            .catch(() => toast.error(t('app.serviceDetail.failedToLoadVersions', 'Failed to load versions')))
+            .catch(() => toastError(t('app.serviceDetail.failedToLoadVersions', 'Failed to load versions')))
             .finally(() => setVersionsLoading(false));
-    }, [service?.source, id, toast]);
+    }, [service?.source, id, toastError, t]);
 
     // Close menus on outside click
     useEffect(() => {
@@ -288,28 +289,28 @@ const ServiceDetail = () => {
                     <div className="svc-detail__dropdown" ref={deployMenuRef}>
                         <Button onClick={() => setShowDeployMenu(!showDeployMenu)}>
                             {t('app.serviceDetail.deploy', 'Deploy')}
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ml-1">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="svc-title-link-icon">
                                 <polyline points="6 9 12 15 18 9"/>
                             </svg>
                         </Button>
                         {showDeployMenu && (
                             <div className="svc-detail__dropdown-menu">
-                                <button type="button" onClick={() => handleAction('restart')} disabled={actionLoading === 'restart'}>
+                                <Button variant="unstyled" type="button" onClick={() => handleAction('restart')} disabled={actionLoading === 'restart'}>
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <polyline points="23 4 23 10 17 10"/>
                                         <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
                                     </svg>
                                     {t('app.serviceDetail.manualDeployRestart', 'Manual Deploy (Restart)')}
-                                </button>
+                                </Button>
                                 {isGitBased && deployConfig && (
-                                    <button type="button" onClick={handleDeployLatest} disabled={actionLoading === 'deploy-latest'}>
+                                    <Button variant="unstyled" type="button" onClick={handleDeployLatest} disabled={actionLoading === 'deploy-latest'}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                             <circle cx="18" cy="18" r="3"/>
                                             <circle cx="6" cy="6" r="3"/>
                                             <path d="M6 21V9a9 9 0 0 0 9 9"/>
                                         </svg>
                                         {actionLoading === 'deploy-latest' ? 'Deploying...' : 'Deploy Latest Commit'}
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         )}
@@ -353,12 +354,12 @@ const ServiceDetail = () => {
                         {showMoreMenu && (
                             <div className="svc-detail__dropdown-menu svc-detail__dropdown-menu--right">
                                 {service.isRunning && (
-                                    <button type="button" onClick={() => handleAction('stop')} disabled={actionLoading === 'stop'}>
+                                    <Button variant="unstyled" type="button" onClick={() => handleAction('stop')} disabled={actionLoading === 'stop'}>
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                                             <rect x="6" y="6" width="12" height="12"/>
                                         </svg>
                                         {t('app.serviceDetail.suspendService', 'Suspend Service')}
-                                    </button>
+                                    </Button>
                                 )}
                                 {openUrl && (
                                     <a
@@ -376,7 +377,7 @@ const ServiceDetail = () => {
                                     </a>
                                 )}
                                 <div className="svc-detail__dropdown-divider" />
-                                <button type="button"
+                                <Button variant="unstyled" type="button"
                                     className="svc-detail__dropdown-danger"
                                     onClick={handleDelete}
                                     disabled={actionLoading === 'delete'}
@@ -386,7 +387,7 @@ const ServiceDetail = () => {
                                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
                                     </svg>
                                     {t('app.serviceDetail.deleteService', 'Delete Service')}
-                                </button>
+                                </Button>
                             </div>
                         )}
                     </div>
@@ -503,14 +504,14 @@ const ServiceDetail = () => {
                         )}
                     </div>
                 ) : (
-                    <button type="button" className="svc-detail__connect-repo" onClick={() => navigate(`/services/${id}/settings/git`)}>
+                    <Button variant="unstyled" type="button" className="svc-detail__connect-repo" onClick={() => navigate(`/services/${id}/settings/git`)}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="18" cy="18" r="3"/>
                             <circle cx="6" cy="6" r="3"/>
                             <path d="M6 21V9a9 9 0 0 0 9 9"/>
                         </svg>
                         {t('app.serviceDetail.connectARepository', 'Connect a repository')}
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -565,14 +566,14 @@ const ServiceDetail = () => {
                 {availableTabs.map(tab => {
                     const Icon = TAB_ICONS[tab];
                     return (
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             key={tab}
                             className={`app-detail-tab ${activeTab === tab ? 'active' : ''} ${tab === 'settings' ? 'app-detail-tab--end' : ''}`}
                             onClick={() => setActiveTab(tab)}
                         >
                             {Icon && <Icon size={14} />}
                             {TAB_LABELS[tab] || tab}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>

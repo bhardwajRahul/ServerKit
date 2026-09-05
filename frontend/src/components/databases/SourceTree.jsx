@@ -2,6 +2,7 @@ import { ChevronRight, ChevronDown, Table2, Loader2, MoreHorizontal, Plus, Downl
 import { EngineIcon } from '../icons/DatabaseBrands';
 import EngineGlyph from './EngineGlyph';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Icon per node kind / engine. Brand glyphs come from DatabaseBrands; tint comes
 // from `.is-<engine>` in SCSS (the brand icons use currentColor). An engine
@@ -86,7 +87,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                 onContextMenu={(e) => handlers.onContext(e, node)}
             >
                 {node.expandable ? (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-tree-chevron"
                         onClick={(e) => { e.stopPropagation(); handlers.onToggle(node); }}
@@ -96,7 +97,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                         {isLoading
                             ? <Loader2 size={13} className="dbx-spin" aria-hidden="true" />
                             : isOpen ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronRight size={14} aria-hidden="true" />}
-                    </button>
+                    </SharedButton>
                 ) : (
                     <span className="dbx-tree-chevron dbx-tree-chevron--leaf" aria-hidden="true" />
                 )}
@@ -130,7 +131,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                     Unlike the row's other buttons this one keeps its place in the
                     tab order: it is the only way out of the state it announces. */}
                 {canInstall && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-tree-install-btn"
                         onClick={(e) => { e.stopPropagation(); handlers.onInstall(node); }}
@@ -138,7 +139,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                         title={t('app.sourceTree.install', 'Install {{label}}', { label: node.label })}
                     >
                         <Download size={11} aria-hidden="true" /> {t('app.sourceTree.install2', 'Install')}
-                    </button>
+                    </SharedButton>
                 )}
                 {!canInstall && node.installHint && (
                     <span className="dbx-tree-hint">{node.installHint}</span>
@@ -157,7 +158,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                 )}
 
                 {node.canCreate && handlers.onCreateChild && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-tree-add"
                         onClick={(e) => { e.stopPropagation(); handlers.onCreateChild(node); }}
@@ -166,10 +167,10 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                         tabIndex={-1}
                     >
                         <Plus size={12} aria-hidden="true" />
-                    </button>
+                    </SharedButton>
                 )}
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="dbx-tree-more"
                     onClick={(e) => { e.stopPropagation(); handlers.onContext(e, node); }}
@@ -177,7 +178,7 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                     tabIndex={-1}
                 >
                     <MoreHorizontal size={14} aria-hidden="true" />
-                </button>
+                </SharedButton>
             </div>
 
             {node.expandable && isOpen && (
@@ -193,13 +194,13 @@ function TreeRow({ node, depth, expanded, childrenCache, loading, activeKey, sel
                     {!isLoading && !hadError && childNodes.length === 0 && (
                         <li className="dbx-tree-leaf-msg" style={{ paddingLeft: `${(depth + 1) * 14 + 22}px` }}>
                             {canInstall ? (
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className="dbx-tree-leaf-link"
                                     onClick={() => handlers.onInstall(node)}
                                 >
                                     {t('app.sourceTree.notInstalledInstall', 'Not installed — install')} {node.label}
-                                </button>
+                                </SharedButton>
                             ) : emptyLabel(node)}
                         </li>
                     )}

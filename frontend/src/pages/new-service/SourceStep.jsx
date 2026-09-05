@@ -1,6 +1,7 @@
 import { GitBranch, FolderOpen, FileArchive } from 'lucide-react';
 import { SiGithub } from 'react-icons/si';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Step 1 — Source. Four clean radio-cards; selecting one advances to Connect.
 //
@@ -30,7 +31,7 @@ const SourceStep = ({ form }) => {
             </div>
             <div className="new-service-page__sources" data-walkthrough="service-sources" role="radiogroup" aria-label={t('app.sourceStep.serviceSource', 'Service source')}>
                 {SOURCES.map(({ mode, Icon, title, sub }) => (
-                    <button
+                    <SharedButton variant="unstyled"
                         key={mode}
                         type="button"
                         role="radio"
@@ -45,7 +46,7 @@ const SourceStep = ({ form }) => {
                             <strong>{title}</strong>
                             <span>{sub}</span>
                         </span>
-                    </button>
+                    </SharedButton>
                 ))}
             </div>
         </div>

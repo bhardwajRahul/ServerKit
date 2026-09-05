@@ -1,11 +1,12 @@
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useNotifications } from '../contexts/useNotifications.js';
 import { useOperations } from '../contexts/OperationsContext';
-import { useServerkitAI } from '../contexts/AIContext';
-import { useShellDock } from '../contexts/ShellDockContext';
+import { useServerkitAI } from '../contexts/useServerkitAI.js';
+import { useShellDock } from '../contexts/useShellDock.js';
 import { useWalkthroughs } from '../contexts/walkthroughContextValue';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Shared header strip for every shell console panel. Wherever a panel opens
 // (Operations, Alerts, Recipes bottom console; Assistant right drawer), the
@@ -38,7 +39,7 @@ export default function ShellDockTabs({ controls = null, expandable = true }) {
     return (
         <div className="shell-dock-tabs" role="tablist" aria-label={t('app.statusbar.consolePanels', 'Console panels')}>
             {tabs.map((tab) => (
-                <button
+                <SharedButton variant="unstyled"
                     key={tab.id}
                     type="button"
                     role="tab"
@@ -48,12 +49,12 @@ export default function ShellDockTabs({ controls = null, expandable = true }) {
                 >
                     {tab.label}
                     {tab.badge ? <span className="shell-dock-tabs__badge mono">{tab.badge}</span> : null}
-                </button>
+                </SharedButton>
             ))}
             <span className="shell-dock-tabs__spacer" />
             {controls}
             {expandable && (
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="shell-dock-tabs__control"
                     onClick={() => setExpanded(!expanded)}
@@ -66,9 +67,9 @@ export default function ShellDockTabs({ controls = null, expandable = true }) {
                         : t('app.statusbar.expandPanel', 'Expand panel')}
                 >
                     {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                </button>
+                </SharedButton>
             )}
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="shell-dock-tabs__control"
                 onClick={close}
@@ -76,7 +77,7 @@ export default function ShellDockTabs({ controls = null, expandable = true }) {
                 title={t('app.statusbar.closeEsc', 'Close (Esc)')}
             >
                 <X size={15} />
-            </button>
+            </SharedButton>
         </div>
     );
 }

@@ -14,8 +14,8 @@ import { ShieldAlert } from 'lucide-react';
 import api from '../../../services/api';
 import useSettingFocus from '../../../hooks/useSettingFocus';
 import { useConfirm } from '../../../hooks/useConfirm';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToast } from '../../../contexts/ToastContext';
+import { useAuth } from '../../../contexts/useAuth.js';
+import { useToast } from '../../../contexts/useToast.js';
 import {
     CONNECTION_CATEGORIES, CONNECTION_PROVIDERS, deriveScope, dedupeScopes,
 } from './providerCatalog';
@@ -112,7 +112,7 @@ export default function ConnectionsHub() {
         } catch (err) {
             toast.error(err.message || t('app.connectionsHub.failedToStartConnection', 'Failed to start {{name}} connection', { name: provider.name }));
         }
-    }, [toast]);
+    }, [t, toast]);
 
     const onDisconnectSource = useCallback(async (provider) => {
         try {
@@ -123,7 +123,7 @@ export default function ConnectionsHub() {
         } catch (err) {
             toast.error(err.message || t('app.connectionsHub.failedToDisconnect', 'Failed to disconnect'));
         }
-    }, [toast, loadData]);
+    }, [toast, loadData, t]);
 
     // One-click GitHub App setup: fetch the manifest, then POST it to github.com
     // via an auto-submitted form (GitHub only accepts the manifest as a form
@@ -147,7 +147,7 @@ export default function ConnectionsHub() {
         } catch (err) {
             toast.error(err.message || t('app.connectionsHub.failedToStartGithubAppSetup', 'Failed to start GitHub App setup'));
         }
-    }, [toast]);
+    }, [t, toast]);
 
     const onSaveSourceConfig = useCallback(async (provider, config) => {
         try {
@@ -161,7 +161,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToSaveOauthApp', 'Failed to save OAuth app'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     // ── DNS ──
     const onAddDns = useCallback(async (payload) => {
@@ -175,7 +175,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToAddConnection', 'Failed to add connection'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, loadData, t]);
 
     const onRemoveDns = useCallback(async (record) => {
         const confirmed = await confirm({
@@ -194,7 +194,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToRemoveConnection', 'Failed to remove connection'));
             return false;
         }
-    }, [confirm, toast, loadData]);
+    }, [confirm, t, toast, loadData]);
 
     const onTestDns = useCallback(async (id) => {
         try {
@@ -206,7 +206,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.connectionTestFailed', 'Connection test failed'));
             return null;
         }
-    }, [toast]);
+    }, [t, toast]);
 
     // ── Cloud (server provisioning) ──
     const onAddCloud = useCallback(async (payload) => {
@@ -219,7 +219,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToConnectProvider', 'Failed to connect provider'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     const onRemoveCloud = useCallback(async (id) => {
         const confirmed = await confirm({
@@ -238,7 +238,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToDisconnect', 'Failed to disconnect'));
             return false;
         }
-    }, [confirm, toast, loadData]);
+    }, [confirm, t, toast, loadData]);
 
     // ── Storage ──
     const onSaveStorage = useCallback(async (config) => {
@@ -252,7 +252,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToSaveStorage', 'Failed to save storage'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     const onTestStorage = useCallback(async (config) => {
         try {
@@ -264,7 +264,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.connectionTestFailed', 'Connection test failed'));
             return null;
         }
-    }, [toast]);
+    }, [t, toast]);
 
     // ── Email relay ──
     const onSaveRelay = useCallback(async (payload) => {
@@ -277,7 +277,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToSaveRelay', 'Failed to save relay'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     const onTestRelay = useCallback(async (payload) => {
         try {
@@ -289,7 +289,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.connectionTestFailed', 'Connection test failed'));
             return null;
         }
-    }, [toast]);
+    }, [t, toast]);
 
     const onDisableRelay = useCallback(async () => {
         try {
@@ -301,7 +301,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToDisableRelay', 'Failed to disable relay'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     // ── Registrar ──
     const onAddRegistrar = useCallback(async (payload) => {
@@ -314,7 +314,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToConnectRegistrar', 'Failed to connect registrar'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     const onRemoveRegistrar = useCallback(async (id) => {
         const confirmed = await confirm({
@@ -333,7 +333,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToDisconnect', 'Failed to disconnect'));
             return false;
         }
-    }, [confirm, toast, loadData]);
+    }, [confirm, t, toast, loadData]);
 
     const onTestRegistrar = useCallback(async (id) => {
         try {
@@ -345,7 +345,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.connectionTestFailed', 'Connection test failed'));
             return null;
         }
-    }, [toast]);
+    }, [t, toast]);
 
     // ── Container registries ──
     const onAddRegistry = useCallback(async (payload) => {
@@ -358,7 +358,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToAddRegistry', 'Failed to add registry'));
             return false;
         }
-    }, [toast, loadData]);
+    }, [toast, t, loadData]);
 
     const onRemoveRegistry = useCallback(async (id) => {
         const confirmed = await confirm({
@@ -377,7 +377,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.failedToRemoveRegistry', 'Failed to remove registry'));
             return false;
         }
-    }, [confirm, toast, loadData]);
+    }, [confirm, t, toast, loadData]);
 
     const onTestRegistry = useCallback(async (id) => {
         try {
@@ -389,7 +389,7 @@ export default function ConnectionsHub() {
             toast.error(err.message || t('app.connectionsHub.loginFailed', 'Login failed'));
             return null;
         }
-    }, [toast]);
+    }, [t, toast]);
 
     // ── Per-provider card summaries ──
     const summaries = useMemo(() => {

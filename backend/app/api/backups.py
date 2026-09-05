@@ -474,8 +474,9 @@ def cleanup_backups():
 @admin_required
 def list_schedules():
     """List backup schedules."""
+    from app.services.backup_schedule_service import server_timezone
     schedules = BackupService.get_schedules()
-    return jsonify({'schedules': schedules}), 200
+    return jsonify({'schedules': schedules, 'timezone': str(server_timezone())}), 200
 
 
 @backups_bp.route('/schedules', methods=['POST'])

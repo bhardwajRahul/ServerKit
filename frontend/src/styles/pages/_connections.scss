@@ -188,23 +188,6 @@
 }
 
 // ── Status pill (top-right of a card) ──
-.conn-status {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    padding: 2px $space-2;
-    border: 1px solid $border-subtle;
-    border-radius: $radius-full;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-medium;
-    color: $text-tertiary;
-    white-space: nowrap;
-
-    &--ok {
-        @include status-variant($success, $success-bg);
-        border-color: $success-border;
-    }
-}
 
 // ── Scope chip (access level) ──
 .conn-pill {

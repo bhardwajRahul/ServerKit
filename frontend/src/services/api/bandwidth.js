@@ -6,7 +6,7 @@ export async function getBandwidthApps() {
 }
 
 export async function getAppBandwidth(appId, days = 90) {
-    return this.request(`/bandwidth/apps/${appId}?days=${days}`);
+    return this.request(`/bandwidth/apps/${appId}?days=${encodeURIComponent(days)}`);
 }
 
 export async function runBandwidthAggregate(day = null) {

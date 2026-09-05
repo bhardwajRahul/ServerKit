@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
+const NO_ACTIVE_ITEM = () => -1;
+
 function arraysEqual(a, b) {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
@@ -77,11 +79,12 @@ export function sanitizeOverflowIndices(indices, count) {
  *   recompute: () => void
  * }}
  */
-export function useOverflowItems({ count, itemRefs: externalItemRefs, gap = 8, moreWidth = 36, getActiveIndex = () => -1, deps = [] }) {
+export function useOverflowItems({ count, itemRefs: externalItemRefs, gap = 8, moreWidth = 36, getActiveIndex = NO_ACTIVE_ITEM, deps = [] }) {
     const containerRef = useRef(null);
     const internalItemRefs = useRef([]);
     const moreBtnRef = useRef(null);
     const [hiddenIndices, setHiddenIndices] = useState([]);
+    const measurementInputs = useRef(null);
 
     const itemRefs = externalItemRefs || internalItemRefs;
     itemRefs.current.length = count;
@@ -141,12 +144,20 @@ export function useOverflowItems({ count, itemRefs: externalItemRefs, gap = 8, m
             if (!visibleSetObj.has(i)) hidden.push(i);
         }
         setHiddenIndices((prev) => (arraysEqual(prev, hidden) ? prev : hidden));
-    }, [count, gap, moreWidth, getActiveIndex, ...deps]);
+    }, [gap, moreWidth, getActiveIndex, itemRefs]);
 
-    // Initial measurement after first paint.
+    // Consumers may supply an arbitrary dependency list. Compare its values
+    // after each commit, using React's Object.is semantics, without putting a
+    // variable-length spread into a hook dependency array or measuring again
+    // just because the caller created a fresh array.
     useEffect(() => {
+        const inputs = [recompute, count, ...deps];
+        const previous = measurementInputs.current;
+        if (previous && previous.length === inputs.length
+            && inputs.every((value, index) => Object.is(value, previous[index]))) return;
+        measurementInputs.current = inputs;
         recompute();
-    }, [recompute, count]);
+    });
 
     // Re-fit on container resize.
     useEffect(() => {

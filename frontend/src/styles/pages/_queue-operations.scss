@@ -659,3 +659,6 @@
 .queue-table tbody tr.is-selected {
     background: $accent-glow;
 }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.queue-action-icon { margin-inline-end: 0.5rem; }

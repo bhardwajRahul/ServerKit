@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import useTabParam from '../hooks/useTabParam';
 import { refreshDevMode } from '../hooks/useDevMode';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import api from '../services/api';
 import ProfileTab from '../components/settings/ProfileTab';
 import SecuritySettingsTab from '../components/settings/SecuritySettingsTab';

@@ -125,7 +125,7 @@ export async function grantPostgreSQLPrivileges(username, database, privileges =
 
 // Backups
 export async function getDatabaseBackups(type = null) {
-    const params = type ? `?type=${type}` : '';
+    const params = type ? `?type=${encodeURIComponent(type)}` : '';
     return this.request(`/databases/backups${params}`);
 }
 
@@ -134,7 +134,7 @@ export async function deleteDatabaseBackup(filename) {
 }
 
 export async function generateDatabasePassword(length = 16) {
-    return this.request(`/databases/generate-password?length=${length}`);
+    return this.request(`/databases/generate-password?length=${encodeURIComponent(length)}`);
 }
 
 // Query Execution

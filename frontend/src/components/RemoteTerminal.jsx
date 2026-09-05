@@ -6,6 +6,7 @@ import '@xterm/xterm/css/xterm.css';
 import api from '../services/api';
 import socketService from '../services/socket';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 /**
  * RemoteTerminal - Interactive terminal component for remote server access
@@ -261,7 +262,7 @@ export default function RemoteTerminal({ serverId, onClose }) {
                     {sessionId && <span className="session-id">{sessionId}</span>}
                 </div>
                 <div className="terminal-actions">
-                    <button type="button"
+                    <SharedButton variant="unstyled" type="button"
                         className="terminal-close-btn"
                         onClick={handleClose}
                         title={t('app.remoteTerminal.closeTerminal', 'Close terminal')}
@@ -269,7 +270,7 @@ export default function RemoteTerminal({ serverId, onClose }) {
                         <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" fill="none" strokeWidth="2">
                             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                         </svg>
-                    </button>
+                    </SharedButton>
                 </div>
             </div>
             <div

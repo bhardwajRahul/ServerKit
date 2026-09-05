@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ArrowLeft, Boxes, Plus, Trash2 } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,7 +80,7 @@ const SharedVariableGroups = ({ scopeType = 'workspace', scopeId = 'default' }) 
         } finally {
             setLoading(false);
         }
-    }, [scopeType, scopeId, toast]);
+    }, [scopeType, scopeId, toast, t]);
 
     const loadDetail = useCallback(async (groupId) => {
         if (!groupId) { setDetail(null); return; }
@@ -90,7 +90,7 @@ const SharedVariableGroups = ({ scopeType = 'workspace', scopeId = 'default' }) 
         } catch {
             toast.error(t('app.sharedVariableGroups.failedToLoadGroup', 'Failed to load group'));
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => { loadGroups(); }, [loadGroups]);
     useEffect(() => { loadDetail(selectedId); }, [selectedId, loadDetail]);
@@ -487,7 +487,7 @@ const SharedVariableGroups = ({ scopeType = 'workspace', scopeId = 'default' }) 
                                             <span className="shared-groups__attachment-label">
                                                 {a.resource_type}:{a.resource_id}
                                             </span>
-                                            <button
+                                            <Button variant="unstyled"
                                                 type="button"
                                                 className="shared-tag__remove"
                                                 onClick={() => handleDetach(a)}
@@ -495,7 +495,7 @@ const SharedVariableGroups = ({ scopeType = 'workspace', scopeId = 'default' }) 
                                                 aria-label={t('app.sharedVariableGroups.detachGroup', 'Detach group')}
                                             >
                                                 &times;
-                                            </button>
+                                            </Button>
                                         </li>
                                     ))}
                                 </ul>

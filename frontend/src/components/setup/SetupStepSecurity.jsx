@@ -118,13 +118,13 @@ const SetupStepSecurity = ({ onComplete }) => {
                 </div>
 
                 <div className="wizard-nav wizard-nav--flush">
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-wizard-next"
                         onClick={() => onComplete(true)}
                     >
                         {t('common.actions.continue', 'Continue')}
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -163,14 +163,14 @@ const SetupStepSecurity = ({ onComplete }) => {
                     <Button variant="ghost" onClick={() => onComplete(false)} disabled={busy}>
                         {t('app.setupStepSecurity.skipForNow', 'Skip for now')}
                     </Button>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-wizard-next"
                         onClick={handleEnable}
                         disabled={busy}
                     >
                         {busy ? 'Starting...' : 'Enable two-factor'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -233,14 +233,14 @@ const SetupStepSecurity = ({ onComplete }) => {
                     <Button variant="ghost" onClick={() => onComplete(false)} disabled={busy}>
                         {t('app.setupStepSecurity.skipForNow', 'Skip for now')}
                     </Button>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-wizard-next"
                         onClick={handleConfirm}
                         disabled={busy || code.length !== CODE_LENGTH}
                     >
                         {busy ? 'Verifying...' : 'Verify and enable'}
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
@@ -280,13 +280,13 @@ const SetupStepSecurity = ({ onComplete }) => {
             </div>
 
             <div className="wizard-nav wizard-nav--flush">
-                <button
+                <Button variant="unstyled"
                     type="button"
                     className="btn-wizard-next"
                     onClick={() => onComplete(true)}
                 >
                     {savedCodes ? 'Continue' : 'I have saved these'}
-                </button>
+                </Button>
             </div>
         </div>
     );

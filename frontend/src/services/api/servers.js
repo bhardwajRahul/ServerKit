@@ -117,7 +117,7 @@ export async function deleteServerGroup(id) {
 
 // Remote Docker Operations (via agent)
 export async function getRemoteContainers(serverId, all = false) {
-    return this.request(`/servers/${serverId}/docker/containers?all=${all}`);
+    return this.request(`/servers/${serverId}/docker/containers?all=${encodeURIComponent(all)}`);
 }
 
 export async function getRemoteContainer(serverId, containerId) {
@@ -143,7 +143,7 @@ export async function restartRemoteContainer(serverId, containerId) {
 }
 
 export async function removeRemoteContainer(serverId, containerId, force = false) {
-    return this.request(`/servers/${serverId}/docker/containers/${containerId}?force=${force}`, {
+    return this.request(`/servers/${serverId}/docker/containers/${containerId}?force=${encodeURIComponent(force)}`, {
         method: 'DELETE'
     });
 }
@@ -170,7 +170,7 @@ export async function pullRemoteImage(serverId, image) {
 }
 
 export async function removeRemoteImage(serverId, imageId, force = false) {
-    return this.request(`/servers/${serverId}/docker/images/${imageId}?force=${force}`, {
+    return this.request(`/servers/${serverId}/docker/images/${imageId}?force=${encodeURIComponent(force)}`, {
         method: 'DELETE'
     });
 }
@@ -180,7 +180,7 @@ export async function getRemoteVolumes(serverId) {
 }
 
 export async function removeRemoteVolume(serverId, volumeName, force = false) {
-    return this.request(`/servers/${serverId}/docker/volumes/${encodeURIComponent(volumeName)}?force=${force}`, {
+    return this.request(`/servers/${serverId}/docker/volumes/${encodeURIComponent(volumeName)}?force=${encodeURIComponent(force)}`, {
         method: 'DELETE'
     });
 }
@@ -518,16 +518,16 @@ export async function remoteComposePull(serverId, projectPath, service = null) {
 
 // Server Historical Metrics
 export async function getServerMetricsHistory(serverId, period = '24h') {
-    return this.request(`/servers/${serverId}/metrics/history?period=${period}`);
+    return this.request(`/servers/${serverId}/metrics/history?period=${encodeURIComponent(period)}`);
 }
 
 export async function getServerMetricsAggregated(serverId, period = '24h', aggregation = 'hourly') {
-    return this.request(`/servers/${serverId}/metrics/aggregated?period=${period}&aggregation=${aggregation}`);
+    return this.request(`/servers/${serverId}/metrics/aggregated?period=${encodeURIComponent(period)}&aggregation=${encodeURIComponent(aggregation)}`);
 }
 
 export async function compareServerMetrics(serverIds, metric = 'cpu', period = '24h') {
     const ids = Array.isArray(serverIds) ? serverIds.join(',') : serverIds;
-    return this.request(`/servers/metrics/compare?ids=${ids}&metric=${metric}&period=${period}`);
+    return this.request(`/servers/metrics/compare?ids=${encodeURIComponent(ids)}&metric=${encodeURIComponent(metric)}&period=${encodeURIComponent(period)}`);
 }
 
 export async function getMetricsRetentionStats() {
@@ -612,7 +612,7 @@ export async function getAllSecurityAlerts(options = {}) {
 }
 
 export async function getSecurityAlertCounts(serverId = null) {
-    const query = serverId ? `?server_id=${serverId}` : '';
+    const query = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
     return this.request(`/servers/security/alerts/counts${query}`);
 }
 
@@ -669,7 +669,7 @@ export async function startRollout(data) {
 }
 
 export async function getRollouts(status) {
-    const query = status ? `?status=${status}` : '';
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return this.request(`/servers/fleet/rollouts${query}`);
 }
 
@@ -684,7 +684,7 @@ export async function cancelRollout(rolloutId) {
 }
 
 export async function startDiscovery(duration = 10) {
-    return this.request(`/servers/fleet/discovery?duration=${duration}`, {
+    return this.request(`/servers/fleet/discovery?duration=${encodeURIComponent(duration)}`, {
         method: 'POST'
     });
 }
@@ -706,7 +706,7 @@ export async function rejectRegistration(serverId) {
 }
 
 export async function getQueuedCommands(serverId) {
-    const query = serverId ? `?server_id=${serverId}` : '';
+    const query = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
     return this.request(`/servers/fleet/commands/queued${query}`);
 }
 
@@ -722,13 +722,13 @@ export async function getServerDiagnostics(serverId) {
 
 // Fleet Monitor (Cross-Server Monitoring) endpoints
 export async function getFleetHeatmap(groupId) {
-    const query = groupId ? `?group_id=${groupId}` : '';
+    const query = groupId ? `?group_id=${encodeURIComponent(groupId)}` : '';
     return this.request(`/fleet-monitor/heatmap${query}`);
 }
 
 export async function getFleetComparison(serverIds, metric, period) {
     const ids = serverIds.join(',');
-    return this.request(`/fleet-monitor/comparison?ids=${ids}&metric=${metric}&period=${period}`);
+    return this.request(`/fleet-monitor/comparison?ids=${encodeURIComponent(ids)}&metric=${encodeURIComponent(metric)}&period=${encodeURIComponent(period)}`);
 }
 
 export async function getFleetAlerts(params = {}) {
@@ -750,7 +750,7 @@ export async function resolveFleetAlert(alertId) {
 }
 
 export async function getFleetThresholds(serverId) {
-    const query = serverId ? `?server_id=${serverId}` : '';
+    const query = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
     return this.request(`/fleet-monitor/thresholds${query}`);
 }
 
@@ -763,21 +763,21 @@ export async function deleteFleetThreshold(thresholdId) {
 }
 
 export async function getFleetAnomalies(serverId) {
-    const query = serverId ? `?server_id=${serverId}` : '';
+    const query = serverId ? `?server_id=${encodeURIComponent(serverId)}` : '';
     return this.request(`/fleet-monitor/anomalies${query}`);
 }
 
 export async function getCapacityForecast(serverId, metric = 'disk') {
-    return this.request(`/fleet-monitor/forecast/${serverId}?metric=${metric}`);
+    return this.request(`/fleet-monitor/forecast/${serverId}?metric=${encodeURIComponent(metric)}`);
 }
 
 export async function searchFleet(query, type = 'any') {
-    return this.request(`/fleet-monitor/search?q=${encodeURIComponent(query)}&type=${type}`);
+    return this.request(`/fleet-monitor/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}`);
 }
 
 export async function exportFleetCsv(serverIds, metric, period) {
     const ids = serverIds.join(',');
-    const url = `${this.baseUrl}/fleet-monitor/export/csv?ids=${ids}&metric=${metric}&period=${period}`;
+    const url = `${this.baseUrl}/fleet-monitor/export/csv?ids=${encodeURIComponent(ids)}&metric=${encodeURIComponent(metric)}&period=${encodeURIComponent(period)}`;
     const token = this.getToken();
     const response = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
@@ -787,7 +787,7 @@ export async function exportFleetCsv(serverIds, metric, period) {
 
 // Agent Plugins endpoints
 export async function getAgentPlugins(status) {
-    const query = status ? `?status=${status}` : '';
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return this.request(`/agent-plugins/${query}`);
 }
 
@@ -835,7 +835,7 @@ export async function disablePluginInstall(installId) {
     return this.request(`/agent-plugins/installs/${installId}/disable`, { method: 'POST' });
 }
 
-export async function uninstallPlugin(installId) {
+export async function uninstallPluginInstall(installId) {
     return this.request(`/agent-plugins/installs/${installId}`, { method: 'DELETE' });
 }
 
@@ -851,7 +851,7 @@ export async function getPluginSpec() {
 
 // Server Templates endpoints
 export async function getServerTemplates(category) {
-    const query = category ? `?category=${category}` : '';
+    const query = category ? `?category=${encodeURIComponent(category)}` : '';
     return this.request(`/server-templates/${query}`);
 }
 
@@ -1000,7 +1000,7 @@ export async function getCloudProviderOptions(type) {
 }
 
 export async function getCloudServers(providerId) {
-    const query = providerId ? `?provider_id=${providerId}` : '';
+    const query = providerId ? `?provider_id=${encodeURIComponent(providerId)}` : '';
     return this.request(`/cloud/servers${query}`);
 }
 

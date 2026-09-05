@@ -5,7 +5,7 @@ export async function getTestSandboxDistros() {
 }
 
 export async function getTestSandboxRuns(limit = 20) {
-    return this.request(`/test-sandbox/runs?limit=${limit}`);
+    return this.request(`/test-sandbox/runs?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function startTestSandboxRun(distros, mode) {

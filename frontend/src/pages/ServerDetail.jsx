@@ -1,7 +1,8 @@
+import { serverStatusKind } from '../components/serverdetail/serverDetailData';
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import { useRecordVisit } from '@/hooks/useRecordVisit';
 import FavoriteStar from '@/components/FavoriteStar';
@@ -19,7 +20,6 @@ import ServerMetricsTab from '../components/serverdetail/ServerMetricsTab';
 import SurveyTab from '../components/serverdetail/SurveyTab';
 import ServerSettingsTab, { TokenModal } from '../components/serverdetail/ServerSettingsTab';
 import {
-    serverStatusKind,
     CopyChip,
     FolderTinyIcon,
     RefreshIcon,
@@ -29,7 +29,7 @@ import RemoteAccess from '../pages/RemoteAccess';
 import EmptyState from '../components/EmptyState';
 import { usePolling } from '@/hooks/usePolling';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import ServerRestorePointsTab from '../components/serverdetail/ServerRestorePointsTab';
 
 // Live host metrics cadence while the server is online.
@@ -179,7 +179,7 @@ const ServerDetail = () => {
             } else {
                 toast.error(t('app.serverDetail.serverDidNotRespond', 'Server did not respond'));
             }
-        } catch (err) {
+        } catch {
             toast.error(t('app.serverDetail.failedToPingServer', 'Failed to ping server'));
         }
     }

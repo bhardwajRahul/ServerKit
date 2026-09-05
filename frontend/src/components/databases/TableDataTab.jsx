@@ -10,6 +10,7 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const PAGE_SIZE = 100;
 
@@ -242,7 +243,7 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
         <div className="dbx-table-tab">
             <div className="dbx-table-toolbar">
                 <div className="dbx-segmented" role="tablist" aria-label={t('app.tableDataTab.tableView', 'Table view')}>
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         role="tab"
                         aria-selected={view === 'data'}
@@ -250,8 +251,8 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
                         onClick={() => setView('data')}
                     >
                         <Table2 size={14} aria-hidden="true" /> {t('app.tableDataTab.data', 'Data')}
-                    </button>
-                    <button
+                    </SharedButton>
+                    <SharedButton variant="unstyled"
                         type="button"
                         role="tab"
                         aria-selected={view === 'structure'}
@@ -259,12 +260,12 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
                         onClick={() => setView('structure')}
                     >
                         <Columns3 size={14} aria-hidden="true" /> {t('app.tableDataTab.structure', 'Structure')}
-                    </button>
+                    </SharedButton>
                 </div>
 
                 {view === 'data' && (
                     <div className="dbx-pager">
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="dbx-icon-btn"
                             onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -272,14 +273,14 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
                             aria-label={t('app.tableDataTab.previousPage', 'Previous page')}
                         >
                             <ChevronLeft size={15} aria-hidden="true" />
-                        </button>
+                        </SharedButton>
                         <span className="dbx-pager-label">
                             {rowsEstimate === 0
                                 ? '0 rows'
                                 : `${page * PAGE_SIZE + 1}–${page * PAGE_SIZE + (data?.row_count || 0)}`}
                             {rowsEstimate != null && rowsEstimate > 0 && <span className="dbx-pager-total"> {t('app.tableDataTab.of', 'of ≈')}{rowsEstimate.toLocaleString()}</span>}
                         </span>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="dbx-icon-btn"
                             onClick={() => setPage((p) => p + 1)}
@@ -287,20 +288,20 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
                             aria-label={t('app.tableDataTab.nextPage', 'Next page')}
                         >
                             <ChevronRight size={15} aria-hidden="true" />
-                        </button>
+                        </SharedButton>
                     </div>
                 )}
 
                 <div className="dbx-table-toolbar-spacer" />
 
-                <button type="button" className="dbx-chip" onClick={() => onOpenConsole?.(`SELECT * FROM ${table} LIMIT 100;`)}>
+                <SharedButton variant="unstyled" type="button" className="dbx-chip" onClick={() => onOpenConsole?.(`SELECT * FROM ${table} LIMIT 100;`)}>
                     <Terminal size={14} aria-hidden="true" /> {t('app.tableDataTab.query', 'Query')}
-                </button>
+                </SharedButton>
                 {/* Data only. The structure table's refresh lives in its own
                     "⋮" with the rest of its table-wide actions, so the schema
                     never carries two ways to reload it. */}
                 {view === 'data' && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-icon-btn"
                         onClick={() => loadData(page)}
@@ -308,7 +309,7 @@ export default function TableDataTab({ conn, tabId, table, rowsEstimate, active,
                         aria-label={t('common.actions.refresh', 'Refresh')}
                     >
                         <RefreshCw size={14} className={dataLoading ? 'dbx-spin' : ''} aria-hidden="true" />
-                    </button>
+                    </SharedButton>
                 )}
             </div>
 

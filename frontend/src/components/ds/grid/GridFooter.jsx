@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronsLeft, ChevronsRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { byKey, columnLabel } from './fields';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Footer: what you are looking at on the left, how to page through it on the
 // right. The sort/group summary is here rather than in a toolbar chip because
@@ -43,19 +44,19 @@ export function GridFooter({
                     </select>
                     <ChevronDown size={12} />
                 </div>
-                <button type="button" disabled={page <= 1} onClick={() => onPage(1)} aria-label={t('app.gridFooter.firstPage', 'First page')}>
+                <SharedButton variant="unstyled" type="button" disabled={page <= 1} onClick={() => onPage(1)} aria-label={t('app.gridFooter.firstPage', 'First page')}>
                     <ChevronsLeft size={13} />
-                </button>
-                <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t('app.gridFooter.previousPage', 'Previous page')}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label={t('app.gridFooter.previousPage', 'Previous page')}>
                     <ChevronLeft size={14} />
-                </button>
+                </SharedButton>
                 <span className="sk-gridpager__pos">{page} / {pageCount}</span>
-                <button type="button" disabled={page >= pageCount} onClick={() => onPage(page + 1)} aria-label={t('app.gridFooter.nextPage', 'Next page')}>
+                <SharedButton variant="unstyled" type="button" disabled={page >= pageCount} onClick={() => onPage(page + 1)} aria-label={t('app.gridFooter.nextPage', 'Next page')}>
                     <ChevronRight size={14} />
-                </button>
-                <button type="button" disabled={page >= pageCount} onClick={() => onPage(pageCount)} aria-label={t('app.gridFooter.lastPage', 'Last page')}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" disabled={page >= pageCount} onClick={() => onPage(pageCount)} aria-label={t('app.gridFooter.lastPage', 'Last page')}>
                     <ChevronsRight size={13} />
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

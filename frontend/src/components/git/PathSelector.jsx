@@ -53,7 +53,7 @@ const PathSelector = ({ paths, onChange, label, hint, id }) => {
                 {QUICK_PATHS.map(({ label: quickLabel, value }) => {
                     const active = paths.includes(value);
                     return (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             key={value}
                             className={`git-path-selector__chip git-path-selector__chip--quick${active ? ' is-active' : ''}`}
@@ -62,7 +62,7 @@ const PathSelector = ({ paths, onChange, label, hint, id }) => {
                         >
                             {active ? <X size={12} aria-hidden="true" /> : <Plus size={12} aria-hidden="true" />}
                             {quickLabel}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>
@@ -88,14 +88,14 @@ const PathSelector = ({ paths, onChange, label, hint, id }) => {
                     {paths.map((path) => (
                         <li key={path} className="git-path-selector__item">
                             <code>{path}</code>
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="git-path-selector__remove"
                                 onClick={() => removePath(path)}
                                 aria-label={t('app.pathSelector.remove', 'Remove {{path}}', { path: path })}
                             >
                                 <X size={12} aria-hidden="true" />
-                            </button>
+                            </Button>
                         </li>
                     ))}
                 </ul>

@@ -66,6 +66,8 @@ class Config:
     # Database - use instance folder for Flask convention
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:////app/instance/serverkit.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Temporary local/staging profiling. Off by default; no SQL text is exposed.
+    PROFILE_REQUESTS = _env_bool('SERVERKIT_PROFILE_REQUESTS', False)
 
     # JWT
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')

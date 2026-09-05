@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/useTheme.js';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useToast } from '../../contexts/useToast.js';
 import { Link } from 'react-router-dom';
 import { RotateCcw, Upload, Store, Sparkles, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
+
 import useSettingFocus from '../../hooks/useSettingFocus';
 import LanguageSelector from './LanguageSelector';
 import ThemeGallery from './ThemeGallery';
@@ -66,7 +66,7 @@ const AppearanceTab = () => {
                 <h3>{t('app.appearanceTab.theme', 'Theme')}</h3>
                 <p>{t('app.appearanceTab.selectYourPreferredColorScheme', 'Select your preferred color scheme')}</p>
                 <div className="theme-options">
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
                         onClick={() => setTheme('dark')}
                     >
@@ -78,8 +78,8 @@ const AppearanceTab = () => {
                             </div>
                         </div>
                         <span>{t('app.appearanceTab.dark', 'Dark')}</span>
-                    </button>
-                    <button type="button"
+                    </Button>
+                    <Button variant="unstyled" type="button"
                         className={`theme-option ${theme === 'light' ? 'active' : ''}`}
                         onClick={() => setTheme('light')}
                     >
@@ -91,8 +91,8 @@ const AppearanceTab = () => {
                             </div>
                         </div>
                         <span>{t('app.appearanceTab.light', 'Light')}</span>
-                    </button>
-                    <button type="button"
+                    </Button>
+                    <Button variant="unstyled" type="button"
                         className={`theme-option ${theme === 'system' ? 'active' : ''}`}
                         onClick={() => setTheme('system')}
                     >
@@ -104,7 +104,7 @@ const AppearanceTab = () => {
                             </div>
                         </div>
                         <span>{t('common.labels.system', 'System')}</span>
-                    </button>
+                    </Button>
                 </div>
             </div>
 
@@ -150,14 +150,14 @@ const AppearanceTab = () => {
                 <p>{t('app.appearanceTab.chooseThePrimaryAccentColorUsed', 'Choose the primary accent color used across the interface')}</p>
                 <div className="accent-presets">
                     {ACCENT_PRESETS.map(({ label, color }) => (
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             key={color}
                             className={`accent-preset${accentColor === color ? ' active' : ''}`}
                             onClick={() => setAccentColor(color)}
                         >
                             <span className="accent-swatch" style={{ background: color }} />
                             <span className="accent-label">{label}</span>
-                        </button>
+                        </Button>
                     ))}
                 </div>
                 <div className="accent-custom">
@@ -171,14 +171,14 @@ const AppearanceTab = () => {
                         />
                         <span className="accent-custom-hex">{accentColor.toUpperCase()}</span>
                         {hasCustomAccent && (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="accent-custom-reset"
                                 onClick={resetAccentColor}
                                 title={t('app.appearanceTab.useTheThemeSAccent', 'Use the theme\'s accent')}
                             >
                                 <RotateCcw size={13} /> {t('app.appearanceTab.useThemeAccent', 'Use theme accent')}
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

@@ -13,6 +13,7 @@ export default function useFocusTrap(ref, { active, onEscape, restoreFocusRef } 
         if (!active || !ref.current) return undefined;
         const node = ref.current;
         const previouslyFocused = document.activeElement;
+        const restoreTo = restoreFocusRef?.current || previouslyFocused;
 
         const focusFirst = () => {
             const focusable = node.querySelectorAll(FOCUSABLE);
@@ -44,7 +45,6 @@ export default function useFocusTrap(ref, { active, onEscape, restoreFocusRef } 
         node.addEventListener('keydown', onKeyDown);
         return () => {
             node.removeEventListener('keydown', onKeyDown);
-            const restoreTo = restoreFocusRef?.current || previouslyFocused;
             restoreTo?.focus?.();
         };
     }, [active, ref, onEscape, restoreFocusRef]);

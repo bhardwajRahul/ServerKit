@@ -117,29 +117,6 @@
     }
 }
 
-.btn-ghost {
-    background: transparent;
-    color: $text-secondary;
-
-    &:hover:not(:disabled) {
-        background-color: $bg-hover;
-        color: $text-primary;
-    }
-}
-
-.btn-link {
-    height: auto;
-    min-width: 0;
-    padding: 0;
-    background: transparent;
-    color: $accent-primary;
-    text-decoration: none;
-
-    &:hover:not(:disabled) {
-        text-decoration: underline;
-    }
-}
-
 // --------------------------------------------
 // Size variants
 // --------------------------------------------
@@ -170,37 +147,80 @@
     }
 }
 
+.btn-link {
+height: auto;
+    min-width: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    color: $accent-primary;
+    cursor: pointer;
+    font-size: $font-size-sm;
+    text-decoration: none;
+
+    // Named sizes retain their geometry while links keep zero padding.
+    &.btn-sm { height: 32px; min-width: 72px; }
+    &.btn-lg { height: 44px; min-width: 128px; }
+
+    &:hover,
+    &:hover:not(:disabled) { text-decoration: underline; }
+}
+
 // Icon-only square button — matches default height so it lines up
 // next to regular buttons in toolbars.
 .btn-icon {
-    width: 40px;
-    height: 40px;
-    min-width: 0;
-    padding: 0;
+display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: auto !important;
+    padding: $space-2 !important;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    color: $text-tertiary;
+    cursor: pointer;
+    transition: all 0.2s;
 
     svg {
         width: 18px;
         height: 18px;
+        margin: 0 !important;
     }
 
     &.btn-sm {
         width: 32px;
         height: 32px;
 
-        svg {
-            width: 16px;
-            height: 16px;
-        }
+        svg { width: 16px; height: 16px; }
     }
 
     &.btn-lg {
         width: 44px;
         height: 44px;
 
-        svg {
-            width: 20px;
-            height: 20px;
-        }
+        svg { width: 20px; height: 20px; }
+    }
+
+    &:hover {
+        color: $text-primary;
+        background: $bg-hover;
+    }
+
+    &.btn-danger:hover {
+        background: fade($danger-raw, 20%);
+        color: $danger;
+    }
+
+    &.success {
+        color: $success;
+        &:hover { background: $success-bg; }
+    }
+
+    &.danger {
+        color: $danger;
+        &:hover { background: $danger-bg; }
     }
 }
 
@@ -232,3 +252,30 @@
 
 // Loading state styling lives in _spinner.scss alongside .spinner overrides.
 
+.btn-xs {
+    padding: 2px 6px;
+    font-size: 11px;
+
+    svg {
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 2;
+    }
+}
+
+// Ghost takes precedence when combined with the icon size.
+.btn-ghost {
+background: transparent;
+    border: 1px solid transparent;
+    color: $text-secondary;
+
+    &:hover {
+        background: $bg-elevated;
+        color: $text-primary;
+    }
+
+    &:hover:not(:disabled) {
+        background-color: $bg-hover;
+        color: $text-primary;
+    }
+}

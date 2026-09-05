@@ -15,7 +15,7 @@ import {
     ChevronRight, Globe, Pause, Play, Plus, Radar, RefreshCw,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import {
     DataTable, DataTableFooter, Drawer, FilterButton, FilterDrawer,

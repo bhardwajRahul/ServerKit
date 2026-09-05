@@ -21,22 +21,11 @@ import logging
 from datetime import datetime, timezone
 
 from app.services.connect_commands import handler
+from app.services.connect_format import iso_datetime as _iso
 
 logger = logging.getLogger(__name__)
 
 FACTS_VERSION = 1
-
-
-def _iso(value):
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value.isoformat()
-    return None
 
 
 # ==================== facts ====================

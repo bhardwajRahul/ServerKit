@@ -434,69 +434,13 @@ h3.svc-eyebrow {
 // ============================================
 // EVENTS TAB — the merged activity table
 // ============================================
-.events-tab {
-    // The Event cell stacks the message over its meta line, so the ellipsis on
-    // the message needs a min-width:0 flex parent to bite against.
-    &__cell {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-
-    // Config and audit rows carry everything they have in the row itself —
-    // only a deploy opens a drawer, so only a deploy gets a pointer.
-    .sk-dtable tbody tr.is-static {
-        cursor: default;
-    }
-
-    // A cell with genuinely nothing behind it (an audit entry has no outcome).
-    &__none {
-        color: var(--text-faint);
-    }
-
-    &__event-sha {
-        font-family: var(--mono);
-        font-size: $font-size-sm;
-        @include status-variant(var(--accent-bright), var(--accent-bg));
-        padding: 1px $space-2;
-        border-radius: $radius-sm;
-        flex-shrink: 0;
-    }
-
-    &__event-message {
-        font-size: $font-size-base - 1;
-        color: $text-primary;
-        font-weight: $font-weight-medium;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    // The build log, now shown in the deploy drawer rather than in an expanded
-    // row. Flat BEM, so it styles the same block wherever it is portalled to.
-    &__event-logs {
-        padding: $space-3;
-        background: var(--bg-code);
-        border: 1px solid var(--border-soft);
-        border-radius: $radius-md;
-        max-height: 60vh;
-        overflow-y: auto;
-
-        pre {
-            margin: 0;
-            font-family: var(--mono);
-            font-size: $font-size-sm;
-            color: var(--text-code);
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-    }
-}
 
 // ============================================
 // SHELL TAB — console re-tinted to tokens
 // ============================================
 .shell-tab {
+    &__container-select { font-size: $font-size-sm; }
+
     &__container {
         border: 1px solid var(--border-soft);
         border-radius: var(--radius);
@@ -582,61 +526,6 @@ h3.svc-eyebrow {
 // (no metrics HISTORY backend yet — see docs/REDESIGN_MAP.md §5; the cards
 // bind to live point-in-time stats only, no fabricated series)
 // ============================================
-.metrics-tab {
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: $space-4;
-    }
-
-    &__card {
-        background: var(--surface);
-        border: 1px solid var(--border-soft);
-        border-radius: var(--radius);
-        padding: $space-4 $space-5;
-        transition: border-color 0.15s;
-
-        &:hover {
-            border-color: var(--border-strong);
-        }
-
-        .sk-gauge {
-            margin-top: $space-3;
-        }
-    }
-
-    &__card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: $space-3;
-
-        h4 {
-            margin: 0;
-            font-family: var(--mono);
-            font-size: 11px;
-            font-weight: $font-weight-semibold;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-faint);
-        }
-
-        span {
-            font-family: var(--mono);
-            font-size: 22px;
-            font-weight: $font-weight-semibold;
-            letter-spacing: -0.02em;
-            color: $text-primary;
-        }
-    }
-
-    &__info {
-        margin-top: $space-2;
-        font-family: var(--mono);
-        font-size: $font-size-sm;
-        color: var(--text-dim);
-    }
-}
 
 // Settings tab within service detail — grouped left sub-nav + content pane,
 // mirroring the WordPress detail page's settings layout (.wp-settings).
@@ -750,10 +639,6 @@ h3.svc-eyebrow {
 }
 
 // Icon-only button (global utility consumed by several other components)
-.btn-icon {
-    padding: $space-2 !important;
-    min-width: auto !important;
-}
 
 // ============================================
 // MANIFEST PANEL (service settings → Manifest)
@@ -1387,73 +1272,6 @@ h3.svc-eyebrow {
     }
 }
 
-.logs-viewer {
-    background: var(--bg-code);
-    border: 1px solid var(--border-soft);
-    border-top: none;
-    border-radius: 0 0 var(--radius) var(--radius);
-    min-height: 400px;
-    max-height: 600px;
-    overflow-y: auto;
-    font-family: var(--mono);
-    font-size: $font-size-sm;
-    line-height: 1.7;
-    scroll-behavior: smooth;
-
-    &__loading, &__empty {
-        padding: $space-8;
-        text-align: center;
-        color: var(--text-faint);
-    }
-
-    &__line {
-        display: flex;
-        padding: 0 $space-4;
-        transition: background 0.1s;
-
-        &:hover {
-            background: var(--surface-hover);
-        }
-
-        &--error {
-            background: rgba(251, 111, 111, 0.06);
-            .logs-viewer__line-text { color: var(--red); }
-        }
-
-        &--warn {
-            background: rgba(245, 185, 69, 0.06);
-            .logs-viewer__line-text { color: var(--amber); }
-        }
-
-        &--debug {
-            .logs-viewer__line-text { color: var(--text-faint); }
-        }
-    }
-
-    &__line-num {
-        width: 48px;
-        padding-right: $space-3;
-        color: var(--text-ghost);
-        text-align: right;
-        flex-shrink: 0;
-        user-select: none;
-    }
-
-    &__line-text {
-        flex: 1;
-        color: var(--text-code);
-        white-space: pre-wrap;
-        word-break: break-all;
-    }
-
-    &__highlight {
-        background: rgba(245, 185, 69, 0.35);
-        color: var(--text);
-        border-radius: 2px;
-        padding: 0 1px;
-    }
-}
-
 // Open-in-new-tab affordance next to the service name, before the status pill.
 .svc-detail__open,
 .svc-detail__portlink {
@@ -1467,3 +1285,6 @@ h3.svc-eyebrow {
 }
 
 .svc-detail__open { margin-left: 2px; }
+
+// Semantic layouts and controls; declarations preserved from the legacy compatibility layer.
+.svc-title-link-icon { margin-inline-start: 0.25rem; }

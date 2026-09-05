@@ -664,7 +664,7 @@ class TestApi:
             headers=auth_headers,
         )
 
-        assert resp.status_code == 200
+        assert resp.status_code == 200, resp.get_json()
         body = resp.get_json()
         assert body['success'] is True
         assert body['connection']['id'] == second.id

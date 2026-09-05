@@ -426,7 +426,7 @@ const Deployments = () => {
                 </label>
                 <div className="deployments-page__sim-list">
                     {(simInfo?.scenarios || []).map((s) => (
-                        <button
+                        <Button variant="unstyled"
                             key={s.id}
                             type="button"
                             className="deployments-page__sim-scenario"
@@ -440,7 +440,7 @@ const Deployments = () => {
                             {simBusy === s.id && (
                                 <Loader2 size={15} className="spin" />
                             )}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </Modal>

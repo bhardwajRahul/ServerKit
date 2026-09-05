@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 

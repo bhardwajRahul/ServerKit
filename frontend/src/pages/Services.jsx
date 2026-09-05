@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useCallback, useState, useEffect, useMemo  } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Layers, Plus, Square, Play, RotateCw, GitBranch, Github, FolderOpen, FileArchive, FolderKanban, ArrowDownToLine } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { getServiceType, getStatusConfig, formatRelativeTime } from '../utils/serviceTypes';
 import ResourceListPage from '../components/layouts/ResourceListPage';
 import BandwidthSparkline from '../components/BandwidthSparkline';
@@ -106,6 +106,7 @@ const Services = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const toast = useToast();
+    const toastError = toast.error;
     const [apps, setApps] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -115,24 +116,25 @@ const Services = () => {
     const [showMoveDialog, setShowMoveDialog] = useState(false);
     const [bandwidth, setBandwidth] = useState({});
 
+    const loadApps = useCallback(async () => {
+        try {
+            const data = await api.getApps();
+            setApps(data.apps || []);
+        } catch {
+            toastError(t('app.services.failedToLoadServices', 'Failed to load services'));
+        } finally {
+            setLoading(false);
+        }
+    }, [t, toastError]);
+
     useEffect(() => {
         loadApps();
         // Best-effort: one call for every row's sparkline; absence is fine.
         api.getBandwidthApps()
             .then((data) => setBandwidth(data?.apps || {}))
             .catch(() => {});
-    }, []);
+    }, [loadApps]);
 
-    async function loadApps() {
-        try {
-            const data = await api.getApps();
-            setApps(data.apps || []);
-        } catch (err) {
-            toast.error(t('app.services.failedToLoadServices', 'Failed to load services'));
-        } finally {
-            setLoading(false);
-        }
-    }
 
     async function handleAction(e, appId, action) {
         e.stopPropagation();
@@ -142,7 +144,7 @@ const Services = () => {
             else if (action === 'stop') await api.stopApp(appId);
             else if (action === 'restart') await api.restartApp(appId);
             await loadApps();
-        } catch (err) {
+        } catch {
             toast.error(t('app.services.failedToService', 'Failed to {{action}} service', { action: action }));
         } finally {
             setActionLoading(null);
@@ -163,7 +165,7 @@ const Services = () => {
             toast.success(t('app.services.sentToServiceS', '{{action}} sent to {{size}} service(s)', { action: action, size: selectedIds.size }));
             setSelectedIds(new Set());
             await loadApps();
-        } catch (err) {
+        } catch {
             toast.error(t('app.services.bulkFailed', 'Bulk {{action}} failed', { action: action }));
         } finally {
             setBulkLoading(false);
@@ -453,6 +455,7 @@ const Services = () => {
 const MoveToProjectDialog = ({ open, onOpenChange, count, onMove }) => {
     const { t } = useTranslation();
     const toast = useToast();
+    const toastError = toast.error;
     const [projects, setProjects] = useState([]);
     const [environments, setEnvironments] = useState([]);
     const [projectValue, setProjectValue] = useState(UNASSIGN);
@@ -470,9 +473,9 @@ const MoveToProjectDialog = ({ open, onOpenChange, count, onMove }) => {
         setLoadingProjects(true);
         api.getProjects()
             .then((data) => setProjects(Array.isArray(data?.projects) ? data.projects : []))
-            .catch(() => toast.error(t('app.services.failedToLoadProjects', 'Failed to load projects')))
+            .catch(() => toastError(t('app.services.failedToLoadProjects', 'Failed to load projects')))
             .finally(() => setLoadingProjects(false));
-    }, [open, toast]);
+    }, [open, toastError, t]);
 
     async function handleProjectChange(value) {
         setProjectValue(value);

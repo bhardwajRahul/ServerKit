@@ -4,6 +4,7 @@
 import { AlertTriangle } from 'lucide-react';
 import CopyButton from '../CopyButton';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 export default function DdnsTokenCallout({ host, onDismiss }) {
     const { t } = useTranslation();
@@ -18,9 +19,9 @@ export default function DdnsTokenCallout({ host, onDismiss }) {
                     {t('app.ddnsTokenCallout.tokenFor', 'Token for')} <strong>{host.hostname || host.record_name}</strong> {t('app.ddnsTokenCallout.shownOnceSaveItNow', '— shown once. Save it now.')}
                 </span>
                 {onDismiss && (
-                    <button type="button" className="ddns-token-callout__close" onClick={onDismiss} aria-label={t('common.actions.dismiss', 'Dismiss')}>
+                    <SharedButton variant="unstyled" type="button" className="ddns-token-callout__close" onClick={onDismiss} aria-label={t('common.actions.dismiss', 'Dismiss')}>
                         &times;
-                    </button>
+                    </SharedButton>
                 )}
             </div>
 

@@ -10,7 +10,7 @@ import {
     X,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
@@ -333,9 +333,9 @@ const QueueDetail = () => {
     return (
         <div className="queue-page queue-detail">
             <div className="queue-detail-header">
-                <button type="button" className="queue-back" onClick={() => navigate('/queue')}>
+                <Button variant="unstyled" type="button" className="queue-back" onClick={() => navigate('/queue')}>
                     <ArrowLeft size={16} /> {t('app.queueDetail.queueBus', 'Queue Bus')}
-                </button>
+                </Button>
                 <div className="queue-detail-headline">
                     <div className="queue-workbar-title">
                         <span>{t('app.queueDetail.queue', 'Queue')}</span>
@@ -450,9 +450,9 @@ const QueueDetail = () => {
                     <aside className="queue-detail-panel">
                         <div className="queue-detail-panel-header">
                             <h2>{t('app.queueDetail.message', 'Message')}</h2>
-                            <button type="button" className="queue-panel-close" onClick={() => setSelectedMessage(null)} aria-label={t('common.actions.close', 'Close')}>
+                            <Button variant="unstyled" type="button" className="queue-panel-close" onClick={() => setSelectedMessage(null)} aria-label={t('common.actions.close', 'Close')}>
                                 <X size={16} />
-                            </button>
+                            </Button>
                         </div>
                         <div className="queue-message-detail">
                             <div><strong>{t('app.queueDetail.id', 'ID:')}</strong> <code>{selectedMessage.id}</code></div>
@@ -474,7 +474,7 @@ const QueueDetail = () => {
                         {!viewOnly && (selectedMessage.status === 'failed' || selectedMessage.status === 'dead_letter') && (
                             <div className="queue-detail-panel-footer">
                                 <Button onClick={() => handleRequeue(selectedMessage)}>
-                                    <RefreshCw size={14} className="mr-2" /> {t('app.queueDetail.requeue', 'Requeue')}
+                                    <RefreshCw size={14} className="queue-action-icon" /> {t('app.queueDetail.requeue', 'Requeue')}
                                 </Button>
                             </div>
                         )}
@@ -500,7 +500,7 @@ const QueueDetail = () => {
                                 </div>
                             <div className="modal-actions">
                                 <Button type="button" variant="outline" onClick={() => setShowSend(false)}>{t('common.actions.cancel', 'Cancel')}</Button>
-                                <Button type="submit"><Send size={14} className="mr-2" /> {t('app.queueDetail.send', 'Send')}</Button>
+                                <Button type="submit"><Send size={14} className="queue-action-icon" /> {t('app.queueDetail.send', 'Send')}</Button>
                             </div>
                         </form>
             </Modal>

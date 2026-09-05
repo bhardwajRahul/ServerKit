@@ -1,10 +1,10 @@
+import { serverStatusKind } from './serverDetailData';
 import { Pill, KpiBand } from '../ds';
 import OnboardingWizard from '../server/OnboardingWizard';
 import SystemStatusCard from './SystemStatusCard';
 import { formatBytes } from '@/utils/formatBytes';
 import { useTranslation } from 'react-i18next';
 import {
-    serverStatusKind,
     InfoRow,
     KpiTile,
     KpiGauge,

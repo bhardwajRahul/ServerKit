@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { formatCompact, formatFull } from '../../utils/formatNumber';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // KPI / stat tile: icon chip + big value (+ optional unit) + label, with an
 // optional trend delta in the top-right.
@@ -76,14 +77,14 @@ export function MetricCard({
 
     if (onClick) {
         return (
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className={cn('sk-kpi', 'sk-kpi--clickable', className)}
                 onClick={onClick}
                 {...props}
             >
                 {inner}
-            </button>
+            </SharedButton>
         );
     }
 

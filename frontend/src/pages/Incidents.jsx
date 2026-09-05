@@ -14,7 +14,7 @@ import {
     AlertTriangle, CheckCircle2, ChevronRight, Eye, Radar, RefreshCw, Siren,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import { DataTable, DataTableFooter, Drawer, Pill, SearchField } from '@/components/ds';
 import {
@@ -322,7 +322,7 @@ export default function Incidents() {
         } catch {
             toast.error(t('app.incidents.failedToAlert', 'Failed to {{value}} alert', { value: action === 'ack' ? 'acknowledge' : 'resolve' }));
         }
-    }, [load, toast]);
+    }, [load, t, toast]);
 
     const onPostUpdate = async (state) => {
         if (!selected || selected.kind !== 'incident') return;
@@ -450,7 +450,7 @@ export default function Incidents() {
                 </>
             ),
         },
-    ], [onAlertAction]);
+    ], [onAlertAction, t]);
 
     const viewPageState = useMemo(() => ({ search }), [search]);
     const applyViewPageState = useCallback((saved) => {

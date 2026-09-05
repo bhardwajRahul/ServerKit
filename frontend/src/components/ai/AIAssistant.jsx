@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import ChatBubble from './ChatBubble';
 import ChatDrawer from './ChatDrawer';
 

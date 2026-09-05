@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState  } from 'react';
 import api from '../services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Modal from '@/components/Modal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { ArrowLeft, Plus, MoreVertical, Copy, Eye, EyeOff, KeyRound, Trash2 } from 'lucide-react';
 import ResourceListPage from '../components/layouts/ResourceListPage';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
@@ -15,7 +15,7 @@ import { SearchField, ServiceTile } from '@/components/ds';
 import { formatRelativeTime } from '@/utils/time';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useClipboard } from '@/hooks/useClipboard';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 import { useTranslation } from 'react-i18next';
 
 const formatDate = (d) => (d ? new Date(d).toLocaleString() : '—');
@@ -45,6 +45,7 @@ const VAULT_VIEWS = [
 export default function Vaults() {
     const { t } = useTranslation();
     const toast = useToast();
+    const toastError = toast.error;
     const { confirm } = useConfirm();
     const { copy } = useClipboard({ successMessage: 'Copied' });
     const { activeWorkspaceId: workspaceScopeId, isAllWorkspaces } = useWorkspace();
@@ -61,11 +62,7 @@ export default function Vaults() {
     const [revealedValue, setRevealedValue] = useState('');
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        loadAll();
-    }, []);
-
-    async function loadAll() {
+    const loadAll = useCallback(async () => {
         setLoading(true);
         try {
             const [v, w] = await Promise.all([
@@ -75,11 +72,16 @@ export default function Vaults() {
             setVaults(v.vaults || []);
             setWorkspaces(w.workspaces || []);
         } catch (err) {
-            toast.error(t('app.vaults.loadFailed', 'Load failed: {{message}}', { message: err.message }));
+            toastError(t('app.vaults.loadFailed', 'Load failed: {{message}}', { message: err.message }));
         } finally {
             setLoading(false);
         }
-    }
+    }, [t, toastError]);
+
+    useEffect(() => {
+        loadAll();
+    }, [loadAll]);
+
 
     async function createVault(e) {
         e.preventDefault();

@@ -4,6 +4,7 @@
 // green bar — "we weren't looking" and "it was fine" are different facts, and
 // conflating them is how uptime widgets end up lying about their own history.
 import { cn } from '@/lib/utils';
+import { Button as SharedButton } from '@/components/ui/button';
 
 function tooltipFor(day) {
     if (day.state === 'none') return `${day.date} — not monitored`;
@@ -21,8 +22,8 @@ export default function UptimeBars({ days = [], selected, onSelect, className })
                 // 6px sliver with no label or affordance of its own. Semantic
                 // <button> keeps it keyboard-reachable without dragging the
                 // full button styling into a data visualisation.
-                // eslint-disable-next-line no-restricted-syntax
-                <button
+
+                <SharedButton variant="unstyled"
                     key={day.date}
                     type="button"
                     className={cn(

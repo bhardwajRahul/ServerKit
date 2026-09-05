@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import { useConfirm } from '../hooks/useConfirm';
 import useFocusParam from '@/hooks/useFocusParam';
 import EmptyState from '../components/EmptyState';
@@ -154,7 +154,7 @@ const CronJobs = () => {
 
     // Table sort + column visibility (persisted, mirrored by the toolbar menus)
     const { sorts, setSorts } = useTableSort({ storageKey: 'serverkit-table-cronjobs-sort' });
-    const { hiddenKeys, setHiddenKeys, toggleColumn, showAllColumns } = useColumnVisibility({
+    const { hiddenKeys, setHiddenKeys } = useColumnVisibility({
         storageKey: 'serverkit-table-cronjobs-cols',
     });
 
@@ -278,9 +278,6 @@ const CronJobs = () => {
         }
     };
 
-    const enabledCount = jobs.filter(j => j.enabled).length;
-    const failedCount = jobs.filter(j => j.enabled && j.last_status === 'failure').length;
-    const pausedCount = jobs.length - enabledCount;
 
     const q = search.trim().toLowerCase();
     const shown = jobs.filter((job) => !q
@@ -441,14 +438,14 @@ const CronJobs = () => {
             {error && (
                 <div className="error-banner">
                     {error}
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="error-banner__close"
                         onClick={() => setError(null)}
                         aria-label={t('app.cronJobs.dismissError', 'Dismiss error')}
                     >
                         ×
-                    </button>
+                    </Button>
                 </div>
             )}
 

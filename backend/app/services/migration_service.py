@@ -53,6 +53,19 @@ class MigrationService:
         return cls._TYPE_MAP.get(type_name, 'TEXT')
 
     @classmethod
+    def _sqlite_default(cls, col):
+        """Render a column's literal server_default as a SQLite DEFAULT value."""
+        default = getattr(col, 'server_default', None)
+        arg = getattr(default, 'arg', None)
+        if isinstance(arg, bool):
+            return '1' if arg else '0'
+        if isinstance(arg, (int, float)):
+            return repr(arg)
+        if isinstance(arg, str):
+            return "'" + arg.replace("'", "''") + "'"
+        return None
+
+    @classmethod
     def _fix_missing_columns(cls, db):
         """Sync database schema with ORM models.
 
@@ -78,6 +91,13 @@ class MigrationService:
 
                 sqlite_type = cls._sqlite_type(col.type)
                 sql = f'ALTER TABLE {table_name} ADD COLUMN {col.name} {sqlite_type}'
+                # Honour a declared server_default so existing rows are
+                # backfilled instead of left NULL — this runs BEFORE alembic,
+                # so a migration that only adds the column when missing would
+                # otherwise skip its own default (users.auth_version → no login).
+                default = cls._sqlite_default(col)
+                if default is not None:
+                    sql += f' DEFAULT {default}'
 
                 try:
                     with db.engine.begin() as conn:

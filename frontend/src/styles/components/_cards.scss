@@ -7,7 +7,6 @@
     padding: $space-6;
     position: relative;
     overflow: hidden;
-
 }
 
 .card-header {
@@ -252,39 +251,6 @@
 }
 
 // Empty state card
-.empty-state {
-    text-align: center;
-    padding: $space-16 $space-5;
-    background: $bg-card;
-    border-radius: $radius-xl;
-    border: 1px solid $border-subtle;
-
-    > svg,
-    &__icon svg {
-        color: $text-tertiary;
-        margin-bottom: $space-4;
-    }
-
-    h3 {
-        font-size: $font-size-md;
-        font-weight: $font-weight-semibold;
-        margin-bottom: $space-2;
-    }
-
-    p {
-        color: $text-secondary;
-        margin-bottom: $space-6;
-    }
-
-    // When nested inside a card, drop the card-in-card double background.
-    .card &,
-    .card-body & {
-        background: transparent;
-        border: none;
-        border-radius: 0;
-        padding: $space-10 $space-5;
-    }
-}
 
 // Card body (content area below card-header)
 .card-body {

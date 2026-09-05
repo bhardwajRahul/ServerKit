@@ -1,3 +1,4 @@
+import { bindApiMethods } from './registry.js';
 import ApiClient from './client.js';
 import * as authMethods from './auth.js';
 import * as appMethods from './apps.js';
@@ -116,13 +117,7 @@ class ApiService extends ApiClient {
             recipeMethods,
             restorePointMethods,
         ];
-        for (const mod of modules) {
-            for (const [key, fn] of Object.entries(mod)) {
-                if (typeof fn === 'function') {
-                    this[key] = fn.bind(this);
-                }
-            }
-        }
+        bindApiMethods(this, modules);
     }
 }
 

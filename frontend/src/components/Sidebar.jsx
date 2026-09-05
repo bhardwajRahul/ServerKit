@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useLayout } from '../contexts/LayoutContext';
-import { Star, Settings, LogOut, Sun, Moon, Monitor, ChevronRight, ChevronDown, ChevronUp, Layers, Palette, PanelLeft, PanelLeftClose, PanelTop, Check, X, Server } from 'lucide-react';
+import { useAuth } from '../contexts/useAuth.js';
+import { useTheme } from '../contexts/useTheme.js';
+import { useLayout } from '../contexts/useLayout.js';
+import { Star, Settings, LogOut, Sun, Moon, Monitor, ChevronRight, ChevronUp, Layers, Palette, PanelLeft, PanelLeftClose, PanelTop, Check, X, Server } from 'lucide-react';
 import { api } from '../services/api';
 import { SIDEBAR_CATEGORIES, SIDEBAR_CATEGORY_LABELS, SIDEBAR_PRESETS, getHiddenItemIds, getVisibleItems, applyWorkspaceNavPermissions } from './sidebarItems';
 import { useTranslation } from 'react-i18next';
@@ -13,13 +13,14 @@ import { sanitizeSvgInner } from '../utils/sanitizeSvg';
 import useModules from '../hooks/useModules';
 import useDevMode from '../hooks/useDevMode';
 import QuickCreate from './QuickCreate';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {} }) => {
     const { t } = useTranslation();
     const label = useLabel();
     const { user, logout, updateUser, hasPermission } = useAuth();
-    const { theme, resolvedTheme, setTheme, whiteLabel } = useTheme();
+    const { theme, setTheme, whiteLabel } = useTheme();
     const { layout, setLayout } = useLayout();
     const { activeWorkspace } = useWorkspace();
     const navigate = useNavigate();
@@ -209,7 +210,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
         // and it defines a nav map. This lets a workspace restrict which sidebar
         // items its members see based on their effective workspace role.
         return applyWorkspaceNavPermissions(items, activeWorkspace, user);
-    }, [user?.sidebar_config, pluginNav, pluginTabs, wpInstalled, gpuAvailable, wordpressEnabled, devMode, user, hasPermission, activeWorkspace]);
+    }, [pluginNav, pluginTabs, wpInstalled, gpuAvailable, wordpressEnabled, devMode, user, hasPermission, activeWorkspace]);
 
     // Group visible items by category
     const groupedItems = useMemo(() => {
@@ -269,7 +270,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                         {label(item)}
                     </NavLink>
                     {visibleSubs.length > 0 && (
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className={`nav-expand-btn ${isExpanded ? 'expanded' : ''}`}
                             aria-expanded={isExpanded}
@@ -279,7 +280,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                             onClick={(e) => { e.stopPropagation(); toggleExpand(item.id); }}
                         >
                             <ChevronRight size={14} aria-hidden="true" />
-                        </button>
+                        </SharedButton>
                     )}
                 </div>
                 {isExpanded && visibleSubs.map(sub => (
@@ -307,14 +308,14 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
             aria-label={t('nav.mainNavigation', 'Main navigation')}
         >
             {isMobile && (
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="sidebar__close"
                     aria-label={t('nav.closeMenu', 'Close navigation menu')}
                     onClick={onMobileClose}
                 >
                     <X size={20} aria-hidden="true" />
-                </button>
+                </SharedButton>
             )}
             {whiteLabel.enabled ? (
                 <div className="brand-section brand-section--custom">
@@ -442,7 +443,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                         <div className="context-menu-section">
                             <div className="context-menu-label" id="theme-switcher-label">{t('nav.theme', 'Theme')}</div>
                             <div className="theme-switcher" role="group" aria-labelledby="theme-switcher-label">
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${theme === 'dark' ? 'active' : ''}`}
                                     onClick={() => setTheme('dark')}
@@ -451,8 +452,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.themeDark', 'Dark')}
                                 >
                                     <Moon size={14} aria-hidden="true" />
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${theme === 'light' ? 'active' : ''}`}
                                     onClick={() => setTheme('light')}
@@ -461,8 +462,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.themeLight', 'Light')}
                                 >
                                     <Sun size={14} aria-hidden="true" />
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${theme === 'system' ? 'active' : ''}`}
                                     onClick={() => setTheme('system')}
@@ -471,13 +472,13 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.themeSystem', 'System')}
                                 >
                                     <Monitor size={14} aria-hidden="true" />
-                                </button>
+                                </SharedButton>
                             </div>
                         </div>
                         <div className="context-menu-section">
                             <div className="context-menu-label" id="layout-switcher-label">{t('nav.layout', 'Layout')}</div>
                             <div className="theme-switcher" role="group" aria-labelledby="layout-switcher-label">
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${layout === 'sidebar' ? 'active' : ''}`}
                                     onClick={() => setLayout('sidebar')}
@@ -486,8 +487,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.layoutSidebar', 'Sidebar')}
                                 >
                                     <PanelLeft size={14} aria-hidden="true" />
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${layout === 'rail' ? 'active' : ''}`}
                                     onClick={() => setLayout('rail')}
@@ -496,8 +497,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.layoutCompact', 'Compact')}
                                 >
                                     <PanelLeftClose size={14} aria-hidden="true" />
-                                </button>
-                                <button
+                                </SharedButton>
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className={`theme-btn ${layout === 'topbar' ? 'active' : ''}`}
                                     onClick={() => setLayout('topbar')}
@@ -506,14 +507,14 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     title={t('nav.layoutTopbar', 'Top bar')}
                                 >
                                     <PanelTop size={14} aria-hidden="true" />
-                                </button>
+                                </SharedButton>
                             </div>
                         </div>
                         <div className="context-menu-section">
                             <div className="context-menu-label" id="sidebar-view-label">{t('nav.sidebarView', 'Sidebar View')}</div>
                             <div className="view-switcher" role="group" aria-labelledby="sidebar-view-label">
                                 {Object.entries(SIDEBAR_PRESETS).map(([key, preset]) => (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         key={key}
                                         type="button"
                                         className={`view-btn ${currentPreset === key ? 'active' : ''}`}
@@ -523,12 +524,12 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                                     >
                                         {label(preset)}
                                         {currentPreset === key && <Check size={10} aria-hidden="true" />}
-                                    </button>
+                                    </SharedButton>
                                 ))}
                             </div>
                         </div>
                         <div className="context-menu-divider" />
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="context-menu-item"
                             onClick={() => { navigate('/settings/appearance'); setMenuOpen(false); }}
@@ -536,8 +537,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                             <Palette size={15} aria-hidden="true" />
                             {t('nav.appearance', 'Appearance')}
                             <ChevronRight size={14} className="context-menu-arrow" aria-hidden="true" />
-                        </button>
-                        <button
+                        </SharedButton>
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="context-menu-item"
                             onClick={() => { navigate('/settings/sidebar'); setMenuOpen(false); }}
@@ -545,8 +546,8 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                             <PanelLeft size={15} aria-hidden="true" />
                             {t('nav.customizeSidebar', 'Customize Sidebar')}
                             <ChevronRight size={14} className="context-menu-arrow" aria-hidden="true" />
-                        </button>
-                        <button
+                        </SharedButton>
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="context-menu-item"
                             onClick={() => { navigate('/settings'); setMenuOpen(false); }}
@@ -554,16 +555,16 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                             <Settings size={15} aria-hidden="true" />
                             {t('nav.allSettings', 'All Settings')}
                             <ChevronRight size={14} className="context-menu-arrow" aria-hidden="true" />
-                        </button>
+                        </SharedButton>
                         <div className="context-menu-divider" />
-                        <button type="button" className="context-menu-item danger" onClick={logout}>
+                        <SharedButton variant="unstyled" type="button" className="context-menu-item danger" onClick={logout}>
                             <LogOut size={15} aria-hidden="true" />
                             {t('common.actions.logOut', 'Log out')}
-                        </button>
+                        </SharedButton>
                     </div>
                 )}
                 <div className="sidebar-footer__row">
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="user-mini"
                         onClick={() => setMenuOpen(!menuOpen)}
@@ -579,7 +580,7 @@ const Sidebar = ({ mobileOpen = false, isMobile = false, onMobileClose = () => {
                             <span className="user-status">{t('nav.online', 'Online')}</span>
                         </span>
                         <ChevronUp size={14} className={`user-menu-arrow ${menuOpen ? 'open' : ''}`} aria-hidden="true" />
-                    </button>
+                    </SharedButton>
                 </div>
             </div>
         </aside>

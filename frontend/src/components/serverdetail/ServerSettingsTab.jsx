@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { TOKEN_EXPIRY_OPTIONS } from './serverDetailData';
+import { useCallback, useState, useEffect  } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useClipboard } from '@/hooks/useClipboard';
 import { DangerZone } from '../DangerZone';
@@ -20,7 +21,6 @@ import {
 import TagsPanel from '../shared/TagsPanel';
 import { useTranslation } from 'react-i18next';
 import {
-    TOKEN_EXPIRY_OPTIONS,
     KeyIcon,
     ServerIcon,
     NetworkIcon,
@@ -75,21 +75,7 @@ const ServerSettingsTab = ({ server, onUpdate, onRegenerateToken, onDelete }) =>
     const [rotatingKey, setRotatingKey] = useState(false);
     const toast = useToast();
 
-    useEffect(() => {
-        loadGroups();
-        loadSecurityData();
-    }, []);
-
-    async function loadGroups() {
-        try {
-            const data = await api.getServerGroups();
-            setGroups(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error('Failed to load groups:', err);
-        }
-    }
-
-    async function loadSecurityData() {
+    const loadSecurityData = useCallback(async () => {
         try {
             const [ipsData, connData] = await Promise.all([
                 api.getAllowedIPs(server.id),
@@ -100,7 +86,22 @@ const ServerSettingsTab = ({ server, onUpdate, onRegenerateToken, onDelete }) =>
         } catch (err) {
             console.error('Failed to load security data:', err);
         }
+    }, [server.id]);
+
+    useEffect(() => {
+        loadGroups();
+        loadSecurityData();
+    }, [loadSecurityData]);
+
+    async function loadGroups() {
+        try {
+            const data = await api.getServerGroups();
+            setGroups(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Failed to load groups:', err);
+        }
     }
+
 
     async function handleAddIP() {
         if (!newIP.trim()) return;
@@ -280,13 +281,13 @@ const ServerSettingsTab = ({ server, onUpdate, onRegenerateToken, onDelete }) =>
                                         {connectionInfo?.ip_address === ip && (
                                             <Pill kind="green" dot={false}>{t('common.labels.current', 'Current')}</Pill>
                                         )}
-                                        <button type="button"
+                                        <Button variant="unstyled" type="button"
                                             className="btn-icon danger"
                                             onClick={() => handleRemoveIP(ip)}
                                             title={t('common.actions.remove', 'Remove')}
                                         >
                                             <TrashIcon />
-                                        </button>
+                                        </Button>
                                     </div>
                                 ))
                             )}

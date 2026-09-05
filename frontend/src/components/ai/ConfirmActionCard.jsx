@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { ShieldAlert } from 'lucide-react';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const formatParams = (params) => {
     if (!params || !Object.keys(params).length) return null;
@@ -33,21 +34,21 @@ const ConfirmActionCard = () => {
                 <pre className="sk-ai-code sk-ai-confirm__params"><code>{params}</code></pre>
             ) : null}
             <div className="sk-ai-confirm__actions">
-                <button
+                <SharedButton variant="unstyled"
                     ref={denyRef}
                     type="button"
                     className="sk-ai-btn sk-ai-btn--ghost"
                     onClick={() => confirmAction('deny')}
                 >
                     {t('app.confirmActionCard.deny', 'Deny')}
-                </button>
-                <button
+                </SharedButton>
+                <SharedButton variant="unstyled"
                     type="button"
                     className="sk-ai-btn sk-ai-btn--danger"
                     onClick={() => confirmAction('approve')}
                 >
                     {t('app.confirmActionCard.approveRun', 'Approve & run')}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

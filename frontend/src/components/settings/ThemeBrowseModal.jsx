@@ -3,10 +3,11 @@ import { Check, Download, Loader2 } from 'lucide-react';
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/useTheme.js';
+import { useToast } from '../../contexts/useToast.js';
 import api from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Browse & install community themes from the registry (plan 60, Phase 3).
 // Offline-tolerant: if the registry is unreachable the panel falls back to the
@@ -93,7 +94,7 @@ const ThemeBrowseModal = ({ open, onOpenChange }) => {
                                     {themeEntry.installed ? (
                                         <span className="theme-browse__installed"><Check size={13} /> {t('app.themeBrowseModal.installed', 'Installed')}</span>
                                     ) : (
-                                        <button
+                                        <SharedButton variant="unstyled"
                                             type="button"
                                             className="theme-browse__install"
                                             disabled={installing === themeEntry.slug}
@@ -103,7 +104,7 @@ const ThemeBrowseModal = ({ open, onOpenChange }) => {
                                                 ? <Loader2 className="spin" size={13} />
                                                 : <Download size={13} />}
                                             {t('app.themeBrowseModal.install', 'Install')}
-                                        </button>
+                                        </SharedButton>
                                     )}
                                 </div>
                             );

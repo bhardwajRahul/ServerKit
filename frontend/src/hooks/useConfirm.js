@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useConfirmContext } from '../contexts/ConfirmContext';
+import { useConfirmContext } from '../contexts/useConfirmContext.js';
 
 // Confirm-dialog hook.
 //

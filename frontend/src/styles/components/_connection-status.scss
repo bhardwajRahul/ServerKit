@@ -1,0 +1,39 @@
+// Shared connection status indicator.
+
+.conn-status {
+    gap: $space-2;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px $space-2;
+    border: 1px solid $border-subtle;
+    border-radius: $radius-full;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    color: $text-tertiary;
+    white-space: nowrap;
+
+    .conn-status__dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    &--live .conn-status__dot {
+        background: $success;
+        box-shadow: 0 0 8px $success;
+    }
+
+    &--down .conn-status__dot {
+        background: $warning;
+        box-shadow: 0 0 8px $warning;
+    }
+
+    &--ok {
+        @include status-variant($success, $success-bg);
+        border-color: $success-border;
+    }
+}

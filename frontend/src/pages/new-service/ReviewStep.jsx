@@ -8,11 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import BuildpackPreview from '@/components/buildpack/BuildpackPreview';
 import ResourcePicker from '@/components/ResourcePicker';
-import { useWorkspace } from '@/contexts/WorkspaceContext';
+import { useWorkspace } from '@/contexts/useWorkspace.js';
 import { useTranslation } from 'react-i18next';
 import {
     APP_TYPE_OPTIONS, BUILD_METHOD_OPTIONS, formatAppType, formatBuildMethod,
 } from './useNewServiceForm';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Step 3 — Review & deploy. Only renders cards that have real data; the core
 // fields live in one grid, Advanced keeps the genuinely rare bits.
@@ -315,7 +316,7 @@ const ReviewStep = ({ form }) => {
             {/* Advanced keeps only the genuinely rare bits. */}
             {showBuild && (
                 <>
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="new-service-page__advanced-toggle"
                         onClick={() => setAdvancedOpen(open => !open)}
@@ -323,7 +324,7 @@ const ReviewStep = ({ form }) => {
                     >
                         <span><Settings2 size={16} /> {t('app.reviewStep.advanced', 'Advanced')}</span>
                         <ChevronDown size={16} />
-                    </button>
+                    </SharedButton>
                     {advancedOpen && (
                         <div className="new-service-page__advanced">
                             <p className="new-service-page__advanced-note">

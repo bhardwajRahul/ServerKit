@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import api from '../../services/api';
 import { Gauge } from '@/components/ds';
 import EmptyState from '../EmptyState';
@@ -9,20 +9,19 @@ import { useTranslation } from 'react-i18next';
 const METRICS_REFRESH_MS = 10000;
 
 
-const MetricsTab = ({ app }) => {
+const MetricsTabContent = ({ app }) => {
     const { t } = useTranslation();
     const [stats, setStats] = useState(null);
     const [processInfo, setProcessInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+    const requestId = useRef(0);
 
     const isDocker = app.app_type === 'docker';
     const isPython = ['flask', 'django'].includes(app.app_type);
 
     // Load on mount and whenever the app changes; poll on top of that.
-    useEffect(() => { loadMetrics(); }, [app.id]);
-    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
-
-    async function loadMetrics() {
+    const loadMetrics = useCallback(async () => {
+        const currentRequest = ++requestId.current;
         try {
             if (isDocker) {
                 const data = await api.getContainers(true);
@@ -33,18 +32,30 @@ const MetricsTab = ({ app }) => {
 
                 if (appContainers.length > 0) {
                     const containerStats = await api.getContainerStats(appContainers[0].Id);
-                    setStats(containerStats);
+                    if (currentRequest === requestId.current) setStats(containerStats);
+                } else if (currentRequest === requestId.current) {
+                    setStats(null);
                 }
             } else if (isPython) {
                 const data = await api.getPythonAppStatus(app.id);
-                setProcessInfo(data);
+                if (currentRequest === requestId.current) setProcessInfo(data);
             }
         } catch (err) {
+            if (currentRequest !== requestId.current) return;
+            setStats(null);
+            setProcessInfo(null);
             console.error('Failed to load metrics:', err);
         } finally {
-            setLoading(false);
+            if (currentRequest === requestId.current) setLoading(false);
         }
-    }
+    }, [app.id, app.name, isDocker, isPython]);
+
+    useEffect(() => {
+        loadMetrics();
+        return () => { requestId.current += 1; };
+    }, [loadMetrics]);
+    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
+
 
     if (loading) {
         return <EmptyState loading title={t('app.metricsTab.loadingMetrics', 'Loading metrics…')} />;
@@ -157,11 +168,16 @@ const MetricsTab = ({ app }) => {
     }
 
     return (
-        <div className="events-tab__empty">
-            <h3>{t('app.metricsTab.noMetricsAvailable', 'No metrics available')}</h3>
-            <p>{t('app.metricsTab.startTheServiceToViewResource', 'Start the service to view resource metrics.')}</p>
-        </div>
+        <EmptyState
+            title={t('app.metricsTab.noMetricsAvailable', 'No metrics available')}
+            description={t('app.metricsTab.startTheServiceToViewResource', 'Start the service to view resource metrics.')}
+        />
     );
 };
 
-export default MetricsTab;
+export default function MetricsTab({ app }) {
+    // A new runtime starts with empty state before its first request resolves.
+    // Old requests belong to the unmounted instance and cannot update this one.
+    const runtimeKey = JSON.stringify([app.id, app.name, app.app_type, app.server_id, app.container_id]);
+    return <MetricsTabContent key={runtimeKey} app={app} />;
+}

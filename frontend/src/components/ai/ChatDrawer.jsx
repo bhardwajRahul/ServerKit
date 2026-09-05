@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import useMediaQuery from '../../hooks/useMediaQuery';
 import { useLockBodyScroll } from '../../hooks/useLockBodyScroll';
 import useFocusTrap from '../../hooks/ai/useFocusTrap';

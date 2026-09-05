@@ -57,7 +57,7 @@ export function SortMenu({ columns = [], sorts = [], onChange, className }) {
                             <span className="sk-tablemenu__priority">{index + 1}</span>
                         )}
                         <span className="sk-tablemenu__field">{labelFor(sort.key)}</span>
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="sk-tablemenu__dir"
                             onClick={() => flip(sort.key)}
@@ -65,15 +65,15 @@ export function SortMenu({ columns = [], sorts = [], onChange, className }) {
                             title={sort.direction === 'asc' ? t('app.sortMenu.ascending', 'Ascending') : t('app.sortMenu.descending', 'Descending')}
                         >
                             {sort.direction === 'asc' ? <ArrowUp size={13} /> : <ArrowDown size={13} />}
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="unstyled"
                             type="button"
                             className="sk-tablemenu__remove"
                             onClick={() => remove(sort.key)}
                             aria-label={t('app.sortMenu.removeSortOn', 'Remove sort on {{value}}', { value: labelFor(sort.key) })}
                         >
                             <X size={13} />
-                        </button>
+                        </Button>
                     </div>
                 ))}
                 {available.length > 0 && (
@@ -81,14 +81,14 @@ export function SortMenu({ columns = [], sorts = [], onChange, className }) {
                         <div className="sk-tablemenu__section">{t('app.sortMenu.addSortLevel', 'Add sort level')}</div>
                         <div className="sk-tablemenu__list">
                             {available.map((c) => (
-                                <button
+                                <Button variant="unstyled"
                                     key={c.key}
                                     type="button"
                                     className="sk-tablemenu__item"
                                     onClick={() => add(c.key)}
                                 >
                                     {labelFor(c.key)}
-                                </button>
+                                </Button>
                             ))}
                         </div>
                     </>

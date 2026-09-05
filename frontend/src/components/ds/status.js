@@ -20,6 +20,7 @@ const STATUS_KIND = {
     success: 'green',
     succeeded: 'green',
     completed: 'green',
+    complete: 'green',
     done: 'green',
     passed: 'green',
     pass: 'green',
@@ -97,6 +98,7 @@ const STATUS_KIND = {
     created: 'gray',
     paused: 'gray',
     stopped: 'gray',
+    exited: 'gray',
     inactive: 'gray',
     skipped: 'gray',
     unknown: 'gray',
@@ -175,7 +177,7 @@ export function statusLabel(status) {
 // ---------------------------------------------------------------------------
 
 // Fleet alert lifecycle: an ACTIVE alert is the bad state.
-const ALERT_STATUS_OVERRIDES = { active: 'red' };
+const ALERT_STATUS_OVERRIDES = { active: 'red', firing: 'red' };
 
 /** Alert lifecycle status → Pill kind (active→red, acknowledged→amber, resolved→green). */
 export function alertStatusKind(status) {
@@ -219,4 +221,13 @@ export function serviceStatusVariant(status) {
 /** Service/unit status → StatusBadge dot color class, same scoped table. */
 export function serviceStatusDotClass(status) {
     return KIND_DOT[SERVICE_STATUS_OVERRIDES[normalize(status)] || statusKind(status)];
+}
+
+// CSS colors for small status indicators that do not render a Pill.
+const KIND_COLOR = {
+    green: 'var(--green)', red: 'var(--red)', amber: 'var(--amber)',
+    cyan: 'var(--cyan)', violet: 'var(--violet)', gray: 'var(--text-faint)',
+};
+export function statusColor(status) {
+    return KIND_COLOR[statusKind(status)];
 }

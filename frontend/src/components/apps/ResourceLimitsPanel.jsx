@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Gauge } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

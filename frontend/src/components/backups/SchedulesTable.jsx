@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+import { nextFire, untilLabel, frequencyLabel } from '@/utils/backupSchedule';
 import { Archive, Database, Globe, HardDrive, Package, Play, ShieldCheck, Trash2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { DataTable, DataTableFooter } from '@/components/ds';
@@ -11,40 +13,6 @@ const KIND_ICON = {
     server: HardDrive,
 };
 
-const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-const DAY_LABEL = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-// Next fire of a schedule row. Deliberately the same walk-forward the overview
-// tile uses, so "in 4h 48m" here and on Overview can never disagree.
-function nextFire(schedule) {
-    const [hh, mm] = String(schedule.schedule_time || '').split(':').map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-    const days = Array.isArray(schedule.days) ? schedule.days : ['daily'];
-    const daily = days.length === 0 || days.includes('daily');
-    const wanted = daily
-        ? null
-        : new Set(days.map((d) => DAY_INDEX[String(d).slice(0, 3).toLowerCase()]).filter((n) => n != null));
-    if (!daily && (!wanted || wanted.size === 0)) return null;
-    for (let offset = 0; offset <= 7; offset += 1) {
-        const candidate = new Date();
-        candidate.setDate(candidate.getDate() + offset);
-        candidate.setHours(hh, mm, 0, 0);
-        if (candidate.getTime() <= Date.now()) continue;
-        if (daily || wanted.has(candidate.getDay())) return candidate;
-    }
-    return null;
-}
-
-function untilLabel(date) {
-    const ms = date.getTime() - Date.now();
-    if (ms <= 0) return 'due now';
-    const mins = Math.round(ms / 60000);
-    if (mins < 60) return `in ${mins}m`;
-    const h = Math.floor(mins / 60);
-    if (h < 24) return `in ${h}h ${mins % 60}m`;
-    return `in ${Math.round(h / 24)}d`;
-}
-
 function agoLabel(iso) {
     if (!iso) return 'Never';
     const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -55,18 +23,6 @@ function agoLabel(iso) {
     return `${Math.round(diff / 86400)}d ago`;
 }
 
-// Frequency in the mock's phrasing: "Daily · 03:00" / "Weekly · Sun 02:00".
-function frequencyLabel(schedule) {
-    const time = schedule.schedule_time || '—';
-    const days = Array.isArray(schedule.days) ? schedule.days : ['daily'];
-    if (days.length === 0 || days.includes('daily')) return `Daily · ${time}`;
-    if (days.length === 1) {
-        const idx = DAY_INDEX[String(days[0]).slice(0, 3).toLowerCase()];
-        return `Weekly · ${idx == null ? days[0] : DAY_LABEL[idx]} ${time}`;
-    }
-    return `${days.length}×/week · ${time}`;
-}
-
 // Policy list in the design mock's shape: what runs, how often, how long it is
 // kept, where it lands, and whether it is on. The columns the mock fills from
 // its fixtures but this panel has no source for (per-policy size, run-now) are
@@ -75,6 +31,7 @@ export default function SchedulesTable({
     schedules, retentionDays, remoteLabel, onToggle, onRemove, onRun,
 }) {
     const { t } = useTranslation();
+    const now = new Date();
     // DataTable columns. Cell markup and classNames are identical to the
     // hand-rolled table they replace, so _backups.scss keeps applying
     // (.bk-name, .bk-ret, .bk-lastrun, .bk-paused, .bk-col-on, .bk-actions).
@@ -151,14 +108,15 @@ export default function SchedulesTable({
             headerKey: 'app.schedulesTable.next', header: 'Next',
             sortable: true,
             sortValue: (s) => {
-                const next = s.enabled ? nextFire(s) : null;
+                const next = nextFire(s);
                 return next ? next.getTime() : null;
             },
             cellClassName: 'sk-cell-mono',
             render: (schedule) => {
-                const next = schedule.enabled ? nextFire(schedule) : null;
+                const next = nextFire(schedule);
+                if (schedule.schedule_error) return <span title={schedule.schedule_error}>{t('app.schedulesTable.invalidSchedule', 'Invalid schedule')}</span>;
                 return schedule.enabled
-                    ? (next ? untilLabel(next) : '—')
+                    ? (next ? <span title={schedule.next_run_at}>{untilLabel(next, now)}</span> : '—')
                     : <span className="bk-paused">paused</span>;
             },
         },
@@ -187,7 +145,7 @@ export default function SchedulesTable({
             render: (schedule) => (
                 <div className="bk-actions">
                     {onRun && (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="bk-iconbtn"
                             onClick={() => onRun(schedule)}
@@ -195,9 +153,9 @@ export default function SchedulesTable({
                             aria-label={t('app.schedulesTable.runNow', 'Run {{name}} now', { name: schedule.name })}
                         >
                             <Play size={15} />
-                        </button>
+                        </Button>
                     )}
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="bk-iconbtn bk-iconbtn--danger"
                         onClick={() => onRemove(schedule.id)}
@@ -205,7 +163,7 @@ export default function SchedulesTable({
                         aria-label={t('app.schedulesTable.delete', 'Delete {{name}}', { name: schedule.name })}
                     >
                         <Trash2 size={15} />
-                    </button>
+                    </Button>
                 </div>
             ),
         },

@@ -1,3 +1,4 @@
+import { Card as SharedCard } from '@/components/ui/card';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -10,8 +11,9 @@ import { Drawer } from '../components/ds';
 import EmptyState from '../components/EmptyState';
 import FormField from '../components/FormField';
 import { runRecipe, useRecipeCatalog } from '../hooks/useRecipeCatalog';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { formatBytes } from '../utils/formatBytes';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Recipe catalog (serverkit-recipes registry). A Recipe is a ready-to-go
 // installer: pick one, point it at a server, fill in the non-secret inputs,
@@ -160,14 +162,14 @@ export default function Recipes() {
             {categories.length > 1 && (
                 <div className="recipes-page__cats">
                     {categories.map(cat => (
-                        <button
+                        <SharedButton variant="unstyled"
                             key={cat}
                             type="button"
                             className={`sk-pill${category === cat ? ' is-active' : ''}`}
                             onClick={() => setCategory(cat)}
                         >
                             {cat === 'all' ? t('common.labels.all', 'All') : cat}
-                        </button>
+                        </SharedButton>
                     ))}
                 </div>
             )}
@@ -232,14 +234,14 @@ export default function Recipes() {
                                             plural: handoffCount === 1 ? '' : 's',
                                         })}
                                     </span>
-                                    <button
+                                    <SharedButton variant="primary"
                                         type="button"
                                         className="btn btn-primary btn-sm"
                                         onClick={() => openInstall(recipe)}
                                     >
                                         <Play size={13} />
                                         {t('app.recipes.install', 'Install')}
-                                    </button>
+                                    </SharedButton>
                                 </div>
                             </div>
                         );
@@ -258,9 +260,9 @@ export default function Recipes() {
                 {selected && (
                     <div className="recipe-install">
                         <FormField label={t('app.recipes.runOn', 'Run on')}>
-                            <div className="recipe-install__servers card">
+                            <SharedCard variant="legacy" className="recipe-install__servers card">
                                 {servers.filter(s => s.status === 'running').map(server => (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         key={server.id}
                                         className={`recipe-install__server${String(targetId) === String(server.id) ? ' is-on' : ''}`}
@@ -273,19 +275,19 @@ export default function Recipes() {
                                             {formatBytes(server.total_memory, { decimals: 0 })}
                                         </span>
                                         {String(targetId) === String(server.id) && <Check size={15} />}
-                                    </button>
+                                    </SharedButton>
                                 ))}
                                 {!servers.some(s => s.status === 'running') && (
                                     <p className="recipe-install__nosrv">
                                         {t('app.recipes.noServers', 'No running servers. Start one first.')}
                                     </p>
                                 )}
-                            </div>
+                            </SharedCard>
                         </FormField>
 
                         {!!selectedRows.length && (
                             <FormField label={t('app.recipes.preflight', 'Preflight')}>
-                                <div className="recipe-install__preflight card">
+                                <SharedCard variant="legacy" className="recipe-install__preflight card">
                                     {selectedRows.map(row => {
                                         const label = row.key === 'cpu'
                                             ? t('app.recipes.cpu', 'CPU')
@@ -301,7 +303,7 @@ export default function Recipes() {
                                             </div>
                                         );
                                     })}
-                                </div>
+                                </SharedCard>
                                 {!!selectedBlockers.length && (
                                     <p className="recipe-install__blocked">
                                         {t('app.recipes.blocked', 'This server does not meet the requirements above. Pick another server.')}
@@ -329,7 +331,7 @@ export default function Recipes() {
 
                         <FormField label={t('app.recipes.askedDuringRun', 'Asked for during the run')}>
                             {(selected.handoffs || []).length ? (
-                                <div className="recipe-install__handoffs card">
+                                <SharedCard variant="legacy" className="recipe-install__handoffs card">
                                     {selected.handoffs.map(handoff => (
                                         <div className="recipe-handoff-row" key={handoff.key}>
                                             <Lock size={13} />
@@ -341,7 +343,7 @@ export default function Recipes() {
                                             )}
                                         </div>
                                     ))}
-                                </div>
+                                </SharedCard>
                             ) : (
                                 <p className="recipe-install__unattended">
                                     {t('app.recipes.noHandoffs', 'Nothing — this recipe runs unattended.')}
@@ -350,10 +352,10 @@ export default function Recipes() {
                         </FormField>
 
                         <div className="recipe-install__actions">
-                            <button type="button" className="btn" onClick={() => setSelected(null)}>
+                            <SharedButton variant="unstyled" type="button" className="btn" onClick={() => setSelected(null)}>
                                 {t('common.actions.cancel', 'Cancel')}
-                            </button>
-                            <button
+                            </SharedButton>
+                            <SharedButton variant="primary"
                                 type="button"
                                 className="btn btn-primary"
                                 disabled={!targetServer || !!selectedBlockers.length || starting}
@@ -361,7 +363,7 @@ export default function Recipes() {
                             >
                                 {starting ? <Loader2 size={14} className="spin" /> : <Play size={14} />}
                                 {t('app.recipes.runRecipe', 'Run recipe')}
-                            </button>
+                            </SharedButton>
                         </div>
                     </div>
                 )}

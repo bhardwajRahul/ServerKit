@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-const LayoutContext = createContext(null);
+import { LayoutContext } from './useLayout.js';
 
 // Shell geometry options, kept in sync with the switcher in Sidebar and the
 // [data-layout="..."] rules in styles/layout/_sidebar.scss. 'topbar' is reserved
@@ -31,13 +31,3 @@ export function LayoutProvider({ children }) {
         </LayoutContext.Provider>
     );
 }
-
-export function useLayout() {
-    const context = useContext(LayoutContext);
-    if (!context) {
-        throw new Error('useLayout must be used within a LayoutProvider');
-    }
-    return context;
-}
-
-export default LayoutContext;

@@ -3,6 +3,7 @@ import globals from 'globals';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import noStaticInlineStyles from './scripts/eslint-rules/no-static-inline-styles.mjs';
 
 export default [
   { ignores: ['dist/**', 'node_modules/**'] },
@@ -26,6 +27,7 @@ export default [
       react: reactPlugin,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      serverkit: { rules: { 'no-static-inline-styles': noStaticInlineStyles } },
     },
     rules: {
       ...js.configs.recommended.rules,
@@ -35,21 +37,18 @@ export default [
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'react/prop-types': 'off',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'serverkit/no-static-inline-styles': 'warn',
 
-      // Discourage inline styles — prefer SCSS classes and shared components.
+      // Prefer shared controls; static styles are checked separately above.
       'no-restricted-syntax': [
         'warn',
-        {
-          selector: 'JSXAttribute[name.name="style"]',
-          message: 'Inline styles are discouraged. Use SCSS classes or a shared primitive instead.',
-        },
         {
           selector: 'JSXOpeningElement[name.name="button"]',
           message: 'Use the shared Button component (or IconButton for icon-only actions).',
         },
         {
           // Match the legacy card family (.card, .card-header, .card-body, …) as a
-          // LEADING class token — not unrelated compounds like `settings-card`,
+          // class token — not unrelated compounds like `settings-card`,
           // `sk-spec-card`, or `wp-site-card-skeleton`, which the old `\bcard\b`
           // pattern flagged as false positives.
           selector: 'JSXOpeningElement[name.name="div"] > JSXAttribute[name.name="className"] > Literal[value=/(^|\\s)card(\\s|$|-)/]',

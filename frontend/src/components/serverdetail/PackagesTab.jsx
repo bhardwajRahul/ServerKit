@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ const PackagesTab = ({ serverId, serverStatus }) => {
         } finally {
             setLoadingInstalled(false);
         }
-    }, [serverId, toast]);
+    }, [serverId, t, toast]);
 
     useEffect(() => {
         if (serverStatus !== 'online') {
@@ -168,14 +168,14 @@ const PackagesTab = ({ serverId, serverStatus }) => {
                 <h3>{t('app.serverPackagesTab.quickInstall', 'Quick install')}</h3>
                 <div className="server-packages__chips">
                     {QUICK_PRESETS.map((p) => (
-                        <button
+                        <Button variant="unstyled"
                             key={p.name}
                             type="button"
                             className="server-packages__chip"
                             onClick={() => handleInstall(p.name)}
                         >
                             {p.label}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </section>

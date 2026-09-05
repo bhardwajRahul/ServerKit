@@ -44,25 +44,25 @@ ni el coste de las plataformas gestionadas.
 
 ## 📊 En Números
 
-Todo lo siguiente está medido sobre este repositorio, no estimado.
+<!-- BEGIN GENERATED MEASUREMENTS -->
+Instantánea: **2026-09-05**. [Definiciones, medidas y comandos para reproducirlas](METRICS.md).
 
 | | |
 |---|---|
-| **1.519** endpoints REST | repartidos en 107 blueprints — `/api/v1/*`, con OpenAPI y Swagger UI en `/api/v1/docs` |
-| **106** plantillas de apps | incluidas en el repositorio, sin necesidad de cuenta en ningún registro |
-| **2.633** pruebas de backend | la suite completa se ejecuta ante cada cambio |
-| **1,75 MB** de interfaz web (gzip) | 65 pantallas, servidas desde tu propio servidor — sin CDN |
-| **~180 MB** en memoria | el panel entero, un solo proceso — convive sin apreturas con tus apps en un VPS de 1 GB |
-| **501 MB** de imagen de contenedor | o instálalo directamente en el host; Docker es opcional para el panel |
-| **$0** | Licencia MIT. Sin planes, sin límite de usuarios, sin ventas adicionales — y nada se comunica hacia afuera. |
+| **1.212** declaraciones de rutas del núcleo | en **104** declaraciones de blueprints de `backend/app/api`; inventario del código, sin extensiones |
+| **118** plantillas de apps incluidas | archivos YAML de apps en el directorio raíz; las plantillas de extensiones de bases de datos se cuentan aparte |
+| **5.089** casos de prueba de backend recopilados | recopilación de un checkout limpio; no significa que todos se hayan ejecutado o aprobado |
+| **3,31 MB** de JS/CSS en total, comprimido con gzip | incluye módulos diferidos, idiomas y adaptadores de dependencias; excluye fuentes e imágenes |
+| **$0** de licencia | Licencia MIT, sin suscripciones ni tarifas por usuario |
 
-Autoalojado y nativo en Docker, sobre hardware que ya estás pagando.
+Los valores gzip suman archivos comprimidos por separado a nivel 9; no son tiempos de carga medidos. La RAM y el tamaño de imagen dependen de la compilación, plataforma y carga de trabajo.
+<!-- END GENERATED MEASUREMENTS -->
 
 ---
 
 ## 🚀 Inicio Rápido
 
-> ⏱️ En funcionamiento en menos de 2 minutos
+> El tiempo de instalación depende del servidor, la red y los paquetes necesarios.
 
 ### Opción 1: Instalación en Una Línea (Recomendada)
 
@@ -115,7 +115,7 @@ Consulta la [Guía de Instalación](INSTALLATION.md) para instrucciones paso a p
 | **Disco** | 10 GB | 20+ GB |
 | **Docker** | 24.0+ (opcional para el panel) | Última versión |
 
-> El panel en sí solo usa ~180 MB de RAM y ~500 MB de disco — el resto es margen para tus apps. Funciona bien en un VPS de 1 GB, un portátil viejo o una Raspberry Pi (ARM64): pensado tanto para homelabs como para producción.
+> Estos requisitos orientan el dimensionamiento; no son una prueba de capacidad. Reserva RAM y disco adicionales para apps, imágenes, bases de datos, registros y copias de seguridad. Consulta la [guía de medición](METRICS.md) para medir tu carga de trabajo.
 
 ---
 

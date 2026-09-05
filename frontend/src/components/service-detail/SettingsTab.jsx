@@ -19,7 +19,7 @@ import {
     Zap,
 } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '@/hooks/useConfirm';
 import { DangerZone } from '../DangerZone';
 import RepoConnectForm from '../git/RepoConnectForm';
@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { downloadBlob } from '@/utils/downloadBlob';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
 
 // Grouped left sub-nav for the service Settings tab — mirrors the WordPress
 // detail page's settings layout: an uppercase mono group label per section with
@@ -124,7 +125,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
             await api.updateAppEnvironment(app.id, newType);
             setEnvironmentType(newType);
             onUpdate();
-        } catch (err) {
+        } catch {
             toast.error(t('app.settingsTab.failedToUpdateEnvironmentType', 'Failed to update environment type'));
             setEnvironmentType(app.environment_type || 'standalone');
         } finally {
@@ -144,7 +145,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
         try {
             await api.unlinkApp(app.id);
             onUpdate();
-        } catch (err) {
+        } catch {
             toast.error(t('app.settingsTab.failedToUnlinkApp', 'Failed to unlink app'));
         } finally {
             setUnlinking(false);
@@ -170,7 +171,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
             await api.deleteApp(app.id);
             toast.success(t('app.settingsTab.movedToTheRecycleBin', '“{{name}}” moved to the recycle bin', { name: app.name }));
             navigate('/services');
-        } catch (err) {
+        } catch {
             toast.error(t('app.settingsTab.failedToDeleteService', 'Failed to delete service'));
             setDeleting(false);
         }
@@ -227,7 +228,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
                     <div className="svc-settings__group" key={g.label}>
                         <div className="svc-settings__grouplabel">{g.label}</div>
                         {g.items.map(s => (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 key={s.id}
                                 className={`svc-settings__navitem ${section === s.id ? 'is-active' : ''}`}
@@ -235,7 +236,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
                             >
                                 <s.icon size={15} />
                                 {s.label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 ))}
@@ -246,7 +247,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
                 {section === 'environment' && (
                     <div className="svc-settings__section">
                         <h3 className="svc-settings__section-title">{t('app.settingsTab.environmentType', 'Environment Type')}</h3>
-                        <div className="card settings-section">
+                        <SharedCard variant="legacy" className="card settings-section">
                             <div className="settings-row">
                                 <div className="settings-label">
                                     <span>{t('app.settingsTab.environmentType', 'Environment Type')}</span>
@@ -301,7 +302,7 @@ const SettingsTab = ({ app, deployConfig, domains, primaryDomain, onUpdate }) =>
                                     </div>
                                 </div>
                             )}
-                        </div>
+                        </SharedCard>
                     </div>
                 )}
 
@@ -642,7 +643,7 @@ const DomainSslPanel = ({ app, domains, primaryDomain, onUpdate }) => {
     );
 
     return (
-        <div className="card settings-section svc-domain-panel" data-walkthrough="service-domain-panel">
+        <SharedCard variant="legacy" className="card settings-section svc-domain-panel" data-walkthrough="service-domain-panel">
             <div className="app-info-grid">
                 <div className="app-info-item">
                     <span className="app-info-label">{t('app.settingsTab.primaryDomain', 'Primary Domain')}</span>
@@ -824,7 +825,7 @@ const DomainSslPanel = ({ app, domains, primaryDomain, onUpdate }) => {
                     </>
                 )}
             </Modal>
-        </div>
+        </SharedCard>
     );
 };
 
@@ -852,7 +853,7 @@ const ManifestSection = ({ app }) => {
             try {
                 const res = await api.getManifest(projectId);
                 if (!cancelled) setManifest(res?.manifest || null);
-            } catch (err) {
+            } catch {
                 if (!cancelled) setManifest(null);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -927,14 +928,14 @@ const ManifestSection = ({ app }) => {
     }
 
     if (loading) {
-        return <div className="card settings-section"><p className="hint">{t('app.settingsTab.loadingManifest', 'Loading manifest…')}</p></div>;
+        return <SharedCard variant="legacy" className="card settings-section"><p className="hint">{t('app.settingsTab.loadingManifest', 'Loading manifest…')}</p></SharedCard>;
     }
 
     const source = manifest?.source || {};
     const shortCommit = source.commit ? String(source.commit).slice(0, 7) : null;
 
     return (
-        <div className="card settings-section svc-manifest">
+        <SharedCard variant="legacy" className="card settings-section svc-manifest">
             {manifest ? (
                 <div className="svc-manifest__status">
                     <span className="svc-manifest__badge">
@@ -1033,7 +1034,7 @@ const ManifestSection = ({ app }) => {
                     )}
                 </div>
             )}
-        </div>
+        </SharedCard>
     );
 };
 

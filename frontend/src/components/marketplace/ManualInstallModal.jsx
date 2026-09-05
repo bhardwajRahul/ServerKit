@@ -10,7 +10,7 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -278,7 +278,7 @@ const ManualInstallModal = ({ defaultSource = 'url', onClose, onInstalled }) => 
                     {INSTALL_SOURCES.map((source) => {
                         const SourceIcon = source.icon;
                         return (
-                            <button
+                            <Button variant="unstyled"
                                 key={source.id}
                                 role="tab"
                                 type="button"
@@ -288,7 +288,7 @@ const ManualInstallModal = ({ defaultSource = 'url', onClose, onInstalled }) => 
                             >
                                 <SourceIcon aria-hidden="true" />
                                 {source.label}
-                            </button>
+                            </Button>
                         );
                     })}
                 </div>

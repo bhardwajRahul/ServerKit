@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import api from '../services/api';
 import ServerKitLogo from '../components/ServerKitLogo';
 import { Button } from '@/components/ui/button';

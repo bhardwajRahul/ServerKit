@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth.js';
 
-const ResourceTierContext = createContext(null);
+import { ResourceTierContext } from './useResourceTier.js';
 
 export function ResourceTierProvider({ children }) {
     const { isAuthenticated, isAdmin } = useAuth();
@@ -75,12 +75,4 @@ export function ResourceTierProvider({ children }) {
             {children}
         </ResourceTierContext.Provider>
     );
-}
-
-export function useResourceTier() {
-    const context = useContext(ResourceTierContext);
-    if (!context) {
-        throw new Error('useResourceTier must be used within a ResourceTierProvider');
-    }
-    return context;
 }

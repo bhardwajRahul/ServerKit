@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useLocale } from '../contexts/LocaleContext';
+import { useLocale } from '../contexts/useLocale.js';
 import * as intl from '../utils/intl';
 
 /**
@@ -27,6 +27,6 @@ export default function useFormat() {
         formatPercent: intl.formatPercent,
         formatList: intl.formatList,
         locale: language,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
     }), [language]);
 }

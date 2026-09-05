@@ -4,9 +4,9 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/useTheme.js';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useToast } from '../../contexts/useToast.js';
 import { TOKEN_GROUPS, GROUP_LABELS, TOKEN_TYPE, sanitizeTokens } from '../../data/themeTokens';
 import { DEFAULT_THEME_SLUG, BUNDLED_THEME_MAP } from '../../data/bundledThemes';
 import api from '../../services/api';
@@ -170,16 +170,16 @@ const ThemeStudioModal = ({ open, onOpenChange }) => {
                         <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
                     </div>
                     <div className="theme-studio__modes">
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className={editMode === 'dark' ? 'active' : ''}
                             onClick={() => setEditMode('dark')}
-                        >{t('app.themeStudioModal.darkTokens', 'Dark tokens')}</button>
-                        <button
+                        >{t('app.themeStudioModal.darkTokens', 'Dark tokens')}</Button>
+                        <Button variant="unstyled"
                             type="button"
                             className={editMode === 'light' ? 'active' : ''}
                             onClick={() => setEditMode('light')}
-                        >{t('app.themeStudioModal.lightTokens', 'Light tokens')}</button>
+                        >{t('app.themeStudioModal.lightTokens', 'Light tokens')}</Button>
                     </div>
                 </div>
 

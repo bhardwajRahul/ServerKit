@@ -36,7 +36,7 @@ const AboutTab = () => {
             try {
                 const data = await api.getVersion();
                 setVersion(data.version || '1.0.0');
-            } catch (error) {
+            } catch {
                 setVersion('1.0.0');
             }
         };
@@ -61,7 +61,7 @@ const AboutTab = () => {
                     setUpdateStatus(null);
                 }
             }
-        } catch (error) {
+        } catch {
             setUpdateInfo({ error: 'Failed to check for updates' });
         }
         setCheckingUpdate(false);
@@ -157,7 +157,7 @@ const AboutTab = () => {
                     ) : updateInfo.error ? (
                         <div className="update-status error">
                             <span>{updateInfo.error}</span>
-                            <button type="button" className="btn-link" onClick={checkForUpdate}>{t('common.actions.retry', 'Retry')}</button>
+                            <Button variant="unstyled" type="button" className="btn-link" onClick={checkForUpdate}>{t('common.actions.retry', 'Retry')}</Button>
                         </div>
                     ) : updateInfo.update_available ? (
                         updatePhase === null || updatePhase === 'confirm' ? (
@@ -245,9 +245,9 @@ const AboutTab = () => {
 
             {showStarPrompt && (
                 <div className="star-prompt-card">
-                    <button type="button" className="dismiss-btn" onClick={dismissStarPrompt} title={t('common.actions.dismiss', 'Dismiss')}>
+                    <Button variant="unstyled" type="button" className="dismiss-btn" onClick={dismissStarPrompt} title={t('common.actions.dismiss', 'Dismiss')}>
                         <X size={16} />
-                    </button>
+                    </Button>
                     <div className="star-icon">
                         <Star size={24} />
                     </div>

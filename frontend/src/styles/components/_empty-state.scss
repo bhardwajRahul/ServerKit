@@ -1,4 +1,8 @@
 .empty-state {
+    background: $bg-card;
+    border-radius: $radius-xl;
+    border: 1px solid $border-subtle;
+    color: $text-secondary;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -6,6 +10,32 @@
     padding: $spacing-xl * 2;
     text-align: center;
     min-height: 200px;
+
+    > svg,
+    &__icon svg {
+        color: $text-tertiary;
+        margin-bottom: $space-4;
+    }
+
+    h3 {
+        font-size: $font-size-md;
+        font-weight: $font-weight-semibold;
+        margin-bottom: $space-2;
+    }
+
+    p {
+        color: $text-secondary;
+        margin-bottom: $space-6;
+    }
+
+    // When nested inside a card, drop the card-in-card double background.
+    .card &,
+    .card-body & {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        padding: $space-10 $space-5;
+    }
 
     &__icon {
         color: $text-tertiary;

@@ -1,3 +1,6 @@
+import { statusColor } from '@/components/ds/status';
+import { Button } from '@/components/ui/button';
+import { formatRelativeTime } from '@/utils/time';
 /**
  * The 13 core dashboard widget renderers (plan 62).
  *
@@ -23,7 +26,7 @@ import {
     ShieldCheck,
     Terminal,
 } from 'lucide-react';
-import { Gauge, Pill } from '@/components/ds';
+import { Gauge, Pill, serviceStatusKind, statusKind, alertStatusKind } from '@/components/ds';
 import { getWidgetType } from './registry';
 import { useTranslation } from 'react-i18next';
 import { t } from '../../../i18n/t';
@@ -78,28 +81,6 @@ function Failed({ error, subject = 'data' }) {
             {error?.message ? ` — ${error.message}` : '.'}
         </div>
     );
-}
-
-function relTime(value) {
-    if (!value) return '';
-    const stamp = new Date(value).getTime();
-    if (Number.isNaN(stamp)) return '';
-    const minutes = Math.floor(Math.max(0, Date.now() - stamp) / 60000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-}
-
-const OK_STATE = /^(running|healthy|online|succeeded|success|completed|up|active)$/i;
-const BAD_STATE = /^(failed|error|down|exited|stopped|offline|cancelled)$/i;
-
-function pillKind(state) {
-    const value = String(state || '');
-    if (OK_STATE.test(value)) return 'green';
-    if (BAD_STATE.test(value)) return 'red';
-    return 'amber';
 }
 
 /**
@@ -537,12 +518,12 @@ function WTable({ cfg, ctx }) {
                                 if (key === 'status' || key === 'state') {
                                     return (
                                         <td key={label}>
-                                            <Pill kind={pillKind(value)}>{value || 'unknown'}</Pill>
+                                            <Pill kind={(cfg.source === 'deploys' ? statusKind(value) : serviceStatusKind(value))}>{value || 'unknown'}</Pill>
                                         </td>
                                     );
                                 }
                                 const isName = key === 'name' || key === 'app_name';
-                                const text = key === 'created_at' ? relTime(value) : value;
+                                const text = key === 'created_at' ? formatRelativeTime(value) : value;
                                 return (
                                     <td key={label} className={isName ? 'nm' : 'mono'}>
                                         {text === null || text === undefined || text === '' ? '—' : String(text)}
@@ -608,13 +589,6 @@ function WLogs({ cfg, ctx }) {
 
 /* ----------------------------------------------------------------- deploys */
 
-const DEPLOY_COLOR = {
-    succeeded: 'var(--green)',
-    completed: 'var(--green)',
-    failed: 'var(--red)',
-    running: 'var(--amber)',
-};
-
 // A job reports total_steps + current_step; derive each dot's state from those
 // rather than inventing per-step records the API does not return.
 function stepState(index, job) {
@@ -643,7 +617,7 @@ function WDeploys({ cfg, ctx }) {
                 >
                     <div className="skw-dep__top">
                         <span className="skw-dep__name">{job.app_name || job.kind || 'deployment'}</span>
-                        <span className="skw-dep__state mono" style={{ color: DEPLOY_COLOR[job.status] || 'var(--text-faint)' }}>
+                        <span className="skw-dep__state mono" style={{ color: statusColor(job.status) }}>
                             {job.status}
                         </span>
                     </div>
@@ -655,7 +629,7 @@ function WDeploys({ cfg, ctx }) {
                         </div>
                     )}
                     <div className="skw-dep__meta mono">
-                        {job.trigger || 'manual'} · {job.target_server_name || 'local'} · {relTime(job.created_at) || '—'}
+                        {job.trigger || 'manual'} · {job.target_server_name || 'local'} · {formatRelativeTime(job.created_at) || '—'}
                     </div>
                 </div>
             ))}
@@ -664,8 +638,6 @@ function WDeploys({ cfg, ctx }) {
 }
 
 /* ------------------------------------------------------------------ alerts */
-
-const SEVERITY_COLOR = { critical: 'var(--red)', warning: 'var(--amber)' };
 
 function WAlerts({ cfg, ctx }) {
     const { t } = useTranslation();
@@ -683,17 +655,17 @@ function WAlerts({ cfg, ctx }) {
     return (
         <div className="skw-list">
             {shown.map((alert) => {
-                const color = SEVERITY_COLOR[alert.severity] || 'var(--cyan)';
+                const color = statusColor(alert.severity);
                 return (
                     <div className="skw-alert" key={alert.id} onClick={() => ctx.navigate?.('/monitoring')}>
                         <span className="skw-alert__sev" style={{ background: color, boxShadow: `0 0 7px ${color}` }} />
                         <div className="skw-alert__body">
                             <div className="skw-alert__title">{alert.title}</div>
                             <div className="skw-alert__meta mono">
-                                {alert.target}{alert.time ? ` · ${relTime(alert.time)}` : ''}
+                                {alert.target}{alert.time ? ` · ${formatRelativeTime(alert.time)}` : ''}
                             </div>
                         </div>
-                        <Pill kind={alert.state === 'firing' ? 'red' : 'amber'}>{alert.state}</Pill>
+                        <Pill kind={alertStatusKind(alert.state)}>{alert.state}</Pill>
                     </div>
                 );
             })}
@@ -702,8 +674,6 @@ function WAlerts({ cfg, ctx }) {
 }
 
 /* ------------------------------------------------------------------ status */
-
-const STATE_COLOR = { up: 'var(--green)', down: 'var(--red)', unknown: 'var(--amber)' };
 
 function WStatus({ cfg, ctx }) {
     const { t } = useTranslation();
@@ -718,7 +688,7 @@ function WStatus({ cfg, ctx }) {
     return (
         <div className="skw-status">
             {cells.map((cell) => {
-                const color = STATE_COLOR[cell.state] || 'var(--amber)';
+                const color = statusColor(cell.state);
                 return (
                     <div
                         className="skw-status__cell"
@@ -768,7 +738,7 @@ function WFeed({ cfg, ctx }) {
                     <span className="skw-feed__dot" />
                     <div className="skw-feed__body">
                         <div className="skw-feed__text">{describeLog(entry)}</div>
-                        <div className="skw-feed__time mono">{relTime(entry.created_at)}</div>
+                        <div className="skw-feed__time mono">{formatRelativeTime(entry.created_at)}</div>
                     </div>
                 </div>
             ))}
@@ -811,10 +781,10 @@ function WActions({ cfg, ctx }) {
             {items.map((key) => {
                 const [label, Icon, href] = ACTIONS[key];
                 return (
-                    <button type="button" className="skw-actions__row" key={key} onClick={() => ctx.navigate?.(href)}>
+                    <Button variant="unstyled" type="button" className="skw-actions__row" key={key} onClick={() => ctx.navigate?.(href)}>
                         <span className="skw-actions__label">{label}</span>
                         <span className="skw-actions__icon"><Icon size={15} /></span>
-                    </button>
+                    </Button>
                 );
             })}
         </div>

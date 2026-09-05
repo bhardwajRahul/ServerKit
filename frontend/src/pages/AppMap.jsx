@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageLayout from '../layouts/PageLayout';
 import useTabParam from '../hooks/useTabParam';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const VIEWS = [
     {
@@ -301,13 +302,13 @@ export default function AppMap() {
             <div className="app-map__viewmeta">
                 <Info size={14} />
                 <span>{view.description}</span>
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="app-map__legend-toggle"
                     onClick={() => setShowLegend(s => !s)}
                 >
                     {showLegend ? 'Hide legend' : 'Show legend'}
-                </button>
+                </SharedButton>
             </div>
 
             {showLegend && (

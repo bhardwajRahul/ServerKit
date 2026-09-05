@@ -2,7 +2,7 @@
 // Mounted by the backend at /api/v1/manifests.
 
 export async function getManifest(projectId) {
-    return this.request(`/manifests?project_id=${projectId}`);
+    return this.request(`/manifests?project_id=${encodeURIComponent(projectId)}`);
 }
 
 export async function planManifest(projectId, body = {}) {
@@ -20,5 +20,5 @@ export async function applyManifest(projectId, body = {}) {
 }
 
 export async function scaffoldManifest(appId) {
-    return this.request(`/manifests/scaffold?app_id=${appId}`);
+    return this.request(`/manifests/scaffold?app_id=${encodeURIComponent(appId)}`);
 }

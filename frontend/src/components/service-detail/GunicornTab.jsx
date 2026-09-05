@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import EmptyState from '../EmptyState';
@@ -13,11 +13,7 @@ const GunicornTab = ({ appId }) => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        loadConfig();
-    }, [appId]);
-
-    async function loadConfig() {
+    const loadConfig = useCallback(async () => {
         try {
             const data = await api.getGunicornConfig(appId);
             setConfig(data.content || '');
@@ -26,14 +22,18 @@ const GunicornTab = ({ appId }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [appId]);
+
+    useEffect(() => {
+        loadConfig();
+    }, [loadConfig]);
 
     async function handleSave() {
         setSaving(true);
         try {
             await api.updateGunicornConfig(appId, config);
             toast.success(t('app.gunicornTab.configurationSavedRestartTheAppTo', 'Configuration saved. Restart the app to apply changes.'));
-        } catch (err) {
+        } catch {
             toast.error(t('app.gunicornTab.failedToSaveConfiguration', 'Failed to save configuration'));
         } finally {
             setSaving(false);

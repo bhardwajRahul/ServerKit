@@ -1,14 +1,17 @@
 .status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: $spacing-xs;
+    justify-content: center;
+    border: 1px solid transparent;
     min-height: 24px;
-    padding: 4px $spacing-sm;
-    border-radius: $radius-full;
-    font-size: $font-size-xs;
-    font-weight: $font-weight-semibold;
     line-height: 1;
     white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-1 $space-2;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    text-transform: capitalize;
 
     &__dot {
         width: 6px;
@@ -45,5 +48,22 @@
         background: $bg-hover;
         color: $text-tertiary;
         .status-badge__dot { background: $text-tertiary; }
+    }
+
+    &.online {
+        @include status-variant($success, $success-bg);
+    }
+
+    &.offline {
+        @include status-variant($danger, $danger-bg);
+    }
+
+    &.connecting {
+        @include status-variant($warning, $warning-bg);
+    }
+
+    &.pending {
+        background: $bg-secondary;
+        color: $text-tertiary;
     }
 }

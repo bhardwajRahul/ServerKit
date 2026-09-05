@@ -3,6 +3,7 @@ import { Boxes, ChevronDown, FileCode2, Layers, Terminal, Zap } from 'lucide-rea
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Map a plan's language to the primary version-override field.
 const VERSION_FIELD = {
@@ -179,7 +180,7 @@ function BuildpackPreview({ plan, dockerfile, overrides = {}, onChange, loading 
 
             {dockerfile && !present && (
                 <div className="buildpack-preview__dockerfile">
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="buildpack-preview__dockerfile-toggle"
                         onClick={() => setDockerfileOpen((open) => !open)}
@@ -193,7 +194,7 @@ function BuildpackPreview({ plan, dockerfile, overrides = {}, onChange, loading 
                             size={16}
                             className={dockerfileOpen ? 'buildpack-preview__chevron--open' : ''}
                         />
-                    </button>
+                    </SharedButton>
                     {dockerfileOpen && (
                         <pre className="buildpack-preview__code">
                             <code>{dockerfile}</code>

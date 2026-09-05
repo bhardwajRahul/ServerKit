@@ -2,7 +2,7 @@
 // Mounted by the backend at /api/v1/apps.
 
 export async function getAppSnapshots(appId, limit = 50) {
-    return this.request(`/apps/${appId}/snapshots?limit=${limit}`);
+    return this.request(`/apps/${appId}/snapshots?limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getAppSnapshot(appId, snapId) {

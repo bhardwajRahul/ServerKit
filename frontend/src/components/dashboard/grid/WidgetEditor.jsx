@@ -16,6 +16,7 @@ import { QUICK_ACTION_OPTIONS, WidgetBody } from '../widgets/renderers';
 import { deriveWidgetTitle } from '../widgets/registry';
 import { GRID_COLS, GRID_GAP, GRID_ROW } from './layout';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Tallest a widget may be dragged/stepped to. Twelve columns wide is the board;
 // height is only bounded so a stepper can't run away.
@@ -133,7 +134,7 @@ function Stepper({ label, value, onStep, suffix }) {
     const { t } = useTranslation();
     return (
         <div className="skwe-stepper">
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="skwe-stepper__btn"
                 title={t('app.widgetEditor.decrease', 'Decrease {{label}}', { label: label })}
@@ -141,9 +142,9 @@ function Stepper({ label, value, onStep, suffix }) {
                 onClick={() => onStep(-1)}
             >
                 <Minus size={13} aria-hidden="true" />
-            </button>
+            </SharedButton>
             <span className="skwe-stepper__val mono">{value}{suffix ? ` ${suffix}` : ''}</span>
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="skwe-stepper__btn"
                 title={t('app.widgetEditor.increase', 'Increase {{label}}', { label: label })}
@@ -151,7 +152,7 @@ function Stepper({ label, value, onStep, suffix }) {
                 onClick={() => onStep(1)}
             >
                 <Plus size={13} aria-hidden="true" />
-            </button>
+            </SharedButton>
         </div>
     );
 }
@@ -184,7 +185,7 @@ function SeriesColor({ value, fallback, index, onChange }) {
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="skwe-edit__color"
                     aria-label={t('app.widgetEditor.seriesColour', 'Series {{value}} colour', { value: index + 1 })}
@@ -194,7 +195,7 @@ function SeriesColor({ value, fallback, index, onChange }) {
             </PopoverTrigger>
             <PopoverContent align="start" sideOffset={6} className="skwe-palette">
                 {SERIES_COLORS.map(([option, name]) => (
-                    <button
+                    <SharedButton variant="unstyled"
                         key={option || 'default'}
                         type="button"
                         aria-label={name}
@@ -437,7 +438,7 @@ export function WidgetEditor({
                                                             onChange={(value) => setSeries(index, 'metric', value)}
                                                             options={metricOptionsFor(series.resource, series.metric)}
                                                         />
-                                                        <button
+                                                        <SharedButton variant="unstyled"
                                                             type="button"
                                                             className="skwe-edit__del"
                                                             title={t('app.widgetEditor.removeSeries', 'Remove series {{value}}', { value: index + 1 })}
@@ -448,10 +449,10 @@ export function WidgetEditor({
                                                             )}
                                                         >
                                                             <Trash2 size={13} aria-hidden="true" />
-                                                        </button>
+                                                        </SharedButton>
                                                     </div>
                                                 ))}
-                                                <button
+                                                <SharedButton variant="unstyled"
                                                     type="button"
                                                     className="skwe-edit__add"
                                                     onClick={() => set('series', [
@@ -460,7 +461,7 @@ export function WidgetEditor({
                                                     ])}
                                                 >
                                                     <Plus size={12} aria-hidden="true" /> {t('app.widgetEditor.addSeries', 'Add series')}
-                                                </button>
+                                                </SharedButton>
                                             </div>
                                         </Field>
                                         <Field label={t('app.widgetEditor.legend', 'Legend')} inline>
@@ -627,16 +628,16 @@ export function WidgetEditor({
                 </div>
 
                 <div className="skwe-edit__foot">
-                    <button type="button" className="btn btn-sm" onClick={onDuplicate}>
+                    <SharedButton variant="unstyled" type="button" className="btn btn-sm" onClick={onDuplicate}>
                         <Copy size={13} aria-hidden="true" /> {t('app.widgetEditor.duplicate', 'Duplicate')}
-                    </button>
-                    <button type="button" className="btn btn-sm btn-danger" onClick={onRemove}>
+                    </SharedButton>
+                    <SharedButton variant="danger" type="button" className="btn btn-sm btn-danger" onClick={onRemove}>
                         <Trash2 size={13} aria-hidden="true" /> {t('common.actions.remove', 'Remove')}
-                    </button>
+                    </SharedButton>
                     <span className="skwe-edit__spacer" />
-                    <button type="button" className="btn btn-sm btn-primary" onClick={onClose}>
+                    <SharedButton variant="primary" type="button" className="btn btn-sm btn-primary" onClick={onClose}>
                         {t('common.actions.done', 'Done')}
-                    </button>
+                    </SharedButton>
                 </div>
             </div>
         </Drawer>

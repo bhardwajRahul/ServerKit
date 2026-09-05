@@ -6,7 +6,7 @@ import {
     ArrowRight, HardDrive, Cloud, AlertTriangle,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import ResourcePicker from '../components/ResourcePicker';
@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useTranslation } from 'react-i18next';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 
 // Tunnel / service status → status-pill tone.
 const pillKind = (status) => statusKind(status);
@@ -105,7 +105,7 @@ const RemoteAccess = ({ serverId }) => {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => {
         load();
@@ -297,7 +297,6 @@ const RemoteAccess = ({ serverId }) => {
                                         <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="text-red-600"
                                             onClick={() => setTeardown(t)}
                                             title={t('app.remoteAccess.tearDownTunnel', 'Tear down tunnel')}
                                         >
@@ -360,7 +359,6 @@ const RemoteAccess = ({ serverId }) => {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        className="text-red-600"
                                                         onClick={() => unpublish(t.id, svc)}
                                                     >
                                                         {t('common.actions.remove', 'Remove')}
@@ -393,16 +391,15 @@ const RemoteAccess = ({ serverId }) => {
                     </>
                 }
             >
-                <div className="space-y-4">
+                <div className="ra-service-form">
                     {!wizardTunnel && (
                         <>
-                            <div className="space-y-1.5">
+                            <div className="ra-service-field">
                                 <Label>{t('app.remoteAccess.privateHostWhereTheServiceRuns', 'Private host (where the service runs)')}</Label>
                                 {serverId ? (
                                     <Input
                                         value={currentServer?.name || serverId}
                                         disabled
-                                        className="bg-muted"
                                     />
                                 ) : (
                                     <ResourcePicker
@@ -426,7 +423,7 @@ const RemoteAccess = ({ serverId }) => {
                                     />
                                 )}
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="ra-service-field">
                                 <Label>{t('app.remoteAccess.edgeServerPublicIpFrontsThe', 'Edge server (public IP — fronts the tunnel)')}</Label>
                                 <ResourcePicker
                                     value={form.edgeServerId
@@ -447,15 +444,15 @@ const RemoteAccess = ({ serverId }) => {
                                     searchPlaceholder={t('app.serverPicker.findAServer', 'Find a server…')}
                                     className="sk-resource-picker__trigger--full"
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <p className="ra-service-hint">
                                     {t('app.remoteAccess.aTunnelBetweenTheseTwoIs', 'A tunnel between these two is created (or reused) automatically.')}
                                 </p>
                             </div>
                         </>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="sm:col-span-2 space-y-1.5">
+                    <div className="ra-service-routing">
+                        <div className="ra-service-field ra-service-field--host">
                             <Label>{t('app.remoteAccess.publicHostname', 'Public hostname')}</Label>
                             <Input
                                 placeholder="jellyfin.example.com"
@@ -463,7 +460,7 @@ const RemoteAccess = ({ serverId }) => {
                                 onChange={(e) => setField('hostname', e.target.value)}
                             />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="ra-service-field">
                             <Label>{t('app.remoteAccess.servicePort', 'Service port')}</Label>
                             <Input
                                 type="number"
@@ -474,32 +471,32 @@ const RemoteAccess = ({ serverId }) => {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="ra-service-option">
                         <div>
                             <Label>{t('app.remoteAccess.httpsLetSEncrypt', 'HTTPS (Let\'s Encrypt)')}</Label>
-                            <p className="text-xs text-muted-foreground">{t('app.remoteAccess.obtainACertificateOnTheEdge', 'Obtain a certificate on the edge.')}</p>
+                            <p className="ra-service-hint">{t('app.remoteAccess.obtainACertificateOnTheEdge', 'Obtain a certificate on the edge.')}</p>
                         </div>
                         <Switch checked={form.ssl} onCheckedChange={(v) => setField('ssl', v)} />
                     </div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="ra-service-option">
                         <div>
                             <Label>{t('app.remoteAccess.requireLoginBasicAuth', 'Require login (basic auth)')}</Label>
-                            <p className="text-xs text-muted-foreground">{t('app.remoteAccess.putAUsernamePasswordInFront', 'Put a username/password in front of the service.')}</p>
+                            <p className="ra-service-hint">{t('app.remoteAccess.putAUsernamePasswordInFront', 'Put a username/password in front of the service.')}</p>
                         </div>
                         <Switch checked={form.requireAuth} onCheckedChange={(v) => setField('requireAuth', v)} />
                     </div>
 
                     {form.requireAuth && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
+                        <div className="ra-service-credentials">
+                            <div className="ra-service-field">
                                 <Label>{t('common.labels.username', 'Username')}</Label>
                                 <Input
                                     value={form.authUsername}
                                     onChange={(e) => setField('authUsername', e.target.value)}
                                 />
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="ra-service-field">
                                 <Label>{t('common.labels.password', 'Password')}</Label>
                                 <Input
                                     type="password"
@@ -529,7 +526,7 @@ const RemoteAccess = ({ serverId }) => {
                     </>
                 }
             >
-                <p className="text-sm text-muted-foreground">
+                <p className="ra-service-description">
                     {t('app.remoteAccess.thisRemovesTheWireguardTunnel', 'This removes the WireGuard tunnel')}{teardown ? ` between ${teardown.private_server_name || teardown.private_server_id} and ${teardown.edge_server_name || teardown.edge_server_id}` : ''} {t('app.remoteAccess.andAnyServicesPublishedOverIt', 'and any services published over it. The agents\' interfaces are brought down.')}
                 </p>
             </Modal>

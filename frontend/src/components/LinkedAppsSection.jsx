@@ -1,5 +1,7 @@
 import { GitBranch, Link2, Unlink, ExternalLink, Server } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
+import { Card as SharedCard } from '@/components/ui/card';
 
 const LinkedAppsSection = ({
     app,
@@ -33,21 +35,21 @@ const LinkedAppsSection = ({
     };
 
     return (
-        <div className="card linked-apps-section">
+        <SharedCard variant="legacy" className="card linked-apps-section">
             <div className="linked-apps-header">
                 <h3>
                     <GitBranch size={18} />
                     {t('app.linkedAppsSection.environmentLinking', 'Environment Linking')}
                 </h3>
                 {!app.has_linked_app && (
-                    <button type="button"
+                    <SharedButton variant="outline" type="button"
                         className="btn btn-secondary btn-sm"
                         onClick={onLink}
                         disabled={loading}
                     >
                         <Link2 size={14} />
                         {t('app.linkedAppsSection.linkApp', 'Link App')}
-                    </button>
+                    </SharedButton>
                 )}
             </div>
 
@@ -89,21 +91,21 @@ const LinkedAppsSection = ({
                                     </div>
                                 </div>
                                 <div className="linked-app-actions">
-                                    <button type="button"
+                                    <SharedButton variant="outline" type="button"
                                         className="btn btn-secondary btn-sm btn-icon"
                                         onClick={() => onNavigate(linkedApp.id)}
                                         title={t('app.linkedAppsSection.viewApp', 'View app')}
                                     >
                                         <ExternalLink size={14} />
-                                    </button>
-                                    <button type="button"
+                                    </SharedButton>
+                                    <SharedButton variant="outline" type="button"
                                         className="btn btn-secondary btn-sm btn-icon"
                                         onClick={onUnlink}
                                         disabled={loading}
                                         title={t('app.linkedAppsSection.unlinkApps', 'Unlink apps')}
                                     >
                                         <Unlink size={14} />
-                                    </button>
+                                    </SharedButton>
                                 </div>
                             </div>
                         ))}
@@ -111,14 +113,14 @@ const LinkedAppsSection = ({
                 ) : app.environment_type !== 'standalone' ? (
                     <div className="linked-apps-empty">
                         <p>{t('app.linkedAppsSection.noLinkedAppsLinkAnotherApp', 'No linked apps. Link another app to share database resources.')}</p>
-                        <button type="button"
+                        <SharedButton variant="outline" type="button"
                             className="btn btn-secondary btn-sm"
                             onClick={onLink}
                             disabled={loading}
                         >
                             <Link2 size={14} />
                             {t('app.linkedAppsSection.linkApp', 'Link App')}
-                        </button>
+                        </SharedButton>
                     </div>
                 ) : (
                     <div className="linked-apps-info">
@@ -144,7 +146,7 @@ const LinkedAppsSection = ({
                     </div>
                 )}
             </div>
-        </div>
+        </SharedCard>
     );
 };
 

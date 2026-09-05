@@ -244,7 +244,7 @@ const Docker = () => {
                             </div>
                             <div className="dx-resource-nav">
                                 {availableServers.map(server => (
-                                    <button type="button"
+                                    <Button variant="unstyled" type="button"
                                         key={server.id}
                                         className={`dx-resource-nav-item ${selectedServer.id === server.id ? 'active' : ''}`}
                                         onClick={() => setSelectedServer(server)}
@@ -252,7 +252,7 @@ const Docker = () => {
                                         <ServerIcon size={15} />
                                         <span>{server.name || server.hostname || server.id}</span>
                                         <strong>{server.status || 'online'}</strong>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </section>
@@ -267,7 +267,7 @@ const Docker = () => {
                             {tabs.map(tab => {
                                 const Icon = tab.icon;
                                 return (
-                                    <button type="button"
+                                    <Button variant="unstyled" type="button"
                                         key={tab.id}
                                         className={`dx-resource-nav-item ${activeTab === tab.id ? 'active' : ''}`}
                                         onClick={() => setActiveTab(tab.id)}
@@ -275,7 +275,7 @@ const Docker = () => {
                                         <Icon size={15} />
                                         <span>{tab.label}</span>
                                         {tab.count !== null && <strong>{tab.count}</strong>}
-                                    </button>
+                                    </Button>
                                 );
                             })}
                         </div>

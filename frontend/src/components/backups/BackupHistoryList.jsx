@@ -78,7 +78,7 @@ function RestoreDrills({ drills }) {
                     const isOpen = expanded === drill.id;
                     return (
                         <li key={drill.id} className="backup-drills__item">
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="backup-drills__row"
                                 onClick={() => setExpanded(isOpen ? null : drill.id)}
@@ -96,7 +96,7 @@ function RestoreDrills({ drills }) {
                                 {drill.bytes_restored != null && (
                                     <span className="backup-drills__meta">{humanSize(drill.bytes_restored)}</span>
                                 )}
-                            </button>
+                            </Button>
                             {isOpen && (
                                 <div className="backup-drills__detail">
                                     {drill.error && <p className="backup-drills__error">{drill.error}</p>}

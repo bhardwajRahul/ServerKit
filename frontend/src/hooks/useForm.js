@@ -18,6 +18,7 @@ export default function useForm({ initialValues = {}, validate, onSubmit }) {
     const initialValuesRef = useRef(initialValues);
     const validateRef = useRef(validate);
     const onSubmitRef = useRef(onSubmit);
+    const submitInFlight = useRef(false);
     validateRef.current = validate;
     onSubmitRef.current = onSubmit;
 
@@ -49,34 +50,42 @@ export default function useForm({ initialValues = {}, validate, onSubmit }) {
 
     const handleSubmit = useCallback(async (event) => {
         event?.preventDefault?.();
-        const values = state.values;
-        const errors = normalizeFieldErrors(
-            validateRef.current ? await validateRef.current(values) : {},
-        );
-        const touched = touchedFieldsFor(values);
-
-        if (Object.keys(errors).length > 0) {
-            dispatch({ type: 'validationFailed', errors, touched });
-            return { ok: false, errors };
-        }
-
-        dispatch({ type: 'submitStarted' });
+        // A second submit event can arrive before React commits disabled buttons,
+        // or while asynchronous validation is still running.
+        if (submitInFlight.current) return { ok: false, pending: true };
+        submitInFlight.current = true;
         try {
-            const result = await onSubmitRef.current?.(values);
-            dispatch({ type: 'submitFinished' });
-            return { ok: true, value: result };
-        } catch (error) {
-            const mapped = mapServerFormError(error);
-            const failedTouched = Object.fromEntries(
-                Object.keys(mapped.fieldErrors).map((name) => [name, true]),
+            const values = state.values;
+            const errors = normalizeFieldErrors(
+                validateRef.current ? await validateRef.current(values) : {},
             );
-            dispatch({
-                type: 'submitFailed',
-                errors: mapped.fieldErrors,
-                touched: failedTouched,
-                submitError: mapped.formError,
-            });
-            return { ok: false, error, errors: mapped.fieldErrors };
+            const touched = touchedFieldsFor(values);
+
+            if (Object.keys(errors).length > 0) {
+                dispatch({ type: 'validationFailed', errors, touched });
+                return { ok: false, errors };
+            }
+
+            dispatch({ type: 'submitStarted' });
+            try {
+                const result = await onSubmitRef.current?.(values);
+                dispatch({ type: 'submitFinished' });
+                return { ok: true, value: result };
+            } catch (error) {
+                const mapped = mapServerFormError(error);
+                const failedTouched = Object.fromEntries(
+                    Object.keys(mapped.fieldErrors).map((name) => [name, true]),
+                );
+                dispatch({
+                    type: 'submitFailed',
+                    errors: mapped.fieldErrors,
+                    touched: failedTouched,
+                    submitError: mapped.formError,
+                });
+                return { ok: false, error, errors: mapped.fieldErrors };
+            }
+        } finally {
+            submitInFlight.current = false;
         }
     }, [state.values]);
 

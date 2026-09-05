@@ -87,7 +87,7 @@ const ApiKeyModal = ({ onClose, onSubmit, createdKey }) => {
                             <Label>{t('app.apiKeyModal.tier', 'Tier')}</Label>
                             <div className="api-key-modal__tiers">
                                 {TIER_OPTIONS.map(t => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={t.value}
                                         type="button"
                                         className={`api-key-modal__tier-btn ${tier === t.value ? 'active' : ''}`}
@@ -95,7 +95,7 @@ const ApiKeyModal = ({ onClose, onSubmit, createdKey }) => {
                                     >
                                         <span className="api-key-modal__tier-label">{t.label}</span>
                                         <span className="api-key-modal__tier-desc">{t.desc}</span>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </div>

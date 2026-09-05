@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Network, RefreshCw, Server as ServerIcon } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useTopbarActions, useTopbarChrome } from '@/hooks/useTopbarActions';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
@@ -327,7 +327,7 @@ const FleetProxy = () => {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => {
         load();

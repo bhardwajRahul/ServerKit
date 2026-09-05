@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 
 // Shared, app-wide "developer mode" flag — the gate for developer-only surfaces
 // (currently the Test Sandbox). True when either:

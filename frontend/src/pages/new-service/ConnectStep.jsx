@@ -73,7 +73,7 @@ const ConnectStep = ({ form }) => {
                                     <div className="new-service-page__repo-state">{t('app.connectStep.noRepositoriesFound', 'No repositories found.')}</div>
                                 )}
                                 {!reposLoading && repos.map(repo => (
-                                    <button
+                                    <Button variant="unstyled"
                                         key={repo.id}
                                         type="button"
                                         className={`new-service-page__repo-row ${selectedRepo?.id === repo.id ? 'new-service-page__repo-row--active' : ''}`}
@@ -84,7 +84,7 @@ const ConnectStep = ({ form }) => {
                                             <small>{repo.description || repo.language || 'No description'}</small>
                                         </span>
                                         <em>{repo.private ? 'Private' : 'Public'}</em>
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </>

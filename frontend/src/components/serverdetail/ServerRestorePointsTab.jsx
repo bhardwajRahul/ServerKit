@@ -5,7 +5,7 @@ import Modal from '../Modal';
 import FormField from '../FormField';
 import DeploymentTimeline from '../deployments/DeploymentTimeline';
 import { Button } from '../ui/button';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
 
 export default function ServerRestorePointsTab({ serverId }) {

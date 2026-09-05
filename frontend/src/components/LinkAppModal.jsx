@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { X, Link2, GitBranch, AlertCircle, Check } from 'lucide-react';
+import { useCallback, useState, useEffect  } from 'react';
+import { GitBranch, AlertCircle, Check } from 'lucide-react';
 import api from '../services/api';
 import Modal from './Modal';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const LinkAppModal = ({ app, onClose, onLinked }) => {
     const { t } = useTranslation();
@@ -16,11 +17,7 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
     const [tablePrefix, setTablePrefix] = useState('');
     const [propagateCredentials, setPropagateCredentials] = useState(true);
 
-    useEffect(() => {
-        loadCompatibleApps();
-    }, [app]);
-
-    async function loadCompatibleApps() {
+    const loadCompatibleApps = useCallback(async () => {
         try {
             const data = await api.getApps();
             // Filter to same type, not already linked, not self
@@ -31,12 +28,17 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
                 a.environment_type === 'standalone'
             );
             setApps(compatible);
-        } catch (err) {
+        } catch {
             setError('Failed to load applications');
         } finally {
             setLoading(false);
         }
-    }
+    }, [app.id, app.app_type]);
+
+    useEffect(() => {
+        loadCompatibleApps();
+    }, [loadCompatibleApps]);
+
 
     async function handleLink(e) {
         e.preventDefault();
@@ -64,11 +66,6 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
 
     const selectedApp = apps.find(a => a.id === parseInt(selectedAppId));
 
-    const envDescriptions = {
-        development: 'This app will be the DEVELOPMENT environment',
-        production: 'This app will be the PRODUCTION environment',
-        staging: 'This app will be the STAGING environment'
-    };
 
     return (
         <Modal open={true} onClose={onClose} title={t('app.linkAppModal.linkApplication', 'Link Application')} className="link-app-modal">
@@ -88,9 +85,9 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
                         <p>
                             {t('app.linkAppModal.thereAreNoOther', 'There are no other')} {app.app_type} {t('app.linkAppModal.applicationsAvailableToLinkCreateAnother', 'applications available to link. Create another')} {app.app_type} {t('app.linkAppModal.appFirstOrEnsureExistingApps', 'app first, or ensure existing apps are not already linked.')}
                         </p>
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
+                        <SharedButton variant="outline" type="button" className="btn btn-secondary" onClick={onClose}>
                             {t('common.actions.close', 'Close')}
-                        </button>
+                        </SharedButton>
                     </div>
                 ) : (
                     <form onSubmit={handleLink}>
@@ -195,10 +192,10 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
                         )}
 
                         <div className="modal-actions">
-                            <button type="button" className="btn btn-secondary" onClick={onClose}>
+                            <SharedButton variant="outline" type="button" className="btn btn-secondary" onClick={onClose}>
                                 {t('common.actions.cancel', 'Cancel')}
-                            </button>
-                            <button type="submit" className="btn btn-primary" disabled={linking || !selectedAppId}>
+                            </SharedButton>
+                            <SharedButton variant="primary" type="submit" className="btn btn-primary" disabled={linking || !selectedAppId}>
                                 {linking ? (
                                     <>{t('app.linkAppModal.linking', 'Linking…')}</>
                                 ) : (
@@ -207,7 +204,7 @@ const LinkAppModal = ({ app, onClose, onLinked }) => {
                                         {t('app.linkAppModal.linkApps', 'Link Apps')}
                                     </>
                                 )}
-                            </button>
+                            </SharedButton>
                         </div>
                     </form>
                 )}

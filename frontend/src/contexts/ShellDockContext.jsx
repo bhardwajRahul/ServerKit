@@ -1,9 +1,7 @@
-import {
-    createContext, useCallback, useContext, useEffect, useMemo, useState,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useOperations } from './OperationsContext';
-import { useServerkitAI } from './AIContext';
+import { useServerkitAI } from './useServerkitAI.js';
 import { useWalkthroughs } from './walkthroughContextValue';
 
 // One console, four tabs (Operations · Alerts · Recipes · Assistant), exactly
@@ -13,7 +11,7 @@ import { useWalkthroughs } from './walkthroughContextValue';
 // provider doesn't own their state: it derives the active tab and flips the
 // underlying contexts in concert. Priority on conflicting opens: assistant >
 // recipes > operations — closing the winner reveals the panel underneath.
-const ShellDockContext = createContext(null);
+import { ShellDockContext } from './useShellDock.js';
 
 export function ShellDockProvider({ children }) {
     const { collapsed, setCollapsed } = useOperations();
@@ -72,10 +70,4 @@ export function ShellDockProvider({ children }) {
     }), [activeTab, close, expanded, openTab, toggleTab]);
 
     return <ShellDockContext.Provider value={value}>{children}</ShellDockContext.Provider>;
-}
-
-export function useShellDock() {
-    const context = useContext(ShellDockContext);
-    if (!context) throw new Error('useShellDock must be used within ShellDockProvider');
-    return context;
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import Modal from '@/components/Modal';
 import { Pill, statusKind } from '@/components/ds';

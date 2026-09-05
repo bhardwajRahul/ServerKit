@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Zap, Eraser } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { useConfirm } from '@/hooks/useConfirm';

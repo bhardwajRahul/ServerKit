@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Check, Star, Trash2 } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/useTheme.js';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useToast } from '../../contexts/useToast.js';
 import { DEFAULT_THEME_SLUG } from '../../data/bundledThemes';
 import api from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Theme Gallery — cards for every selectable skin (bundled seeds + installed).
 // Apply is instant (tokens are already local); hovering previews live and
@@ -104,24 +105,24 @@ const ThemeGallery = () => {
                         {isAdmin && (
                             <div className="theme-card__admin">
                                 {!isPanelDefault && (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         className="theme-card__admin-btn"
                                         disabled={busy === themeEntry.slug}
                                         onClick={(e) => { e.stopPropagation(); setDefault(themeEntry.slug); }}
                                     >
                                         <Star size={12} /> {t('app.themeGallery.setDefault', 'Set default')}
-                                    </button>
+                                    </SharedButton>
                                 )}
                                 {removable && (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         className="theme-card__admin-btn theme-card__admin-btn--danger"
                                         disabled={busy === themeEntry.slug}
                                         onClick={(e) => { e.stopPropagation(); removeTheme(themeEntry.slug); }}
                                     >
                                         <Trash2 size={12} /> {t('common.actions.remove', 'Remove')}
-                                    </button>
+                                    </SharedButton>
                                 )}
                             </div>
                         )}

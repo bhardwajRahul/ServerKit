@@ -35,22 +35,22 @@ export function GroupMenu({ columns = [], groupBy = null, onChange, className })
             <PopoverContent align="end" className="sk-tablemenu">
                 <div className="sk-tablemenu__title">{t('app.groupMenu.groupBy', 'Group by')}</div>
                 <div className="sk-tablemenu__list">
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className={cn('sk-tablemenu__item', !active && 'is-on')}
                         onClick={() => onChange?.(null)}
                     >
                         {t('app.groupMenu.noGrouping', 'No grouping')}
-                    </button>
+                    </Button>
                     {groupable.map((column) => (
-                        <button
+                        <Button variant="unstyled"
                             key={column.key}
                             type="button"
                             className={cn('sk-tablemenu__item', active?.key === column.key && 'is-on')}
                             onClick={() => onChange?.(column.key)}
                         >
                             {labelFor(column)}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </PopoverContent>

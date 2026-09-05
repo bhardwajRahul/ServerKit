@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import EmptyState from '../EmptyState';
 import Modal from '@/components/Modal';
@@ -263,13 +263,13 @@ const ComposeTab = ({ onStatsChange }) => {
             sortable: false,
             hideable: false,
             width: 132,
-            className: 'text-right',
+            className: 'docker-compose-actions-column',
             render: (project) => {
                 const busy = !!actionLoading[projectName(project)];
                 const running = isProjectRunning(project);
                 return (
                     <div className="dx-row-actions">
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="dx-row-action"
                             onClick={() => setLogsProject(project)}
@@ -277,10 +277,10 @@ const ComposeTab = ({ onStatsChange }) => {
                             title={t('common.labels.logs', 'Logs')}
                         >
                             <FileText size={13} />
-                        </button>
+                        </Button>
                         {running ? (
                             <>
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="dx-row-action"
                                     onClick={() => handleAction(project, 'restart')}
@@ -288,8 +288,8 @@ const ComposeTab = ({ onStatsChange }) => {
                                     title={t('common.actions.restart', 'Restart')}
                                 >
                                     <RotateCw size={13} />
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="unstyled"
                                     type="button"
                                     className="dx-row-action is-danger"
                                     onClick={() => handleAction(project, 'down')}
@@ -297,10 +297,10 @@ const ComposeTab = ({ onStatsChange }) => {
                                     title={t('common.actions.stop', 'Stop')}
                                 >
                                     <Square size={13} />
-                                </button>
+                                </Button>
                             </>
                         ) : (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 className="dx-row-action is-success"
                                 onClick={() => handleAction(project, 'up')}
@@ -308,9 +308,9 @@ const ComposeTab = ({ onStatsChange }) => {
                                 title={t('common.actions.start', 'Start')}
                             >
                                 <Play size={13} />
-                            </button>
+                            </Button>
                         )}
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="dx-row-action"
                             onClick={() => handleAction(project, 'pull')}
@@ -318,7 +318,7 @@ const ComposeTab = ({ onStatsChange }) => {
                             title={t('app.composeTab.pullImages', 'Pull images')}
                         >
                             <Download size={13} />
-                        </button>
+                        </Button>
                     </div>
                 );
             },
@@ -489,12 +489,12 @@ const ComposeLogsModal = ({ project, onClose }) => {
     return (
         <Modal open onClose={onClose} title={t('app.composeTab.logs2', 'Logs: {{name}}', { name: name })} size="lg">
             <div className="modal-body">
-                <div className="logs-controls flex flex-wrap items-center gap-2 mb-2">
+                <div className="logs-controls docker-compose-log-controls">
                     <label>{t('app.composeTab.service', 'Service:')}</label>
                     <select
                         value={selectedService}
                         onChange={(e) => setSelectedService(e.target.value)}
-                        className="py-2 px-2"
+                        className="docker-compose-log-select"
                     >
                         <option value="">{t('app.composeTab.allServices', 'All Services')}</option>
                         {services.map(service => (
@@ -502,7 +502,7 @@ const ComposeLogsModal = ({ project, onClose }) => {
                         ))}
                     </select>
                     <label>{t('app.composeTab.lines', 'Lines:')}</label>
-                    <select value={tail} onChange={(e) => setTail(Number(e.target.value))} className="py-2 px-2">
+                    <select value={tail} onChange={(e) => setTail(Number(e.target.value))} className="docker-compose-log-select">
                         <option value={50}>50</option>
                         <option value={100}>100</option>
                         <option value={200}>200</option>

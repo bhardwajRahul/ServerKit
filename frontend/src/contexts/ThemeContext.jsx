@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BUNDLED_THEMES, BUNDLED_THEME_MAP, DEFAULT_THEME_SLUG } from '../data/bundledThemes';
 import { applySkin } from '../utils/applySkin';
 import api from '../services/api';
-import { useWorkspace } from './WorkspaceContext';
+import { useWorkspace } from './useWorkspace.js';
 
-const ThemeContext = createContext(null);
+import { ThemeContext } from './useTheme.js';
 
 const DEFAULT_ACCENT = '#6d7cff';
 
@@ -325,13 +325,3 @@ export function ThemeProvider({ children }) {
         </ThemeContext.Provider>
     );
 }
-
-export function useTheme() {
-    const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within a ThemeProvider');
-    }
-    return context;
-}
-
-export default ThemeContext;

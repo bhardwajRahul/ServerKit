@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { scrollBehavior } from '@/utils/reducedMotion';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // How many slices the severity map is divided into. Enough to resolve a single
 // error in a long log without rendering a node per line.
@@ -181,7 +182,7 @@ export default function LogPane({
                         return (
                             <div className="deploy-console__sec" key={section.key}>
                                 {showSections && (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         type="button"
                                         className={`deploy-console__sec-head ${isShut ? 'is-shut' : ''}`}
                                         data-step={section.step ?? undefined}
@@ -197,7 +198,7 @@ export default function LogPane({
                                             )}
                                             {section.warns > 0 && ` · ${section.warns} warning${section.warns === 1 ? '' : 's'}`}
                                         </span>
-                                    </button>
+                                    </SharedButton>
                                 )}
                                 {!isShut && section.rows.map(({ ln, i }) => {
                                     const ts = timestamps && ln.ts
@@ -240,9 +241,9 @@ export default function LogPane({
                 </div>
             )}
             {showJump && (
-                <button type="button" className="deploy-console__jump" onClick={jumpToLive}>
+                <SharedButton variant="unstyled" type="button" className="deploy-console__jump" onClick={jumpToLive}>
                     <ArrowDown size={14} /> {t('app.logPane.jumpToLive', 'Jump to live')}
-                </button>
+                </SharedButton>
             )}
         </div>
     );

@@ -41,9 +41,6 @@
 
 // Spinning icon — used well beyond this page (Servers, Deployments, backups…),
 // so it stays global despite living in a page partial.
-.spin {
-    animation: ssl-spin 1s linear infinite;
-}
 
 @keyframes ssl-spin {
     from { transform: rotate(0deg); }

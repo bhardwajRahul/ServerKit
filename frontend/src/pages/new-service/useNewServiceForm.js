@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 
 export const APP_TYPE_OPTIONS = [
     { value: 'auto', labelKey: 'app.useNewServiceForm.autoDetect', label: 'Auto-detect' },

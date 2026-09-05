@@ -193,7 +193,7 @@ function SourceBody({ provider, status, config, isAdmin, onConnect, onDisconnect
             {isAdmin && (
                 <div className="conn-advanced">
                     {isGithub && (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="conn-advanced__toggle"
                             onClick={() => setAdvancedOpen((o) => !o)}
@@ -201,7 +201,7 @@ function SourceBody({ provider, status, config, isAdmin, onConnect, onDisconnect
                         >
                             <span><KeyRound size={14} /> {t('app.connectProviderModal.advancedUseYourOwnOauthApp', 'Advanced: use your own OAuth app')}</span>
                             <ChevronDown size={15} className={advancedOpen ? 'conn-list__chev is-open' : 'conn-list__chev'} />
-                        </button>
+                        </Button>
                     )}
                     {advancedOpen && (
                         <form className="conn-form" onSubmit={save}>
@@ -317,14 +317,14 @@ function DnsBody({ provider, isAdmin, connections, onAdd, onRemove, onTest }) {
 
                     {isCloudflare && (
                         <div className="conn-scope" role="radiogroup" aria-label={t('app.connectProviderModal.accessLevel', 'Access level')}>
-                            <button type="button" className={`conn-scope__opt${cfMode === 'scoped' ? ' is-active' : ''}`} onClick={() => setCfMode('scoped')} role="radio" aria-checked={cfMode === 'scoped'}>
+                            <Button variant="unstyled" type="button" className={`conn-scope__opt${cfMode === 'scoped' ? ' is-active' : ''}`} onClick={() => setCfMode('scoped')} role="radio" aria-checked={cfMode === 'scoped'}>
                                 <span className="conn-scope__head"><ShieldCheck size={16} /> {t('app.connectProviderModal.scopedToken', 'Scoped token')} <span className="conn-scope__rec">{t('app.connectProviderModal.recommended', 'Recommended')}</span></span>
                                 <span className="conn-scope__desc">{t('app.connectProviderModal.aCloudflareTokenLimitedToDns', 'A Cloudflare token limited to DNS:Edit on the zones you choose. ServerKit can only touch DNS.')}</span>
-                            </button>
-                            <button type="button" className={`conn-scope__opt${cfMode === 'global' ? ' is-active' : ''}`} onClick={() => setCfMode('global')} role="radio" aria-checked={cfMode === 'global'}>
+                            </Button>
+                            <Button variant="unstyled" type="button" className={`conn-scope__opt${cfMode === 'global' ? ' is-active' : ''}`} onClick={() => setCfMode('global')} role="radio" aria-checked={cfMode === 'global'}>
                                 <span className="conn-scope__head"><ShieldAlert size={16} /> {t('app.connectProviderModal.globalApiKey', 'Global API key')}</span>
                                 <span className="conn-scope__desc">{t('app.connectProviderModal.yourAccountEmailGlobalKeySimplest', 'Your account email + global key. Simplest to set up, but grants full account access.')}</span>
-                            </button>
+                            </Button>
                         </div>
                     )}
 
@@ -706,7 +706,7 @@ function RegistryBody({ isAdmin, registries, onAdd, onRemove, onTest }) {
 
                     <div className="conn-presets" role="radiogroup" aria-label={t('app.connectProviderModal.registryProvider', 'Registry provider')}>
                         {REGISTRY_PROVIDERS.map((p) => (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 key={p.id}
                                 className={`conn-presets__opt${providerId === p.id ? ' is-active' : ''}`}
@@ -715,7 +715,7 @@ function RegistryBody({ isAdmin, registries, onAdd, onRemove, onTest }) {
                                 aria-checked={providerId === p.id}
                             >
                                 {p.name}
-                            </button>
+                            </Button>
                         ))}
                     </div>
 
@@ -815,7 +815,7 @@ function EmailBody({ isAdmin, relayConfig, onSave, onTest, onDisable }) {
 
             <div className="conn-presets" role="radiogroup" aria-label={t('app.connectProviderModal.providerPreset', 'Provider preset')}>
                 {SMTP_PRESETS.map((p) => (
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         key={p.id}
                         className={`conn-presets__opt${form.provider_hint === p.id ? ' is-active' : ''}`}
@@ -824,7 +824,7 @@ function EmailBody({ isAdmin, relayConfig, onSave, onTest, onDisable }) {
                         aria-checked={form.provider_hint === p.id}
                     >
                         {p.name}
-                    </button>
+                    </Button>
                 ))}
             </div>
 

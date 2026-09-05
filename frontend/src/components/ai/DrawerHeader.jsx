@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Settings } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useServerkitAI } from '../../contexts/AIContext';
+import { useAuth } from '../../contexts/useAuth.js';
+import { useServerkitAI } from '../../contexts/useServerkitAI.js';
 import ModeToggle from './ModeToggle';
 import ConversationMenu from './ConversationMenu';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Slim toolbar under the shared console tabs. Close lives in the tab strip
 // above, so this row carries only the assistant-specific controls.
@@ -23,14 +24,14 @@ const DrawerHeader = () => {
                 <ModeToggle />
                 <ConversationMenu />
                 {isAdmin ? (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-ai-iconbtn"
                         aria-label={t('app.drawerHeader.aiSettings', 'AI settings')}
                         onClick={() => { close(); navigate('/settings/ai'); }}
                     >
                         <Settings size={16} />
-                    </button>
+                    </SharedButton>
                 ) : null}
             </div>
         </header>

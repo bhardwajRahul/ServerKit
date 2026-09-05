@@ -37,11 +37,14 @@
 
 // Two column form row
 .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    // Keep system-domain fields on the shared responsive grid.
+    &.system-domain-row { display: grid; gap: $space-4; }
+
+display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: $space-4;
 
-    @media (max-width: $breakpoint-md) {
+    @media (max-width: $breakpoint-sm) {
         grid-template-columns: 1fr;
     }
 }
@@ -109,6 +112,18 @@
 
 // Error message
 .error-message {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-2;
+    line-height: 1.5;
+
+    > svg {
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+}
+
+.error-message {
     background: $danger-bg;
     border: 1px solid $danger-border;
     color: $danger;
@@ -116,25 +131,6 @@
     border-radius: $radius-lg;
     margin-bottom: $space-5;
     font-size: $font-size-sm + 1;
-}
-
-.error-banner {
-    background: $danger-bg;
-    border: 1px solid $danger-border;
-    color: $danger;
-    padding: $space-3 $space-4;
-    border-radius: $radius-lg;
-    margin-bottom: $space-6;
-
-    &__close {
-        float: right;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: inherit;
-        font-size: 18px;
-        line-height: 1;
-    }
 }
 
 // Filter toggle (checkbox)
@@ -189,5 +185,105 @@
 
     &:focus {
         border-color: $accent-primary;
+    }
+}
+
+.checkbox-label {
+@include flex-start();
+    gap: $space-2;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: $accent-primary;
+    }
+
+    .checkbox-text { font-weight: 400; }
+}
+
+.permission-checkbox {
+display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: $space-2;
+    font-size: $font-size-sm;
+    color: $text-secondary;
+    cursor: pointer;
+
+    input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: $accent-primary;
+    }
+
+    &:hover { color: $text-primary; }
+}
+
+.settings-form {
+    margin-bottom: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+
+    .form-group {
+        margin-bottom: $space-4;
+
+        &:last-of-type {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+            color: $text-secondary;
+            margin-bottom: $space-2;
+        }
+
+        input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+            width: 100%;
+            padding: $space-3;
+            background: $bg-hover;
+            border: 1px solid $border-subtle;
+            border-radius: $radius-md;
+            color: $text-primary;
+            font-size: $font-size-sm;
+            transition: border-color $transition-fast;
+
+            &:focus {
+                outline: none;
+                border-color: $accent-primary;
+            }
+
+            &:disabled,
+            &.input-disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                background: $bg-body;
+            }
+        }
+
+        .form-help {
+            display: block;
+            margin-top: $space-1;
+            font-size: $font-size-xs;
+            color: $text-tertiary;
+        }
+    }
+
+    .form-actions {
+        margin-top: $space-5;
+        padding-top: $space-5;
+        border-top: 1px solid $border-subtle;
+        display: flex;
+        gap: $space-2;
+    }
+
+    .form-section .btn[type="submit"] {
+        margin-top: $space-4;
     }
 }

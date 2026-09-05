@@ -72,7 +72,7 @@ export async function applyDNSPreset(zoneId, preset, variables = {}) {
 }
 
 export async function checkDNSPropagation(domain, type = 'A') {
-    return this.request(`/dns/propagation/${domain}?type=${type}`);
+    return this.request(`/dns/propagation/${domain}?type=${encodeURIComponent(type)}`);
 }
 
 export async function getDomainRoutingDiagnostics(appId) {

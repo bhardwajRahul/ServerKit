@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Ban, Activity, TimerReset } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { usePolling } from '../../hooks/usePolling';
 import EmptyState from '../EmptyState';
@@ -13,6 +13,7 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const REFRESH_MS = 5000;
 const QUERY_PREVIEW_LEN = 120;
@@ -241,7 +242,7 @@ export default function ProcessListPanel({ conn, engine, active, isAdmin }) {
             className: 'text-right',
             cellClassName: 'dbp-actions',
             render: (p) => (
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="dbx-icon-btn is-danger"
                     onClick={() => killProcess(p)}
@@ -250,7 +251,7 @@ export default function ProcessListPanel({ conn, engine, active, isAdmin }) {
                     title={isPg ? t('app.processListPanel.terminateBackend', 'Terminate backend') : t('app.processListPanel.killProcess2', 'Kill process')}
                 >
                     <Ban size={14} aria-hidden="true" />
-                </button>
+                </SharedButton>
             ),
         });
     }

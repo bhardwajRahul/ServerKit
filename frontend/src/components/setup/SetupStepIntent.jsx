@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Globe, Code, Server, GitBranch, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const USE_CASE_OPTIONS = [
     {
@@ -81,9 +82,9 @@ const SetupStepIntent = ({ selections, onComplete }) => {
             </div>
 
             <div className="wizard-nav wizard-nav--flush">
-                <button type="button" className="btn-wizard-next" onClick={handleContinue}>
+                <SharedButton variant="unstyled" type="button" className="btn-wizard-next" onClick={handleContinue}>
                     {t('common.actions.continue', 'Continue')}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

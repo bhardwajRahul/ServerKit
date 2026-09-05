@@ -57,7 +57,7 @@ export async function getMonitorHistory(monitorId, params = {}) {
 }
 
 export async function getMonitorUptime(monitorId, days = 90) {
-    return this.request(`/monitors/${monitorId}/uptime?days=${days}`);
+    return this.request(`/monitors/${monitorId}/uptime?days=${encodeURIComponent(days)}`);
 }
 
 // --- Incidents ---

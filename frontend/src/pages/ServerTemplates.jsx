@@ -1,10 +1,11 @@
+import { Card as SharedCard } from '@/components/ui/card';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTopbarActions, useTopbarChrome } from '@/hooks/useTopbarActions';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import PageLoader from '../components/PageLoader';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EmptyState from '../components/EmptyState';
@@ -251,12 +252,12 @@ const ServerTemplates = () => {
             // (after creating or deleting one) never yanks the tab out from
             // under whoever is reading it.
             setActiveTab(current => current ?? (mine.length > 0 ? 'templates' : 'library'));
-        } catch (err) {
+        } catch {
             toast.error(t('app.serverTemplates.failedToLoadTemplates', 'Failed to load templates'));
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => {
         loadData();
@@ -310,25 +311,9 @@ const ServerTemplates = () => {
         }
     };
 
-    const handleCheckDrift = async (assignmentId) => {
-        try {
-            await api.checkTemplateDrift(assignmentId);
-            toast.success(t('app.serverTemplates.driftCheckInitiated', 'Drift check initiated'));
-            loadData();
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
 
-    const handleRemediate = async (assignmentId) => {
-        try {
-            await api.remediateTemplateDrift(assignmentId);
-            toast.success(t('app.serverTemplates.remediationInitiated', 'Remediation initiated'));
-            loadData();
-        } catch (err) {
-            toast.error(err.message);
-        }
-    };
+
+
 
     // Publish the admin "Create Template" action to the shared tab-group top bar.
     useTopbarActions(() =>
@@ -493,7 +478,7 @@ const ServerTemplates = () => {
             sortable: false,
             hideable: false,
             render: (tmpl) => (
-                <div className="flex gap-2">
+                <div className="server-template-error-actions">
                     <Button
                         size="sm"
                         onClick={() => { setSelectedTemplate(tmpl); setShowAssignModal(true); }}
@@ -508,7 +493,7 @@ const ServerTemplates = () => {
                 </div>
             ),
         },
-    ], [user?.is_admin]);
+    ], [t, user?.is_admin]);
 
     // No `pageState`: the list is this endpoint's whole response, with no
     // search and no server-side filter of its own, so there is nothing
@@ -580,7 +565,7 @@ const ServerTemplates = () => {
                                 views={chrome.views}
                                 label="templates"
                                 onCreate={chrome.createView}
-                            
+
                 actions={chromeActions}
             />
 
@@ -605,7 +590,7 @@ const ServerTemplates = () => {
                 <TabsContent value="library">
                     <div className="templates-grid">
                         {Object.entries(library).map(([key, tmpl]) => (
-                            <div key={key} className="template-card card">
+                            <SharedCard variant="legacy" key={key} className="template-card card">
                                 <div className="template-card__header">
                                     <h3>{tmpl.name}</h3>
                                     <Badge variant="outline">{CATEGORY_LABELS[tmpl.category] || tmpl.category}</Badge>
@@ -621,7 +606,7 @@ const ServerTemplates = () => {
                                         {t('app.serverTemplates.useTemplate', 'Use Template')}
                                     </Button>
                                 </div>
-                            </div>
+                            </SharedCard>
                         ))}
                     </div>
                 </TabsContent>

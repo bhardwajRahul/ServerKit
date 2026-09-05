@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, Folder, Plus, RefreshCw, Server as ServerLucideIcon, X } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import Modal from '@/components/Modal';
 import { Button } from '@/components/ui/button';
@@ -303,7 +303,7 @@ const Servers = () => {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => {
         loadData();
@@ -487,14 +487,14 @@ const Servers = () => {
                             <option value="none">{t('app.servers.ungrouped', 'Ungrouped')}</option>
                         </select>
                     </div>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="sk-bulkbar__clear"
                         onClick={() => setSelectedIds(new Set())}
                         aria-label={t('app.servers.clearSelection', 'Clear selection')}
                     >
                         <X size={14} />
-                    </button>
+                    </Button>
                 </div>
             )}
 
@@ -805,27 +805,27 @@ Install-ServerKitAgent -Server "${window.location.origin}" -Token "${registratio
         >
                 {step === 1 && (
                     <div className="mode-switcher" data-walkthrough="server-setup">
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className={`mode-switcher__tab${mode === 'install' ? ' is-active' : ''}`}
                             onClick={() => setMode('install')}
                         >
                             {t('app.servers.connectionString', 'Connection string')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="unstyled"
                             type="button"
                             className={`mode-switcher__tab${mode === 'pair' ? ' is-active' : ''}`}
                             onClick={() => setMode('pair')}
                         >
                             {t('app.servers.pairCode', 'Pair code')}
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="unstyled"
                             type="button"
                             className={`mode-switcher__tab${mode === 'link' ? ' is-active' : ''}`}
                             onClick={() => setMode('link')}
                         >
                             {t('app.servers.linkPanel', 'Link panel')}
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -1079,20 +1079,20 @@ const ManageGroupsModal = ({ groups, onClose, onUpdated }) => {
                                         </span>
                                         <span className="group-count">{group.server_count || 0} servers</span>
                                         <div className="group-actions">
-                                            <button type="button"
+                                            <Button variant="unstyled" type="button"
                                                 className="btn-icon"
                                                 onClick={() => setEditingGroup(group.id)}
                                                 title={t('common.actions.edit', 'Edit')}
                                             >
                                                 <EditIcon />
-                                            </button>
-                                            <button type="button"
+                                            </Button>
+                                            <Button variant="unstyled" type="button"
                                                 className="btn-icon danger"
                                                 onClick={() => handleDeleteGroup(group.id)}
                                                 title={t('common.actions.delete', 'Delete')}
                                             >
                                                 <TrashIcon />
-                                            </button>
+                                            </Button>
                                         </div>
                                     </>
                                 )}

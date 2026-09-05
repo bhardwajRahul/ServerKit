@@ -397,6 +397,8 @@
 }
 
 .dom-specs {
+    &__value { margin-top: $space-2; }
+
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: $space-3;
@@ -431,18 +433,6 @@
         color: $text-secondary;
 
         strong { color: $text-primary; }
-    }
-}
-
-.checkbox-label {
-    @include flex-start();
-    gap: $space-2;
-    cursor: pointer;
-
-    input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
-        accent-color: $accent-primary;
     }
 }
 

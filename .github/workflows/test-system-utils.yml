@@ -16,8 +16,8 @@ on:
       - 'backend/tests/test_utils_system*.py'
 
 # The mocked `unit-tests` job that used to lead this file was removed: it ran
-# `pytest tests/test_utils_system.py` (44 tests), and Backend CI's bare
-# `pytest -v` already collects that exact file — there is no pytest.ini,
+# `pytest tests/test_utils_system.py`, and Backend CI's
+# `pytest tests -v` already collects that exact file — there is no pytest.ini,
 # addopts, or collect_ignore narrowing it. What is left here is the part
 # Backend CI genuinely cannot do: exercise the package-manager detection
 # against real apt/dnf inside real distro images.

@@ -3,7 +3,7 @@ import {
     Copy, Download, Eye, EyeOff, History, Pencil, Plus, Trash2, Upload, Variable,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,6 +70,7 @@ const ENV_VIEWS = [
 const EnvironmentVariables = ({ appId }) => {
     const { t } = useTranslation();
     const toast = useToast();
+    const toastError = toast.error;
     const { confirm } = useConfirm();
     const { copy } = useClipboard();
     const [envVars, setEnvVars] = useState([]);
@@ -110,12 +111,7 @@ const EnvironmentVariables = ({ appId }) => {
 
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        loadEnvVars();
-        loadComposeServices();
-    }, [appId]);
-
-    async function loadComposeServices() {
+    const loadComposeServices = useCallback(async () => {
         try {
             const data = await api.getComposeServices(appId);
             setComposeServices(data.services || []);
@@ -123,20 +119,26 @@ const EnvironmentVariables = ({ appId }) => {
             // Non-compose apps or errors: keep single-container UX (no selector).
             setComposeServices([]);
         }
-    }
+    }, [appId]);
 
-    async function loadEnvVars() {
+    const loadEnvVars = useCallback(async () => {
         try {
             setLoading(true);
             const data = await api.getEnvVars(appId);
             setEnvVars(data.env_vars || []);
         } catch (err) {
-            toast.error(t('app.environmentVariables.failedToLoadEnvironmentVariables', 'Failed to load environment variables'));
+            toastError(t('app.environmentVariables.failedToLoadEnvironmentVariables', 'Failed to load environment variables'));
             console.error('Failed to load env vars:', err);
         } finally {
             setLoading(false);
         }
-    }
+    }, [appId, t, toastError]);
+
+    useEffect(() => {
+        loadEnvVars();
+        loadComposeServices();
+    }, [loadEnvVars, loadComposeServices]);
+
 
     function openAddModal() {
         setNewKey('');
@@ -250,7 +252,7 @@ const EnvironmentVariables = ({ appId }) => {
             const data = await api.exportEnvFile(appId, includeSecrets);
             downloadBlob(data.content, data.filename || 'app.env');
             toast.success(t('app.environmentVariables.environmentFileExported', 'Environment file exported'));
-        } catch (err) {
+        } catch {
             toast.error(t('app.environmentVariables.failedToExport', 'Failed to export'));
         }
     }
@@ -291,7 +293,7 @@ const EnvironmentVariables = ({ appId }) => {
             const data = await api.getEnvVarHistory(appId);
             setHistory(data.history || []);
             setShowHistoryModal(true);
-        } catch (err) {
+        } catch {
             toast.error(t('app.environmentVariables.failedToLoadHistory', 'Failed to load history'));
         }
     }
@@ -312,7 +314,7 @@ const EnvironmentVariables = ({ appId }) => {
             await api.clearEnvVars(appId);
             toast.success(t('app.environmentVariables.allEnvironmentVariablesCleared', 'All environment variables cleared'));
             loadEnvVars();
-        } catch (err) {
+        } catch {
             toast.error(t('app.environmentVariables.failedToClear', 'Failed to clear'));
         }
     }
@@ -437,38 +439,38 @@ const EnvironmentVariables = ({ appId }) => {
             cellClassName: 'actions-cell',
             render: (ev) => (
                 <>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-icon"
                         onClick={() => toggleShowValue(ev.id)}
                         title={showValues[ev.id] ? t('app.environmentVariables.hideValue', 'Hide value') : t('app.environmentVariables.showValue', 'Show value')}
                     >
                         {showValues[ev.id] ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-icon"
                         onClick={() => copy(ev.value)}
                         title={t('app.environmentVariables.copyValue', 'Copy value')}
                     >
                         <Copy size={16} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-icon"
                         onClick={() => startEditing(ev)}
                         title={t('common.actions.edit', 'Edit')}
                     >
                         <Pencil size={16} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         className="btn-icon btn-danger"
                         onClick={() => handleDelete(ev.key)}
                         title={t('common.actions.delete', 'Delete')}
                     >
                         <Trash2 size={16} />
-                    </button>
+                    </Button>
                 </>
             ),
         },

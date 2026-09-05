@@ -6,13 +6,14 @@ import {
 import api from '../../services/api';
 import { Drawer, SearchField } from '@/components/ds';
 import EmptyState from '../EmptyState';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import EngineGlyph from './EngineGlyph';
 import { useTranslation } from 'react-i18next';
 import {
     engineInstanceKey, engineLocation, engineMeta, engineTreeStatus, familiesOf,
     formatMemory,
 } from './engineHelpers';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // "Add a database engine" — the browse half of the install flow.
 //
@@ -80,7 +81,7 @@ function EngineCard({ entry, onPick }) {
 
     return (
         <li className="dbx-engine-card">
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="dbx-engine-card__hit"
                 onClick={() => onPick(entry)}
@@ -106,7 +107,7 @@ function EngineCard({ entry, onPick }) {
                         {entry.installed_count > 0 ? 'Add another' : 'Install'}
                     </span>
                 </span>
-            </button>
+            </SharedButton>
         </li>
     );
 }
@@ -198,16 +199,16 @@ export default function EngineCatalogDrawer({
                     />
                     {families.length > 0 && (
                         <div className="dbx-cat-chips" role="group" aria-label={t('app.engineCatalogDrawer.filterByFamily', 'Filter by family')}>
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className={`dbx-cat-chip${family ? '' : ' is-on'}`}
                                 onClick={() => setFamily(null)}
                                 aria-pressed={!family}
                             >
                                 {t('common.labels.all', 'All')}
-                            </button>
+                            </SharedButton>
                             {families.map((f) => (
-                                <button
+                                <SharedButton variant="unstyled"
                                     key={f}
                                     type="button"
                                     className={`dbx-cat-chip${family === f ? ' is-on' : ''}`}
@@ -215,7 +216,7 @@ export default function EngineCatalogDrawer({
                                     aria-pressed={family === f}
                                 >
                                     {f}
-                                </button>
+                                </SharedButton>
                             ))}
                         </div>
                     )}
@@ -266,7 +267,7 @@ export default function EngineCatalogDrawer({
                 </div>
 
                 <footer className="dbx-drawer__foot dbx-drawer__foot--split">
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="dbx-inline-link"
                         onClick={syncRepos}
@@ -274,7 +275,7 @@ export default function EngineCatalogDrawer({
                     >
                         <RefreshCw size={13} className={syncing ? 'dbx-spin' : undefined} aria-hidden="true" />
                         {syncing ? 'Syncing…' : 'Sync template repositories'}
-                    </button>
+                    </SharedButton>
                     <Link
                         className="dbx-inline-link"
                         to="/templates"

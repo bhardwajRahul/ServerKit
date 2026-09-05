@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "measured_at_utc": "2026-09-05T18:41:48.234988+00:00",
+  "source_revision": "d67e5d07d0c8027d7611048ac74b371db43cd7d1",
+  "measured_source_has_uncommitted_changes": false,
+  "measured_source_sha256": "4e6556b3e881b20b53caf0e0c9d23956da514d95e0e6ec9a1bf43ffe0546a8b8",
+  "scope": "Git-tracked core API Python declarations and root-level bundled app YAML templates; excludes extensions, dependencies and generated/install copies.",
+  "python_version": "3.11.7",
+  "platform": "Windows",
+  "core_route_declarations": 1212,
+  "core_blueprint_declarations": 104,
+  "explicit_method_route_pairs_excluding_head_options": 1216,
+  "route_declarations_with_dynamic_methods": 0,
+  "core_api_source_files": 111,
+  "bundled_app_templates": 118,
+  "backend_tests_clean_collected": 5089,
+  "collection_scope": "backend/tests, SERVERKIT_CLEAN_COLLECT=1; collected cases, not passed tests",
+  "runtime_memory_bytes": null,
+  "container_image_bytes": null
+}

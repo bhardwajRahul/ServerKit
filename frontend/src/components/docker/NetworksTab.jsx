@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import EmptyState from '../EmptyState';
 import Modal from '@/components/Modal';
@@ -241,14 +241,14 @@ const NetworksTab = ({ onStatsChange }) => {
                             <Lock size={11} /> {t('common.labels.system', 'System')}
                         </span>
                     ) : (
-                        <button
+                        <Button variant="unstyled"
                             type="button"
                             className="dx-row-action is-danger"
                             onClick={() => handleRemove(network)}
                             title={t('app.networksTab.removeNetwork2', 'Remove network')}
                         >
                             <Trash2 size={13} />
-                        </button>
+                        </Button>
                     )}
                 </div>
             ),

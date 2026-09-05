@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Play, History, Download, Eraser, Lock, Unlock, Clock } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { runQuery, connKey } from './dbAdapter';
 import ResultsGrid from './ResultsGrid';
 import SqlEditor from './SqlEditor';
 import { downloadBlob } from '@/utils/downloadBlob';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const HISTORY_KEY = 'serverkit_query_history';
 const MAX_HISTORY = 50;
@@ -116,7 +117,7 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
     return (
         <div className="dbx-console">
             <div className="dbx-console-toolbar">
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="dbx-run"
                     onClick={execute}
@@ -126,10 +127,10 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                     <Play size={14} aria-hidden="true" />
                     {loading ? 'Running…' : 'Run'}
                     <kbd>{MOD_KEY} ↵</kbd>
-                </button>
+                </SharedButton>
 
                 {isAdmin && (
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className={`dbx-toggle ${readonly ? '' : 'is-write'}`}
                         onClick={() => setReadonly((r) => !r)}
@@ -138,25 +139,25 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                     >
                         {readonly ? <Lock size={13} aria-hidden="true" /> : <Unlock size={13} aria-hidden="true" />}
                         {readonly ? 'Read-only' : 'Writes on'}
-                    </button>
+                    </SharedButton>
                 )}
 
                 <div className="dbx-console-toolbar-spacer" />
 
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className={`dbx-chip ${showHistory ? 'is-active' : ''}`}
                     onClick={() => setShowHistory((s) => !s)}
                     aria-pressed={showHistory}
                 >
                     <History size={14} aria-hidden="true" /> {t('app.consoleTab.history', 'History')}
-                </button>
-                <button type="button" className="dbx-chip" onClick={() => { setQuery(''); editorRef.current?.focus(); }}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" className="dbx-chip" onClick={() => { setQuery(''); editorRef.current?.focus(); }}>
                     <Eraser size={14} aria-hidden="true" /> {t('common.actions.clear', 'Clear')}
-                </button>
-                <button type="button" className="dbx-chip" onClick={exportCsv} disabled={!results?.rows?.length}>
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button" className="dbx-chip" onClick={exportCsv} disabled={!results?.rows?.length}>
                     <Download size={14} aria-hidden="true" /> {t('app.consoleTab.export', 'Export')}
-                </button>
+                </SharedButton>
             </div>
 
             <div className="dbx-console-split">
@@ -185,7 +186,7 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                             <ul>
                                 {history.map((item, idx) => (
                                     <li key={idx}>
-                                        <button
+                                        <SharedButton variant="unstyled"
                                             type="button"
                                             onClick={() => { setQuery(item.query); setShowHistory(false); editorRef.current?.focus(); }}
                                         >
@@ -194,7 +195,7 @@ export default function ConsoleTab({ conn, tabId, active, isAdmin, initialQuery 
                                                 <Clock size={11} aria-hidden="true" />
                                                 {new Date(item.timestamp).toLocaleString()}
                                             </span>
-                                        </button>
+                                        </SharedButton>
                                     </li>
                                 ))}
                             </ul>

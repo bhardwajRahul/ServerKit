@@ -5,7 +5,7 @@ import {
     CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { DataTable, DataTableFooter, Pill } from '@/components/ds';
 import { CHART_COLORS, METRIC_LABELS } from './fleetMetrics';

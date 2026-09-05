@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import EmptyState from '../EmptyState';
@@ -38,11 +38,7 @@ const PackagesTab = ({ appId }) => {
     const [installing, setInstalling] = useState(false);
     const [newPackage, setNewPackage] = useState('');
 
-    useEffect(() => {
-        loadPackages();
-    }, [appId]);
-
-    async function loadPackages() {
+    const loadPackages = useCallback(async () => {
         try {
             const data = await api.getPythonPackages(appId);
             setPackages(data.packages || []);
@@ -51,7 +47,11 @@ const PackagesTab = ({ appId }) => {
         } finally {
             setLoading(false);
         }
-    }
+    }, [appId]);
+
+    useEffect(() => {
+        loadPackages();
+    }, [loadPackages]);
 
     async function handleInstall(e) {
         e.preventDefault();
@@ -73,7 +73,7 @@ const PackagesTab = ({ appId }) => {
         try {
             await api.freezePythonRequirements(appId);
             toast.success(t('app.packagesTab.requirementsTxtUpdated', 'requirements.txt updated'));
-        } catch (err) {
+        } catch {
             toast.error(t('app.packagesTab.failedToFreezeRequirements', 'Failed to freeze requirements'));
         }
     }

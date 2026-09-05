@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import api from '../../services/api';
 import useSettingFocus from '../../hooks/useSettingFocus';
 import TwoFactorPolicyCard from './TwoFactorPolicyCard';
@@ -30,7 +30,7 @@ const LinkedAccounts = ({ register }) => {
         try {
             const data = await api.getSSOIdentities();
             setIdentities(data.identities || []);
-        } catch (err) {
+        } catch {
             // SSO may not be configured; silently handle
         } finally {
             setLoading(false);
@@ -176,7 +176,10 @@ const SecuritySettingsTab = () => {
         setLoading(true);
 
         try {
-            await updateUser({ password: formData.newPassword });
+            await updateUser({
+                password: formData.newPassword,
+                current_password: formData.currentPassword,
+            });
             setMessage({ type: 'success', text: 'Password changed successfully' });
             setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err) {

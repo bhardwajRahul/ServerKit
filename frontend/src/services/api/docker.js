@@ -15,7 +15,7 @@ export async function getDockerDiskUsage() {
 
 // Containers
 export async function getContainers(all = true) {
-    return this.request(`/docker/containers?all=${all}`);
+    return this.request(`/docker/containers?all=${encodeURIComponent(all)}`);
 }
 
 export async function getContainer(containerId) {

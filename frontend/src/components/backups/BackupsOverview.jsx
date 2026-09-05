@@ -1,3 +1,5 @@
+import { Button } from '@/components/ui/button';
+import { nextFire, untilLabel } from '@/utils/backupSchedule';
 import { useState, useEffect, useMemo } from 'react';
 import {
     AlertTriangle, Archive, ChevronRight, Cloud, Database, Globe, HardDrive,
@@ -55,46 +57,6 @@ function formatDuration(seconds) {
     return s ? `${m}m ${s}s` : `${m}m`;
 }
 
-// "in 1h 12m" / "in 3d" — the shape the mock's Next-scheduled tile uses.
-function untilLabel(date) {
-    const ms = date.getTime() - Date.now();
-    if (ms <= 0) return 'due now';
-    const mins = Math.round(ms / 60000);
-    if (mins < 60) return `in ${mins}m`;
-    const h = Math.floor(mins / 60);
-    if (h < 24) return `in ${h}h ${mins % 60}m`;
-    return `in ${Math.round(h / 24)}d`;
-}
-
-// Next fire of a legacy schedule row ({ schedule_time: '02:00', days: [...] }).
-// Deliberately reads the same list the Schedules tab renders rather than
-// parsing policy crons — the number on the tile then matches the rows you'd
-// click through to. Returns null for anything it can't place.
-const DAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
-
-function nextFire(schedule) {
-    const [hh, mm] = String(schedule.schedule_time || '').split(':').map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-
-    const days = Array.isArray(schedule.days) ? schedule.days : ['daily'];
-    const daily = days.length === 0 || days.includes('daily');
-    const wanted = daily
-        ? null
-        : new Set(days.map((d) => DAY_INDEX[String(d).slice(0, 3).toLowerCase()]).filter((n) => n != null));
-    if (!daily && (!wanted || wanted.size === 0)) return null;
-
-    // Walk forward a week at most; the first slot that is still in the future
-    // on an allowed weekday wins.
-    for (let offset = 0; offset <= 7; offset += 1) {
-        const candidate = new Date();
-        candidate.setDate(candidate.getDate() + offset);
-        candidate.setHours(hh, mm, 0, 0);
-        if (candidate.getTime() <= Date.now()) continue;
-        if (daily || wanted.has(candidate.getDay())) return candidate;
-    }
-    return null;
-}
-
 // DataTable columns for the "Latest snapshots" digest. The hand-rolled table
 // had no thead; the shared primitive always renders one, so the cells keep
 // their exact markup (.sk-cell-name, .bk-ico, .sk-cell-sub) and the columns
@@ -148,6 +110,7 @@ export default function BackupsOverview({
     stats, storageConfig, costSummary, schedules = [], backups = [], onGo,
 }) {
     const { t } = useTranslation();
+    const now = new Date();
     const [policies, setPolicies] = useState(null);
     const [runs, setRuns] = useState(null);
 
@@ -283,14 +246,14 @@ export default function BackupsOverview({
         return { rows, peak, count: rows.length };
     }, [stats, storageConfig, costSummary]);
 
-    const nextScheduled = useMemo(() => {
+    const nextScheduled = (() => {
         const upcoming = (schedules || [])
             .filter((s) => s.enabled !== false)
             .map((s) => ({ schedule: s, at: nextFire(s) }))
             .filter((x) => x.at)
             .sort((a, b) => a.at - b.at);
         return upcoming[0] || null;
-    }, [schedules]);
+    })();
 
     const totalBytes = (stats?.total_size || 0) + (stats?.remote_size || 0);
     const latest = events.slice(0, 5);
@@ -332,14 +295,14 @@ export default function BackupsOverview({
                 <MetricCard
                     tone="violet"
                     icon={<Timer size={16} />}
-                    value={nextScheduled ? untilLabel(nextScheduled.at) : 'Not set'}
+                    value={nextScheduled ? untilLabel(nextScheduled.at, now) : 'Not set'}
                     label={t('app.backupsOverview.nextScheduled', 'Next scheduled')}
                 >
                     <div className="sk-kpi__sub">
                         <span>
                             {nextScheduled
-                                ? `${nextScheduled.schedule.name || 'schedule'} · ${nextScheduled.schedule.schedule_time}`
-                                : 'no enabled schedules'}
+                                ? `${nextScheduled.schedule.name || 'schedule'} · ${[nextScheduled.schedule.schedule_time, nextScheduled.schedule.timezone].filter(Boolean).join(' ')}`
+                                : t('app.backupsOverview.noScheduledRun', 'no scheduled run reported')}
                         </span>
                     </div>
                 </MetricCard>
@@ -389,9 +352,9 @@ export default function BackupsOverview({
                 <section className="bk-panel">
                     <div className="bk-panel__head">
                         <h3>{t('app.backupsOverview.recentActivity', 'Recent activity')}</h3>
-                        <button type="button" className="bk-link" onClick={() => onGo('snapshots')}>
+                        <Button variant="unstyled" type="button" className="bk-link" onClick={() => onGo('snapshots')}>
                             {t('app.backupsOverview.allSnapshots', 'All snapshots')} <ChevronRight size={14} />
-                        </button>
+                        </Button>
                     </div>
                     {events.length === 0 ? (
                         <p className="bk-hint">{t('app.backupsOverview.nothingHasRunYetTheFirst', 'Nothing has run yet — the first backup will show up here.')}</p>
@@ -427,9 +390,9 @@ export default function BackupsOverview({
                 <section className="bk-panel">
                     <div className="bk-panel__head">
                         <h3>{t('app.backupsOverview.storageDestinations', 'Storage destinations')}</h3>
-                        <button type="button" className="bk-link" onClick={() => onGo('storage')}>
+                        <Button variant="unstyled" type="button" className="bk-link" onClick={() => onGo('storage')}>
                             {t('app.backupsOverview.manage', 'Manage')} <ChevronRight size={14} />
-                        </button>
+                        </Button>
                     </div>
                     {destinations.rows.map((row) => (
                         <div key={row.key} className="bk-dest__row">

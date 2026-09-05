@@ -140,9 +140,6 @@
 .text-red-500 { color: $danger; }
 .text-yellow-600 { color: $warning; }
 .text-yellow-700 { color: $warning; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-muted { color: $text-tertiary; }
@@ -171,7 +168,6 @@
 .block { display: block; }
 .inline-flex { display: inline-flex; }
 .hidden { display: none; }
-.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .whitespace-nowrap { white-space: nowrap; }
 .overflow-hidden { overflow: hidden; }
 .overflow-y-auto { overflow-y: auto; }
@@ -288,8 +284,6 @@
 .text-muted-foreground { color: $text-tertiary; }
 .text-accent-foreground { color: $text-primary; }
 .text-popover-foreground { color: $text-primary; }
-.text-secondary { color: $text-secondary; }
-.text-tertiary { color: $text-tertiary; }
 .text-destructive { color: $danger; }
 .text-yellow-400 { color: $warning; }
 .text-blue-400 { color: $accent-primary; }

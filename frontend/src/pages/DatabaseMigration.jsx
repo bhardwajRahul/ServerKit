@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth.js';
 import api from '../services/api';
 import {
     Check, Database, AlertTriangle, ArrowRight, Download,
@@ -44,7 +44,7 @@ const DatabaseMigration = () => {
         if (!needsMigration && migrationStatus && !migrationStatus.needs_migration) {
             navigate('/');
         }
-    }, [needsMigration, migrationStatus]);
+    }, [needsMigration, migrationStatus, navigate]);
 
     async function loadMigrationStatus() {
         try {
@@ -192,7 +192,7 @@ const DatabaseMigration = () => {
                                             : `Latest ${shownMigrations.length} of ${pendingMigrations.length} changes`}
                                     </span>
                                     {pendingMigrations.length > MIGRATION_PREVIEW_COUNT && (
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className="migration-list-toggle"
                                             onClick={() => setShowAllMigrations(v => !v)}
@@ -200,7 +200,7 @@ const DatabaseMigration = () => {
                                             {showAllMigrations
                                                 ? 'Show less'
                                                 : `Show all ${pendingMigrations.length}`}
-                                        </button>
+                                        </Button>
                                     )}
                                 </div>
                                 {/* Scrolls within itself so Continue stays reachable no matter

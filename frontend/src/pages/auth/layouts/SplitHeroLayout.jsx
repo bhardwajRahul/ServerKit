@@ -1,5 +1,5 @@
 import ServerKitLogo from '../../../components/ServerKitLogo';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../contexts/useAuth.js';
 
 // Split auth layout: a branded hero panel beside the form card. The hero is
 // hidden on small screens (the card just centers), so it stays usable on mobile.

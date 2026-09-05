@@ -88,9 +88,8 @@ class _FakeReq:
 
 
 class TestSubscribeDeployAuth:
-    """The socketio test client is unusable on this Flask/Werkzeug pairing
-    (`ctx.session` became read-only), so exercise the handler's auth guard
-    directly by faking the socket context (request.sid / emit / join_room)."""
+    """Exercise handler gates directly, with the same persisted user, session
+    claims and resource checks as a socket authenticated at connect time."""
 
     def _patch(self, monkeypatch, sid):
         import app.sockets as sk
@@ -100,6 +99,11 @@ class TestSubscribeDeployAuth:
         monkeypatch.setattr(sk, 'request', _FakeReq(sid))
         return sk, emitted, joined
 
+    def _authenticate(self, sk, sid, auth_headers):
+        from flask_jwt_extended import decode_token
+        claims = decode_token(auth_headers['Authorization'].removeprefix('Bearer '))
+        sk.connected_clients[sid] = {'user_id': int(claims['sub']), 'role': 'admin', 'claims': claims}
+
     def test_unauthenticated_join_rejected(self, app, monkeypatch):
         sk, emitted, joined = self._patch(monkeypatch, 'sid-unauth')
         sk.connected_clients.pop('sid-unauth', None)  # not authenticated
@@ -107,19 +111,30 @@ class TestSubscribeDeployAuth:
         assert joined == []  # never joined a room
         assert any(a and a[0] == 'error' for a, k in emitted)
 
-    def test_authenticated_join_succeeds(self, app, monkeypatch):
+    def test_authenticated_join_succeeds(self, app, auth_headers, monkeypatch):
         sk, emitted, joined = self._patch(monkeypatch, 'sid-auth')
-        sk.connected_clients['sid-auth'] = {'user_id': 1, 'role': 'admin'}
+        job = _make_job()
+        self._authenticate(sk, 'sid-auth', auth_headers)
         try:
-            sk.CHANNELS['deploy']['subscribe']({'job_id': 'job-xyz'})
+            sk.CHANNELS['deploy']['subscribe']({'job_id': job.id})
         finally:
             sk.connected_clients.pop('sid-auth', None)
-        assert 'deploy_job-xyz' in joined
+        assert f'deploy_{job.id}' in joined
         assert any(a and a[0] == 'subscribed' for a, k in emitted)
 
-    def test_missing_job_id_rejected(self, app, monkeypatch):
+    def test_authenticated_unknown_job_is_rejected(self, app, auth_headers, monkeypatch):
+        sk, emitted, joined = self._patch(monkeypatch, 'sid-unknown-job')
+        self._authenticate(sk, 'sid-unknown-job', auth_headers)
+        try:
+            sk.CHANNELS['deploy']['subscribe']({'job_id': 'no-such-job'})
+        finally:
+            sk.connected_clients.pop('sid-unknown-job', None)
+        assert joined == []
+        assert any(a and a[0] == 'error' for a, k in emitted)
+
+    def test_missing_job_id_rejected(self, app, auth_headers, monkeypatch):
         sk, emitted, joined = self._patch(monkeypatch, 'sid-auth2')
-        sk.connected_clients['sid-auth2'] = {'user_id': 1, 'role': 'admin'}
+        self._authenticate(sk, 'sid-auth2', auth_headers)
         try:
             sk.CHANNELS['deploy']['subscribe']({})
         finally:

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 import { queryClient, serializeQueryKey } from '../services/queryClient';
 import { usePolling } from './usePolling';
 

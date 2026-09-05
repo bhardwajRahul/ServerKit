@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Copy, Plus, Trash2, UserRound } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { copyToClipboard } from '@/utils/clipboard';
@@ -31,7 +31,7 @@ export default function DbUsersPanel({ databaseId }) {
         } finally {
             setLoading(false);
         }
-    }, [databaseId, toast]);
+    }, [databaseId, t, toast]);
 
     useEffect(() => { load(); }, [load]);
 

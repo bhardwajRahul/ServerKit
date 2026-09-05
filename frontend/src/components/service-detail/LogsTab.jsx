@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useCallback, useState, useEffect, useRef, useMemo  } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { logsToText } from '@/utils/logText';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useLogsDrawer } from '../../contexts/LogsDrawerContext';
 import DeploymentJobProgress from '../DeploymentJobProgress';
 import { Button } from '@/components/ui/button';
@@ -41,9 +41,28 @@ const LogsTab = ({ app }) => {
     const isDockerApp = app.app_type === 'docker';
     const isPythonApp = ['flask', 'django'].includes(app.app_type);
 
+    const loadLogs = useCallback(async () => {
+        try {
+            let data;
+            if (isDockerApp) {
+                data = await api.getDockerAppLogs(app.id, lineCount);
+            } else if (isPythonApp) {
+                data = await api.getPythonAppLogs(app.id, lineCount);
+            } else {
+                data = { logs: 'Logs not available for this app type.' };
+            }
+            setRawLogs(logsToText(data) || 'No logs available');
+        } catch (err) {
+            console.error('Failed to load logs:', err);
+            setRawLogs('Failed to load logs');
+        } finally {
+            setLoading(false);
+        }
+    }, [app.id, lineCount, isDockerApp, isPythonApp]);
+
     useEffect(() => {
         loadLogs();
-    }, [app.id, lineCount]);
+    }, [loadLogs]);
 
     // No explicit ?deploy_job= param — check whether a deployment job is
     // currently pending/running for this app so a mid-deploy visit to the
@@ -71,24 +90,6 @@ const LogsTab = ({ app }) => {
         }
     }, [rawLogs, autoScroll]);
 
-    async function loadLogs() {
-        try {
-            let data;
-            if (isDockerApp) {
-                data = await api.getDockerAppLogs(app.id, lineCount);
-            } else if (isPythonApp) {
-                data = await api.getPythonAppLogs(app.id, lineCount);
-            } else {
-                data = { logs: 'Logs not available for this app type.' };
-            }
-            setRawLogs(logsToText(data) || 'No logs available');
-        } catch (err) {
-            console.error('Failed to load logs:', err);
-            setRawLogs('Failed to load logs');
-        } finally {
-            setLoading(false);
-        }
-    }
 
     function handleDeploySuccess() {
         setDeployJobId(null);

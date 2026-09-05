@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { KeyRound } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '@/hooks/useConfirm';
 import EmptyState from '@/components/EmptyState';
 import Modal from '../Modal';
@@ -16,6 +16,7 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
 
 // What the Comment cell renders when a key carries none. It has to be a real
 // value, not '': `ruleIsArmed` drops any rule whose value is empty, so
@@ -226,11 +227,11 @@ const SSHKeysTab = () => {
             <GridChips {...chrome.chipProps} />
 
             {loading ? (
-                <div className="card">
+                <SharedCard variant="legacy" className="card">
                     <div className="loading-sm">{t('common.loading', 'Loading…')}</div>
-                </div>
+                </SharedCard>
             ) : keys.length === 0 ? (
-                <div className="card">
+                <SharedCard variant="legacy" className="card">
                     <EmptyState
                         icon={KeyRound}
                         title={t('app.sSHKeysTab.noSshKeysConfiguredForRoot', 'No SSH keys configured for root user.')}
@@ -240,9 +241,9 @@ const SSHKeysTab = () => {
                             </Button>
                         )}
                     />
-                </div>
+                </SharedCard>
             ) : (
-                <div className="card sec-flush">
+                <SharedCard variant="legacy" className="card sec-flush">
                     <DataTable
                         columns={chrome.columns}
                         data={keys}
@@ -258,7 +259,7 @@ const SSHKeysTab = () => {
                             />
                         )}
                     />
-                </div>
+                </SharedCard>
             )}
 
             <GridFilterDrawer {...chrome.drawerProps} />

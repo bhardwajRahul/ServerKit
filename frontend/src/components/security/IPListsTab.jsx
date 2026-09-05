@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '@/hooks/useConfirm';
 import Modal from '../Modal';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useTranslation } from 'react-i18next';
 import { t } from '../../i18n/t';
+import { Card as SharedCard, CardHeader as SharedCardHeader, CardContent as SharedCardContent } from '@/components/ui/card';
 
 // Both lists have the same columns; only the accent tone and the remove
 // target differ, so one factory builds both. Two accessors per column on
@@ -246,8 +247,8 @@ const IPListsTab = () => {
         // the table lying about what you are looking at.
         const shown = applyFilters(items, chrome.cfg.filters, chrome.columns);
         return (
-        <div className="card sec-flush">
-            <div className="card-header">
+        <SharedCard variant="legacy" className="card sec-flush">
+            <SharedCardHeader variant="legacy" className="card-header">
                 {/* The view name IS the heading — there is no room for two
                     titles in a card this narrow. `label` keeps which list this
                     is inside that name, since the pair sits side by side and
@@ -271,12 +272,12 @@ const IPListsTab = () => {
                         {t('app.iPListsTab.addTo', 'Add to')} {listType}
                     </Button>
                 </div>
-            </div>
+            </SharedCardHeader>
             <GridChips {...chrome.chipProps} />
             {items.length === 0 ? (
-                <div className="card-body">
+                <SharedCardContent variant="legacy" className="card-body">
                     <p className="text-muted">{t('app.iPListsTab.noIpsIn', 'No IPs in')} {listType}.</p>
-                </div>
+                </SharedCardContent>
             ) : (
                 <DataTable
                     columns={chrome.columns}
@@ -295,7 +296,7 @@ const IPListsTab = () => {
                 />
             )}
             <GridFilterDrawer {...chrome.drawerProps} />
-        </div>
+        </SharedCard>
         );
     };
 

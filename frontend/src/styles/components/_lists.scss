@@ -9,30 +9,88 @@
 
 // Info list (key-value pairs)
 .info-list {
-    @include flex-column-gap($space-3);
+@include flex-column-gap($space-3);
+
+    .info-item {
+        @include flex-between();
+        padding: $space-2 0;
+        border-bottom: 1px solid $border-subtle;
+
+        &:last-child { border-bottom: none; }
+
+        .info-label {
+            font-size: $font-size-sm;
+            color: $text-tertiary;
+        }
+
+        .info-value {
+            font-size: $font-size-sm;
+            font-weight: $font-weight-medium;
+            color: $text-primary;
+        }
+    }
 }
 
 .info-item {
     @include flex-between();
     padding: $space-2 0;
     border-bottom: 1px solid $border-subtle;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     &:last-child {
         border-bottom: none;
     }
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    &:last-child {
+        border-bottom: none;
+    }
+
+    .info-label {
+        color: $text-secondary;
+    }
+
+    .info-value {
+        font-weight: 500;
+    }
+
+    .info-label {
+        font-size: $font-size-sm;
+        color: $text-tertiary;
+    }
+
+    .info-value {
+        font-size: $font-size-sm;
+        color: $text-primary;
+
+        &.mono {
+            font-family: $font-mono;
+            font-size: $font-size-xs;
+        }
+    }
 }
 
 .info-label {
-    color: $text-tertiary;
-    font-size: $font-size-sm + 1;
+    font-size: $font-size-sm;
+    color: $text-secondary;
 }
 
 .info-value {
-    color: $text-primary;
+    font-size: $font-size-sm;
     font-weight: $font-weight-medium;
+    color: $text-primary;
 
     &.mono {
         @include mono-text();
+    }
+
+    &.mono {
+        font-family: $font-mono;
     }
 }
 
@@ -57,17 +115,6 @@
 }
 
 // Environment variables list
-.env-list {
-    @include flex-column-gap($space-2);
-}
-
-.env-item {
-    display: flex;
-    align-items: center;
-    gap: $space-4;
-    padding: $space-3 $space-4;
-    @include card-base();
-}
 
 .env-key {
     font-weight: $font-weight-semibold;

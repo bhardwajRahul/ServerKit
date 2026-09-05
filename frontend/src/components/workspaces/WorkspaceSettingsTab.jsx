@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Settings, PanelLeft, Check, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { SIDEBAR_ITEMS } from '../sidebarItems';
 import api from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Card as SharedCard } from '@/components/ui/card';
 
 const SETTINGS_GROUPS = [
     {
@@ -38,7 +39,7 @@ const GeneralSection = ({ form, setForm }) => {
     return (
         <div className="ws-settings__section">
             <h3 className="ws-settings__section-title">{t('app.workspaceSettingsTab.general', 'General')}</h3>
-            <div className="card settings-section">
+            <SharedCard variant="legacy" className="card settings-section">
                 <div className="form-group">
                     <label>{t('common.labels.name', 'Name')}</label>
                     <Input
@@ -84,7 +85,7 @@ const GeneralSection = ({ form, setForm }) => {
                     />
                     <span className="form-hint">{t('app.workspaceSettingsTab.recolorsThePanelForAnyoneViewing', 'Recolors the panel for anyone viewing this workspace.')}</span>
                 </div>
-            </div>
+            </SharedCard>
         </div>
     );
 };
@@ -94,7 +95,7 @@ const ManagementSection = ({ ws, isCurrent, onSetActive, onArchive, onRestore, o
     return (
         <div className="ws-settings__section">
             <h3 className="ws-settings__section-title">{t('app.workspaceSettingsTab.workspaceManagement', 'Workspace management')}</h3>
-            <div className="card settings-section ws-settings__management">
+            <SharedCard variant="legacy" className="card settings-section ws-settings__management">
                 <p className="form-hint">{t('app.workspaceSettingsTab.theseActionsTakeEffectImmediatelyAnd', 'These actions take effect immediately and cannot be undone from this screen.')}</p>
                 <div className="ws-settings__actions-grid">
                     {!isCurrent && ws.status === 'active' && (
@@ -118,7 +119,7 @@ const ManagementSection = ({ ws, isCurrent, onSetActive, onArchive, onRestore, o
                         </Button>
                     )}
                 </div>
-            </div>
+            </SharedCard>
         </div>
     );
 };
@@ -129,7 +130,7 @@ const NavigationPermissionsSection = ({ form, setForm }) => {
     return (
         <div className="ws-settings__section">
             <h3 className="ws-settings__section-title">{t('app.workspaceSettingsTab.navigationPermissions', 'Navigation Permissions')}</h3>
-            <div className="card settings-section">
+            <SharedCard variant="legacy" className="card settings-section">
                 <p className="form-hint">{t('app.workspaceSettingsTab.limitWhichSidebarItemsEachWorkspace', 'Limit which sidebar items each workspace role can see. Empty = no restrictions.')}</p>
                 {roles.map((role) => (
                     <div key={role} className="ws-nav-role">
@@ -155,7 +156,7 @@ const NavigationPermissionsSection = ({ form, setForm }) => {
                         </div>
                     </div>
                 ))}
-            </div>
+            </SharedCard>
         </div>
     );
 };
@@ -213,7 +214,7 @@ const WorkspaceSettingsTab = ({ wsId, ws, onUpdate, user, isCurrent, onSetActive
                     <div className="ws-settings__group" key={g.label}>
                         <div className="ws-settings__grouplabel">{g.label}</div>
                         {g.items.map((s) => (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 key={s.id}
                                 className={`ws-settings__navitem ${section === s.id ? 'is-active' : ''}`}
@@ -221,7 +222,7 @@ const WorkspaceSettingsTab = ({ wsId, ws, onUpdate, user, isCurrent, onSetActive
                             >
                                 <s.icon size={15} />
                                 {s.label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 ))}

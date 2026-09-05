@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import useTabParam from '../hooks/useTabParam';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/useToast.js';
+import { useAuth } from '../contexts/useAuth.js';
 import { useRecordVisit } from '@/hooks/useRecordVisit';
 import FavoriteStar from '@/components/FavoriteStar';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -22,7 +22,7 @@ import WorkspaceServicesTab from '../components/workspaces/WorkspaceServicesTab'
 import WorkspaceSitesTab from '../components/workspaces/WorkspaceSitesTab';
 import WorkspaceMembersTab from '../components/workspaces/WorkspaceMembersTab';
 import WorkspaceSettingsTab from '../components/workspaces/WorkspaceSettingsTab';
-import { useWorkspace } from '../contexts/WorkspaceContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
 import { useTranslation } from 'react-i18next';
 
 const VALID_TABS = ['overview', 'servers', 'services', 'sites', 'members', 'settings'];
@@ -90,13 +90,13 @@ const WorkspaceDetail = () => {
             setApps(appData.apps || []);
             setServers(asServerList(srvData));
             setAllUsers(uData.users || []);
-        } catch (err) {
+        } catch {
             toast.error(t('app.workspaceDetail.failedToLoadWorkspace', 'Failed to load workspace'));
             setWs(null);
         } finally {
             setLoading(false);
         }
-    }, [wsId, toast, refreshActiveWorkspace]);
+    }, [wsId, refreshActiveWorkspace, toast, t]);
 
     useEffect(() => { setLoading(true); load(); }, [load]);
 
@@ -170,7 +170,7 @@ const WorkspaceDetail = () => {
             const gData = await api.getAppGrants(appObj.id);
             setGrants(gData.grants || []);
             setSharingApp(appObj);
-        } catch (err) { toast.error(t('app.workspaceDetail.failedToLoadSharing', 'Failed to load sharing')); }
+        } catch { toast.error(t('app.workspaceDetail.failedToLoadSharing', 'Failed to load sharing')); }
     };
 
     const handleGrant = async (userId) => {

@@ -10,10 +10,11 @@ import {
 import { useTableSort } from '@/hooks/useTableSort';
 import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import EmptyState from '../EmptyState';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import useSettingFocus from '../../hooks/useSettingFocus';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Revisions in this project are short descriptive slugs (e.g. 016_resource_grants),
 // so show them in full rather than truncating mid-word.
@@ -265,7 +266,7 @@ const MigrationHistoryTab = () => {
                             )}
                         </p>
                         <div className="migration-pending-actions">
-                            <button
+                            <SharedButton variant="primary"
                                 type="button"
                                 className="btn btn-primary btn-sm"
                                 onClick={runMigrations}
@@ -278,7 +279,7 @@ const MigrationHistoryTab = () => {
                                 ) : (
                                     <><Database size={14} /> {t('app.migrationHistoryTab.apply', 'Apply')} {count} migration{plural}</>
                                 )}
-                            </button>
+                            </SharedButton>
                             <label className="migration-backup-toggle">
                                 <input
                                     type="checkbox"

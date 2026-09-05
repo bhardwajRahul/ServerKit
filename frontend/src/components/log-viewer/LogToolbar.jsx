@@ -1,5 +1,6 @@
 import { Search, RefreshCw, Download, Trash2, Maximize2, Minimize2, X, ArrowDownToLine, Hash, WrapText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 export default function LogToolbar({
     searchPattern, onSearchChange, onSearchSubmit, onSearchClear,
@@ -25,9 +26,9 @@ export default function LogToolbar({
                         onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
                     />
                     {searchPattern && (
-                        <button type="button" className="lv-search-field-clear" onClick={onSearchClear} title={t('common.actions.clear', 'Clear')}>
+                        <SharedButton variant="unstyled" type="button" className="lv-search-field-clear" onClick={onSearchClear} title={t('common.actions.clear', 'Clear')}>
                             <X size={11} />
-                        </button>
+                        </SharedButton>
                     )}
                 </div>
                 <select
@@ -43,7 +44,7 @@ export default function LogToolbar({
             </div>
 
             <div className="lv-toolbar-right">
-                <button type="button"
+                <SharedButton variant="unstyled" type="button"
                     className={`lv-chip ${autoRefresh ? 'active' : ''}`}
                     onClick={onAutoRefreshToggle}
                     disabled={!canAct}
@@ -51,60 +52,60 @@ export default function LogToolbar({
                 >
                     <span className={`lv-pulse ${autoRefresh ? 'on' : ''}`} />
                     <span>{t('app.logToolbar.live', 'Live')}</span>
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className={`lv-icon-btn ${showLineNumbers ? 'active' : ''}`}
                     onClick={onToggleLineNumbers}
                     title={t('app.logToolbar.toggleLineNumbers', 'Toggle line numbers')}
                 >
                     <Hash size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className={`lv-icon-btn ${wrapLines ? 'active' : ''}`}
                     onClick={onToggleWrap}
                     title={t('app.logToolbar.toggleWordWrap', 'Toggle word wrap')}
                 >
                     <WrapText size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn"
                     onClick={onScrollToBottom}
                     disabled={!canAct}
                     title={t('app.logToolbar.jumpToEnd', 'Jump to end')}
                 >
                     <ArrowDownToLine size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn"
                     onClick={onRefresh}
                     disabled={!canAct}
                     title={t('common.actions.refresh', 'Refresh')}
                 >
                     <RefreshCw size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn"
                     onClick={onDownload}
                     disabled={!canAct}
                     title={t('common.actions.download', 'Download')}
                 >
                     <Download size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn danger"
                     onClick={onClear}
                     disabled={!canAct}
                     title={t('app.logToolbar.truncateLogFile', 'Truncate log file')}
                 >
                     <Trash2 size={13} />
-                </button>
-                <button type="button"
+                </SharedButton>
+                <SharedButton variant="unstyled" type="button"
                     className="lv-icon-btn"
                     onClick={onToggleFullscreen}
                     title={isFullscreen ? t('app.logToolbar.exitFullscreen', 'Exit fullscreen') : t('app.logToolbar.fullscreen', 'Fullscreen')}
                 >
                     {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

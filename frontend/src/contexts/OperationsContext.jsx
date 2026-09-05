@@ -22,7 +22,7 @@ import {
     reconcileOperationStatus,
 } from '../services/operations';
 import socketService from '../services/socket';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth.js';
 
 const OperationsContext = createContext(null);
 const REFRESH_MS = 6000;

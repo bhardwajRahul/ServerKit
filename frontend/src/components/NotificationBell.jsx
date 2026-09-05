@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Check, X } from 'lucide-react';
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useNotifications } from '../contexts/useNotifications.js';
 import { timeAgo } from '../utils/time';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Severity → dot color, mirroring the email/brand palette.
 const SEVERITY_DOT = {
@@ -65,7 +66,7 @@ export default function NotificationBell() {
 
     return (
         <div className="sk-notif" ref={ref}>
-            <button
+            <SharedButton variant="unstyled"
                 type="button"
                 className="sk-notif__bell"
                 onClick={toggle}
@@ -77,16 +78,16 @@ export default function NotificationBell() {
             >
                 <Bell size={16} aria-hidden="true" />
                 {unreadCount > 0 && <span className="sk-notif__badge">{badge}</span>}
-            </button>
+            </SharedButton>
 
             {open && (
                 <div className="sk-notif__panel" role="menu" aria-label={t('notifications.bell', 'Notifications')}>
                     <div className="sk-notif__head">
                         <span className="sk-notif__heading">{t('notifications.heading', 'Notifications')}</span>
                         {unreadCount > 0 && (
-                            <button type="button" className="sk-notif__markall" onClick={markAllRead}>
+                            <SharedButton variant="unstyled" type="button" className="sk-notif__markall" onClick={markAllRead}>
                                 <Check size={13} aria-hidden="true" /> {t('notifications.markAllRead', 'Mark all read')}
-                            </button>
+                            </SharedButton>
                         )}
                     </div>
 
@@ -97,7 +98,7 @@ export default function NotificationBell() {
                             items.map((item) => (
                                 item.kind === 'notice' ? (
                                     <div key={item.delivery_id} className="sk-notif__item is-notice">
-                                        <button
+                                        <SharedButton variant="unstyled"
                                             type="button"
                                             className="sk-notif__hit"
                                             onClick={() => onItemClick(item)}
@@ -114,18 +115,18 @@ export default function NotificationBell() {
                                                     <span className="sk-notif__time">{item.action_label} →</span>
                                                 )}
                                             </span>
-                                        </button>
-                                        <button
+                                        </SharedButton>
+                                        <SharedButton variant="unstyled"
                                             type="button"
                                             className="sk-notif__dismiss"
                                             onClick={() => dismissNotice && dismissNotice(item.notice_id)}
                                             aria-label={t('notifications.dismissItem', 'Dismiss {{title}}', { title: item.title })}
                                         >
                                             <X size={14} aria-hidden="true" />
-                                        </button>
+                                        </SharedButton>
                                     </div>
                                 ) : (
-                                    <button
+                                    <SharedButton variant="unstyled"
                                         key={item.delivery_id}
                                         type="button"
                                         className={`sk-notif__item${item.read ? '' : ' is-unread'}`}
@@ -144,19 +145,19 @@ export default function NotificationBell() {
                                                 {item.action_path && <span className="sk-notif__cta"> · {item.action_label || 'Open'} →</span>}
                                             </span>
                                         </span>
-                                    </button>
+                                    </SharedButton>
                                 )
                             ))
                         )}
                     </div>
 
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="sk-notif__seeall"
                         onClick={() => { setOpen(false); navigate('/notifications'); }}
                     >
                         {t('notifications.seeAll', 'See all notifications')}
-                    </button>
+                    </SharedButton>
                 </div>
             )}
         </div>

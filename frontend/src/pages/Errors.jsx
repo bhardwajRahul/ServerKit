@@ -15,8 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import { useConfirm } from '@/hooks/useConfirm';
-import { useAuth } from '../contexts/AuthContext';
-import { useToast } from '../contexts/ToastContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import { timeAgo } from '../utils/time';
 import { useTranslation } from 'react-i18next';

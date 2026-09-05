@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect  } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Rocket, CheckCircle2, XCircle, Globe, Database, ShieldCheck, ExternalLink } from 'lucide-react';
 import { servicePortUrl } from '@/utils/serviceUrl';
@@ -36,31 +36,7 @@ const OverviewTab = ({ app, deployConfig }) => {
     const isPython = ['flask', 'django'].includes(app.app_type);
 
     // Load on mount and whenever the app changes; poll on top of that.
-    useEffect(() => { loadMetrics(); }, [app.id]);
-    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
-
-    useEffect(() => {
-        // Best-effort daily rollups; hide the card when there is no data.
-        let cancelled = false;
-        api.getAppBandwidth(app.id, 90)
-            .then((data) => { if (!cancelled) setBandwidth(data); })
-            .catch(() => {});
-        return () => { cancelled = true; };
-    }, [app.id]);
-
-    useEffect(() => {
-        // Related resources (domains, DBs, backups, deploys). Member-visible.
-        let cancelled = false;
-        api.getAppRelatedResources(app.id)
-            .then((data) => { if (!cancelled) setRelated(data); })
-            // Settle to an empty result rather than staying null: null is
-            // the card's "still loading" state, so swallowing the error
-            // left it spinning forever.
-            .catch(() => { if (!cancelled) setRelated({}); });
-        return () => { cancelled = true; };
-    }, [app.id]);
-
-    async function loadMetrics() {
+    const loadMetrics = useCallback(async () => {
         try {
             if (isDocker) {
                 const data = await api.getContainers(true);
@@ -107,7 +83,32 @@ const OverviewTab = ({ app, deployConfig }) => {
         } finally {
             setMetricsLoading(false);
         }
-    }
+    }, [app.id, app.name, isDocker, isPython]);
+
+    useEffect(() => { loadMetrics(); }, [loadMetrics]);
+    usePolling(loadMetrics, METRICS_REFRESH_MS, { immediate: false });
+
+    useEffect(() => {
+        // Best-effort daily rollups; hide the card when there is no data.
+        let cancelled = false;
+        api.getAppBandwidth(app.id, 90)
+            .then((data) => { if (!cancelled) setBandwidth(data); })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [app.id]);
+
+    useEffect(() => {
+        // Related resources (domains, DBs, backups, deploys). Member-visible.
+        let cancelled = false;
+        api.getAppRelatedResources(app.id)
+            .then((data) => { if (!cancelled) setRelated(data); })
+            // Settle to an empty result rather than staying null: null is
+            // the card's "still loading" state, so swallowing the error
+            // left it spinning forever.
+            .catch(() => { if (!cancelled) setRelated({}); });
+        return () => { cancelled = true; };
+    }, [app.id]);
+
 
     // No link when a domain fronts it — the Domain row above is the one to follow.
     const portUrl = app.domain ? null : servicePortUrl(app);

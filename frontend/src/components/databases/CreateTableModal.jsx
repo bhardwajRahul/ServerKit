@@ -286,9 +286,9 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                 ? 'ServerKit could not reach any database server. Check that MySQL or PostgreSQL is running, then try again.'
                                 : 'Create a database first — the builder writes into an existing one.'}
                         </p>
-                        <button type="button" className="dbx-inline-link" onClick={load}>
+                        <Button variant="unstyled" type="button" className="dbx-inline-link" onClick={load}>
                             <RefreshCw size={13} aria-hidden="true" /> {t('app.createTableModal.tryAgain', 'Try again')}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             ) : (
@@ -413,7 +413,7 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                             </select>
                                             <ChevronDown size={12} aria-hidden="true" />
                                         </div>
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className={`dbx-cbox${c.pk ? ' is-on' : ''}`}
                                             onClick={() => setKeyCol(i)}
@@ -421,8 +421,8 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                             aria-label={t('app.createTableModal.onColumn', '{{key}} on column {{value}}', { key: words.key, value: i + 1 })}
                                         >
                                             {c.pk && <Check size={12} aria-hidden="true" />}
-                                        </button>
-                                        <button
+                                        </Button>
+                                        <Button variant="unstyled"
                                             type="button"
                                             className={`dbx-cbox${c.notNull ? ' is-on' : ''}`}
                                             onClick={() => setCol(i, 'notNull', !c.notNull)}
@@ -430,7 +430,7 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                             aria-label={t('app.createTableModal.onColumn2', '{{required}} on column {{value}}', { required: words.required, value: i + 1 })}
                                         >
                                             {c.notNull && <Check size={12} aria-hidden="true" />}
-                                        </button>
+                                        </Button>
                                         <div className="dbx-input dbx-input--sm">
                                             <input
                                                 value={c.def}
@@ -440,7 +440,7 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                                 aria-label={t('app.createTableModal.defaultForColumn', 'Default for column {{value}}', { value: i + 1 })}
                                             />
                                         </div>
-                                        <button
+                                        <Button variant="unstyled"
                                             type="button"
                                             className="dbx-icon-xs"
                                             onClick={() => removeCol(i)}
@@ -448,13 +448,13 @@ export default function CreateTableModal({ preset, engines = [], isAdmin = false
                                             aria-label={t('app.createTableModal.removeColumn', 'Remove column {{value}}', { value: i + 1 })}
                                         >
                                             <Trash2 size={13} aria-hidden="true" />
-                                        </button>
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
-                            <button type="button" className="dbx-inline-link dbx-colgrid__add" onClick={addCol}>
+                            <Button variant="unstyled" type="button" className="dbx-inline-link dbx-colgrid__add" onClick={addCol}>
                                 <Plus size={13} aria-hidden="true" /> {t('common.actions.add', 'Add')} {target?.dialect ? 'column' : 'field'}
-                            </button>
+                            </Button>
                         </div>
                         <p className="dbx-field-hint">
                             {target?.dialect ? (

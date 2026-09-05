@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { deriveWidgetTitle, getWidgetType, useWidgetTypes } from '../widgets/registry';
 import { WidgetBody } from '../widgets/renderers';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 /**
  * Modal that blows one widget up to a comfortable reading size. Escape or a
@@ -45,7 +46,7 @@ export function WidgetFullscreen({ widget, type, ctx, onClose }) {
                     <div className="skw-frame__head">
                         <span className="skw-frame__title">{title}</span>
                         <div className="skw-frame__actions">
-                            <button
+                            <SharedButton variant="unstyled"
                                 type="button"
                                 className="skw-iconbtn skw-iconbtn--bare"
                                 title={t('common.actions.close', 'Close')}
@@ -53,7 +54,7 @@ export function WidgetFullscreen({ widget, type, ctx, onClose }) {
                                 onClick={onClose}
                             >
                                 <X size={15} />
-                            </button>
+                            </SharedButton>
                         </div>
                     </div>
                     <div className="skw-frame__body">

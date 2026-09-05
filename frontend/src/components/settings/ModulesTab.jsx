@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Layers, CheckCircle, XCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import useModules from '../../hooks/useModules';
 import api from '../../services/api';
 import { Label } from '@/components/ui/label';

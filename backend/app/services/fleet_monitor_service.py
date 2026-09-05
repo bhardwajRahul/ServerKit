@@ -13,11 +13,13 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
 
 from sqlalchemy import func, and_
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models.server import Server, ServerMetrics, ServerGroup
 from app.models.metric_alert import ServerAlertThreshold, MetricAlert
 from app.services.agent_registry import agent_registry
+from app.services.server_metrics_service import latest_metrics_by_server
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +44,12 @@ class FleetMonitorService:
         if group_id:
             query = query.filter_by(group_id=group_id)
 
-        servers = query.all()
+        servers = query.options(joinedload(Server.group)).all()
+        metrics_by_server = latest_metrics_by_server(server.id for server in servers)
         result = []
 
         for server in servers:
-            latest = ServerMetrics.query.filter_by(
-                server_id=server.id
-            ).order_by(ServerMetrics.timestamp.desc()).first()
+            latest = metrics_by_server.get(server.id)
 
             result.append({
                 'id': server.id,
@@ -520,6 +521,7 @@ class FleetMonitorService:
         """Generate Prometheus exposition format metrics for all servers."""
         lines = []
         servers = Server.query.all()
+        metrics_by_server = latest_metrics_by_server(server.id for server in servers)
 
         metrics_defs = [
             ('serverkit_cpu_percent', 'CPU usage percentage', 'cpu_percent'),
@@ -533,9 +535,7 @@ class FleetMonitorService:
             lines.append(f'# TYPE {metric_name} gauge')
 
             for server in servers:
-                latest = ServerMetrics.query.filter_by(
-                    server_id=server.id
-                ).order_by(ServerMetrics.timestamp.desc()).first()
+                latest = metrics_by_server.get(server.id)
 
                 if latest:
                     val = getattr(latest, col_name)

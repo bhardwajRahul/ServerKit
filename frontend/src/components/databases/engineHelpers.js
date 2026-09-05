@@ -6,7 +6,7 @@
 // `GET /api/v1/databases/engines` returns, which is what lets a brand-new
 // engine template work with zero UI changes.
 
-import { hasBrandIcon } from '../icons/DatabaseBrands';
+import { hasBrandIcon } from '../icons/databaseBrandData';
 
 // Templates put their engine metadata in `engine`; an installed engine is an
 // Application whose template metadata was resolved onto it the same way.

@@ -87,19 +87,22 @@
 // DataTable now), but still the documented "list of pairs" block in the style
 // guide, so it keeps its own styling.
 .env-list {
-    display: flex;
-    flex-direction: column;
-    gap: $space-2;
+@include flex-column-gap($space-2);
 }
 
 .env-item {
-    // One tier brighter than the surface it sits on, so rows have depth
-    // (body < panel --surface < row --surface-2) instead of blending together.
+    display: flex;
+    align-items: center;
+    gap: $space-4;
+    @include card-base();
     background: var(--surface-2);
     border: 1px solid var(--border-soft);
     border-radius: $radius-md;
     padding: $space-3 $space-4;
     transition: border-color 0.15s, background 0.15s;
+
+    // One tier brighter than the surface it sits on, so rows have depth
+    // (body < panel --surface < row --surface-2) instead of blending together.
 
     &:hover {
         border-color: var(--border-strong);
@@ -140,30 +143,6 @@
     background: rgba($accent-primary-raw, 0.12);
     border: 1px solid rgba($accent-primary-raw, 0.22);
     white-space: nowrap;
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    background: transparent;
-    border: none;
-    border-radius: $radius-sm;
-    color: $text-tertiary;
-    cursor: pointer;
-    transition: all 0.2s;
-
-    &:hover {
-        background: $bg-hover;
-        color: $text-primary;
-    }
-
-    &.btn-danger:hover {
-        background: fade($danger-raw, 20%);
-        color: $danger;
-    }
 }
 
 // The shared EmptyState allows a single action node; an app with no variables
@@ -207,6 +186,3 @@
 }
 
 // Modal large variant
-.modal-lg {
-    max-width: 700px;
-}

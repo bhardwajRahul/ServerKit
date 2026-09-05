@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, RefreshCw, Cloud, ShieldCheck, Radio, Download, Activity } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { ProviderBrandIcon } from '../icons/ProviderBrands';
 import DdnsTokenCallout from './DdnsTokenCallout';
 import { Button } from '@/components/ui/button';

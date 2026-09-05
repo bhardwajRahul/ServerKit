@@ -5,6 +5,7 @@ import {
 import { WidgetBody } from '../widgets/renderers';
 import { deriveWidgetTitle } from '../widgets/registry';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Chrome around one placed widget: a header (drag handle + title + actions),
 // the renderer body, and — in edit mode — the bottom-right resize grip.
@@ -74,7 +75,7 @@ export function WidgetFrame({
                 {widget.type === 'logs' && <span className="skw-frame__live" aria-hidden="true" />}
                 <div className="skw-frame__actions">
                     {edit && (
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="skw-iconbtn skw-iconbtn--bare"
                             title={t('app.widgetFrame.configureWidget', 'Configure widget')}
@@ -82,9 +83,9 @@ export function WidgetFrame({
                             onClick={(event) => { event.stopPropagation(); fire('config'); }}
                         >
                             <SlidersHorizontal size={13} />
-                        </button>
+                        </SharedButton>
                     )}
-                    <button
+                    <SharedButton variant="unstyled"
                         type="button"
                         className="skw-iconbtn skw-iconbtn--bare"
                         title={t('app.widgetFrame.viewFullscreen', 'View fullscreen')}
@@ -92,9 +93,9 @@ export function WidgetFrame({
                         onClick={(event) => { event.stopPropagation(); fire('full'); }}
                     >
                         <Maximize2 size={13} />
-                    </button>
+                    </SharedButton>
                     <div className="skw-frame__menu-wrap" ref={menuRef}>
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="skw-iconbtn skw-iconbtn--bare"
                             title={t('app.widgetFrame.widgetMenu', 'Widget menu')}
@@ -104,23 +105,23 @@ export function WidgetFrame({
                             onClick={(event) => { event.stopPropagation(); setMenuOpen((open) => !open); }}
                         >
                             <MoreVertical size={14} />
-                        </button>
+                        </SharedButton>
                         {menuOpen && (
                             <div className="skw-menu" role="menu" onClick={(event) => event.stopPropagation()}>
-                                <button type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('config')}>
+                                <SharedButton variant="unstyled" type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('config')}>
                                     <span className="skw-menu__ic"><SlidersHorizontal size={14} /></span>
                                     {t('app.widgetFrame.configure', 'Configure')}
-                                </button>
-                                <button type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('dup')}>
+                                </SharedButton>
+                                <SharedButton variant="unstyled" type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('dup')}>
                                     <span className="skw-menu__ic"><Copy size={14} /></span>
                                     {t('app.widgetFrame.duplicate', 'Duplicate')}
-                                </button>
-                                <button type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('full')}>
+                                </SharedButton>
+                                <SharedButton variant="unstyled" type="button" className="skw-menu__item" role="menuitem" onClick={() => fire('full')}>
                                     <span className="skw-menu__ic"><Maximize2 size={14} /></span>
                                     {t('app.widgetFrame.viewFullscreen', 'View fullscreen')}
-                                </button>
+                                </SharedButton>
                                 <div className="skw-menu__sep" role="separator" />
-                                <button
+                                <SharedButton variant="unstyled"
                                     type="button"
                                     className="skw-menu__item skw-menu__item--danger"
                                     role="menuitem"
@@ -128,7 +129,7 @@ export function WidgetFrame({
                                 >
                                     <span className="skw-menu__ic"><Trash2 size={14} /></span>
                                     {t('common.actions.remove', 'Remove')}
-                                </button>
+                                </SharedButton>
                             </div>
                         )}
                     </div>

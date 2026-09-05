@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Button } from '@/components/ui/button';
 import { Pill } from '../ds';
 import { CheckCircle2, Loader2, Circle, XCircle, RotateCw, Clock, ChevronDown } from 'lucide-react';
@@ -322,7 +322,7 @@ const OnboardingWizard = ({ serverId, initialState, onStateChange }) => {
 
             {progress.length > 0 && (
                 <div className="onboarding-wizard__trail">
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className="onboarding-wizard__trail-head"
                         aria-expanded={trailExpanded}
@@ -335,7 +335,7 @@ const OnboardingWizard = ({ serverId, initialState, onStateChange }) => {
                         />
                         <span>{t('app.onboardingWizard.stepHistory', 'Step history')}</span>
                         <span className="onboarding-wizard__trail-count">{progress.length}</span>
-                    </button>
+                    </Button>
                     {trailExpanded && (
                         <ul
                             ref={logTrailRef}

@@ -1,3 +1,4 @@
+import { procUser } from './processData';
 import { useCallback, useMemo, useState } from 'react';
 import { processStateVariant } from '@/components/ds/status';
 import { X, AlertTriangle } from 'lucide-react';
@@ -78,7 +79,6 @@ const PROCESS_VIEWS = [
 // psutil reports the owner as `username`; the per-PID detail endpoint and the
 // style-guide fixtures call it `user`. Read both so the column is never blank
 // against a real payload.
-export const procUser = (p) => p.user || p.username || '';
 
 export function UsageCell({ percent = 0, variant = 'cpu', label }) {
     const clamped = Math.min(Number(percent) || 0, 100);

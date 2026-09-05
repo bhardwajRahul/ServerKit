@@ -1,8 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import api from '../services/api';
 import { presetForUseCases } from '../components/sidebarItems';
 
-const AuthContext = createContext(null);
+import { AuthContext } from './useAuth.js';
 
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
@@ -26,17 +26,23 @@ export function AuthProvider({ children }) {
         checked: false
     });
 
-    useEffect(() => {
-        checkSetupStatus();
+    const checkAuth = useCallback(async () => {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            try {
+                const data = await api.getCurrentUser();
+                setUser(data.user);
+            } catch (error) {
+                if (error.status !== 401) {
+                    console.error('Auth check failed:', error);
+                }
+                api.clearTokens();
+            }
+        }
+        setLoading(false);
     }, []);
 
-    useEffect(() => {
-        const handleAuthExpired = () => setUser(null);
-        window.addEventListener('serverkit:auth-expired', handleAuthExpired);
-        return () => window.removeEventListener('serverkit:auth-expired', handleAuthExpired);
-    }, []);
-
-    async function checkSetupStatus(retries = 3) {
+    const checkSetupStatus = useCallback(async function checkSetupStatus(retries = 3) {
         try {
             const status = await api.getSetupStatus();
             setSetupStatus({
@@ -71,23 +77,18 @@ export function AuthProvider({ children }) {
             }));
             await checkAuth();
         }
-    }
+    }, [checkAuth]);
 
-    async function checkAuth() {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const data = await api.getCurrentUser();
-                setUser(data.user);
-            } catch (error) {
-                if (error.status !== 401) {
-                    console.error('Auth check failed:', error);
-                }
-                api.clearTokens();
-            }
-        }
-        setLoading(false);
-    }
+    useEffect(() => {
+        checkSetupStatus();
+    }, [checkSetupStatus]);
+
+    useEffect(() => {
+        const handleAuthExpired = () => setUser(null);
+        window.addEventListener('serverkit:auth-expired', handleAuthExpired);
+        return () => window.removeEventListener('serverkit:auth-expired', handleAuthExpired);
+    }, []);
+
 
     async function refreshSetupStatus() {
         try {
@@ -144,9 +145,14 @@ export function AuthProvider({ children }) {
         }));
     }
 
-    function logout() {
-        api.logout();
-        setUser(null);
+    async function logout() {
+        try {
+            await api.logout();
+        } catch (err) {
+            console.error('Server sign-out failed:', err);
+        } finally {
+            setUser(null);
+        }
     }
 
     async function updateUser(data) {
@@ -202,12 +208,4 @@ export function AuthProvider({ children }) {
             {children}
         </AuthContext.Provider>
     );
-}
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
 }

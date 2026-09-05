@@ -117,7 +117,6 @@ APPLICATION_BASELINE = {
     'test_site_base_domains.py',
     'test_site_routing.py',
     'test_sites_https.py',
-    'test_soft_delete_leaks.py',
     'test_ssl_acme_contact.py',
     'test_url_swap.py',
     'test_workspace_scope.py',

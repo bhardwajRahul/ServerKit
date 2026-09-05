@@ -5,7 +5,7 @@ import shutil
 import tarfile
 import gzip
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 from pathlib import Path
 import threading
@@ -19,6 +19,7 @@ from app.utils.config_store import load_json_config, save_json_config
 from app.utils.formatting import format_bytes
 from app.utils.system import is_command_available, run_checked
 from app.services.telemetry_service import TelemetryService, generate_correlation_id
+from app.services import backup_schedule_service
 
 # Unified job kind for asynchronous scheduled backups (see register_jobs).
 BACKUP_JOB_KIND = 'backup.run'
@@ -660,18 +661,23 @@ class BackupService:
             'backup_type': backup_type,
             'target': target,
             'schedule_time': schedule_time,
-            'days': days or ['daily'],
+            'days': ['daily'] if days is None else days,
             'enabled': True,
             'upload_remote': upload_remote,
             'last_run': None,
             'last_status': None
         }
 
+        try:
+            backup_schedule_service.validate_schedule(schedule_entry)
+        except ValueError as exc:
+            return {'success': False, 'error': str(exc)}
         config.setdefault('schedules', []).append(schedule_entry)
         result = cls.save_config(config)
 
         if result.get('success'):
-            return {'success': True, 'schedule': schedule_entry}
+            return {'success': True, 'schedule': backup_schedule_service.describe_schedule(
+                schedule_entry, globally_enabled=config.get('enabled', False))}
         return result
 
     @classmethod
@@ -684,9 +690,12 @@ class BackupService:
             if s.get('id') == schedule_id:
                 allowed_fields = ['name', 'backup_type', 'target', 'schedule_time',
                                   'days', 'enabled', 'upload_remote']
-                for field in allowed_fields:
-                    if field in updates:
-                        schedules[i][field] = updates[field]
+                updated = {**s, **{field: updates[field] for field in allowed_fields if field in updates}}
+                try:
+                    backup_schedule_service.validate_schedule(updated)
+                except ValueError as exc:
+                    return {'success': False, 'error': str(exc)}
+                schedules[i] = updated
                 config['schedules'] = schedules
                 return cls.save_config(config)
 
@@ -710,7 +719,11 @@ class BackupService:
     def get_schedules(cls) -> List[Dict]:
         """Get all backup schedules."""
         config = cls.get_config()
-        return config.get('schedules', [])
+        zone = backup_schedule_service.server_timezone()
+        now = datetime.now(timezone.utc)
+        return [backup_schedule_service.describe_schedule(
+            entry, globally_enabled=config.get('enabled', False), now=now, zone=zone,
+        ) for entry in config.get('schedules', [])]
 
     @classmethod
     def get_backup_stats(cls) -> Dict:
@@ -895,27 +908,15 @@ class BackupService:
         if not config.get('enabled', False):
             return
 
-        now = datetime.now()
+        zone = backup_schedule_service.server_timezone()
+        now = datetime.now(timezone.utc).astimezone(zone)
         current_time = now.strftime('%H:%M')
-        current_day = now.strftime('%A').lower()
         dirty = False
 
         for sched in config.get('schedules', []):
-            if not sched.get('enabled', False):
+            due = backup_schedule_service.next_run(sched, now=now, zone=zone)
+            if due is None or due.astimezone(timezone.utc) > now.astimezone(timezone.utc):
                 continue
-            if sched.get('schedule_time') != current_time:
-                continue
-            days = sched.get('days', ['daily'])
-            if 'daily' not in days and current_day not in days:
-                continue
-            # Skip if a run was enqueued / ran within the last ~2 minutes.
-            last_run = sched.get('last_run')
-            if last_run:
-                try:
-                    if (now - datetime.fromisoformat(last_run)).total_seconds() < 120:
-                        continue
-                except Exception:
-                    pass
 
             JobService.enqueue(
                 BACKUP_JOB_KIND,
@@ -1018,7 +1019,7 @@ class BackupService:
             config = cls.get_config()
             for s in config.get('schedules', []):
                 if s.get('id') == sched.get('id'):
-                    s['last_run'] = datetime.now().isoformat()
+                    s['last_run'] = datetime.now(timezone.utc).isoformat()
                     s['last_status'] = 'success' if result and result.get('success') else 'failed'
                     break
             cls.save_config(config)
@@ -1037,7 +1038,7 @@ class BackupService:
             config = cls.get_config()
             for s in config.get('schedules', []):
                 if s.get('id') == sched.get('id'):
-                    s['last_run'] = datetime.now().isoformat()
+                    s['last_run'] = datetime.now(timezone.utc).isoformat()
                     s['last_status'] = 'failed'
                     break
             cls.save_config(config)

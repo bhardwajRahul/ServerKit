@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useLocale } from '../contexts/LocaleContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useLocale } from '../contexts/useLocale.js';
 import api from '../services/api';
 
 // Bridges auth -> locale (plan 79 B1/B2). LocaleProvider sits above

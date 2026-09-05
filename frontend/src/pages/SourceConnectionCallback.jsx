@@ -3,8 +3,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Github, Gitlab, GitBranch, Loader2 } from 'lucide-react';
 import { SiBitbucket } from 'react-icons/si';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const PROVIDER_LABELS = {
     github: 'GitHub',
@@ -68,9 +69,9 @@ const SourceConnectionCallback = () => {
                 {error ? (
                     <>
                         <p className="auth-error">{error}</p>
-                        <button type="button" className="btn btn-primary" onClick={() => navigate('/settings/connections')}>
+                        <SharedButton variant="primary" type="button" className="btn btn-primary" onClick={() => navigate('/settings/connections')}>
                             {t('app.sourceConnectionCallback.backToConnections', 'Back to Connections')}
-                        </button>
+                        </SharedButton>
                     </>
                 ) : (
                     <div className="sso-loading">

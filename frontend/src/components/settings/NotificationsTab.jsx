@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import api from '../../services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,7 +149,7 @@ const NotificationsTab = () => {
         <div className="user-notification-prefs">
             <div {...register('notifications-enable', 'settings-card')}>
                 <div className="form-group">
-                    <div className="flex items-center gap-3">
+                    <div className="settings-notification-option">
                         <Switch
                             checked={userPrefs.enabled}
                             onCheckedChange={(checked) => setUserPrefs({...userPrefs, enabled: checked})}
@@ -277,7 +277,7 @@ const NotificationsTab = () => {
                 <h3>{t('app.notificationsTab.quietHours', 'Quiet Hours')}</h3>
                 <p>{t('app.notificationsTab.pauseNonCriticalNotificationsDuringThese', 'Pause non-critical notifications during these hours')}</p>
                 <div className="form-group">
-                    <div className="flex items-center gap-3">
+                    <div className="settings-notification-option">
                         <Switch
                             checked={userPrefs.quiet_hours?.enabled}
                             onCheckedChange={(checked) => setUserPrefs({
@@ -379,7 +379,7 @@ const NotificationsTab = () => {
             )}
 
             <div className="notification-tabs">
-                <button type="button"
+                <Button variant="unstyled" type="button"
                     className={`notification-tab ${activeSection === 'personal' ? 'active' : ''}`}
                     onClick={() => setActiveSection('personal')}
                 >
@@ -388,9 +388,9 @@ const NotificationsTab = () => {
                         <circle cx="12" cy="7" r="4"/>
                     </svg>
                     {t('app.notificationsTab.myPreferences', 'My Preferences')}
-                </button>
+                </Button>
                 {isAdmin && (
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className={`notification-tab ${activeSection === 'admin' ? 'active' : ''}`}
                         onClick={() => setActiveSection('admin')}
                     >
@@ -399,7 +399,7 @@ const NotificationsTab = () => {
                             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
                         </svg>
                         {t('app.notificationsTab.systemWebhooks', 'System Webhooks')}
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -436,7 +436,7 @@ const NotificationsTab = () => {
                         {expandedChannel === channel.id && (
                             <div className="channel-config">
                                 <div className="form-group">
-                                    <div className="flex items-center gap-3">
+                                    <div className="settings-notification-option">
                                         <Switch
                                             checked={config[channel.id]?.enabled || false}
                                             onCheckedChange={(checked) => updateChannelConfig(channel.id, 'enabled', checked)}
@@ -612,7 +612,7 @@ const NotificationsTab = () => {
                                             />
                                         </div>
                                         <div className="form-group">
-                                            <div className="flex items-center gap-3">
+                                            <div className="settings-notification-option">
                                                 <Switch
                                                     checked={config.email.smtp_tls !== false}
                                                     onCheckedChange={(checked) => updateChannelConfig('email', 'smtp_tls', checked)}

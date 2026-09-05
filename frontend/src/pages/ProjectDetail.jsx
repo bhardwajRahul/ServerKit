@@ -11,7 +11,7 @@ import {
     ExternalLink,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useRecordVisit } from '@/hooks/useRecordVisit';
 import FavoriteStar from '@/components/FavoriteStar';
 import EmptyState from '../components/EmptyState';
@@ -181,7 +181,7 @@ const ProjectDetail = () => {
                             key={env.id}
                             className={`project-env-tab ${env.id === activeEnvId ? 'is-active' : ''}`}
                         >
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 role="tab"
                                 aria-selected={env.id === activeEnvId}
@@ -191,9 +191,9 @@ const ProjectDetail = () => {
                                 {env.name}
                                 {env.is_default && <Badge variant="outline">default</Badge>}
                                 <span className="project-env-tab__count">{env.app_count ?? 0}</span>
-                            </button>
+                            </Button>
                             <div className="project-env-tab__controls">
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     title={t('common.actions.moveUp', 'Move up')}
                                     aria-label={t('app.projectDetail.moveUp2', 'Move {{name}} up', { name: env.name })}
@@ -201,8 +201,8 @@ const ProjectDetail = () => {
                                     onClick={() => handleReorder(env.id, -1)}
                                 >
                                     <ArrowUp size={13} />
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="unstyled"
                                     type="button"
                                     title={t('common.actions.moveDown', 'Move down')}
                                     aria-label={t('app.projectDetail.moveDown2', 'Move {{name}} down', { name: env.name })}
@@ -210,8 +210,8 @@ const ProjectDetail = () => {
                                     onClick={() => handleReorder(env.id, 1)}
                                 >
                                     <ArrowDown size={13} />
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="unstyled"
                                     type="button"
                                     className="project-env-tab__delete"
                                     title={t('app.projectDetail.deleteEnvironment', 'Delete environment')}
@@ -220,7 +220,7 @@ const ProjectDetail = () => {
                                     onClick={() => setDeleteEnv(env)}
                                 >
                                     <Trash2 size={13} />
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     ))}

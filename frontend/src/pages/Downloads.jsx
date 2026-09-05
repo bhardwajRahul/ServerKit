@@ -166,7 +166,7 @@ function Downloads() {
             {error && (
                 <div className="alert alert-error">
                     <p>{error}</p>
-                    <button type="button" onClick={fetchVersionInfo}>{t('app.downloads.tryAgain', 'Try Again')}</button>
+                    <Button variant="unstyled" type="button" onClick={fetchVersionInfo}>{t('app.downloads.tryAgain', 'Try Again')}</Button>
                 </div>
             )}
 
@@ -253,13 +253,13 @@ function Downloads() {
                                     <pre>
                                         <code>{platforms[0].command}</code>
                                     </pre>
-                                    <button type="button"
+                                    <Button variant="unstyled" type="button"
                                         className="copy-btn"
                                         onClick={() => copyCommand(platforms[0].command, 'linux')}
                                         title={t('app.downloads.copyToClipboard', 'Copy to clipboard')}
                                     >
                                         {copiedCommand === 'linux' ? <CheckIcon /> : <CopyIcon />}
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
 
@@ -272,13 +272,13 @@ function Downloads() {
                                     <pre>
                                         <code>{platforms[2].command}</code>
                                     </pre>
-                                    <button type="button"
+                                    <Button variant="unstyled" type="button"
                                         className="copy-btn"
                                         onClick={() => copyCommand(platforms[2].command, 'windows')}
                                         title={t('app.downloads.copyToClipboard', 'Copy to clipboard')}
                                     >
                                         {copiedCommand === 'windows' ? <CheckIcon /> : <CopyIcon />}
-                                    </button>
+                                    </Button>
                                 </div>
                                 <p className="command-note">{t('app.downloads.runPowershellAsAdministrator', 'Run PowerShell as Administrator')}</p>
                             </div>

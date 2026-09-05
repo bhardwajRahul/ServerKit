@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuth.js';
 import api from '../../services/api';
 import { Check, RotateCcw } from 'lucide-react';
 import { sanitizeSvgInner } from '../../utils/sanitizeSvg';
@@ -106,7 +106,7 @@ const SidebarSettings = () => {
 
                 <div className="sidebar-presets">
                     {Object.entries(SIDEBAR_PRESETS).map(([key, profile]) => (
-                        <button type="button"
+                        <Button variant="unstyled" type="button"
                             key={key}
                             className={`sidebar-preset-card ${preset === key ? 'active' : ''}`}
                             onClick={() => handlePresetChange(key)}
@@ -123,9 +123,9 @@ const SidebarSettings = () => {
                                     <Check size={16} />
                                 </div>
                             )}
-                        </button>
+                        </Button>
                     ))}
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className={`sidebar-preset-card ${preset === 'custom' ? 'active' : ''}`}
                         onClick={() => handlePresetChange('custom')}
                     >
@@ -143,7 +143,7 @@ const SidebarSettings = () => {
                                 <Check size={16} />
                             </div>
                         )}
-                    </button>
+                    </Button>
                 </div>
             </div>
 

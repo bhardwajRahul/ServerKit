@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useResourceTier } from '../../contexts/ResourceTierContext';
+import { useResourceTier } from '../../contexts/useResourceTier.js';
 import { Check, X, AlertTriangle, Loader, Cpu, MemoryStick, HardDrive } from 'lucide-react';
 import api from '../../services/api';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Display order. The card bodies themselves come from the backend so the
 // installer and the panel can never disagree about what a profile contains.
@@ -134,7 +135,7 @@ const SetupStepCapacity = ({ useCases, onComplete }) => {
                     const isRecommended = recommendedProfile === id;
 
                     return (
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             key={id}
                             className={`tier-card tier-card--selectable${isActive ? ' detected' : ''}`}
@@ -171,7 +172,7 @@ const SetupStepCapacity = ({ useCases, onComplete }) => {
                                     </div>
                                 ))}
                             </div>
-                        </button>
+                        </SharedButton>
                     );
                 })}
             </div>
@@ -197,14 +198,14 @@ const SetupStepCapacity = ({ useCases, onComplete }) => {
             )}
 
             <div className="wizard-nav wizard-nav--flush">
-                <button
+                <SharedButton variant="unstyled"
                     type="button"
                     className="btn-wizard-next"
                     onClick={handleContinue}
                     disabled={saving}
                 >
                     {saving ? 'Saving...' : 'Continue'}
-                </button>
+                </SharedButton>
             </div>
         </div>
     );

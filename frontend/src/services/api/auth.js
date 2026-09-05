@@ -10,7 +10,9 @@ export async function login(email, password) {
         method: 'POST',
         body: { email, password },
     });
-    this.setTokens(data.access_token, data.refresh_token);
+    if (data.access_token) {
+        this.setTokens(data.access_token, data.refresh_token);
+    }
     return data;
 }
 
@@ -37,7 +39,11 @@ export async function completeOnboarding(useCases, installedExtensions = [], sec
 }
 
 export async function logout() {
-    this.clearTokens();
+    try {
+        await this.request('/auth/logout', { method: 'POST' });
+    } finally {
+        this.clearTokens();
+    }
 }
 
 export async function getCurrentUser() {
@@ -45,10 +51,14 @@ export async function getCurrentUser() {
 }
 
 export async function updateCurrentUser(data) {
-    return this.request('/auth/me', {
+    const response = await this.request('/auth/me', {
         method: 'PUT',
         body: data
     });
+    if (response.access_token) {
+        this.setTokens(response.access_token, response.refresh_token);
+    }
+    return response;
 }
 
 // One-time login links
@@ -72,7 +82,9 @@ export async function redeemLoginLink(token) {
         method: 'POST',
         body: { token },
     });
-    this.setTokens(data.access_token, data.refresh_token);
+    if (data.access_token) {
+        this.setTokens(data.access_token, data.refresh_token);
+    }
     return data;
 }
 
@@ -150,7 +162,7 @@ export async function getPermissionTemplates() {
 
 // Admin - Invitations endpoints
 export async function getInvitations(status) {
-    const query = status ? `?status=${status}` : '';
+    const query = status ? `?status=${encodeURIComponent(status)}` : '';
     return this.request(`/admin/invitations/${query}`);
 }
 
@@ -350,7 +362,7 @@ export async function testEventSubscription(id) {
 }
 
 export async function getEventDeliveries(id, page = 1) {
-    return this.request(`/event-subscriptions/${id}/deliveries?page=${page}`);
+    return this.request(`/event-subscriptions/${id}/deliveries?page=${encodeURIComponent(page)}`);
 }
 
 export async function retryEventDelivery(subId, deliveryId) {
@@ -359,21 +371,21 @@ export async function retryEventDelivery(subId, deliveryId) {
 
 // API Analytics
 export async function getApiAnalyticsOverview(period = '24h') {
-    return this.request(`/api-analytics/overview?period=${period}`);
+    return this.request(`/api-analytics/overview?period=${encodeURIComponent(period)}`);
 }
 
 export async function getApiAnalyticsEndpoints(period = '24h', limit = 20) {
-    return this.request(`/api-analytics/endpoints?period=${period}&limit=${limit}`);
+    return this.request(`/api-analytics/endpoints?period=${encodeURIComponent(period)}&limit=${encodeURIComponent(limit)}`);
 }
 
 export async function getApiAnalyticsErrors(period = '24h') {
-    return this.request(`/api-analytics/errors?period=${period}`);
+    return this.request(`/api-analytics/errors?period=${encodeURIComponent(period)}`);
 }
 
 export async function getApiAnalyticsTimeseries(period = '24h', interval = 'hour') {
-    return this.request(`/api-analytics/timeseries?period=${period}&interval=${interval}`);
+    return this.request(`/api-analytics/timeseries?period=${encodeURIComponent(period)}&interval=${encodeURIComponent(interval)}`);
 }
 
 export async function getApiKeyUsage(keyId, period = '24h') {
-    return this.request(`/api-analytics/keys/${keyId}/usage?period=${period}`);
+    return this.request(`/api-analytics/keys/${keyId}/usage?period=${encodeURIComponent(period)}`);
 }

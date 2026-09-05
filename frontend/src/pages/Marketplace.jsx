@@ -21,7 +21,7 @@ import {
     UploadCloud,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { sanitizeSvgInner } from '../utils/sanitizeSvg';
 import Modal from '@/components/Modal';
 import PageLoader from '../components/PageLoader';
@@ -34,9 +34,8 @@ import {
 import { useTopbarActions } from '@/hooks/useTopbarActions';
 import ManualInstallModal from '../components/marketplace/ManualInstallModal';
 import ExtensionPermissionsDialog from '../components/marketplace/ExtensionPermissionsDialog';
-import {
-    ExtensionBrandMark, hasBrandMark, extensionCoverStyle,
-} from '../components/icons/ExtensionBrands';
+import { ExtensionBrandMark } from '../components/icons/ExtensionBrands';
+import { hasBrandMark, extensionCoverStyle } from '../components/icons/extensionBrandData';
 import { resolveExtensionIcon } from '../components/icons/ExtensionIcons';
 import { useTranslation } from 'react-i18next';
 
@@ -275,7 +274,7 @@ const Marketplace = () => {
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [t, toast]);
 
     useEffect(() => { loadExtensions(); }, [loadExtensions]);
 

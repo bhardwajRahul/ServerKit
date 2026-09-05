@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import socketService from '../services/socket';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth.js';
 import { getDismissedNotices, addDismissedNotice, noticeToItem } from '../utils/dismissedNotices';
 
 // Global in-app notification state: the bell's unread badge + recent list, kept
@@ -11,14 +11,12 @@ import { getDismissedNotices, addDismissedNotice, noticeToItem } from '../utils/
 // It also folds in live "system notices" (admin misconfiguration hints from
 // /system/notices) so they surface in the notification center instead of stacking
 // as banners at the top of the dashboard — only genuinely urgent ones get a banner.
-const NotificationsContext = createContext(null);
+import { NotificationsContext } from './useNotifications.js';
 
 const RECENT_LIMIT = 12;
 const MAX_BUFFERED = 30;
 
-export function useNotifications() {
-    return useContext(NotificationsContext);
-}
+
 
 export function NotificationsProvider({ children }) {
     const { isAuthenticated, isAdmin } = useAuth();
@@ -104,5 +102,3 @@ export function NotificationsProvider({ children }) {
         </NotificationsContext.Provider>
     );
 }
-
-export default NotificationsContext;

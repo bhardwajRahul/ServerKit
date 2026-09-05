@@ -44,25 +44,25 @@ English | [Español](docs/README.es.md) | [中文版](docs/README.zh-CN.md) | [P
 
 ## 📊 By the Numbers
 
-Everything below is measured from this repository, not estimated.
+<!-- BEGIN GENERATED MEASUREMENTS -->
+Snapshot: **2026-09-05**. [Definitions, raw measurements and reproduction commands](docs/METRICS.md).
 
 | | |
 |---|---|
-| **1,350+** REST endpoints | across 109 blueprints — `/api/v1/*`, with OpenAPI + Swagger UI at `/api/v1/docs` |
-| **118** one-click app templates | bundled in the repo, no registry account needed |
-| **4,300+** backend tests | the whole suite runs on every change, with a CI-enforced floor on the collected count |
-| **1.75 MB** gzipped web UI | 60+ screens, assets served from your own box — no CDN |
-| **~180 MB** resident | the entire panel, single process — sits comfortably beside your apps on a 1 GB VPS |
-| **501 MB** container image | or install straight onto the host; Docker is optional for the panel itself |
-| **$0** | MIT-licensed. No tiers, no seat limits, no upsell — and nothing phones home. |
+| **1,212** core route declarations | in **104** blueprint declarations under `backend/app/api`; source inventory, excluding extensions |
+| **118** bundled app templates | root-level app YAML files; database extension templates counted separately |
+| **5,089** backend test cases collected | clean-checkout collection; this is not a claim that every case passed or ran |
+| **3.31 MB** total JS/CSS, gzipped | includes lazy chunks, locale bundles and vendor shims; excludes fonts and images |
+| **$0** license cost | MIT-licensed, without subscription or seat fees |
 
-Self-hosted and Docker-native, on hardware you already pay for.
+The total sums files individually compressed with gzip at level 9; it is not a measured page-load time. RAM usage and image size depend on the build, platform and workload; no universal footprint is claimed.
+<!-- END GENERATED MEASUREMENTS -->
 
 ---
 
 ## 🚀 Quick Start
 
-> ⏱️ Up and running in under 2 minutes
+> Installation time depends on the server, network and required packages.
 
 ### Option 1: One-Line Install (Recommended)
 
@@ -114,7 +114,7 @@ See the [Installation Guide](docs/INSTALLATION.md) for step-by-step instructions
 | **Disk** | 10 GB | 20+ GB |
 | **Docker** | 24.0+ (optional for the panel itself) | Latest |
 
-> The panel itself only needs ~180 MB of RAM and ~500 MB of disk — the rest is headroom for your apps. It runs happily on a 1 GB VPS, a spare laptop, or a Raspberry Pi (ARM64), so it's as much at home in a homelab as it is on production hardware.
+> These requirements are sizing guidance, not a capacity benchmark. Allow additional RAM and disk for managed apps, images, databases, logs and backups. Measure your own workload using the [measurement guide](docs/METRICS.md).
 
 ---
 

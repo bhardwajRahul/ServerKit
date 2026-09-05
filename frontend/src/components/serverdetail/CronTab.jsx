@@ -1,6 +1,7 @@
+import { PRESET_LABELS } from './serverDetailData';
 import { useState, useEffect, useCallback } from 'react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useConfirm } from '../../hooks/useConfirm';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +26,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
-    PRESET_LABELS,
     OfflineIcon,
     StopIcon,
     PlayIcon,
@@ -256,20 +256,20 @@ const CronTab = ({ serverId, serverStatus }) => {
             cellClassName: 'actions-cell',
             render: (job) => (
                 <>
-                    <button type="button"
+                    <Button variant="unstyled" type="button"
                         className="btn-icon"
                         onClick={() => handleToggle(job)}
                         title={job.enabled ? t('common.actions.disable', 'Disable') : t('common.actions.enable', 'Enable')}
                     >
                         {job.enabled ? <StopIcon /> : <PlayIcon />}
-                    </button>
-                    <button type="button"
+                    </Button>
+                    <Button variant="unstyled" type="button"
                         className="btn-icon danger"
                         onClick={() => handleRemove(job)}
                         title={t('common.actions.remove', 'Remove')}
                     >
                         <TrashIcon />
-                    </button>
+                    </Button>
                 </>
             ),
         },
@@ -394,8 +394,8 @@ const CronTab = ({ serverId, serverStatus }) => {
                 <p className="sk-modal__subtitle">
                     {t('app.cronTab.scheduleACommandOnTheHost', 'Schedule a command on the host crontab. Runs as the agent user.')}
                 </p>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="space-y-1.5">
+                <form onSubmit={handleSubmit} className="sk-form-stack">
+                        <div className="sk-form-field">
                             <Label htmlFor="cron-name">{t('app.cronTab.nameOptional', 'Name (optional)')}</Label>
                             <Input
                                 id="cron-name"
@@ -404,7 +404,7 @@ const CronTab = ({ serverId, serverStatus }) => {
                                 placeholder={t('app.cronTab.backupDatabase', 'Backup database')}
                             />
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="sk-form-field">
                             <Label htmlFor="cron-schedule">{t('common.labels.schedule', 'Schedule')}</Label>
                             <Select
                                 value={Object.keys(PRESET_LABELS).includes(form.schedule) ? form.schedule : 'custom'}
@@ -428,11 +428,10 @@ const CronTab = ({ serverId, serverStatus }) => {
                                 value={form.schedule}
                                 onChange={(e) => setForm({ ...form, schedule: e.target.value })}
                                 placeholder="* * * * *"
-                                className="font-mono"
                             />
-                            <p className="text-xs text-muted-foreground">{t('app.cronTab.5FieldsMinuteHourDayMonth', '5 fields: minute, hour, day, month, weekday.')}</p>
+                            <p className="sk-form-hint">{t('app.cronTab.5FieldsMinuteHourDayMonth', '5 fields: minute, hour, day, month, weekday.')}</p>
                         </div>
-                        <div className="space-y-1.5">
+                        <div className="sk-form-field">
                             <Label htmlFor="cron-command">{t('common.labels.command', 'Command')}</Label>
                             <Textarea
                                 id="cron-command"
@@ -442,7 +441,7 @@ const CronTab = ({ serverId, serverStatus }) => {
                                 placeholder="/usr/local/bin/my-script.sh"
                                 required
                             />
-                            <p className="text-xs text-muted-foreground">{t('app.cronTab.absolutePathShellOperatorsAreNot', 'Absolute path. Shell operators (;, &&, |, $(), >, <) are not allowed.')}</p>
+                            <p className="sk-form-hint">{t('app.cronTab.absolutePathShellOperatorsAreNot', 'Absolute path. Shell operators (;, &&, |, $(), >, <) are not allowed.')}</p>
                         </div>
                         <div className="modal-actions">
                             <Button type="button" variant="outline" onClick={() => setShowAddModal(false)} disabled={submitting}>{t('common.actions.cancel', 'Cancel')}</Button>

@@ -15,6 +15,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from sqlalchemy.orm import joinedload
 from app import db, limiter
+from app.services.server_metrics_service import latest_metrics_by_server
 from app.api._query import apply_query, QueryParseError
 from app.models import User
 from app.models.server import Server, ServerGroup, ServerMetrics, ServerCommand, AgentSession, AgentVersion, AgentRollout
@@ -301,25 +302,10 @@ def list_servers():
     servers = (query.all() if request.args.get('$orderby')
                else query.order_by(Server.name).all())
 
-    # Latest metrics per server, under the SAME 'metrics' key the detail
-    # endpoint uses (see get_server_status below) — the servers list renders
-    # CPU/Memory/Disk gauges from it, and without it every one of those cells
-    # fell back to the "no data" dash on a live panel.
-    #
-    # Batched deliberately: `server.metrics` is lazy='dynamic', so doing this
-    # per row inside the loop would be one extra SELECT per server. Newest row
-    # per server = highest id, because the id autoincrements on insert — that
-    # also avoids the tie a max(timestamp) join would hit for same-second rows.
-    metrics_by_server = {}
-    if servers:
-        server_ids = [s.id for s in servers]
-        newest = (
-            db.session.query(db.func.max(ServerMetrics.id))
-            .filter(ServerMetrics.server_id.in_(server_ids))
-            .group_by(ServerMetrics.server_id)
-        )
-        for row in ServerMetrics.query.filter(ServerMetrics.id.in_(newest)).all():
-            metrics_by_server[row.server_id] = row.to_dict()
+    # Keep the list's insertion-order contract; monitoring uses sample time.
+    metrics_by_server = latest_metrics_by_server(
+        (server.id for server in servers), order_by='id',
+    )
 
     result = []
     for server in servers:
@@ -327,7 +313,7 @@ def list_servers():
         server_dict['is_connected'] = agent_registry.is_agent_connected(server.id)
         metrics = metrics_by_server.get(server.id)
         if metrics:
-            server_dict['metrics'] = metrics
+            server_dict['metrics'] = metrics.to_dict()
         result.append(server_dict)
 
     return jsonify(result)
@@ -930,7 +916,8 @@ def compare_server_metrics():
 @jwt_required()
 def get_servers_overview():
     """Get overview of all servers health"""
-    servers = Server.query.all()
+    servers = Server.query.options(joinedload(Server.group)).all()
+    metrics_by_server = latest_metrics_by_server(server.id for server in servers)
     connected_ids = set(agent_registry.get_connected_servers())
 
     total = len(servers)
@@ -945,7 +932,7 @@ def get_servers_overview():
         is_online = server.id in connected_ids
 
         # Get latest metrics
-        latest = server.metrics.order_by(ServerMetrics.timestamp.desc()).first()
+        latest = metrics_by_server.get(server.id)
 
         server_summary = {
             'id': server.id,

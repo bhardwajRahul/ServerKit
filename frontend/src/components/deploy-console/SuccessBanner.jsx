@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Database, ExternalLink, LayoutGrid, ScrollText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 const fmtSeconds = (s) => {
     if (s == null) return '—';
@@ -80,13 +81,13 @@ export default function SuccessBanner({ job, appUrl, engineTarget = null, armAut
                             : `${returnLabel} is waiting in Databases.`}
                     </span>
                     {counting && (
-                        <button
+                        <SharedButton variant="unstyled"
                             type="button"
                             className="deploy-console__btn"
                             onClick={() => { setStayed(true); setCountdown(null); }}
                         >
                             {t('app.successBanner.stayHere', 'Stay here')}
-                        </button>
+                        </SharedButton>
                     )}
                 </div>
             )}

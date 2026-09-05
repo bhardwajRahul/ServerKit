@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import Modal from '@/components/Modal';
 import ResourceListPage from '../components/layouts/ResourceListPage';
 import { LayoutGrid, Plus, ChevronRight } from 'lucide-react';
@@ -11,8 +11,8 @@ import useFocusParam from '@/hooks/useFocusParam';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useWorkspace } from '../contexts/WorkspaceContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useWorkspace } from '../contexts/useWorkspace.js';
+import { useAuth } from '../contexts/useAuth.js';
 import { useServerMutation, useServerQuery } from '../hooks/useServerQuery';
 import { useTranslation } from 'react-i18next';
 

@@ -424,3 +424,37 @@ class ServerMetricsService:
             'memory_max': round(max(memory_values), 1) if memory_values else None,
             'disk_avg': round(sum(disk_values) / len(disk_values), 1) if disk_values else None,
         }
+
+
+def latest_metrics_by_server(server_ids, *, order_by='timestamp'):
+    """Return one model per requested server, with one query (none if empty).
+
+    The server list historically uses insertion order; monitoring uses sample
+    time so late arrivals cannot replace a newer observation. Callers choose
+    explicitly when they need insertion order. Equal timestamps resolve to the
+    highest insertion ID, making ties deterministic without duplicating rows.
+    Authorization belongs to the caller: only its selected IDs are queried.
+    """
+    if order_by not in ('timestamp', 'id'):
+        raise ValueError('Latest metrics order must be timestamp or id')
+    server_ids = list(server_ids)
+    if not server_ids:
+        return {}
+    if order_by == 'id':
+        # Preserve the list's existing grouped max query without a window sort.
+        newest = db.session.query(func.max(ServerMetrics.id)).filter(
+            ServerMetrics.server_id.in_(server_ids),
+        ).group_by(ServerMetrics.server_id)
+        rows = ServerMetrics.query.filter(ServerMetrics.id.in_(newest)).all()
+    else:
+        ranked = db.session.query(
+            ServerMetrics.id.label('id'),
+            func.row_number().over(
+                partition_by=ServerMetrics.server_id,
+                order_by=[ServerMetrics.timestamp.desc(), ServerMetrics.id.desc()],
+            ).label('rank'),
+        ).filter(ServerMetrics.server_id.in_(server_ids)).subquery()
+        rows = ServerMetrics.query.join(
+            ranked, ServerMetrics.id == ranked.c.id,
+        ).filter(ranked.c.rank == 1).all()
+    return {row.server_id: row for row in rows}

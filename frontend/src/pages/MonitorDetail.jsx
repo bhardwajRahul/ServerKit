@@ -12,7 +12,7 @@ import {
     Pause, Play, RefreshCw, Rows3, ShieldAlert, SlidersHorizontal, Trash2, Zap,
 } from 'lucide-react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import { useConfirm } from '../hooks/useConfirm';
 import { useRecordVisit } from '@/hooks/useRecordVisit';
 import FavoriteStar from '@/components/FavoriteStar';

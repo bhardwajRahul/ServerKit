@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronUp, ChevronDown, Database } from 'lucide-react';
 import EmptyState from '../EmptyState';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Semantic cell tints (prototype `cellEl`): emails/URLs read as string values,
 // positive/negative status words get green/amber.
@@ -90,14 +91,14 @@ export default function ResultsGrid({ columns, rows, loading, error, emptyTitle 
                                 scope="col"
                                 aria-sort={sort.col === idx ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
                             >
-                                <button type="button" className="dbx-grid-th" onClick={() => toggleSort(idx)}>
+                                <SharedButton variant="unstyled" type="button" className="dbx-grid-th" onClick={() => toggleSort(idx)}>
                                     <span className="dbx-grid-th-name">{col}</span>
                                     {sort.col === idx && (
                                         sort.dir === 'asc'
                                             ? <ChevronUp size={13} aria-hidden="true" />
                                             : <ChevronDown size={13} aria-hidden="true" />
                                     )}
-                                </button>
+                                </SharedButton>
                             </th>
                         ))}
                     </tr>

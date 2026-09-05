@@ -4,8 +4,8 @@ import { Bell, CheckCheck, ScrollText, X } from 'lucide-react';
 import api from '../services/api';
 import PageLayout from '../layouts/PageLayout';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '../contexts/AuthContext';
-import { useNotifications } from '../contexts/NotificationsContext';
+import { useAuth } from '../contexts/useAuth.js';
+import { useNotifications } from '../contexts/useNotifications.js';
 import { timeAgo } from '../utils/time';
 import { useTranslation } from 'react-i18next';
 
@@ -113,7 +113,7 @@ export default function Notifications() {
         >
             <div className="sk-notif-page">
                 <div className="sk-notif-page__filters" role="tablist" aria-label={t('app.notifications.filterNotifications', 'Filter notifications')}>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         role="tab"
                         aria-selected={!unreadOnly}
@@ -121,8 +121,8 @@ export default function Notifications() {
                         onClick={() => setUnreadOnly(false)}
                     >
                         {t('common.labels.all', 'All')}
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         role="tab"
                         aria-selected={unreadOnly}
@@ -130,32 +130,32 @@ export default function Notifications() {
                         onClick={() => setUnreadOnly(true)}
                     >
                         {t('app.notifications.unread', 'Unread')}
-                    </button>
+                    </Button>
                 </div>
 
                 <div className="sk-notif-page__chips">
                     <div className="sk-notif-chipset" aria-label={t('app.notifications.filterByCategory', 'Filter by category')}>
                         {CATEGORY_CHIPS.map((c) => (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 key={c.key || 'all'}
                                 className={`sk-notif-chip${category === c.key ? ' is-active' : ''}`}
                                 onClick={() => setCategory(c.key)}
                             >
                                 {c.label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                     <div className="sk-notif-chipset" aria-label={t('app.notifications.filterBySeverity', 'Filter by severity')}>
                         {SEVERITY_CHIPS.map((s) => (
-                            <button
+                            <Button variant="unstyled"
                                 type="button"
                                 key={s.key || 'any'}
                                 className={`sk-notif-chip sk-notif-chip--sev${severity === s.key ? ' is-active' : ''}`}
                                 onClick={() => setSeverity(s.key)}
                             >
                                 {s.label}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 </div>
@@ -187,14 +187,14 @@ export default function Notifications() {
                                         <div className="sk-notif-row__action">{item.action_label} →</div>
                                     )}
                                 </div>
-                                <button
+                                <Button variant="unstyled"
                                     type="button"
                                     className="sk-notif-row__dismiss"
                                     onClick={(e) => { e.stopPropagation(); if (dismissNotice) dismissNotice(item.notice_id); }}
                                     aria-label={t('app.notifications.dismiss', 'Dismiss {{title}}', { title: item.title })}
                                 >
                                     <X size={15} aria-hidden="true" />
-                                </button>
+                                </Button>
                             </li>
                         ))}
                         {items.map((item) => (

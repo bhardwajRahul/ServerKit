@@ -45,6 +45,8 @@
 .top-bar {
     @include flex-between();
     margin-bottom: $space-10;
+    padding-bottom: $space-4;
+    border-bottom: 1px solid $border-subtle;
 
     h1 {
         font-size: $font-size-2xl;
@@ -54,7 +56,6 @@
 
     @media (max-width: $breakpoint-md) {
         flex-direction: column;
-        align-items: flex-start;
         gap: $space-4;
     }
 }
@@ -175,16 +176,8 @@
 // New pages should use .page-container directly.
 
 // Loading state (full-page spinner)
-.loading {
-    @include flex-center();
-    min-height: 60vh;
-    color: $text-secondary;
-}
 
 // Route-level loading (within dashboard)
-.loading-state {
-    min-height: 40vh;
-}
 
 // ============================================================
 // APP-LEVEL INITIAL LOADER
@@ -284,5 +277,13 @@
 
     .app-loader__bar-fill {
         width: 100%;
+    }
+}
+
+// Skeletons already provide their own page spacing.
+.sk-tabgroup__inner,
+.page-container {
+    > .empty-state--loading:has(.sk-page-wrap) {
+        padding: 0;
     }
 }

@@ -3,7 +3,7 @@ import { LayoutList, Star, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/contexts/ToastContext';
+import { useToast } from '@/contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
 
 // Saved-view picker (CRM style: Twenty view switcher / Frappe view dropdown).
@@ -66,17 +66,17 @@ export function ViewMenu({ views, className }) {
             key={view.builtin ? `b-${view.name}` : `u-${view.id}`}
             className={cn('sk-viewmenu__row', isActive(view) && 'is-active')}
         >
-            <button
+            <Button variant="unstyled"
                 type="button"
                 className="sk-viewmenu__apply"
                 onClick={() => { applyView(view); setOpen(false); }}
             >
                 {isActive(view) && <Check size={13} aria-hidden="true" />}
                 <span className="sk-viewmenu__name">{view.name}</span>
-            </button>
+            </Button>
             {!view.builtin && (
                 <>
-                    <button
+                    <Button variant="unstyled"
                         type="button"
                         className={cn('sk-viewmenu__star', view.is_default && 'is-on')}
                         onClick={() => toggleDefault(view)}
@@ -85,8 +85,8 @@ export function ViewMenu({ views, className }) {
                         aria-pressed={view.is_default}
                     >
                         <Star size={13} />
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="unstyled"
                         type="button"
                         className="sk-viewmenu__delete"
                         onClick={() => handleDelete(view)}
@@ -94,7 +94,7 @@ export function ViewMenu({ views, className }) {
                         aria-label={t('app.viewMenu.deleteView', 'Delete view {{name}}', { name: view.name })}
                     >
                         <Trash2 size={13} />
-                    </button>
+                    </Button>
                 </>
             )}
         </div>

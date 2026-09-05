@@ -50,8 +50,8 @@ jobs:
         run: python tests/check_test_count.py
 
   # Sharded because this job WAS the entire wait: 21m50s of a ~22m pipeline,
-  # while every other workflow finished inside a minute. Splitting the 3173
-  # tests over 4 runners cuts the critical path to roughly a quarter.
+  # while every other workflow finished inside a minute. Splitting the suite
+  # over 4 runners cuts the critical path to roughly a quarter.
   #
   # Sharding rather than pytest-xdist is deliberate: each shard is its own VM,
   # so the process-shared state that makes in-process parallelism unsafe here
@@ -86,9 +86,9 @@ jobs:
           pip install -r requirements.txt
           pip install pytest pytest-split
       - name: Run tests (shard ${{ matrix.group }} of 4)
-        # Scoped to `tests` rather than a bare `pytest`. Identical here (3173
-        # either way, since backend/dev-data/ is gitignored and absent from a
-        # CI checkout), but it makes the command reproducible on a dev box: a
+        # Scoped to `tests` rather than a bare `pytest`. This collects the same
+        # suite in CI (backend/dev-data/ is gitignored), while keeping the
+        # command reproducible on a dev box: a
         # bare pytest there tries to collect the locally deployed apps under
         # backend/dev-data/ and dies during collection. Copy this line verbatim
         # to debug a red shard locally.

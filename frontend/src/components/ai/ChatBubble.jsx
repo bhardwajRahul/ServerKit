@@ -1,12 +1,13 @@
 import { MessageSquare, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // Intercom-style launcher. `raised` lifts it above the serverkit-gui FAB on
 // server-detail routes so the two don't overlap.
 const ChatBubble = ({ open, unread, streaming, raised, onToggle }) => {
     const { t } = useTranslation();
     return (
-        <button
+        <SharedButton variant="unstyled"
             type="button"
             className={[
                 'sk-ai-bubble',
@@ -23,7 +24,7 @@ const ChatBubble = ({ open, unread, streaming, raised, onToggle }) => {
         >
             {open ? <X size={22} /> : <MessageSquare size={22} />}
             {!open && unread > 0 ? <span className="sk-ai-bubble__dot" aria-hidden="true" /> : null}
-        </button>
+        </SharedButton>
     );
 };
 

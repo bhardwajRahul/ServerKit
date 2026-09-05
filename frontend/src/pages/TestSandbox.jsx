@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import api from '../services/api';
-import { useToast } from '../contexts/ToastContext';
+import { useToast } from '../contexts/useToast.js';
 import EmptyState from '../components/EmptyState';
 import { Pill, statusKind } from '@/components/ds';
 import PageLayout from '../layouts/PageLayout';

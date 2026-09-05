@@ -1,21 +1,14 @@
+import { formatBytes } from '@/utils/formatBytes';
 import { useState, useEffect, useCallback } from 'react';
 import { HardDrive, Plus, Trash2, AlertTriangle } from 'lucide-react';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { Pill } from '../ds';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTranslation } from 'react-i18next';
-
-function formatBytes(bytes) {
-    if (bytes == null) return '—';
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
-    return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`;
-}
 
 // A single volume row with an inline detach confirm (the "also delete data"
 // checkbox is off by default and disabled while the app is running, so a detach
@@ -43,7 +36,7 @@ function VolumeRow({ volume, appRunning, onDetach }) {
                 <strong>{volume.name}</strong>
                 <span className="app-volumes__mono">{volume.mount_path}</span>
             </div>
-            <div className="app-volumes__cell">{formatBytes(volume.size_bytes)}</div>
+            <div className="app-volumes__cell">{formatBytes(volume.size_bytes, { defaultValue: '—' })}</div>
             <div className="app-volumes__cell app-volumes__pills">
                 {volume.read_only && <Pill kind="gray">read-only</Pill>}
                 <Pill kind={volume.present === false ? 'red' : 'green'}>
@@ -96,7 +89,7 @@ const VolumesPanel = ({ app, onChanged }) => {
         } finally {
             setLoading(false);
         }
-    }, [app.id, toast]);
+    }, [app.id, toast, t]);
 
     useEffect(() => { load(); }, [load]);
 

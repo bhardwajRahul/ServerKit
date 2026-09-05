@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { CopyButton } from '@/components/CopyButton';
 import api from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
+import { useToast } from '../../contexts/useToast.js';
 import { useTranslation } from 'react-i18next';
 
 // Paste-in .htaccess -> nginx converter for the per-site custom nginx rules

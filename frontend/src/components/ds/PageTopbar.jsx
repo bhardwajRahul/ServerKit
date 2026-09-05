@@ -5,6 +5,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { useOverflowItems } from '@/hooks/useOverflowItems';
 import { t } from '@/i18n/t';
+import { Button as SharedButton } from '@/components/ui/button';
 
 // The demo's page top bar (see docs/REDESIGN_MAP.md §6 decision 3): infra pages
 // carry their own top bar — an icon + title, an optional routed sub-nav that
@@ -107,7 +108,7 @@ function TopbarTabs({ tabs, label }) {
                 {hiddenIndices.length > 0 && (
                     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                         <PopoverTrigger asChild>
-                            <button
+                            <SharedButton variant="unstyled"
                                 ref={moreBtnRef}
                                 type="button"
                                 className="sk-topbar__tab sk-topbar__more"
@@ -115,7 +116,7 @@ function TopbarTabs({ tabs, label }) {
                             >
                                 <MoreHorizontal size={16} />
                                 {t('common.more', 'More')}
-                            </button>
+                            </SharedButton>
                         </PopoverTrigger>
                         <PopoverContent align="end" sideOffset={6} className="ui-popover-content">
                             <div className="tabs-overflow-list">
